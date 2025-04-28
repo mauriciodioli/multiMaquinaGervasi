@@ -3,19 +3,53 @@
 {% block title %}Listado de Trabajos{% endblock %}
 
 {% block content %}
-<h1>Trabajos en Base de Datos</h1>
-
+<div class="titulo-maquinas">
+    <h1>Lavori di Database</h1>
+</div>
 <div class="contenedor-flex">
     
     <!-- Sidebar de máquinas -->
     <div id="sidebar" class="maquinas-lista">
-        <h2>Máquinas en línea</h2>
+        
+        
+        <div class="cabecera-maquinas">
+            <h2>Macchine Online</h2>
+        </div>
+        
+        <div class="maquinas-header">
+            <button class="btn-agregar">➕ Aggiungere</button>           
+            <button class="btn-modificar">✏️ Modificare</button>
+            <button class="btn-eliminar">➖ Eliminare</button>
+        </div>
+
+        <div class="tree">
+            <details open>
+                <summary>Macchine Plasma 1</summary>
+                <ul>
+                    <li>History</li>
+                    <li>Jobs</li>
+                    <li>Settings</li>
+                    <li>Statistics</li>
+                    <li>Logs</li>  
+                </ul>
+            </details>
+            <details>
+                <summary>Macchine Plasma 2</summary>
+                <ul>
+                    <li>History</li>
+                    <li>Jobs</li>
+                    <li>Settings</li>
+                    <li>Statistics</li>
+                    <li>Logs</li>  
+                </ul>
+            </details>
+        </div>
         {% for maquina in maquinas %}
             <div class="maquina-item">
                 {{ maquina }}
             </div>
         {% else %}
-            <p>No hay máquinas conectadas.</p>
+            <p>non ci sono macchine collegate.</p>
         {% endfor %}
     </div>
 
@@ -43,6 +77,45 @@
             </tbody>
         </table>
     </div>
+
+
+
+
+
+
+
+
+    <div id="modal-agregar" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Agregar Máquina</h2>
+            <input type="text" id="nueva-maquina" placeholder="Nombre de la nueva máquina">
+            <button id="confirmar-agregar">Agregar</button>
+        </div>
+    </div>
+
+    
+
+    <div id="modal-modificar" class="modal">
+        <div class="modal-content">
+            <span class="close close-modificar">&times;</span>
+            <h2>Modificar Nombre de Máquina</h2>
+            <input type="text" id="nuevo-nombre-maquina" placeholder="Nuevo nombre de máquina">
+            <button id="confirmar-modificar">Modificar</button>
+        </div>
+    </div>
+    
+
+
+    <div id="modal-eliminar" class="modal">
+        <div class="modal-content">
+            <span class="close close-eliminar">&times;</span>
+            <h2>Eliminar Máquina</h2>
+            <p>¿Estás seguro que quieres eliminar esta máquina?</p>
+            <button id="confirmar-eliminar">Eliminar</button>
+        </div>
+    </div>
+    
 
 </div>
 

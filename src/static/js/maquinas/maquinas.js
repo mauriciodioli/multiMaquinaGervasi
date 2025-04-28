@@ -35,3 +35,41 @@ document.addEventListener('mouseup', () => {
         localStorage.setItem('sidebarWidth', parseInt(sidebar.style.width)); // Guardamos
     }
 });
+
+
+
+
+
+// MODAL AGREGAR
+document.querySelector('.btn-agregar').onclick = function() {
+    document.getElementById('modal-agregar').style.display = "block";
+};
+document.querySelector('.close').onclick = function() {
+    document.getElementById('modal-agregar').style.display = "none";
+};
+
+// MODAL ELIMINAR
+document.querySelector('.btn-eliminar').onclick = function() {
+    document.getElementById('modal-eliminar').style.display = "block";
+};
+document.querySelector('.close-eliminar').onclick = function() {
+    document.getElementById('modal-eliminar').style.display = "none";
+};
+
+// MODAL MODIFICAR
+document.querySelector('.btn-modificar').onclick = function() {
+    document.getElementById('modal-modificar').style.display = "block";
+};
+document.querySelector('.close-modificar').onclick = function() {
+    document.getElementById('modal-modificar').style.display = "none";
+};
+
+// Cerrar modales clickeando fuera del contenido
+window.onclick = function(event) {
+    const modals = ['modal-agregar', 'modal-eliminar', 'modal-modificar'];
+    modals.forEach(function(id) {
+        if (event.target == document.getElementById(id)) {
+            document.getElementById(id).style.display = "none";
+        }
+    });
+};
