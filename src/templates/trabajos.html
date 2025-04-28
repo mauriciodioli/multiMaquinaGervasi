@@ -1,0 +1,26 @@
+<!-- templates/trabajos.html -->
+{% extends "layouts/layout.html" %}
+
+{% block title %}Listado de Trabajos{% endblock %}
+
+{% block content %}
+<h1>Trabajos en Base de Datos</h1>
+<table border="1">
+    <thead>
+        <tr>
+            {% for columna in columnas %}
+                <th>{{ columna }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for trabajo in trabajos %}
+            <tr>
+                {% for valor in trabajo %}
+                    <td>{{ valor }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

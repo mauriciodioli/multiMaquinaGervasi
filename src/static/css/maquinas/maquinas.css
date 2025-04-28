@@ -1,0 +1,76 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.contenedor-flex {
+    display: flex;
+    height: calc(100vh - 120px); /* Ajustar según tu header */
+    overflow: hidden;
+}
+
+.maquinas-lista {
+    min-width: 150px;
+    max-width: 400px;
+    width: 250px;
+    background: #f5f5f5;
+    overflow-y: auto;
+    height: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.resizer {
+    width: 5px;
+    background: #ccc;
+    cursor: ew-resize;
+    height: 100%;
+    flex-shrink: 0;
+}
+
+.tabla-container {
+    flex-grow: 1;
+    overflow-x: auto;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.tabla-container table {
+    border-collapse: collapse;
+    min-width: 1000px; /* La tabla puede ser más ancha que el contenedor */
+}
+
+th, td {
+    padding: 8px;
+    border: 1px solid #ccc;
+    text-align: left;
+    white-space: nowrap; /* Clave para que no se deforme el contenido */
+}
+
+.maquina-item {
+    padding: 8px;
+    margin-bottom: 5px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.maquina-item:hover {
+    background-color: #e0e0e0;
+}
+
+
+.maquinas-lista.collapsed {
+    font-size: 10px;
+    text-align: center;
+    padding: 5px;
+}
+
+.maquinas-lista.collapsed .maquina-item {
+    padding: 4px;
+    margin-bottom: 2px;
+    font-size: 9px;
+}

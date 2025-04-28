@@ -4,6 +4,9 @@ FROM python:3.12
 # Establece el directorio de trabajo dentro del contenedor
 WORKDIR /src
 
+# Instala las librerías necesarias del sistema para pyodbc
+RUN apt-get update && apt-get install -y unixodbc unixodbc-dev
+
 # Copia primero los requirements para aprovechar el cache de Docker
 COPY requirements.txt .
 

@@ -1,0 +1,19 @@
+nav {
+    text-align: right;
+    padding: 10px; /* Opcional, para que no quede pegado */
+}
+
+nav a {
+    text-decoration: none; /* Sin subrayado feo */
+    margin-right: 15px; /* Espacio entre links */
+    color: #333; /* O el color que quieras */
+}
+
+.head-mast {
+    width: 100%;   
+    margin: 0 auto; /* Para que quede centrado en pantallas grandes */
+    box-sizing: border-box;
+    height: 100%; /* Para que tome el alto del padre, que es 155px */
+    padding-left: 10px;
+    padding-right: 10px;
+}

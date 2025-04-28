@@ -1,0 +1,51 @@
+{% extends "layouts/layout.html" %}
+
+{% block title %}Listado de Trabajos{% endblock %}
+
+{% block content %}
+<h1>Trabajos en Base de Datos</h1>
+
+<div class="contenedor-flex">
+    
+    <!-- Sidebar de máquinas -->
+    <div id="sidebar" class="maquinas-lista">
+        <h2>Máquinas en línea</h2>
+        {% for maquina in maquinas %}
+            <div class="maquina-item">
+                {{ maquina }}
+            </div>
+        {% else %}
+            <p>No hay máquinas conectadas.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Resizer -->
+    <div id="resizer" class="resizer"></div>
+
+    <!-- Tabla de trabajos -->
+    <div class="tabla-container">
+        <table>
+            <thead>
+                <tr>
+                    {% for columna in columnas %}
+                        <th>{{ columna }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for trabajo in trabajos %}
+                    <tr>
+                        {% for valor in trabajo %}
+                            <td>{{ valor }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/maquinas/maquinas.css') }}">
+<script src="{{ url_for('static', filename='js/maquinas/maquinas.js') }}"></script>
+{% endblock %}
