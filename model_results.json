@@ -1,0 +1,12 @@
+{
+    "params": {
+        "epochs": 10,
+        "batch_size": 32,
+        "seq_len": 30,
+        "units": 500
+    },
+    "mse": 1.3505412726107557,
+    "training_loss": 0.0005476901424117386,
+    "validation_loss": 0.00029327848460525274,
+    "sobreentrenado": false
+}
