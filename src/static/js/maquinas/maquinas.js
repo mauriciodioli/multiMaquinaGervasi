@@ -73,3 +73,46 @@ window.onclick = function(event) {
         }
     });
 };
+
+
+function enviarNombrePorAjax(iconoClicado, event) {
+    // Detiene la propagación del evento click
+    event.stopPropagation();
+  
+    // Obtiene el elemento <summary> padre del icono
+    const summaryElement = iconoClicado.parentNode;
+    // Obtiene el valor del atributo data-nombre
+    const nombreMaquina = summaryElement.getAttribute('data-nombre');
+  
+    // Muestra el cuadro de confirmación
+    const confirmacion = confirm('¿Estás seguro de enviar los datos de: ' + nombreMaquina + '?');
+  
+    // Si el usuario hace clic en "Aceptar" (confirmación es true), realiza la llamada AJAX
+    if (confirmacion) {
+      fetch('/copiar_origen_destino/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `nombre_maquina=${encodeURIComponent(nombreMaquina)}`,
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text(); // O response.json()
+      })
+      .then(data => {
+        console.log('Respuesta del servidor:', data);
+        alert('Datos enviados correctamente.'); // Opcional: mostrar un mensaje de éxito
+      })
+      .catch(error => {
+        console.error('Error al enviar la petición AJAX:', error);
+        alert('Error al enviar los datos.'); // Opcional: mostrar un mensaje de error
+      });
+    } else {
+      // Si el usuario hace clic en "Cancelar", no se realiza la llamada AJAX
+      console.log('Envío cancelado por el usuario.');
+      alert('Envío cancelado.'); // Opcional: mostrar un mensaje de cancelación
+    }
+  }

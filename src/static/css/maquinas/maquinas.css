@@ -188,3 +188,10 @@ td, th {
     border-bottom: 1px solid #0f0f0f; /* Opcional: línea de separación */
 }
 
+.icono-clic {
+    cursor: pointer; /* Cambia el cursor al pasar por encima */
+    /* Opcional: añade un poco de margen para separarlo del texto */
+    margin-left: 10px;
+  }
+
+  

@@ -1,16 +1,23 @@
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+import urllib
 
 load_dotenv()
 
 class Config:
-    # Cargar variables de entorno desde el archivo .env
-    MYSQL_USER = os.environ.get("MYSQL_USER")
-    MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD")
-    MYSQL_HOST = os.environ.get("MYSQL_HOST")
-    MYSQL_DATABASE = os.environ.get("MYSQL_DATABASE")
-    MYSQL_PORT = os.environ.get("MYSQL_PORT", "3307")  # Default to 3306 if MYSQL_PORT is not set
+    SQLSERVER_DRIVER = os.getenv("SQLSERVER_DRIVER")
+    SQLSERVER_HOST = os.getenv("SQLSERVER_HOST")
+    SQLSERVER_DATABASE = os.getenv("SQLSERVER_DATABASE")
+    SQLSERVER_PORT = os.getenv("SQLSERVER_PORT", "1433")
+    SQLSERVER_TRUSTED_CONNECTION = os.getenv("SQLSERVER_TRUSTED_CONNECTION", "yes")
 
-    # Configuración de SQLAlchemy
-    SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}'
+    params = urllib.parse.quote_plus(
+        f"DRIVER={SQLSERVER_DRIVER};"
+        f"SERVER={SQLSERVER_HOST};"
+        f"DATABASE={SQLSERVER_DATABASE};"
+        f"Trusted_Connection={SQLSERVER_TRUSTED_CONNECTION};"
+    )
+
+    SQLALCHEMY_DATABASE_URI = f"mssql+pyodbc:///?odbc_connect={params}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+

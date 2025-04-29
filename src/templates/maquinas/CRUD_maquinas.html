@@ -1,0 +1,53 @@
+{% extends "layouts/layout.html" %}
+
+{% block title %}Listado de Trabajos{% endblock %}
+
+{% block content %}
+<div class="titulo-maquinas">
+    <h1>Macchine di Database</h1>
+</div>
+<div class="contenedor-flex">
+    
+
+
+
+
+
+
+    <div id="modal-agregar" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Agregar Máquina</h2>
+            <input type="text" id="nueva-maquina" placeholder="Nombre de la nueva máquina">
+            <button id="confirmar-agregar">Agregar</button>
+        </div>
+    </div>
+
+    
+
+    <div id="modal-modificar" class="modal">
+        <div class="modal-content">
+            <span class="close close-modificar">&times;</span>
+            <h2>Modificar Nombre de Máquina</h2>
+            <input type="text" id="nuevo-nombre-maquina" placeholder="Nuevo nombre de máquina">
+            <button id="confirmar-modificar">Modificar</button>
+        </div>
+    </div>
+    
+
+
+    <div id="modal-eliminar" class="modal">
+        <div class="modal-content">
+            <span class="close close-eliminar">&times;</span>
+            <h2>Eliminar Máquina</h2>
+            <p>¿Estás seguro que quieres eliminar esta máquina?</p>
+            <button id="confirmar-eliminar">Eliminar</button>
+        </div>
+    </div>
+    
+
+</div>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/maquinas/crud_maquinas.css') }}">
+<script src="{{ url_for('static', filename='js/maquinas/crud_maquinas.js') }}"></script>
+{% endblock %}

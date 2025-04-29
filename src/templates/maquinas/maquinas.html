@@ -7,7 +7,10 @@
     <h1>Lavori di Database</h1>
 </div>
 <div class="contenedor-flex">
-    
+    {% if mensaje %}
+        <div>{{ mensaje }}</div>
+    {% endif %}
+
     <!-- Sidebar de máquinas -->
     <div id="sidebar" class="maquinas-lista">
         
@@ -24,7 +27,11 @@
 
         <div class="tree">
             <details open>
-                <summary>Macchine Plasma 1</summary>
+                <summary data-nombre="Máquina Láser 1">
+
+                    Máquina Plasma 1
+                    <i class="fas fa-cog icono-clic" onclick="enviarNombrePorAjax(this, event)"></i>
+                  </summary>
                 <ul>
                     <li>History</li>
                     <li>Jobs</li>
@@ -34,7 +41,10 @@
                 </ul>
             </details>
             <details>
-                <summary>Macchine Plasma 2</summary>
+                <summary data-nombre="Máquina Láser 2">
+                    Máquina Plasma 2
+                    <i class="fas fa-cog icono-clic" onclick="enviarNombrePorAjax(this, event)"></i>
+                </summary>
                 <ul>
                     <li>History</li>
                     <li>Jobs</li>

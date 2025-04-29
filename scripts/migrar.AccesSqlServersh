@@ -1,0 +1,15 @@
+#!/bin/bash
+
+echo "🔄 Iniciando migración de MDB a SQL..."
+
+# Variables
+MDB_PATH="/ruta/a/tu/si-cam.mdb"
+OUTPUT_SQL="/ruta/a/output/export_si_cam.sql"
+
+# Activar entorno virtual si lo tenés
+# source venv/bin/activate
+
+# Ejecutar el script Python
+MDB_PATH=$MDB_PATH OUTPUT_SQL=$OUTPUT_SQL python3 convert_mdb_to_sql.py
+
+echo "✅ Migración completada. Archivo generado en: $OUTPUT_SQL"
