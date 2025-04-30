@@ -5,11 +5,13 @@ from src.controller.trabajo_controller import trabajos_bp
 from src.controller.maquinas import maquinas
 from src.controller.automatizacion import automatizacion
 from src.model import Usuario, Maquina
-
+from utils.db import db
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(Config)
+
+    app.config.from_object(Config)  # ✅ Primero la config
+    db.init_app(app)                # ✅ Luego inicializás la DB con esa config
     CORS(app)
 
     app.register_blueprint(trabajos_bp)
@@ -17,3 +19,4 @@ def create_app():
     app.register_blueprint(automatizacion)
 
     return app
+
