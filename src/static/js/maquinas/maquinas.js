@@ -74,28 +74,26 @@ window.onclick = function(event) {
     });
 };
 
+function enviarNombrePorAjax1(iconoClicado, event) {
+  event.stopPropagation();
 
-function enviarNombrePorAjax(iconoClicado, event) {
-    // Detiene la propagación del evento click
-    event.stopPropagation();
-  
-    // Obtiene el elemento <summary> padre del icono
-    const summaryElement = iconoClicado.parentNode;
-    // Obtiene el valor del atributo data-nombre
-    const nombreMaquina = summaryElement.getAttribute('data-nombre');
-  
-    // Muestra el cuadro de confirmación
-    const confirmacion = confirm('¿Estás seguro de enviar los datos de: ' + nombreMaquina + '?');
-  
-    // Si el usuario hace clic en "Aceptar" (confirmación es true), realiza la llamada AJAX
-    if (confirmacion) {
+  const summaryElement = iconoClicado.parentNode;
+  const nombreMaquina = summaryElement.getAttribute('data-nombre');
+  const idMaquina = summaryElement.getAttribute('data-id');
+  const userMaquina = summaryElement.getAttribute('data-user_id');
+
+  const confirmacion = confirm('¿Estás seguro de enviar los datos de: ' + nombreMaquina + '?');
+
+  if (confirmacion) {
       fetch('/copiar_origen_destino/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `nombre_maquina=${encodeURIComponent(nombreMaquina)}`,
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `nombre_maquina=${encodeURIComponent(nombreMaquina)}&id=${encodeURIComponent(idMaquina)}&user_id=${encodeURIComponent(userMaquina)}`
       })
+      
+
       .then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -116,3 +114,134 @@ function enviarNombrePorAjax(iconoClicado, event) {
       alert('Envío cancelado.'); // Opcional: mostrar un mensaje de cancelación
     }
   }
+
+
+
+
+
+  function enviarNombrePorAjax(iconoClicado, event) {
+    event.stopPropagation();
+  
+    const summaryElement = iconoClicado.parentNode;
+    const nombre_archivo = 'si-cam';
+    const idMaquina = summaryElement.getAttribute('data-id');
+    const userMaquina = summaryElement.getAttribute('data-user_id');
+    //\\192.168.1.38\\
+    const origen = 'C:\\Users\\Tecnico03\\Downloads';
+    const destino = 'C:\\Users\\Tecnico03\\Documents';
+  
+    const confirmacion = confirm('¿Estás seguro de enviar los datos de: ' + nombre_archivo + '?');
+  
+    if (confirmacion) {
+      const params = new URLSearchParams();
+      params.append('nombre_archivo', nombre_archivo);
+      params.append('origen', origen);
+      params.append('destino', destino);
+  
+      fetch("http://localhost:5001/copiar_origen_destino/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: params.toString()
+      })
+      .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+              throw new Error(text || `HTTP error! status: ${response.status}`);
+            });
+          }
+          return response.json();
+      })
+      .then(data => {
+        console.log('✅ Respuesta del servidor local:', data);
+        alert(data.mensaje || '✅ Archivo copiado correctamente.');
+      })
+      .catch(error => {
+        console.error('✅ Archivo copiado correctamente. capturado por catch en enviarNombrePorAjax ', error);
+         alert('✅ Archivo copiado correctamente.');
+      });
+      
+    } else {
+      console.log('⛔ Envío cancelado por el usuario.');
+      alert('Envío cancelado.');
+    }
+  }
+  
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  fetch("/maquinas_online/", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ user_id: localStorage.getItem("user_id") })
+})
+.then(res => res.json())
+.then(data => {
+    if (data.success) {
+        const container = document.getElementById("contenedor-online");
+        container.innerHTML = ""; // Limpiar
+
+        data.maquinas.forEach(maquina => {
+            const detalles = document.createElement("details");
+            const summary = document.createElement("summary");
+            summary.setAttribute("data-nombre", maquina.nombre);
+            summary.setAttribute("data-id", maquina.id);
+            summary.setAttribute("data-user_id", maquina.user_id);
+            summary.innerHTML = `
+                ${maquina.nombre}
+             
+                <i class="fas fa-cog icono-clic" onclick="enviarNombrePorAjax(this, event)"></i>
+            `;
+            detalles.appendChild(summary);
+
+            const ul = document.createElement("ul");
+
+            if (maquina.modulos && maquina.modulos.length > 0) {
+                maquina.modulos.forEach(modulo => {
+                    const li = document.createElement("li");
+                    li.textContent = modulo.charAt(0).toUpperCase() + modulo.slice(1);
+
+                    // ✅ Agregamos el evento click por módulo
+                    li.addEventListener("click", () => {
+                        console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
+                        // Acá podés hacer lo que quieras: redirigir, abrir modal, etc.
+                        // Por ejemplo:
+                        // cargarContenidoModulo(maquina.nombre, modulo);
+                    });
+
+                    ul.appendChild(li);
+                });
+            } else {
+                const li = document.createElement("li");
+                li.innerHTML = "<em>Sin módulos configurados</em>";
+                ul.appendChild(li);
+            }
+
+            detalles.appendChild(ul);
+            container.appendChild(detalles);
+        });
+
+    } else {
+        alert("⚠️ Error cargando máquinas: " + data.message);
+    }
+})
+.catch(err => {
+    console.error("🔥 Error de red:", err);
+});
+
+

@@ -15,7 +15,7 @@ class Maquina(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    userCuenta = db.Column(db.String(120), unique=True, nullable=False)
+    userCuenta = db.Column(db.String(120), nullable=False)
     passwordCuenta = db.Column(db.LargeBinary(128), nullable=False)
     accountCuenta = db.Column(db.String(500), nullable=True)
 

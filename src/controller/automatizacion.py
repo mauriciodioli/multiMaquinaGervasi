@@ -1,10 +1,13 @@
-from flask import Blueprint, request, render_template
+from flask import Blueprint, render_template, request, redirect, url_for,jsonify
 import os
 import shutil
 import pyodbc
 from dotenv import load_dotenv
 from src.model.maquina import Maquina
-from src.utils.db import db
+from utils.db import db
+from datetime import datetime
+import json
+import subprocess
 
 
 # Cargar variables de entorno
@@ -32,24 +35,26 @@ destino = os.path.normpath(destino_raw)
 @automatizacion.route('/copiar_origen_destino/', methods=['POST'])
 def automatizacion_index():
     try:
-        if request.method == 'POST':
-            nombre_maquina = request.form.get('nombre_maquina')
-            maquina = db.session.query(Maquina).filter_by(nombre=nombre_maquina).first()
+        nombre_maquina = request.form.get('nombre_maquina')
+        id_maquina = request.form.get('id')
 
-            if not maquina:
-                mensaje = "❌ Error: Máquina no encontrada"
-                return render_template('automatizacion/automatizacion.html', mensaje=mensaje)
+        maquina = db.session.query(Maquina).filter_by(id=int(id_maquina)).first()
 
-            origen = os.path.join(maquina.ruta, maquina.nombreDb)
-            destino = '/src/downloads/'
-
-            print(f"Copiando desde: {origen}")
-            print(f"Destino: {destino}")
-
-            # 👉 Hacemos la copia segura
-            exito, mensaje = copiar_carpeta_segura(origen, destino)
-
+        if not maquina:
+            mensaje = "❌ Error: Máquina no encontrada"
             return render_template('automatizacion/automatizacion.html', mensaje=mensaje)
+
+        origen = os.path.join("/mnt/origen", maquina.nombreDb + '.mbd')
+        destino = '/mnt/destino'
+
+        print(f"Copiando desde: {origen}")
+        print(f"Destino: {destino}")
+
+      
+
+        
+
+        return render_template('automatizacion/automatizacion.html', mensaje=mensaje)
 
     except Exception as e:
         mensaje = f"❌ Error conectando o copiando: {e}"

@@ -19,15 +19,14 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>User Cuenta</th>
-                        <th>Account</th>
+                        <th>User Cuenta</th>                        
                         <th>Nombre</th>
-                        <th>Ruta</th>
-                        <th>Nombre DB</th>
-                        <th>Selector</th>
+                        <th>Ruta Origen</th>
+                        <th>Nombre DB</th>                       
                         <th>Sector</th>
                         <th>Estado</th>
                         <th>Fecha</th>
+                        <th>Settings</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -36,26 +35,32 @@
                     {% for maquina in maquinas %}
                     <tr>
                         <td>{{ maquina.id }}</td>
-                        <td>{{ maquina.userCuenta }}</td>
-                        <td>{{ maquina.accountCuenta }}</td>
+                        <td>{{ maquina.userCuenta }}</td>                      
                         <td>{{ maquina.nombre }}</td>
                         <td>{{ maquina.ruta }}</td>
-                        <td>{{ maquina.nombreDb }}</td>
-                        <td>{{ maquina.selector }}</td>
+                        <td>{{ maquina.nombreDb }}</td>                       
                         <td>{{ maquina.sector }}</td>
                         <td>{{ maquina.estado }}</td>
                         <td>{{ maquina.fecha.strftime('%Y-%m-%d %H:%M') if maquina.fecha else '' }}</td>
+                        <td>
+                          {% if maquina.setting and 'modulos' in maquina.setting %}
+                              {{ maquina.setting.modulos | join(', ') }}
+                          {% else %}
+                              <em>Sin módulos</em>
+                          {% endif %}
+                      </td>
+                      
                         <td>
                             <button type="button" class="btn btn-warning"
                                 data-bs-toggle="modal"
                                 data-bs-target="#modal-modificar"
                                 data-maquina-id="{{ maquina.id }}"
                                 data-user-cuenta="{{ maquina.userCuenta }}"
-                                data-account-cuenta="{{ maquina.accountCuenta }}"
+                             
                                 data-nombre="{{ maquina.nombre }}"
                                 data-ruta="{{ maquina.ruta }}"
                                 data-nombre-db="{{ maquina.nombreDb }}"
-                                data-selector="{{ maquina.selector }}"
+                              
                                 data-sector="{{ maquina.sector }}"
                                 data-estado="{{ maquina.estado }}"
                                 data-setting="{{ maquina.setting }}">
@@ -80,55 +85,81 @@
 </div>
 
 
-
-
-
-
-<div class="modal-body">
-    <form id="form-agregar-maquina">
-        <div class="mb-3">
-            <label class="form-label">Usuario Cuenta</label>
-            <input type="text" class="form-control" name="userCuenta" required>
+<!-- Modal Agregar Máquina -->
+<div class="modal fade" id="modal-agregar" tabindex="-1" aria-labelledby="modal-agregar-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        
+        <div class="modal-header">
+          <h5 class="modal-title" id="modal-agregar-label">Agregar Máquina</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Contraseña Cuenta</label>
-            <input type="password" class="form-control" name="passwordCuenta" required>
+  
+        <div class="modal-body">
+          <form id="form-agregar-maquina">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Usuario Cuenta</label>
+                <input type="text" class="form-control" name="userCuenta" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Contraseña Cuenta</label>
+                <input type="password" class="form-control" name="passwordCuenta" required>
+              </div>
+           <!--    <div class="col-md-6 mb-3">
+                <label class="form-label">Account Cuenta</label>
+                <input type="text" class="form-control" name="accountCuenta">
+              </div>-->
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Nombre</label>
+                <input type="text" class="form-control" name="nombre">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Ruta</label>
+                <input type="text" class="form-control" name="ruta">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Nombre DB</label>
+                <input type="text" class="form-control" name="nombreDb">
+              </div>
+            <!--   <div class="col-md-6 mb-3">
+                <label class="form-label">Selector</label>
+                <input type="text" class="form-control" name="selector">
+              </div>-->
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Sector</label>
+                <input type="text" class="form-control" name="sector">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Estado</label>
+                <input type="text" class="form-control" name="estado">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Módulos Habilitados</label>
+                <select class="form-select" name="modulos" multiple>
+                  <option value="history">History</option>
+                  <option value="jobs">Jobs</option>
+                  <option value="settings">Settings</option>
+                  <option value="statistics">Statistics</option>
+                  <option value="logs">Logs</option>
+                </select>
+                <small class="form-text text-muted">Usá Ctrl o Shift para seleccionar múltiples módulos.</small>
+              </div>
+              
+            </div>
+  
+            <input type="hidden" id="user-id" name="user_id">
+          </form>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Account Cuenta</label>
-            <input type="text" class="form-control" name="accountCuenta">
+  
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="confirmar-agregar">Agregar Máquina</button>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Nombre</label>
-            <input type="text" class="form-control" name="nombre">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Ruta</label>
-            <input type="text" class="form-control" name="ruta">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Nombre DB</label>
-            <input type="text" class="form-control" name="nombreDb">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Selector</label>
-            <input type="text" class="form-control" name="selector">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Sector</label>
-            <input type="text" class="form-control" name="sector">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Estado</label>
-            <input type="text" class="form-control" name="estado">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Settings (JSON)</label>
-            <textarea class="form-control" name="setting"></textarea>
-        </div>
-        <input type="hidden" name="user_id" value="{{ current_user.id }}">  <!-- O lo que uses -->
-    </form>
-</div>
+      </div>
+    </div>
+  </div>
+  
 
 
 

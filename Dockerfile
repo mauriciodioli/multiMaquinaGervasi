@@ -27,6 +27,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia el código fuente
 COPY src/ .
 
+# Copia el script de copiado y da permisos de ejecución
+COPY scripts/copiar_archivo.sh /scripts/copiar_archivo.sh
+RUN chmod +x /scripts/copiar_archivo.sh
+
 # Variables de entorno para Flask
 ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0

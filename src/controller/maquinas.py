@@ -1,7 +1,54 @@
 import pyodbc
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template,request,jsonify
+from src.model.maquina import Maquina
+from utils.db import db
+import json
 
 maquinas = Blueprint('maquinas', __name__)
+
+@maquinas.route('/maquinas_online/', methods=['POST'])
+def maquinas_online():
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+
+        maquinas = db.session.query(Maquina).filter_by(user_id=int(user_id)).all()
+  
+        resultado = []
+        for m in maquinas:
+            if isinstance(m.setting, str):
+                try:
+                    setting = json.loads(m.setting)
+                except:
+                    setting = {}
+            elif isinstance(m.setting, dict):
+                setting = m.setting
+            else:
+                setting = {}
+
+            resultado.append({
+                "id": m.id,
+                "user_id": m.user_id,
+                "userCuenta": m.userCuenta,
+                "estado": m.estado,
+                "nombre": m.nombre,
+                "ruta": m.ruta, 
+                "nombreDb": m.nombreDb,
+                "modulos": setting.get("modulos", [])
+            })
+
+        return jsonify({"success": True, "maquinas": resultado})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)})
+    finally:
+        db.session.close()
+
+
+
+
+
 
 # Ruta para ver los trabajos
 @maquinas.route('/maquinas_sql')

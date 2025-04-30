@@ -1,29 +1,83 @@
-document.getElementById("confirmar-agregar").addEventListener("click", () => {
-    const form = document.getElementById("form-agregar-maquina");
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
+document.getElementById("crud-link").addEventListener("click", (e) => {
+    e.preventDefault();
+    const userId = localStorage.getItem("user_id");
+    
+    if (!userId) {
+        alert("No hay usuario en sesión");
+        return;
+    }
 
-    fetch("/maquinas_crud/agregar", {
+    fetch("/maquinas_crud_consulta/", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify({ user_id: userId })
     })
-    .then(res => res.json())
-    .then(res => {
-        if (res.success) {
-            alert("Máquina agregada correctamente");
-            location.reload();
-        } else {
-            alert("Error: " + res.message);
-        }
+    .then(res => res.text())
+    .then(html => {
+        // Reemplazá todo el contenido del body o redirect manual
+        document.open();
+        document.write(html);
+        document.close();
     })
     .catch(err => {
-        alert("Error al conectar con el servidor");
-        console.error(err);
+        console.error("Error al cargar máquinas:", err);
+        alert("Fallo la carga del CRUD");
     });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.getElementById("confirmar-agregar");
+    const form = document.getElementById("form-agregar-maquina");
+
+    // ✅ Clonamos el botón para evitar listeners duplicados
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    newBtn.addEventListener("click", event => {
+        event.preventDefault();  // ⚠️ CRÍTICO
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        data.modulos = Array.from(form.elements["modulos"].selectedOptions).map(opt => opt.value);
+        data.user_id = localStorage.getItem("user_id");
+
+        fetch("/maquinas_crud/agregar/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.success) {
+                alert("Máquina agregada correctamente");
+                location.reload();
+            } else {
+                alert("Error: " + res.message);
+            }
+        })
+        .catch(err => {
+            alert("Error inesperado:\n" + err.message);
+            console.error(err);
+        });
+    });
+});
+
+
 
 
 

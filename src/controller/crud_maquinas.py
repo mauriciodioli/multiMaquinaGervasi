@@ -2,15 +2,31 @@ from flask import Blueprint, render_template, request, redirect, url_for,jsonify
 from src.model.maquina import Maquina
 from utils.db import db
 from datetime import datetime
+import json
 
 crud_maquinas = Blueprint('crud_maquinas', __name__)
 
 
 
-@crud_maquinas.route('/maquinas_crud/')
+@crud_maquinas.route('/maquinas_crud_consulta/', methods=['GET', 'POST'])
 def maquinas_crud():
     try:
-        maquinas = db.session.query(Maquina).all()
+        if request.method == 'POST':
+            data = request.get_json()
+            user_id = data.get('user_id')
+        else:
+            user_id = request.args.get('user_id')
+
+        if user_id:
+            maquinas = db.session.query(Maquina).filter_by(user_id=int(user_id)).all()
+        else:
+            maquinas = db.session.query(Maquina).all()
+        for m in maquinas:
+            if isinstance(m.setting, str):
+                try:
+                    m.setting = json.loads(m.setting)
+                except:
+                    m.setting = {}
         return render_template('maquinas/CRUD_maquinas.html', maquinas=maquinas)
     except Exception as e:
         db.session.rollback()
@@ -23,14 +39,22 @@ def maquinas_crud():
 
 
 
-# ALTA
-crud_maquinas.route('/maquinas_crud/agregar', methods=['POST'])
+
+#ALTA
+@crud_maquinas.route('/maquinas_crud/agregar/', methods=['POST'])
 def agregar_maquina():
     try:
         data = request.get_json()
 
+        try:
+            settings_dict = json.loads(data.get("setting", "{}"))
+        except:
+            settings_dict = {}
+
+        settings_dict["modulos"] = data.get("modulos", [])
+
         nueva = Maquina(
-            user_id=data["user_id"],
+            user_id=int(data["user_id"]),
             userCuenta=data["userCuenta"],
             passwordCuenta=data["passwordCuenta"].encode('utf-8'),
             accountCuenta=data.get("accountCuenta"),
@@ -41,15 +65,21 @@ def agregar_maquina():
             sector=data.get("sector"),
             estado=data.get("estado"),
             fecha=datetime.now(),
-            setting=data.get("setting")
+            setting=settings_dict
         )
 
         db.session.add(nueva)
         db.session.commit()
         return jsonify({"success": True})
+
     except Exception as e:
         print(f"Error al agregar máquina: {e}")
+        db.session.rollback()
         return jsonify({"success": False, "message": str(e)})
+
+    finally:
+        db.session.close()
+
 
 # BAJA
 @crud_maquinas.route('/maquinas_crud/eliminar/<int:id>', methods=['DELETE'])
