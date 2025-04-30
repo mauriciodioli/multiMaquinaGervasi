@@ -18,65 +18,147 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        <th>ID</th>
+                        <th>User Cuenta</th>
+                        <th>Account</th>
                         <th>Nombre</th>
+                        <th>Ruta</th>
+                        <th>Nombre DB</th>
+                        <th>Selector</th>
+                        <th>Sector</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
+                
                 <tbody id="tabla-maquinas">
+                    {% for maquina in maquinas %}
                     <tr>
-                        <td>Máquina Ejemplo 1</td>
+                        <td>{{ maquina.id }}</td>
+                        <td>{{ maquina.userCuenta }}</td>
+                        <td>{{ maquina.accountCuenta }}</td>
+                        <td>{{ maquina.nombre }}</td>
+                        <td>{{ maquina.ruta }}</td>
+                        <td>{{ maquina.nombreDb }}</td>
+                        <td>{{ maquina.selector }}</td>
+                        <td>{{ maquina.sector }}</td>
+                        <td>{{ maquina.estado }}</td>
+                        <td>{{ maquina.fecha.strftime('%Y-%m-%d %H:%M') if maquina.fecha else '' }}</td>
                         <td>
-                            <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modal-modificar" data-maquina-id="1" data-maquina-nombre="Máquina Ejemplo 1">Modificar</button>
-                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#modal-eliminar" data-maquina-id="1">Eliminar</button>
+                            <button type="button" class="btn btn-warning"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modal-modificar"
+                                data-maquina-id="{{ maquina.id }}"
+                                data-user-cuenta="{{ maquina.userCuenta }}"
+                                data-account-cuenta="{{ maquina.accountCuenta }}"
+                                data-nombre="{{ maquina.nombre }}"
+                                data-ruta="{{ maquina.ruta }}"
+                                data-nombre-db="{{ maquina.nombreDb }}"
+                                data-selector="{{ maquina.selector }}"
+                                data-sector="{{ maquina.sector }}"
+                                data-estado="{{ maquina.estado }}"
+                                data-setting="{{ maquina.setting }}">
+                                Modificar
+                            </button>
+
+                            <button type="button"
+                                    class="btn btn-sm btn-danger"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modal-eliminar"
+                                    data-maquina-id="{{ maquina.id }}">
+                                Eliminar
+                            </button>
                         </td>
                     </tr>
-                    <tr>
-                        <td>Otra Máquina</td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modal-modificar" data-maquina-id="2" data-maquina-nombre="Otra Máquina">Modificar</button>
-                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#modal-eliminar" data-maquina-id="2">Eliminar</button>
-                        </td>
-                    </tr>
-                    </tbody>
+                    {% endfor %}
+                </tbody>
+                
             </table>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="modal-agregar" tabindex="-1" aria-labelledby="modal-agregar-label" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modal-agregar-label">Agregar Máquina</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="nueva-maquina" class="form-label">Nombre de la nueva máquina</label>
-                    <input type="text" class="form-control" id="nueva-maquina" placeholder="Nombre de la nueva máquina">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="confirmar-agregar">Agregar</button>
-            </div>
+
+
+
+
+
+<div class="modal-body">
+    <form id="form-agregar-maquina">
+        <div class="mb-3">
+            <label class="form-label">Usuario Cuenta</label>
+            <input type="text" class="form-control" name="userCuenta" required>
         </div>
-    </div>
+        <div class="mb-3">
+            <label class="form-label">Contraseña Cuenta</label>
+            <input type="password" class="form-control" name="passwordCuenta" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Account Cuenta</label>
+            <input type="text" class="form-control" name="accountCuenta">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control" name="nombre">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Ruta</label>
+            <input type="text" class="form-control" name="ruta">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Nombre DB</label>
+            <input type="text" class="form-control" name="nombreDb">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Selector</label>
+            <input type="text" class="form-control" name="selector">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Sector</label>
+            <input type="text" class="form-control" name="sector">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Estado</label>
+            <input type="text" class="form-control" name="estado">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Settings (JSON)</label>
+            <textarea class="form-control" name="setting"></textarea>
+        </div>
+        <input type="hidden" name="user_id" value="{{ current_user.id }}">  <!-- O lo que uses -->
+    </form>
 </div>
+
+
+
+
+
+
+
 
 <div class="modal fade" id="modal-modificar" tabindex="-1" aria-labelledby="modal-modificar-label" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modal-modificar-label">Modificar Nombre de Máquina</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="modal-modificar-label">Modificar Máquina</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label for="nuevo-nombre-maquina" class="form-label">Nuevo nombre de máquina</label>
-                    <input type="text" class="form-control" id="nuevo-nombre-maquina" placeholder="Nuevo nombre de máquina">
-                    <input type="hidden" id="maquina-id-modificar">
-                </div>
+                <form id="form-modificar-maquina">
+                    <input type="hidden" id="maquina-id-modificar" name="id">
+                    
+                    <input type="text" class="form-control mb-2" name="userCuenta" placeholder="Usuario Cuenta">
+                    <input type="password" class="form-control mb-2" name="passwordCuenta" placeholder="Contraseña Cuenta">
+                    <input type="text" class="form-control mb-2" name="accountCuenta" placeholder="Account Cuenta">
+                    <input type="text" class="form-control mb-2" name="nombre" placeholder="Nombre">
+                    <input type="text" class="form-control mb-2" name="ruta" placeholder="Ruta">
+                    <input type="text" class="form-control mb-2" name="nombreDb" placeholder="Nombre DB">
+                    <input type="text" class="form-control mb-2" name="selector" placeholder="Selector">
+                    <input type="text" class="form-control mb-2" name="sector" placeholder="Sector">
+                    <input type="text" class="form-control mb-2" name="estado" placeholder="Estado">
+                    <textarea class="form-control mb-2" name="setting" placeholder='Settings (JSON)'></textarea>
+                </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -86,6 +168,11 @@
     </div>
 </div>
 
+
+
+
+
+
 <div class="modal fade" id="modal-eliminar" tabindex="-1" aria-labelledby="modal-eliminar-label" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -94,6 +181,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <input type="hidden" id="maquina-id-eliminar">
+
                 <p>¿Estás seguro que quieres eliminar esta máquina?</p>
                 <input type="hidden" id="maquina-id-eliminar">
             </div>

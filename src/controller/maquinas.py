@@ -38,10 +38,3 @@ def listar_maquina_sql():
 #                 EjeX_Force_Offset,
 #                 EjeY_Force_Offset,    
 
-@maquinas.route('/maquinas_crud/')
-def maquinas_crud():
-    try:
-        
-        return render_template('maquinas/CRUD_maquinas.html')
-    except Exception as e:
-        return f"Error conectando a la base de datos: {e}"

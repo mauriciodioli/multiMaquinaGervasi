@@ -3,6 +3,7 @@
 from flask import Blueprint
 from flask_marshmallow import Marshmallow
 from utils.db import db
+from sqlalchemy.orm import relationship
 
 ma = Marshmallow()
 usuario = Blueprint('usuario', __name__)
@@ -19,6 +20,8 @@ class Usuario(db.Model):
     roll = db.Column(db.String(20), nullable=False, default='regular')
     refresh_token = db.Column(db.String(1000), nullable=True)
     calendly_url = db.Column(db.String(255), nullable=True)
+    
+    maquinas = relationship('Maquina', back_populates='usuario')
 
     def __init__(self, correo_electronico, password, roll='regular', activo=False,
                  token=None, refresh_token=None, calendly_url=None):

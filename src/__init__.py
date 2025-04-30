@@ -4,6 +4,8 @@ from config.config import Config
 from src.controller.trabajo_controller import trabajos_bp
 from src.controller.maquinas import maquinas
 from src.controller.automatizacion import automatizacion
+from src.controller.crud_maquinas import crud_maquinas
+ # from src.controller.crud_usuarios import crud_usuarios
 from src.model import Usuario, Maquina
 from utils.db import db
 
@@ -17,6 +19,7 @@ def create_app():
     app.register_blueprint(trabajos_bp)
     app.register_blueprint(maquinas)
     app.register_blueprint(automatizacion)
+    app.register_blueprint(crud_maquinas)
 
     return app
 

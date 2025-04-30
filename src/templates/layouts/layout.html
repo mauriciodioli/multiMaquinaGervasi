@@ -111,7 +111,12 @@ img {
 
                                                             <div class="head-menu-slot">
                                                                 <nav class="nav"><ul id="header-menu-1" class="navigation-main ignition-menu-menu-def"><li id="menu-item-389" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-389"><a href="https://www.gervasi.eu/es/">HOME</a></li>
-                                      
+                                        <button id="btn-simular-login" class="btn btn-sm btn-outline-light ms-2">
+                                            Iniciar sesión como Usuario 1
+                                            </button>
+                                            <span id="usuario-activo" class="text-white ms-2"></span>
+                                                                      
+                                        
                                         <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391">
                                             <a href="javascript:void(0);">MACCHINE</a> 
                                             <ul class="sub-menu">                                                
@@ -180,3 +185,36 @@ img {
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>
+
+<script>
+    document.getElementById("btn-simular-login").addEventListener("click", () => {
+        localStorage.setItem("user_id", "1");
+        const nombre = "Usuario Demo";  // Si querés que se vea más humano
+        document.getElementById("usuario-activo").textContent = `Sesión activa como ${nombre}`;
+        showToast("Sesión iniciada como Usuario 1");
+    });
+    
+    function showToast(mensaje) {
+        const toast = document.createElement("div");
+        toast.className = "toast align-items-center text-bg-success border-0 position-fixed bottom-0 end-0 m-4 show";
+        toast.role = "alert";
+        toast.style.zIndex = "1055";
+        toast.innerHTML = `
+          <div class="d-flex">
+            <div class="toast-body">
+              ${mensaje}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          </div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+    
+    // Mostrar si ya hay sesión
+    const uid = localStorage.getItem("user_id");
+    if (uid) {
+        document.getElementById("usuario-activo").textContent = `Sesión activa como Usuario ${uid}`;
+    }
+    </script>
+    
