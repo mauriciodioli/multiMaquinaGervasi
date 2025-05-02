@@ -64,6 +64,7 @@ def agregar_maquina():
             selector=data.get("selector"),
             sector=data.get("sector"),
             estado=data.get("estado"),
+            potencia=data.get("potencia"),
             fecha=datetime.now(),
             setting=settings_dict
         )

@@ -213,7 +213,7 @@ function enviarNombrePorAjax1(iconoClicado, event) {
                          
                           if (localStorage.getItem("precio_kwh")) {             
                             let precioKwh= localStorage.getItem("precio_kwh");          
-                            cargarContenidoModulo(maquina.nombre, modulo, filtro_clfile, precioKwh);
+                            cargarContenidoModulo(maquina.nombre, modulo, filtro_clfile, precioKwh,maquina.potencia);
                           } else {
                               alert("⚠️ No se ha configurado el precio del kWh");
                           }
@@ -259,7 +259,7 @@ function enviarNombrePorAjax1(iconoClicado, event) {
 
 
 
-function cargarContenidoModulo(nombreMaquina, modulo, clfile,precioKwh ) {
+function cargarContenidoModulo(nombreMaquina, modulo, clfile,precioKwh,potencia ) {
   const tablaContainer = document.querySelector(".tabla-container");
   const spinner = document.getElementById("spinner");
   if (spinner) {
@@ -271,7 +271,12 @@ function cargarContenidoModulo(nombreMaquina, modulo, clfile,precioKwh ) {
     headers: {
         "Content-Type": "application/json"
     },
-    body: JSON.stringify({ clfile: clfile, nombre_maquina: nombreMaquina, modulo: modulo, precioKwh: precioKwh })
+    body: JSON.stringify({ clfile: clfile, 
+      nombre_maquina: nombreMaquina, 
+      modulo: modulo, 
+      precioKwh: precioKwh, 
+      potencia: potencia 
+    })
 })
   .then(res => res.json())
   .then(data => {

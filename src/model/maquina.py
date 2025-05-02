@@ -27,11 +27,13 @@ class Maquina(db.Model):
     fecha = db.Column(db.DateTime)
     estado = db.Column(db.String(100))
     setting = db.Column(db.JSON)
+    potencia = db.Column(db.Float)
 
     usuario = relationship('Usuario', back_populates='maquinas')
 
     def __init__(self, user_id, userCuenta, passwordCuenta, accountCuenta=None,
-                 nombre=None, ruta=None, nombreDb=None, selector=None, sector=None, fecha=None, estado=None, setting=None):
+                 nombre=None, ruta=None, nombreDb=None, selector=None, sector=None, fecha=None, estado=None, setting=None, potencia=None):
+        self.potencia = potencia
         self.user_id = user_id
         self.userCuenta = userCuenta
         self.passwordCuenta = passwordCuenta

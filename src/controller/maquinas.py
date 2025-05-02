@@ -31,6 +31,7 @@ def maquinas_online():
                 "user_id": m.user_id,
                 "userCuenta": m.userCuenta,
                 "estado": m.estado,
+                "potencia": m.potencia,
                 "nombre": m.nombre,
                 "ruta": m.ruta, 
                 "nombreDb": m.nombreDb,
@@ -57,6 +58,7 @@ def listar_maquina_sql_filtrado():
         data = request.get_json()
         filtro_clfile = data.get("clfile", "")  # puede venir vacío
         precioKwh = data.get("precioKwh")  # Precio por kWh, por defecto 0.20
+        potencia = data.get("potencia")  # Potencia de la máquina, por defecto 8kW
         conn = pyodbc.connect(
             "DRIVER={ODBC Driver 17 for SQL Server};"
             "SERVER=192.168.1.250,1433;"
@@ -85,7 +87,7 @@ def listar_maquina_sql_filtrado():
 
         for fila in filas:
             fila_dict = dict(zip(columnas, fila))
-            fila_dict = calculo_consumo_por_trabajo(fila_dict, precioKwh)
+            fila_dict = calculo_consumo_por_trabajo(fila_dict, precioKwh,potencia)
             # Convertir a float si es necesario    
             resultado = {k: fila_dict.get(k) for k in columnas_finales}
            # print("[✅ Fila procesada]", resultado)
@@ -98,12 +100,12 @@ def listar_maquina_sql_filtrado():
             print(f"❌ Error conectando a la base de datos: {e}")
             return jsonify({"success": False, "error": str(e)})
     
-def calculo_consumo_por_trabajo(fila, precioKwh):
+def calculo_consumo_por_trabajo(fila, precioKwh,potencia):
     try:
         temp_total = fila.get("TempTotale", 0) or 0
         if isinstance(temp_total, str):
             temp_total = float(temp_total.replace(",", "."))  # soporte coma como decimal
-        consumo_kw = (float(temp_total) / 3600) * 8  # Suponiendo 8kW de potencia
+        consumo_kw = (float(temp_total) / 3600) * potencia  # Suponiendo 8kW de potencia
         costo_euro = round(consumo_kw * float(precioKwh), 2)  # Supongamos 0.20 €/kWh
         fila["Consumo_kWh"] = round(consumo_kw, 2)
         fila["Costo_Euro"] = costo_euro
