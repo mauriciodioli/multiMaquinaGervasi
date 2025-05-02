@@ -99,10 +99,13 @@ def eliminar_maquina(id):
 def modificar_maquina(id):
     try:
         data = request.get_json()
+        print(f"[DEBUG] Payload recibido: {data}")  # 🐞 Imprime todo el JSON recibido
+
         maquina = db.session.get(Maquina, id)
         if not maquina:
             return jsonify({"success": False, "message": "Máquina no encontrada"})
 
+        # Actualizar campos básicos
         maquina.userCuenta = data.get("userCuenta", maquina.userCuenta)
         if data.get("passwordCuenta"):
             maquina.passwordCuenta = data["passwordCuenta"].encode('utf-8')
@@ -113,13 +116,33 @@ def modificar_maquina(id):
         maquina.selector = data.get("selector")
         maquina.sector = data.get("sector")
         maquina.estado = data.get("estado")
-        maquina.setting = data.get("setting")
+        maquina.potencia = float(data.get("potencia"))
+
+        # Procesar setting con JSON
+        setting_raw = data.get("setting")
+        print(f"[DEBUG] Setting recibido: {setting_raw}")  # 🐞 Imprime el setting tal como llegó
+
+        if isinstance(setting_raw, str):
+            try:
+                setting_dict = json.loads(setting_raw)
+            except Exception as e:
+                print(f"[ERROR] Fallo al parsear setting: {e}")  # 🐞 Log del error
+                return jsonify({"success": False, "message": f"JSON inválido en setting: {e}"})
+        else:
+            setting_dict = setting_raw
+
+        maquina.setting = json.dumps(setting_dict)  # ✅ Guarda como JSON string
 
         db.session.commit()
         return jsonify({"success": True})
+
     except Exception as e:
         db.session.rollback()
+        print(f"[ERROR] Excepción general: {e}")  # 🐞 Log de error general
         return jsonify({"success": False, "message": str(e)})
+
     finally:
         db.session.close()
+
+
 

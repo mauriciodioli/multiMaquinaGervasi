@@ -7,25 +7,10 @@ document.getElementById("crud-link").addEventListener("click", (e) => {
         return;
     }
 
-    fetch("/maquinas_crud_consulta/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ user_id: userId })
-    })
-    .then(res => res.text())
-    .then(html => {
-        // Reemplazá todo el contenido del body o redirect manual
-        document.open();
-        document.write(html);
-        document.close();
-    })
-    .catch(err => {
-        console.error("Error al cargar máquinas:", err);
-        alert("Fallo la carga del CRUD");
-    });
+    // REDIRECCIÓN NORMAL CON GET
+    window.location.href = `/maquinas_crud_consulta/?user_id=${userId}`;
 });
+
 
 
 
@@ -83,7 +68,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-document.getElementById("confirmar-modificar").addEventListener("click", () => {
+const original = document.getElementById("confirmar-modificar");
+const nuevo = original.cloneNode(true);
+original.parentNode.replaceChild(nuevo, original);
+
+nuevo.addEventListener("click", () => {
     const form = document.getElementById("form-modificar-maquina");
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
@@ -116,16 +105,23 @@ document.querySelectorAll('[data-bs-target="#modal-modificar"]').forEach(button 
     button.addEventListener('click', () => {
         const form = document.getElementById("form-modificar-maquina");
         form.reset();
+
         form.userCuenta.value = button.dataset.userCuenta || '';
-        form.accountCuenta.value = button.dataset.accountCuenta || '';
         form.nombre.value = button.dataset.nombre || '';
         form.ruta.value = button.dataset.ruta || '';
         form.nombreDb.value = button.dataset.nombreDb || '';
-        form.selector.value = button.dataset.selector || '';
         form.sector.value = button.dataset.sector || '';
         form.estado.value = button.dataset.estado || '';
-        form.setting.value = button.dataset.setting || '';
-        form.passwordCuenta.value = ''; // nunca prellenar contraseñas
+        form.potencia.value = button.dataset.potencia || '';
+
+        try {
+            const setting = JSON.parse(button.dataset.setting || '{}');
+            form.setting.value = JSON.stringify(setting, null, 2);
+        } catch (e) {
+            console.warn("Error al parsear setting:", e);
+            form.setting.value = button.dataset.setting || '';
+        }
+
         document.getElementById("maquina-id-modificar").value = button.dataset.maquinaId;
     });
 });

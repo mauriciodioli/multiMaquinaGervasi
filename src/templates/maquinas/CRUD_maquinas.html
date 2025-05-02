@@ -25,6 +25,7 @@
                         <th>Nombre DB</th>                       
                         <th>Sector</th>
                         <th>Estado</th>
+                        <th>Potenza</th>
                         <th>Fecha</th>
                         <th>Settings</th>
                         <th>Acciones</th>
@@ -41,6 +42,7 @@
                         <td>{{ maquina.nombreDb }}</td>                       
                         <td>{{ maquina.sector }}</td>
                         <td>{{ maquina.estado }}</td>
+                        <td>{{ maquina.potencia }}</td>
                         <td>{{ maquina.fecha.strftime('%Y-%m-%d %H:%M') if maquina.fecha else '' }}</td>
                         <td>
                           {% if maquina.setting and 'modulos' in maquina.setting %}
@@ -63,7 +65,9 @@
                               
                                 data-sector="{{ maquina.sector }}"
                                 data-estado="{{ maquina.estado }}"
-                                data-setting="{{ maquina.setting }}">
+                                data-potencia="{{ maquina.potencia }}"
+                               data-setting='{{ maquina.setting | tojson | safe }}'
+                                >
                                 Modificar
                             </button>
 
@@ -184,7 +188,6 @@
                     <input type="hidden" id="maquina-id-modificar" name="id">
                     
                     <input type="text" class="form-control mb-2" name="userCuenta" placeholder="Usuario Cuenta">
-                    <input type="password" class="form-control mb-2" name="passwordCuenta" placeholder="Contraseña Cuenta">
                     <input type="text" class="form-control mb-2" name="nombre" placeholder="Nombre">
                     <input type="text" class="form-control mb-2" name="ruta" placeholder="Ruta">
                     <input type="text" class="form-control mb-2" name="nombreDb" placeholder="Nombre DB">
