@@ -40,29 +40,7 @@ document.addEventListener('mouseup', () => {
 
 
 
-// MODAL AGREGAR
-document.querySelector('.btn-agregar').onclick = function() {
-    document.getElementById('modal-agregar').style.display = "block";
-};
-document.querySelector('.close').onclick = function() {
-    document.getElementById('modal-agregar').style.display = "none";
-};
 
-// MODAL ELIMINAR
-document.querySelector('.btn-eliminar').onclick = function() {
-    document.getElementById('modal-eliminar').style.display = "block";
-};
-document.querySelector('.close-eliminar').onclick = function() {
-    document.getElementById('modal-eliminar').style.display = "none";
-};
-
-// MODAL MODIFICAR
-document.querySelector('.btn-modificar').onclick = function() {
-    document.getElementById('modal-modificar').style.display = "block";
-};
-document.querySelector('.close-modificar').onclick = function() {
-    document.getElementById('modal-modificar').style.display = "none";
-};
 
 // Cerrar modales clickeando fuera del contenido
 window.onclick = function(event) {
@@ -201,11 +179,15 @@ function enviarNombrePorAjax1(iconoClicado, event) {
         container.innerHTML = ""; // Limpiar
 
         data.maquinas.forEach(maquina => {
+           
+
             const detalles = document.createElement("details");
             const summary = document.createElement("summary");
             summary.setAttribute("data-nombre", maquina.nombre);
             summary.setAttribute("data-id", maquina.id);
             summary.setAttribute("data-user_id", maquina.user_id);
+            summary.style.cursor = "pointer"; // Para el nombre de la máquina
+
             summary.innerHTML = `
                 ${maquina.nombre}
              
@@ -219,13 +201,39 @@ function enviarNombrePorAjax1(iconoClicado, event) {
                 maquina.modulos.forEach(modulo => {
                     const li = document.createElement("li");
                     li.textContent = modulo.charAt(0).toUpperCase() + modulo.slice(1);
-
+                    li.style.cursor = "pointer"; // Para cada subitem
                     // ✅ Agregamos el evento click por módulo
                     li.addEventListener("click", () => {
-                        console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
+                        
                         // Acá podés hacer lo que quieras: redirigir, abrir modal, etc.
                         // Por ejemplo:
-                        // cargarContenidoModulo(maquina.nombre, modulo);
+                        if (modulo === "history") {
+                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
+                          let filtro_clfile ="";
+                         
+                          if (localStorage.getItem("precio_kwh")) {             
+                            let precioKwh= localStorage.getItem("precio_kwh");          
+                            cargarContenidoModulo(maquina.nombre, modulo, filtro_clfile, precioKwh);
+                          } else {
+                              alert("⚠️ No se ha configurado el precio del kWh");
+                          }
+
+                          
+                        }
+                        else if (modulo === "jobs") {
+                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
+                         // cargarContenidoModulo(maquina.nombre, modulo);
+                        }
+                        else if (modulo === "settings") {
+                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
+                          //cargarContenidoModulo(maquina.nombre, modulo);
+                        }
+                        else if (modulo === "statistics") {
+
+                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
+                         // cargarContenidoModulo(maquina.nombre, modulo);
+                        }
+                       
                     });
 
                     ul.appendChild(li);
@@ -248,4 +256,80 @@ function enviarNombrePorAjax1(iconoClicado, event) {
     console.error("🔥 Error de red:", err);
 });
 
+
+
+
+function cargarContenidoModulo(nombreMaquina, modulo, clfile,precioKwh ) {
+  const tablaContainer = document.querySelector(".tabla-container");
+  const spinner = document.getElementById("spinner");
+  if (spinner) {
+    spinner.style.display = "flex";
+  }
+  
+  fetch("/maquinas_sql/", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ clfile: clfile, nombre_maquina: nombreMaquina, modulo: modulo, precioKwh: precioKwh })
+})
+  .then(res => res.json())
+  .then(data => {
+      spinner.style.display = "none";
+
+      const { columnas, trabajos } = data;
+
+      let html = "<table><thead><tr>";
+      columnas.forEach(col => {
+          html += `<th>${col}</th>`;
+      });
+      html += "</tr></thead><tbody>";
+
+      trabajos.forEach(fila => {
+        html += "<tr>";
+        columnas.forEach(col => {
+            html += `<td>${fila[col]}</td>`;
+        });
+        html += "</tr>";
+    });
+    
+
+      html += "</tbody></table>";
+      tablaContainer.innerHTML = html;
+  })
+  .catch(err => {
+      spinner.style.display = "none";
+      console.error("❌ Error al cargar datos importados:", err);
+      tablaContainer.innerHTML = "<p style='color:red;'>❌ Error al cargar datos</p>";
+  });
+}
+
+
+
+
+let precioKwh = 0.20; // Valor por defecto
+
+function abrirModalCosto() {
+  document.getElementById("modal-costo").style.display = "block";
+  document.getElementById("input-kwh").value = precioKwh; // Mostrar el valor actual
+}
+
+
+function cerrarModalCosto() {
+    document.getElementById("modal-costo").style.display = "none";
+}
+
+function confirmarCosto() {
+  const input = document.getElementById("input-kwh").value;
+  const valor = parseFloat(input);
+  if (!isNaN(valor) && valor > 0) {
+      precioKwh = valor;
+      localStorage.setItem("precio_kwh", precioKwh); // 👉 lo guarda en el navegador
+      alert(`✅ Nuevo precio aplicado: €${precioKwh}/kWh`);
+      cerrarModalCosto();
+      // Si tenés una función para recargar datos con este valor, llamala acá.
+  } else {
+      alert("⚠️ Precio inválido.");
+  }
+}
 

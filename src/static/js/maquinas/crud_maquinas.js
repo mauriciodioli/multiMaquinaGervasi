@@ -134,30 +134,4 @@ document.querySelectorAll('[data-bs-target="#modal-modificar"]').forEach(button 
 
 
 
-document.getElementById("confirmar-eliminar").addEventListener("click", () => {
-    const id = document.getElementById("maquina-id-eliminar").value;
 
-    fetch(`/maquinas_crud/eliminar/${id}`, {
-        method: "DELETE"
-    })
-    .then(res => res.json())
-    .then(res => {
-        if (res.success) {
-            alert("Máquina eliminada correctamente");
-            location.reload();
-        } else {
-            alert("Error: " + res.message);
-        }
-    })
-    .catch(err => {
-        alert("Error al conectar con el servidor");
-        console.error(err);
-    });
-});
-
-
-document.querySelectorAll('[data-bs-target="#modal-eliminar"]').forEach(button => {
-    button.addEventListener('click', () => {
-        document.getElementById("maquina-id-eliminar").value = button.dataset.maquinaId;
-    });
-});

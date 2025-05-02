@@ -3,9 +3,23 @@
 {% block title %}Listado de Trabajos{% endblock %}
 
 {% block content %}
-<div class="titulo-maquinas">
+
+<div class="titulo-maquinas" style="position: relative; text-align: center; margin-bottom: 20px;">
     <h1>Lavori di Database</h1>
+    <button 
+        onclick="abrirModalCosto()" 
+        class="btn btn-secondary" 
+        style="position: absolute; right: 0; top: 50%; transform: translateY(-50%);">
+        ⚡ Prezzo kWh
+    </button>
 </div>
+
+    
+
+
+
+
+
 <div class="contenedor-flex">
     {% if mensaje %}
         <div>{{ mensaje }}</div>
@@ -21,7 +35,7 @@
         
         <div class="maquinas-header">
             <button class="btn-agregar">➕ Aggiungere</button>           
-            <button class="btn-modificar">✏️ Modificare</button>
+           
             <button class="btn-eliminar">➖ Eliminare</button>
         </div>
         <div id="contenedor-online"></div>
@@ -33,12 +47,12 @@
 
     <!-- Resizer -->
     <div id="resizer" class="resizer"></div>
-
+    <div class="spinner-overlay" id="spinner" style="display:none;">
+        <div class="spinner"></div>
+    </div>
     <!-- Tabla de trabajos -->
     <div class="tabla-container">
-        <div class="spinner-overlay" id="spinner" style="display:none;">
-            <div class="spinner"></div>
-        </div>
+        
         
           
         <table>
@@ -71,8 +85,7 @@
     <div id="modal-agregar" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>Agregar Máquina</h2>
-            <input type="text" id="nueva-maquina" placeholder="Nombre de la nueva máquina">
+            <h2>Aggiungere Macchine</h2>          
             <button id="confirmar-agregar">Agregar</button>
         </div>
     </div>
@@ -99,9 +112,18 @@
         </div>
     </div>
     
-
-</div>
+<!-- Modal -->
+<div id="modal-costo" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="cerrarModalCosto()">&times;</span>
+      <h3>💶 Inserisci il prezzo kWh</h3>
+      <input type="number" step="0.01" id="input-kwh" placeholder="Ej: 0.20" />
+      <button onclick="confirmarCosto()" style="margin-top: 10px;">Accettare</button>
+    </div>
+  </div>
+  
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/maquinas/maquinas.css') }}">
 <script src="{{ url_for('static', filename='js/maquinas/maquinas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/maquinas/crud_front_end_maquinas.js') }}"></script>
 {% endblock %}
