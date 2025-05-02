@@ -126,13 +126,15 @@ function enviarNombrePorAjax1(iconoClicado, event) {
     const nombre_archivo = 'si-cam';
     const idMaquina = summaryElement.getAttribute('data-id');
     const userMaquina = summaryElement.getAttribute('data-user_id');
-    //\\192.168.1.38\\
-    const origen = 'C:\\Users\\Tecnico03\\Downloads';
-    const destino = 'C:\\Users\\Tecnico03\\Documents';
+    const origen = '\\\\192.168.1.38\\c\\SiConfig\\Data\\DB';
+    //const origen = 'C:\\Users\\Tecnico03\\Downloads';
+    const destino = 'C:\\Users\\Tecnico03\\Documents\\ProyectoMultiMaquina';
   
     const confirmacion = confirm('¿Estás seguro de enviar los datos de: ' + nombre_archivo + '?');
   
     if (confirmacion) {
+      document.getElementById("spinner").style.display = "flex"; // 👈 Mostrar spinner
+
       const params = new URLSearchParams();
       params.append('nombre_archivo', nombre_archivo);
       params.append('origen', origen);
@@ -160,8 +162,10 @@ function enviarNombrePorAjax1(iconoClicado, event) {
       .catch(error => {
         console.error('✅ Archivo copiado correctamente. capturado por catch en enviarNombrePorAjax ', error);
          alert('✅ Archivo copiado correctamente.');
+      })
+      .finally(() => {
+        document.getElementById("spinner").style.display = "none"; // 👈 Ocultar spinner
       });
-      
     } else {
       console.log('⛔ Envío cancelado por el usuario.');
       alert('Envío cancelado.');
