@@ -73,9 +73,9 @@ def listar_maquina_sql_filtrado():
         campos = "ID_CLF,CLFileName, CodMacchina, DataOraReg, TempTotale"
 
         if filtro_clfile != "":
-            cursor.execute(f"SELECT TOP 500 {campos} FROM Lamiere_Tempi WHERE CLFileName LIKE ?", f"%{filtro_clfile}%")
+            cursor.execute(f"SELECT TOP 500 {campos} FROM Lamiere_Tempi WHERE CLFileName LIKE ? ORDER BY DataOraReg DESC", f"%{filtro_clfile}%")
         else:
-            cursor.execute(f"SELECT TOP 500 {campos} FROM Lamiere_Tempi")
+            cursor.execute(f"SELECT TOP 500 {campos} FROM Lamiere_Tempi ORDER BY DataOraReg DESC")
 
         columnas = [col[0] for col in cursor.description]
         filas = cursor.fetchall()
