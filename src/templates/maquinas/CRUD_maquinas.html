@@ -22,6 +22,7 @@
                         <th>User Cuenta</th>                        
                         <th>Nombre</th>
                         <th>Ruta Origen</th>
+                        
                         <th>Nombre DB</th>                       
                         <th>Sector</th>
                         <th>Estado</th>
@@ -38,7 +39,7 @@
                         <td>{{ maquina.id }}</td>
                         <td>{{ maquina.userCuenta }}</td>                      
                         <td>{{ maquina.nombre }}</td>
-                        <td>{{ maquina.ruta }}</td>
+                        <td>{{ maquina.ruta }}</td>                     
                         <td>{{ maquina.nombreDb }}</td>                       
                         <td>{{ maquina.sector }}</td>
                         <td>{{ maquina.estado }}</td>
@@ -61,6 +62,7 @@
                              
                                 data-nombre="{{ maquina.nombre }}"
                                 data-ruta="{{ maquina.ruta }}"
+                              
                                 data-nombre-db="{{ maquina.nombreDb }}"
                               
                                 data-sector="{{ maquina.sector }}"
@@ -95,14 +97,14 @@
       <div class="modal-content">
         
         <div class="modal-header">
-          <h5 class="modal-title" id="modal-agregar-label">Agregar Máquina</h5>
+          <h5 class="modal-title" id="modal-agregar-label">Aggiungi macchina</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
   
         <div class="modal-body">
           <form id="form-agregar-maquina">
             <div class="row">
-              <div class="col-md-6 mb-3">
+              <!--  <div class="col-md-6 mb-3">
                 <label class="form-label">Usuario Cuenta</label>
                 <input type="text" class="form-control" name="userCuenta" required>
               </div>
@@ -110,20 +112,21 @@
                 <label class="form-label">Contraseña Cuenta</label>
                 <input type="password" class="form-control" name="passwordCuenta" required>
               </div>
-           <!--    <div class="col-md-6 mb-3">
+             <div class="col-md-6 mb-3">
                 <label class="form-label">Account Cuenta</label>
                 <input type="text" class="form-control" name="accountCuenta">
               </div>-->
               <div class="col-md-6 mb-3">
-                <label class="form-label">Nombre</label>
+                <label class="form-label">Nome</label>
                 <input type="text" class="form-control" name="nombre">
               </div>
               <div class="col-md-6 mb-3">
-                <label class="form-label">Ruta</label>
+                <label class="form-label">Itinerario</label>
                 <input type="text" class="form-control" name="ruta">
               </div>
+             
               <div class="col-md-6 mb-3">
-                <label class="form-label">Nombre DB</label>
+                <label class="form-label">Nome DB</label>
                 <input type="text" class="form-control" name="nombreDb">
               </div>
             <!--   <div class="col-md-6 mb-3">
@@ -131,11 +134,11 @@
                 <input type="text" class="form-control" name="selector">
               </div>-->
               <div class="col-md-6 mb-3">
-                <label class="form-label">Sector</label>
+                <label class="form-label">Settore</label>
                 <input type="text" class="form-control" name="sector">
               </div>
               <div class="col-md-6 mb-3">
-                <label class="form-label">Estado</label>
+                <label class="form-label">Stato</label>
                 <input type="text" class="form-control" name="estado">
               </div>
               <div class="col-md-6 mb-3">
@@ -153,9 +156,9 @@
                 </select>
               
                 <input type="text" id="nuevo-modulo" class="form-control mt-2" placeholder="Agregar módulo nuevo">
-                <button type="button" class="btn btn-sm btn-secondary mt-1" id="btn-agregar-modulo">Agregar</button>
+                <button type="button" class="btn btn-sm btn-secondary mt-1" id="btn-agregar-modulo">Aggiungi</button>
               
-                <small class="form-text text-muted">Usá Ctrl o Shift para seleccionar múltiples módulos.</small>
+                <small class="form-text text-muted">Utilizzare Ctrl o Maiusc per selezionare più moduli.</small>
               </div>
               
 
@@ -166,8 +169,8 @@
         </div>
   
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-primary" id="confirmar-agregar">Agregar Máquina</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancellare</button>
+          <button type="button" class="btn btn-primary" id="confirmar-agregar">Aggiungi macchina</button>
         </div>
       </div>
     </div>

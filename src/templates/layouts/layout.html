@@ -129,6 +129,11 @@ img {
                                                       </li>
                                                       
                                                 </li>
+                                                <li id="menu-item-470" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-470">
+                                                    <li id="menu-item-470" class="menu-item">
+                                                        <a id="conexionSqlServer" href="#">CONNESSIONE SQLSERVER</a>
+                                                      </li>
+                                                </li>
                                             </ul>
                                             </li>
                                                                       
@@ -182,7 +187,42 @@ img {
 <footer>
     <p>&copy; 2025 DPIA Solutions. Todos los derechos reservados.</p>
 </footer>
-
+<!-- Modal Configuración SQL Server -->
+<div class="modal fade" id="modal-sqlserver" tabindex="-1" aria-labelledby="modal-sqlserver-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modal-sqlserver-label">Configurazione di SQL Server</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-sqlserver">
+            <div class="mb-3">
+              <label for="input-sql-ip" class="form-label">IP del server</label>
+              <input type="text" class="form-control" id="input-sql-ip" placeholder="192.168.1.250">
+            </div>
+            <div class="mb-3">
+              <label for="input-sql-port" class="form-label">Porta</label>
+              <input type="text" class="form-control" id="input-sql-port" placeholder="1433">
+            </div>
+             <div class="mb-3">
+                <label for="input-sql-user" class="form-label">User</label>
+                <input type="text" class="form-control" id="input-sql-user" placeholder="usuario_si_cam">
+              </div>
+              <div class="mb-3">
+                <label for="input-sql-password" class="form-label">Password</label>
+                <input type="text" class="form-control" id="input-sql-password" placeholder="Dpia1234!">
+              </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancellare</button>
+          <button type="button" class="btn btn-primary" id="confirmar-sql">Mantenere</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
 <!-- Scripts principales -->
 <!-- <script src="/static/js/main.js"></script> -->
 {% block extra_scripts %}{% endblock %}
@@ -219,5 +259,82 @@ img {
     if (uid) {
         document.getElementById("usuario-activo").textContent = `Sesión activa como Usuario ${uid}`;
     }
+
+
+
+
+
+
+    document.getElementById("conexionSqlServer").addEventListener("click", (e) => {
+        e.preventDefault();
+      
+        document.getElementById("input-sql-ip").value = localStorage.getItem("ipSqlServer") || "";
+        document.getElementById("input-sql-port").value = localStorage.getItem("portSqlServer") || "";
+        document.getElementById("input-sql-user").value = localStorage.getItem("userSqlServer") || "";
+        document.getElementById("input-sql-password").value = localStorage.getItem("pasSqlServer") || "";
+        const modal = new bootstrap.Modal(document.getElementById("modal-sqlserver"));
+        modal.show();
+      });
+      
+
+      document.getElementById("confirmar-sql").addEventListener("click", () => {
+        const ip = document.getElementById("input-sql-ip").value.trim();
+        const port = document.getElementById("input-sql-port").value.trim();
+        const user = document.getElementById("input-sql-user").value.trim();
+        const pas = document.getElementById("input-sql-password").value.trim();
+
+      
+        if (!ip || !port) {
+          alert("Por favor completá ambos campos.");
+          return;
+        }
+      
+        // Guardar en localStorage
+        localStorage.setItem("ipSqlServer", ip);
+        localStorage.setItem("portSqlServer", port);
+        localStorage.setItem("userSqlServer", user);
+        localStorage.setItem("pasSqlServer", pas);
+      
+        alert(`✅ IP y puerto guardados: ${ip}:${port}`);
+      
+        // Ocultar el modal
+        bootstrap.Modal.getInstance(document.getElementById("modal-sqlserver")).hide();
+      });
+      
+
+
+
+
+
+      document.addEventListener("DOMContentLoaded", () => {
+      
+        // Si no están en localStorage, los setea con lo que está precargado en el modal
+        const ip = localStorage.getItem("ipSqlServer");
+        const port = localStorage.getItem("portSqlServer");
+        const usuario= localStorage.getItem("userSqlServer");
+        const password= localStorage.getItem("pasSqlServer");
+      
+        if (!ip) {
+          localStorage.setItem("ipSqlServer","192.168.1.250");
+          console.log("[INFO] IP por defecto seteada en localStorage:", "192.168.1.250");
+        }
+      
+        if (!port) {
+          localStorage.setItem("portSqlServer","1433");
+          console.log("[INFO] Puerto por defecto seteado en localStorage:", "1433");
+        }
+        if (!usuario) {
+            localStorage.setItem("userSqlServer","usuario_si_cam");
+            console.log("[INFO] Usuario por defecto seteado en localStorage:", "usuario_si_cam");
+          }
+        if (!password) {
+        localStorage.setItem("pasSqlServer","Dpia1234!");
+        console.log("[INFO] Pass por defecto seteado en localStorage:", "Dpia1234!");
+        }
+
+
+      });
+      
+      
     </script>
     

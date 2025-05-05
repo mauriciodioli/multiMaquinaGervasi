@@ -121,6 +121,7 @@ def modificar_maquina(id):
         maquina.accountCuenta = data.get("accountCuenta")
         maquina.nombre = data.get("nombre")
         maquina.ruta = data.get("ruta")
+       
         maquina.nombreDb = data.get("nombreDb")
         maquina.selector = data.get("selector")
         maquina.sector = data.get("sector")

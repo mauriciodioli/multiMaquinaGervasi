@@ -52,7 +52,7 @@ window.onclick = function(event) {
     });
 };
 
-function enviarNombrePorAjax1(iconoClicado, event) {
+function enviarNombrePorAjax(iconoClicado, event) {
   event.stopPropagation();
 
   const summaryElement = iconoClicado.parentNode;
@@ -95,16 +95,35 @@ function enviarNombrePorAjax1(iconoClicado, event) {
 
 
 
+/*************************************************************************************************/
+/*************************************************************************************************/
+/****************copia las bases de datos desde las maquinas exteriores***************************/
+/****************utiliza archivos .py externos al proyectos como servicio*************************/
+/*************************************************************************************************/
+/*************************************************************************************************/
 
-
-  function enviarNombrePorAjax(iconoClicado, event) {
+  function Copiar_Origen_Destino_fuera_Data_Base(iconoClicado, event) {
     event.stopPropagation();
   
     const summaryElement = iconoClicado.parentNode;
-    const nombre_archivo = 'si-cam';
+    //const nombre_archivo = 'si-cam';
     const idMaquina = summaryElement.getAttribute('data-id');
     const userMaquina = summaryElement.getAttribute('data-user_id');
-    const origen = '\\\\192.168.1.38\\c\\SiConfig\\Data\\DB';
+    const nombreMaquina = summaryElement.getAttribute('data-nombre');
+   
+    const origen = summaryElement.dataset.ruta;
+    const nombre_archivo = summaryElement.dataset.nombre_db;
+    const estado = summaryElement.dataset.estado;
+
+    const match = origen.match(/^\\\\([^\\]+)/);
+    const ip = localStorage.getItem('ipSqlServer'); // ✅ Esto debe ser la IP donde corre SQL Server
+    const port = localStorage.getItem('portSqlServer'); // Cambia esto si es necesario
+    const userSqlServer = localStorage.getItem('userSqlServer'); // Cambia esto si es necesario
+    const passwordSqlServer = localStorage.getItem('pasSqlServer'); // Cambia esto si es necesario
+    console.log(ip);  // 👉 "192.168.1.38".
+    console.log(port); // 👉 "1433".
+    
+    //const origen = '\\\\192.168.1.38\\c\\SiConfig\\Data\\DB';
     //const origen = 'C:\\Users\\Tecnico03\\Downloads';
     const destino = 'C:\\Users\\Tecnico03\\Documents\\ProyectoMultiMaquina';
   
@@ -114,9 +133,16 @@ function enviarNombrePorAjax1(iconoClicado, event) {
       document.getElementById("spinner").style.display = "flex"; // 👈 Mostrar spinner
 
       const params = new URLSearchParams();
+      params.append('nombreMaquina', nombreMaquina);
       params.append('nombre_archivo', nombre_archivo);
       params.append('origen', origen);
       params.append('destino', destino);
+      params.append('estado', estado);
+      params.append('ip',ip);
+      params.append('port',port);
+      params.append('userSqlServer',userSqlServer);
+      params.append('passwordSqlServer',passwordSqlServer);
+    
   
       fetch("http://localhost:5001/copiar_origen_destino/", {
         method: "POST",
@@ -138,7 +164,7 @@ function enviarNombrePorAjax1(iconoClicado, event) {
         alert(data.mensaje || '✅ Archivo copiado correctamente.');
       })
       .catch(error => {
-        console.error('✅ Archivo copiado correctamente. capturado por catch en enviarNombrePorAjax ', error);
+        console.error('✅ Archivo copiado correctamente. capturado por catch en Copiar_Origen_Destino_fuera_Data_Base ', error);
          alert('✅ Archivo copiado correctamente.');
       })
       .finally(() => {
@@ -187,11 +213,14 @@ function enviarNombrePorAjax1(iconoClicado, event) {
             summary.setAttribute("data-id", maquina.id);
             summary.setAttribute("data-user_id", maquina.user_id);
             summary.style.cursor = "pointer"; // Para el nombre de la máquina
+            summary.dataset.ruta = maquina.ruta;
+            summary.dataset.nombre_db = maquina.nombreDb;
+            summary.dataset.estado = maquina.estado;
 
             summary.innerHTML = `
                 ${maquina.nombre}
              
-                <i class="fas fa-cog icono-clic" onclick="enviarNombrePorAjax(this, event)"></i>
+                <i class="fas fa-cog icono-clic" onclick="Copiar_Origen_Destino_fuera_Data_Base(this, event)"></i>
             `;
             detalles.appendChild(summary);
 

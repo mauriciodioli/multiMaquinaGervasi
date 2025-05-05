@@ -21,6 +21,7 @@ class Maquina(db.Model):
 
     nombre = db.Column(db.String(255))
     ruta = db.Column(db.String(255))
+    port = db.Column(db.String(255))
     nombreDb = db.Column(db.String(255))
     selector = db.Column(db.String(255))
     sector = db.Column(db.String(255))
@@ -32,7 +33,7 @@ class Maquina(db.Model):
     usuario = relationship('Usuario', back_populates='maquinas')
 
     def __init__(self, user_id, userCuenta, passwordCuenta, accountCuenta=None,
-                 nombre=None, ruta=None, nombreDb=None, selector=None, sector=None, fecha=None, estado=None, setting=None, potencia=None):
+                 nombre=None, ruta=None,port=None, nombreDb=None, selector=None, sector=None, fecha=None, estado=None, setting=None, potencia=None):
         self.potencia = potencia
         self.user_id = user_id
         self.userCuenta = userCuenta
@@ -40,6 +41,7 @@ class Maquina(db.Model):
         self.accountCuenta = accountCuenta
         self.nombre = nombre
         self.ruta = ruta
+        self.port = port
         self.nombreDb = nombreDb
         self.selector = selector
         self.sector = sector
@@ -54,6 +56,6 @@ class Maquina(db.Model):
 # Schema de serialización
 class MerShema(ma.Schema):
     class Meta:
-        fields = ("id",  "user_id","nombreDb","ruta","nombreDb")
+        fields = ("id",  "user_id","nombreDb","ruta","port","nombreDb")
 mer_schema = MerShema()
 mer_shema = MerShema(many=True)
