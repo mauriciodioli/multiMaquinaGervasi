@@ -51,9 +51,129 @@ def maquinas_online():
 
 
 
+
+
+
+
+
+
+
+
+
+# Ruta para ver todos los trabajos (sin límite, ordenados por fecha)
+@maquinas.route('/maquinas_sql_histoy/', methods=['POST'])
+def listar_maquina_sql_filtrado_history():
+    try:
+        data = request.get_json()
+        filtro_clfile = data.get("clfile", "")  # puede venir vacío
+
+        conn = pyodbc.connect(
+            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "SERVER=192.168.1.250,1433;"
+            "DATABASE=si_cam_db;"
+            "UID=usuario_si_cam;"
+            "PWD=Dpia1234!;"
+            "Encrypt=no;"
+            "TrustServerCertificate=yes;"
+        )
+        cursor = conn.cursor()
+
+        campos = "*"
+
+        if filtro_clfile != "":
+            cursor.execute(f"SELECT TOP 50 {campos} FROM Lamiere_Tempi WHERE CLFileName LIKE ? ORDER BY DataOraReg DESC", f"%{filtro_clfile}%")
+        else:
+            cursor.execute(f"SELECT TOP 50 {campos} FROM Lamiere_Tempi ORDER BY DataOraReg DESC")
+        columnas = [col[0] for col in cursor.description]
+        filas = cursor.fetchall()
+
+        trabajos = [dict(zip(columnas, fila)) for fila in filas]
+
+        conn.close()
+        return jsonify({
+            "success": True,
+            "columnas": columnas,
+            "trabajos": trabajos
+        })
+
+    except Exception as e:
+        print(f"❌ Error conectando a la base de datos: {e}")
+        return jsonify({"success": False, "error": str(e)})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@maquinas.route('/resumen_trabajos/', methods=['GET'])
+def resumen_trabajos():
+    try:
+        conn = pyodbc.connect(
+            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "SERVER=192.168.1.250,1433;"
+            "DATABASE=si_cam_db;"
+            "UID=usuario_si_cam;"
+            "PWD=Dpia1234!;"
+            "Encrypt=no;"
+            "TrustServerCertificate=yes;"
+        )
+        cursor = conn.cursor()
+
+        query = """
+            SELECT 
+                TOP 50 
+                CLFileName,
+                CodMacchina,
+                COUNT(*) AS numero_di_record,
+                SUM(TRY_CAST(TempTotale AS FLOAT)) AS tempo_totale_secondi,
+                AVG(TRY_CAST(Spessore AS FLOAT)) AS spessore_medio,
+                SUM(TRY_CAST(PesoLamiera AS FLOAT)) AS peso_totale,
+                MAX(DataOraReg) AS ultima_data
+            FROM 
+                Lamiere_Tempi
+            GROUP BY 
+                CLFileName, CodMacchina
+            ORDER BY 
+                MAX(DataOraReg) DESC
+
+        """
+
+        cursor.execute(query)
+        columnas = [col[0] for col in cursor.description]
+        filas = cursor.fetchall()
+        resumen = [dict(zip(columnas, fila)) for fila in filas]
+
+        conn.close()
+        return jsonify({"success": True, "resumen": resumen})
+
+    except Exception as e:
+        print(f"❌ Error conectando a la base de datos: {e}")
+        return jsonify({"success": False, "error": str(e)})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Ruta para ver los trabajos
-@maquinas.route('/maquinas_sql/', methods=['POST'])
-def listar_maquina_sql_filtrado():
+@maquinas.route('/maquinas_sql_cost/', methods=['POST'])
+def listar_maquina_sql_filtrado_cost():
     try:
         data = request.get_json()
         filtro_clfile = data.get("clfile", "")  # puede venir vacío

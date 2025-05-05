@@ -208,24 +208,25 @@ function enviarNombrePorAjax1(iconoClicado, event) {
                         // Acá podés hacer lo que quieras: redirigir, abrir modal, etc.
                         // Por ejemplo:
                         if (modulo === "history") {
+                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`); 
+                          cargarContenidoModuloHistory(maquina.nombre, modulo, maquina.clfile);
+                        }
+                        else if (modulo === "jobs") {
+                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
+                          cargarContenidoModuloJobs(maquina.nombre, modulo, maquina.clfile);
+                                                  
+                        }
+                        else if (modulo === "cost") {
+                       
                           console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
                           let filtro_clfile ="";
                          
                           if (localStorage.getItem("precio_kwh")) {             
-                            let precioKwh= localStorage.getItem("precio_kwh");          
-                            cargarContenidoModulo(maquina.nombre, modulo, filtro_clfile, precioKwh,maquina.potencia);
+                              let precioKwh= localStorage.getItem("precio_kwh");          
+                              cargarContenidoModulo(maquina.nombre, modulo, filtro_clfile, precioKwh,maquina.potencia);
                           } else {
                               alert("⚠️ No se ha configurado el precio del kWh");
                           }
-                        }
-                        else if (modulo === "jobs") {
-                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
-                         // cargarContenidoModulo(maquina.nombre, modulo);
-                                                  
-                        }
-                        else if (modulo === "cost") {
-                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
-                         // cargarContenidoModulo(maquina.nombre, modulo);
                         }
                         else if (modulo === "settings") {
                           console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
@@ -262,6 +263,146 @@ function enviarNombrePorAjax1(iconoClicado, event) {
 
 
 
+
+function cargarContenidoModuloHistory(nombreMaquina, modulo, clfile, precioKwh, potencia) {
+  const tablaContainer = document.querySelector(".tabla-container");
+  const spinner = document.getElementById("spinner");
+
+  if (spinner) spinner.style.display = "flex";
+
+  fetch("/maquinas_sql_histoy/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      clfile,
+      nombre_maquina: nombreMaquina,
+      modulo,
+      precioKwh,
+      potencia
+    })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (spinner) spinner.style.display = "none";
+
+      if (!data.success) {
+        tablaContainer.innerHTML = `<p style='color:red;'>❌ Error: ${data.error || "no se pudo cargar el historial"}</p>`;
+        return;
+      }
+
+      const { columnas, trabajos } = data;
+      let html = "<table class='table table-bordered'><thead><tr>";
+
+      columnas.forEach(col => {
+        html += `<th>${col}</th>`;
+      });
+
+      html += "</tr></thead><tbody>";
+
+      trabajos.forEach(fila => {
+        html += "<tr>";
+        columnas.forEach(col => {
+          html += `<td>${fila[col]}</td>`;
+        });
+        html += "</tr>";
+      });
+
+      html += "</tbody></table>";
+      tablaContainer.innerHTML = html;
+    })
+    .catch(err => {
+      if (spinner) spinner.style.display = "none";
+      console.error("❌ Error al cargar datos importados:", err);
+      tablaContainer.innerHTML = "<p style='color:red;'>❌ Error al cargar datos</p>";
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function cargarContenidoModuloJobs(nombreMaquina, modulo, clfile, precioKwh, potencia) {
+  const tablaContainer = document.querySelector(".tabla-container");
+  const spinner = document.getElementById("spinner");
+
+  if (spinner) spinner.style.display = "flex";
+
+  fetch("/resumen_trabajos")
+    .then(res => res.json())
+    .then(data => {
+      if (spinner) spinner.style.display = "none";
+
+      if (!data.success) {
+        tablaContainer.innerHTML = `<p style='color:red;'>❌ Error: ${data.error || "No se pudo cargar el resumen de trabajos"}</p>`;
+        return;
+      }
+
+      const trabajos = data.resumen;
+      if (trabajos.length === 0) {
+        tablaContainer.innerHTML = "<p>No hay trabajos para mostrar.</p>";
+        return;
+      }
+
+      const columnas = Object.keys(trabajos[0]);
+      let html = "<table class='table table-bordered'><thead><tr>";
+
+      columnas.forEach(col => {
+        html += `<th>${col}</th>`;
+      });
+
+      html += "</tr></thead><tbody>";
+
+      trabajos.forEach(fila => {
+        html += "<tr>";
+        columnas.forEach(col => {
+          html += `<td>${fila[col]}</td>`;
+        });
+        html += "</tr>";
+      });
+
+      html += "</tbody></table>";
+      tablaContainer.innerHTML = html;
+    })
+    .catch(err => {
+      if (spinner) spinner.style.display = "none";
+      console.error("❌ Error al cargar datos:", err);
+      tablaContainer.innerHTML = "<p style='color:red;'>❌ Error al cargar los trabajos</p>";
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function cargarContenidoModulo(nombreMaquina, modulo, clfile,precioKwh,potencia ) {
   const tablaContainer = document.querySelector(".tabla-container");
   const spinner = document.getElementById("spinner");
@@ -269,7 +410,7 @@ function cargarContenidoModulo(nombreMaquina, modulo, clfile,precioKwh,potencia 
     spinner.style.display = "flex";
   }
   
-  fetch("/maquinas_sql/", {
+  fetch("/maquinas_sql_cost/", {
     method: "POST",
     headers: {
         "Content-Type": "application/json"
