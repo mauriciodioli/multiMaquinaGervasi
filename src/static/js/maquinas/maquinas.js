@@ -217,10 +217,13 @@ function enviarNombrePorAjax1(iconoClicado, event) {
                           } else {
                               alert("⚠️ No se ha configurado el precio del kWh");
                           }
-
-                          
                         }
                         else if (modulo === "jobs") {
+                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
+                         // cargarContenidoModulo(maquina.nombre, modulo);
+                                                  
+                        }
+                        else if (modulo === "cost") {
                           console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
                          // cargarContenidoModulo(maquina.nombre, modulo);
                         }

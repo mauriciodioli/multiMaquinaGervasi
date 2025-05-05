@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         data.modulos = Array.from(form.elements["modulos"].selectedOptions).map(opt => opt.value);
+        
         data.user_id = localStorage.getItem("user_id");
 
         fetch("/maquinas_crud/agregar/", {
@@ -64,6 +65,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
+document.querySelectorAll('[data-bs-target="#modal-eliminar"]').forEach(button => {
+    button.addEventListener('click', () => {
+        const id = button.dataset.maquinaId;
+        document.getElementById("maquina-id-eliminar").value = id;
+    });
+});
+document.getElementById("confirmar-eliminar").addEventListener("click", () => {
+    const id = document.getElementById("maquina-id-eliminar").value;
+
+    fetch(`/maquinas_crud/eliminar/${id}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+    .then(res => res.json())
+    .then(res => {
+        if (res.success) {
+            alert("Máquina eliminada correctamente");
+            location.reload();
+        } else {
+            alert("Error al eliminar: " + res.message);
+        }
+    })
+    .catch(err => {
+        alert("Error al conectar con el servidor");
+        console.error(err);
+    });
+});
 
 
 
@@ -130,4 +160,48 @@ document.querySelectorAll('[data-bs-target="#modal-modificar"]').forEach(button 
 
 
 
+
+const select = document.getElementById("modulos-select");
+const input = document.getElementById("nuevo-modulo");
+const btn = document.getElementById("btn-agregar-modulo");
+
+// Cargar módulos al iniciar desde localStorage
+document.addEventListener("DOMContentLoaded", () => {
+    const guardados = JSON.parse(localStorage.getItem("modulosPersonalizados")) || [];
+
+    // Opciones iniciales por defecto
+    const baseModulos = ["history", "jobs", "settings", "statistics", "logs"];
+
+    const todos = [...new Set([...baseModulos, ...guardados])]; // evita duplicados
+
+    todos.forEach(valor => {
+        const opt = new Option(valor, valor);
+        select.add(opt);
+    });
+});
+
+// Agregar nuevo módulo dinámicamente
+btn.addEventListener("click", () => {
+    const valor = input.value.trim();
+    if (!valor) return;
+
+    // Verificar si ya existe
+    const existe = [...select.options].some(opt => opt.value === valor);
+    if (existe) {
+        alert("Ese módulo ya existe.");
+        return;
+    }
+
+    // Crear y seleccionar la nueva opción
+    const nuevaOpcion = new Option(valor, valor, true, true);
+    select.add(nuevaOpcion);
+    input.value = "";
+
+    // Guardar en localStorage
+    const existentes = JSON.parse(localStorage.getItem("modulosPersonalizados")) || [];
+    if (!existentes.includes(valor)) {
+        existentes.push(valor);
+        localStorage.setItem("modulosPersonalizados", JSON.stringify(existentes));
+    }
+});
 

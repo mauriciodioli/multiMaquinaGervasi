@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for,jsonify
+from flask import Blueprint, render_template, request, redirect, url_for,jsonify,abort
 from src.model.maquina import Maquina
 from utils.db import db
 from datetime import datetime
@@ -86,12 +86,21 @@ def agregar_maquina():
 @crud_maquinas.route('/maquinas_crud/eliminar/<int:id>', methods=['DELETE'])
 def eliminar_maquina(id):
     try:
-        maquina = Maquina.query.get_or_404(id)
+        maquina = db.session.get(Maquina, id)  # 👈 acceso directo con SQLAlchemy 1.4+
+        if not maquina:
+            abort(404, description="Máquina no encontrada")
+
         db.session.delete(maquina)
         db.session.commit()
         return jsonify({"success": True})
+
     except Exception as e:
+        db.session.rollback()
         return jsonify({"success": False, "message": str(e)})
+
+    finally:
+        db.session.close()
+
 
 
 # MODIFICACIÓN
