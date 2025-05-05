@@ -296,7 +296,11 @@ function enviarNombrePorAjax(iconoClicado, event) {
 function cargarContenidoModuloHistory(nombreMaquina, modulo, clfile, precioKwh, potencia) {
   const tablaContainer = document.querySelector(".tabla-container");
   const spinner = document.getElementById("spinner");
-
+  const ip = localStorage.getItem("ipSqlServer"); // Cambia esto si es necesario
+  const port = localStorage.getItem("portSqlServer"); // Cambia esto si es necesario
+  const userSqlServer = localStorage.getItem("userSqlServer"); // Cambia esto si es necesario
+  const passwordSqlServer = localStorage.getItem("pasSqlServer"); // Cambia esto si es necesario
+  console.log(ip);  // 👉 "
   if (spinner) spinner.style.display = "flex";
 
   fetch("/maquinas_sql_histoy/", {
@@ -305,7 +309,11 @@ function cargarContenidoModuloHistory(nombreMaquina, modulo, clfile, precioKwh, 
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      clfile,
+      clfile:clfile,
+      ip:ip,
+      port:port,
+      user:userSqlServer,
+      password:passwordSqlServer,
       nombre_maquina: nombreMaquina,
       modulo,
       precioKwh,
@@ -330,13 +338,17 @@ function cargarContenidoModuloHistory(nombreMaquina, modulo, clfile, precioKwh, 
 
       html += "</tr></thead><tbody>";
 
-      trabajos.forEach(fila => {
-        html += "<tr>";
+      trabajos.forEach((fila, index) => {
+        const rowClass = index % 2 === 0 ? "fila-par" : "fila-impar";
+        html += `<tr class="${rowClass}">`;
+      
         columnas.forEach(col => {
           html += `<td>${fila[col]}</td>`;
         });
+      
         html += "</tr>";
       });
+      
 
       html += "</tbody></table>";
       tablaContainer.innerHTML = html;
@@ -369,10 +381,30 @@ function cargarContenidoModuloHistory(nombreMaquina, modulo, clfile, precioKwh, 
 function cargarContenidoModuloJobs(nombreMaquina, modulo, clfile, precioKwh, potencia) {
   const tablaContainer = document.querySelector(".tabla-container");
   const spinner = document.getElementById("spinner");
-
+  const ip = localStorage.getItem("ipSqlServer"); // Cambia esto si es necesario
+  const port = localStorage.getItem("portSqlServer"); // Cambia esto si es necesario
+  const userSqlServer = localStorage.getItem("userSqlServer"); // Cambia esto si es necesario
+  const passwordSqlServer = localStorage.getItem("pasSqlServer"); // Cambia esto si es necesario
   if (spinner) spinner.style.display = "flex";
 
-  fetch("/resumen_trabajos")
+
+  fetch("/resumen_trabajos/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      clfile:clfile,
+      ip:ip,
+      port:port,
+      user:userSqlServer,
+      password:passwordSqlServer,
+      nombre_maquina: nombreMaquina,
+      modulo,
+      precioKwh,
+      potencia
+    })
+  })
     .then(res => res.json())
     .then(data => {
       if (spinner) spinner.style.display = "none";
@@ -397,13 +429,17 @@ function cargarContenidoModuloJobs(nombreMaquina, modulo, clfile, precioKwh, pot
 
       html += "</tr></thead><tbody>";
 
-      trabajos.forEach(fila => {
-        html += "<tr>";
+      trabajos.forEach((fila, index) => {
+        const rowClass = index % 2 === 0 ? "fila-par" : "fila-impar";
+        html += `<tr class="${rowClass}">`;
+      
         columnas.forEach(col => {
           html += `<td>${fila[col]}</td>`;
         });
+      
         html += "</tr>";
       });
+      
 
       html += "</tbody></table>";
       tablaContainer.innerHTML = html;
@@ -435,6 +471,10 @@ function cargarContenidoModuloJobs(nombreMaquina, modulo, clfile, precioKwh, pot
 function cargarContenidoModulo(nombreMaquina, modulo, clfile,precioKwh,potencia ) {
   const tablaContainer = document.querySelector(".tabla-container");
   const spinner = document.getElementById("spinner");
+  const ip = localStorage.getItem("ipSqlServer"); // Cambia esto si es necesario
+  const port = localStorage.getItem("portSqlServer"); // Cambia esto si es necesario
+  const userSqlServer = localStorage.getItem("userSqlServer"); // Cambia esto si es necesario
+  const passwordSqlServer = localStorage.getItem("pasSqlServer"); // Cambia esto si es necesario
   if (spinner) {
     spinner.style.display = "flex";
   }
@@ -444,7 +484,12 @@ function cargarContenidoModulo(nombreMaquina, modulo, clfile,precioKwh,potencia 
     headers: {
         "Content-Type": "application/json"
     },
-    body: JSON.stringify({ clfile: clfile, 
+    body: JSON.stringify({
+      clfile:clfile,
+      ip:ip,
+      port:port,
+      user:userSqlServer,
+      password:passwordSqlServer,
       nombre_maquina: nombreMaquina, 
       modulo: modulo, 
       precioKwh: precioKwh, 
@@ -463,13 +508,29 @@ function cargarContenidoModulo(nombreMaquina, modulo, clfile,precioKwh,potencia 
       });
       html += "</tr></thead><tbody>";
 
-      trabajos.forEach(fila => {
-        html += "<tr>";
+      trabajos.forEach((fila, index) => {
+        const rowClass = index % 2 === 0 ? "fila-par" : "fila-impar";
+        html += `<tr class="${rowClass}">`;
+    
         columnas.forEach(col => {
-            html += `<td>${fila[col]}</td>`;
+            let cellClass = "";
+    
+            if (col === "Costo_Euro") {
+                const costo = parseFloat(fila[col]) || 0;
+    
+                if (costo > 2) cellClass = "costo-alto";
+                else if (costo > 1) cellClass = "costo-medio";
+                else cellClass = "costo-bajo";
+            }
+    
+            html += `<td class="${cellClass}">${fila[col]}</td>`;
         });
+    
         html += "</tr>";
     });
+    
+    
+    
     
 
       html += "</tbody></table>";
@@ -510,4 +571,9 @@ function confirmarCosto() {
       alert("⚠️ Precio inválido.");
   }
 }
+
+
+
+
+
 

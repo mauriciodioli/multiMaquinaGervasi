@@ -8,6 +8,7 @@
 	<title>4.0 – 5.0 INDUSTRIA – Gervasi ITALIA SpA </title>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <meta name="robots" content="max-image-preview:large">
 	<style>img:is([sizes="auto" i], [sizes^="auto," i]) { contain-intrinsic-size: 3000px 1500px }</style>
 	
@@ -115,31 +116,40 @@ img {
                                             Iniciar sesión como Usuario 1
                                             </button>
                                             <span id="usuario-activo" class="text-white ms-2"></span>
-                                                                      
+                                               
+                                            <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391">
+                                              <a href="javascript:void(0);">INFORMES</a> 
+                                              <ul class="sub-menu">                                                
+                                                <li id="menu-item-470" class="menu-item">
+                                                  <a id="descargar_tabla_excel" href="#">DOWNLOAD EXCEL TABLE</a>
+                                                </li>
+                                                  
+                                              </ul>
+                                              </li>                         
                                         
-                                        <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391">
-                                            <a href="javascript:void(0);">MACCHINE</a> 
-                                            <ul class="sub-menu">                                                
-                                                <li id="menu-item-469" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-469">
-                                                <a href="/">VER MACCHINE</a>
+                                            <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391">
+                                                <a href="javascript:void(0);">MACCHINE</a> 
+                                                <ul class="sub-menu">                                                
+                                                    <li id="menu-item-469" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-469">
+                                                    <a href="/">VER MACCHINE</a>
+                                                    </li>
+                                                    <li id="menu-item-470" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-470">
+                                                        <li id="menu-item-470">
+                                                            <a id="crud-link" href="#">CRUD MACCHINE</a>
+                                                          </li>
+                                                          
+                                                    </li>
+                                                    <li id="menu-item-470" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-470">
+                                                        <li id="menu-item-470" class="menu-item">
+                                                            <a id="conexionSqlServer" href="#">CONNESSIONE SQLSERVER</a>
+                                                          </li>
+                                                    </li>
+                                                </ul>
                                                 </li>
-                                                <li id="menu-item-470" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-470">
-                                                    <li id="menu-item-470">
-                                                        <a id="crud-link" href="#">CRUD MACCHINE</a>
-                                                      </li>
-                                                      
-                                                </li>
-                                                <li id="menu-item-470" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-470">
-                                                    <li id="menu-item-470" class="menu-item">
-                                                        <a id="conexionSqlServer" href="#">CONNESSIONE SQLSERVER</a>
-                                                      </li>
-                                                </li>
-                                            </ul>
-                                            </li>
                                                                       
                                     
                                     
-                                    </li>
+                                            </li>
                                     <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391"><a href="https://www.gervasi.eu/es/empresa/">EMPRESA</a></li>
                                     <li id="menu-item-406" class="menu-item menu-item-type-custom menu-item-object-custom current-menu-ancestor current-menu-parent menu-item-has-children menu-item-406"><a href="#">PRODUCTOS</a>
                                     <ul class="sub-menu">
@@ -229,6 +239,7 @@ img {
 </body>
 </html>
 <script src="{{ url_for('static', filename='js/maquinas/crud_maquinas.js') }}"></script>
+
 <script>
     document.getElementById("btn-simular-login").addEventListener("click", () => {
         localStorage.setItem("user_id", "1");
@@ -335,6 +346,25 @@ img {
 
       });
       
+
+
+
+
+      
+      document.getElementById("descargar_tabla_excel").addEventListener("click", (e) => {
+          e.preventDefault();
+        const tabla = document.querySelector(".tabla-container table");
+        if (!tabla) return alert("No hay datos para exportar.");
+    
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(tabla);
+        XLSX.utils.book_append_sheet(wb, ws, "Datos");
+    
+        XLSX.writeFile(wb, "datos_maquina.xlsx");
+    });
+    
+
+
       
     </script>
     

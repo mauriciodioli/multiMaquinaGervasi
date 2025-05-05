@@ -66,13 +66,17 @@ def listar_maquina_sql_filtrado_history():
     try:
         data = request.get_json()
         filtro_clfile = data.get("clfile", "")  # puede venir vacío
-
+        database =   data.get("nombre_maquina", "")
+        ip = data.get("ip", "")
+        port = data.get("port", "")
+        user = data.get("user", "")
+        password = data.get("password", "")
         conn = pyodbc.connect(
-            "DRIVER={ODBC Driver 17 for SQL Server};"
-            "SERVER=192.168.1.250,1433;"
-            "DATABASE=si_cam_db;"
-            "UID=usuario_si_cam;"
-            "PWD=Dpia1234!;"
+            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+            f"SERVER={ip},{port};"
+            f"DATABASE={database};"
+            f"UID={user};"
+            f"PWD={password};"
             "Encrypt=no;"
             "TrustServerCertificate=yes;"
         )
@@ -113,15 +117,22 @@ def listar_maquina_sql_filtrado_history():
 
 
 
-@maquinas.route('/resumen_trabajos/', methods=['GET'])
+@maquinas.route('/resumen_trabajos/', methods=['POST'])
 def resumen_trabajos():
     try:
+        data = request.get_json()
+        filtro_clfile = data.get("clfile", "")  # puede venir vacío
+        database =   data.get("nombre_maquina", "")
+        ip = data.get("ip", "")
+        port = data.get("port", "")
+        user = data.get("user", "")
+        password = data.get("password", "")
         conn = pyodbc.connect(
-            "DRIVER={ODBC Driver 17 for SQL Server};"
-            "SERVER=192.168.1.250,1433;"
-            "DATABASE=si_cam_db;"
-            "UID=usuario_si_cam;"
-            "PWD=Dpia1234!;"
+            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+            f"SERVER={ip},{port};"
+            f"DATABASE={database};"
+            f"UID={user};"
+            f"PWD={password};"
             "Encrypt=no;"
             "TrustServerCertificate=yes;"
         )
@@ -179,12 +190,18 @@ def listar_maquina_sql_filtrado_cost():
         filtro_clfile = data.get("clfile", "")  # puede venir vacío
         precioKwh = data.get("precioKwh")  # Precio por kWh, por defecto 0.20
         potencia = data.get("potencia")  # Potencia de la máquina, por defecto 8kW
+        filtro_clfile = data.get("clfile", "")  # puede venir vacío
+        database =   data.get("nombre_maquina", "")
+        ip = data.get("ip", "")
+        port = data.get("port", "")
+        user = data.get("user", "")
+        password = data.get("password", "")
         conn = pyodbc.connect(
-            "DRIVER={ODBC Driver 17 for SQL Server};"
-            "SERVER=192.168.1.250,1433;"
-            "DATABASE=si_cam_db;"
-            "UID=usuario_si_cam;"
-            "PWD=Dpia1234!;"
+            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+            f"SERVER={ip},{port};"
+            f"DATABASE={database};"
+            f"UID={user};"
+            f"PWD={password};"
             "Encrypt=no;"
             "TrustServerCertificate=yes;"
         )

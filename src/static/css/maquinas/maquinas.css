@@ -232,3 +232,28 @@ td, th {
 #contenedor-online li {
     cursor: pointer;
 }
+
+
+
+
+.costo-alto {
+    background-color: rgba(255, 99, 71, 0.25); /* rojo suave */
+    font-weight: bold;
+  }
+  
+  .costo-medio {
+    background-color: rgba(255, 206, 86, 0.25); /* amarillo suave */
+  }
+  
+  .costo-bajo {
+    background-color: rgba(144, 238, 144, 0.25); /* verde claro */
+  }
+  
+  .fila-par {
+    background-color: #f8f9fa; /* claro */
+  }
+  
+  .fila-impar {
+    background-color: #e9ecef; /* un poco más oscuro */
+  }
+  
