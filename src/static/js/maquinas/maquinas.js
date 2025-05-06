@@ -261,7 +261,7 @@ function enviarNombrePorAjax(iconoClicado, event) {
                          
                           if (localStorage.getItem("precio_kwh")) {             
                               let precioKwh= localStorage.getItem("precio_kwh");          
-                              cargarContenidoModulo(maquina.nombre, modulo, filtro_clfile, precioKwh,maquina.potencia);
+                              cargarContenidoModuloCosto(maquina.nombre, modulo, filtro_clfile, precioKwh,maquina.potencia);
                           } else {
                               alert("⚠️ No se ha configurado el precio del kWh");
                           }
@@ -446,10 +446,10 @@ function cargarContenidoModuloJobs(nombreMaquina, modulo, clfile, precioKwh, pot
       
       const nombresColumnas = {
         "ID_CLF": "🔢 ID",
-        "STZFileName": "📁 Archivo STZ",
+        "STZFileName": "📁 Archivio STZ",
         "CodMacchina": "Macchina", 
-        "TempTotale": "⏱ Tiempo trajado",
-        "DataOraReg": "📅 Fecha y Hora"
+        "TempTotale": "⏱ Il tempo ha portato",
+        "DataOraReg": "📅 Data e ora"
       };
 
       let html = "<table class='table table-bordered'><thead><tr>";
@@ -562,14 +562,14 @@ function cargarContenidoModuloLamiere(nombreMaquina, modulo, clfile, precioKwh, 
       
       const nombresColumnas = {
         "ID_CLF": "🔢 ID",
-        "STZFileName": "📁 Archivo STZ",
-        "TempTotale": "⏱ Tiempo real",
-        "FileIcona": "🧩 Pieza",
-        "NumIconCLF": "🔢 Cant. piezas",
-        "TIconTaglio": "⏱ Tiempo estimado",
+        "STZFileName": "📁 Archivio STZ",
+        "TempTotale": "⏱ Tempo reale",
+        "FileIcona": "🧩 Parte",
+        "NumIconCLF": "🔢 Numero di pezzi",
+        "TIconTaglio": "⏱ Tempo stimato",
         "Consumo_kWh": "⚡ kWh",
         "Costo_Euro": "💶 Costo (€)",
-        "DataOraReg": "📅 Fecha"
+        "DataOraReg": "📅 Data"
       };
 
       let html = "<table class='table table-bordered'><thead><tr>";
@@ -646,7 +646,7 @@ function cargarContenidoModuloLamiere(nombreMaquina, modulo, clfile, precioKwh, 
 
 
 
-function cargarContenidoModulo(nombreMaquina, modulo, clfile,precioKwh,potencia ) {
+function cargarContenidoModuloCosto(nombreMaquina, modulo, clfile,precioKwh,potencia ) {
   const tablaContainer = document.querySelector(".tabla-container");
   const spinner = document.getElementById("spinner");
   const ip = localStorage.getItem("ipSqlServer"); // Cambia esto si es necesario
@@ -680,10 +680,23 @@ function cargarContenidoModulo(nombreMaquina, modulo, clfile,precioKwh,potencia 
 
       const { columnas, trabajos } = data;
 
-      let html = "<table><thead><tr>";
+
+        const nombresColumnas = {
+          "ID_CLF": "🔢 ID",
+          "CLFileName": "📁 Archivio STZ",
+          "CodMacchina": "🏭 Macchina",
+          "TempTotale": "⏱ Tempo lavorato (s)",
+          "DataOraReg": "📅 Data e ora",
+          "Consumo_kWh": "⚡ kWh",
+          "Costo_Euro": "💶 Costo (€)"
+      };
+
+      let html = "<table class='table table-bordered'><thead><tr>";
       columnas.forEach(col => {
-          html += `<th>${col}</th>`;
+          html += `<th>${nombresColumnas[col] || col}</th>`;
       });
+
+      
       html += "</tr></thead><tbody>";
 
       trabajos.forEach((fila, index) => {
