@@ -4,6 +4,7 @@ import sys
 import shutil
 import atexit
 import datetime
+import json
 
 from migrar_access_a_sqlserver import migrar_tabla
 
@@ -55,7 +56,9 @@ def copiar_archivo():
         userSqlServer = request.form.get('userSqlServer')
         passwordSqlServer = request.form.get('passwordSqlServer') 
         sql_database = request.form.get('nombreMaquina')
-
+        tablas_str = request.form.get('tablas')
+        tablas = json.loads(tablas_str) if tablas_str else []
+        print(tablas)
         print(f"[INFO] Datos recibidos - nombre_archivo: {nombre_archivo}, origen: {origen_base}, destino: {destino_base}, estado: {estado}")
         
         if not estado or estado.strip().lower() != 'activo':
@@ -90,9 +93,14 @@ def copiar_archivo():
         
         
         try:
-           migrar_tabla(destino, tabla, sql_database, userSqlServer, passwordSqlServer,ip,port)
+           for tabla in tablas:
+                try:
+                    migrar_tabla(destino, tabla, sql_database, userSqlServer, passwordSqlServer, ip, port)
+                except Exception as e:
+                    print(f"[ERROR MIGRANDO TABLA {tabla}]: {str(e)}")
+           #  migrar_tabla(destino, tabla, sql_database, userSqlServer, passwordSqlServer,ip,port)
            print(f"[CLEANUP] Eliminando archivo temporal: {destino}")
-           os.remove(destino)  # ✅ Eliminar solo si migración fue exitosa
+           os.remove(destino)  # Eliminar solo si migración fue exitosa
         except Exception as e:
             print(f"[ERROR MIGRACIÓN] {str(e)}")
         return jsonify({"mensaje": f"Archivo copiado a {destino}"}), 200

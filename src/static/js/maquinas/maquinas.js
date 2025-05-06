@@ -122,7 +122,7 @@ function enviarNombrePorAjax(iconoClicado, event) {
     const passwordSqlServer = localStorage.getItem('pasSqlServer'); // Cambia esto si es necesario
     console.log(ip);  // 👉 "192.168.1.38".
     console.log(port); // 👉 "1433".
-    
+    const tablas = ["Lamiere_Tempi", "Lamiere_Icone"];
     //const origen = '\\\\192.168.1.38\\c\\SiConfig\\Data\\DB';
     //const origen = 'C:\\Users\\Tecnico03\\Downloads';
     const destino = 'C:\\Users\\Tecnico03\\Documents\\ProyectoMultiMaquina';
@@ -142,6 +142,7 @@ function enviarNombrePorAjax(iconoClicado, event) {
       params.append('port',port);
       params.append('userSqlServer',userSqlServer);
       params.append('passwordSqlServer',passwordSqlServer);
+      params.append('tablas', JSON.stringify(tablas));
     
   
       fetch("http://localhost:5001/copiar_origen_destino/", {
@@ -245,6 +246,14 @@ function enviarNombrePorAjax(iconoClicado, event) {
                           cargarContenidoModuloJobs(maquina.nombre, modulo, maquina.clfile);
                                                   
                         }
+                        else if (modulo === "lamiere") {
+                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
+                          let precioKwh= localStorage.getItem("precio_kwh"); 
+                          let filtro_clfile ="";
+                        
+                          cargarContenidoModuloLamiere(maquina.nombre, modulo, filtro_clfile, precioKwh,maquina.potencia);
+                                                  
+                        }
                         else if (modulo === "cost") {
                        
                           console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
@@ -343,8 +352,15 @@ function cargarContenidoModuloHistory(nombreMaquina, modulo, clfile, precioKwh, 
         html += `<tr class="${rowClass}">`;
       
         columnas.forEach(col => {
-          html += `<td>${fila[col]}</td>`;
+          const claseEspecial = col === "CLFileName" ? "no-resize" : "";
+          let valor = fila[col];
+            if (col === "DataOraReg" && valor) {
+              valor = valor.split(".")[0]; // elimina .0000000
+            }
+            html += `<td class="${claseEspecial}">${valor}</td>`;
+
         });
+        
       
         html += "</tr>";
       });
@@ -420,12 +436,28 @@ function cargarContenidoModuloJobs(nombreMaquina, modulo, clfile, precioKwh, pot
         return;
       }
 
-      const columnas = Object.keys(trabajos[0]);
+      const columnas = [
+        "ID_CLF",        
+        "STZFileName",
+        "CodMacchina",
+        "DataOraReg",
+        "TempTotale"
+      ];
+      
+      const nombresColumnas = {
+        "ID_CLF": "🔢 ID",
+        "STZFileName": "📁 Archivo STZ",
+        "CodMacchina": "Macchina", 
+        "TempTotale": "⏱ Tiempo trajado",
+        "DataOraReg": "📅 Fecha y Hora"
+      };
+
       let html = "<table class='table table-bordered'><thead><tr>";
 
       columnas.forEach(col => {
-        html += `<th>${col}</th>`;
+        html += `<th>${nombresColumnas[col] || col}</th>`;
       });
+
 
       html += "</tr></thead><tbody>";
 
@@ -434,8 +466,15 @@ function cargarContenidoModuloJobs(nombreMaquina, modulo, clfile, precioKwh, pot
         html += `<tr class="${rowClass}">`;
       
         columnas.forEach(col => {
-          html += `<td>${fila[col]}</td>`;
+          const claseEspecial = col === "CLFileName" ? "no-resize" : "";
+          let valor = fila[col];
+            if (col === "DataOraReg" && valor) {
+              valor = valor.split(".")[0]; // elimina .0000000
+            }
+            html += `<td class="${claseEspecial}">${valor}</td>`;
+
         });
+        
       
         html += "</tr>";
       });
@@ -450,6 +489,145 @@ function cargarContenidoModuloJobs(nombreMaquina, modulo, clfile, precioKwh, pot
       tablaContainer.innerHTML = "<p style='color:red;'>❌ Error al cargar los trabajos</p>";
     });
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function cargarContenidoModuloLamiere(nombreMaquina, modulo, clfile, precioKwh, potencia) {
+    
+  const tablaContainer = document.querySelector(".tabla-container");
+  const spinner = document.getElementById("spinner");
+  const ip = localStorage.getItem("ipSqlServer"); // Cambia esto si es necesario
+  const port = localStorage.getItem("portSqlServer"); // Cambia esto si es necesario
+  const userSqlServer = localStorage.getItem("userSqlServer"); // Cambia esto si es necesario
+  const passwordSqlServer = localStorage.getItem("pasSqlServer"); // Cambia esto si es necesario
+  if (spinner) spinner.style.display = "flex";
+
+
+  fetch("/resumen_lamiere/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      clfile:clfile,
+      ip:ip,
+      port:port,
+      user:userSqlServer,
+      password:passwordSqlServer,
+      nombre_maquina: nombreMaquina,
+      modulo,
+      precioKwh,
+      potencia
+    })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (spinner) spinner.style.display = "none";
+
+      if (!data.success) {
+        tablaContainer.innerHTML = `<p style='color:red;'>❌ Error: ${data.error || "No se pudo cargar el resumen de trabajos"}</p>`;
+        return;
+      }
+
+      const trabajos = data.resumen;
+      if (trabajos.length === 0) {
+        tablaContainer.innerHTML = "<p>No hay trabajos para mostrar.</p>";
+        return;
+      }
+
+      const columnas = [
+        "ID_CLF",
+        "STZFileName",
+        "TempTotale",  
+        "FileIcona",
+        "NumIconCLF",
+        "TIconTaglio",
+        "Consumo_kWh",
+        "Costo_Euro",
+        "DataOraReg"
+      ];
+      
+      const nombresColumnas = {
+        "ID_CLF": "🔢 ID",
+        "STZFileName": "📁 Archivo STZ",
+        "TempTotale": "⏱ Tiempo real",
+        "FileIcona": "🧩 Pieza",
+        "NumIconCLF": "🔢 Cant. piezas",
+        "TIconTaglio": "⏱ Tiempo estimado",
+        "Consumo_kWh": "⚡ kWh",
+        "Costo_Euro": "💶 Costo (€)",
+        "DataOraReg": "📅 Fecha"
+      };
+
+      let html = "<table class='table table-bordered'><thead><tr>";
+
+      columnas.forEach(col => {
+        html += `<th>${nombresColumnas[col] || col}</th>`;
+      });
+
+      html += "</tr></thead><tbody>";
+      let ultimoID_CLF = null;
+      trabajos.forEach((fila, index) => {
+        const rowClass = index % 2 === 0 ? "fila-par" : "fila-impar";
+        html += `<tr class="${rowClass}">`;
+      
+        columnas.forEach(col => {
+          const claseEspecial = col === "CLFileName" ? "no-resize" : "";
+      
+          // 🔥 Comparar y colorear ID_CLF si es distinto al anterior
+          if (col === "ID_CLF") {
+            const estilo =
+              fila[col] !== ultimoID_CLF
+                ? "style='background-color: #ffeeba; font-weight: bold;'"
+                : "";
+            html += `<td ${estilo}>${fila[col]}</td>`;
+            ultimoID_CLF = fila[col]; // Actualizar valor
+          } else {
+            let valor = fila[col];
+            if (col === "DataOraReg" && valor) {
+              valor = valor.split(".")[0]; // elimina .0000000
+            }
+            html += `<td class="${claseEspecial}">${valor}</td>`;
+            
+          }
+        });
+      
+        html += "</tr>";
+      });
+      
+      html += "</tbody></table>";
+      tablaContainer.innerHTML = html;
+    })
+    .catch(err => {
+      if (spinner) spinner.style.display = "none";
+      console.error("❌ Error al cargar datos:", err);
+      tablaContainer.innerHTML = "<p style='color:red;'>❌ Error al cargar los trabajos</p>";
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 

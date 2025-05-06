@@ -257,3 +257,30 @@ td, th {
     background-color: #e9ecef; /* un poco más oscuro */
   }
   
+
+
+
+
+  table {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    resize: horizontal;
+    overflow: auto;
+    min-width: 100px;
+    white-space: normal;
+    word-break: break-word;
+  }
+  
+  /* CLFileName: scroll pero sin resize (en celdas y cabecera) */
+  td.no-resize, th.no-resize {
+    resize: none;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  

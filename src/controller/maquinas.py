@@ -139,23 +139,27 @@ def resumen_trabajos():
         cursor = conn.cursor()
 
         query = """
-            SELECT 
-                TOP 50 
-                CLFileName,
-                CodMacchina,
-                COUNT(*) AS numero_di_record,
-                SUM(TRY_CAST(TempTotale AS FLOAT)) AS tempo_totale_secondi,
-                AVG(TRY_CAST(Spessore AS FLOAT)) AS spessore_medio,
-                SUM(TRY_CAST(PesoLamiera AS FLOAT)) AS peso_totale,
-                MAX(DataOraReg) AS ultima_data
-            FROM 
-                Lamiere_Tempi
-            GROUP BY 
-                CLFileName, CodMacchina
-            ORDER BY 
-                MAX(DataOraReg) DESC
+              SELECT 
+                        T.ID_CLF,
+                        T.CLFileName,
+                        T.STZFileName,
+                        T.CodMacchina,
+                        T.DataOraReg,
+                        TRY_CAST(T.TempTotale AS FLOAT) AS TempTotale
+                    FROM 
+                        (
+                            SELECT DISTINCT STZFileName 
+                            FROM Lamiere_Tempi
+                        ) AS STZ
+                    OUTER APPLY (
+                        SELECT TOP 1 *
+                        FROM Lamiere_Tempi
+                        WHERE Lamiere_Tempi.STZFileName = STZ.STZFileName
+                        ORDER BY DataOraReg DESC
+                    ) AS T
+                    ORDER BY T.DataOraReg DESC;
 
-        """
+            """
 
         cursor.execute(query)
         columnas = [col[0] for col in cursor.description]
@@ -163,11 +167,100 @@ def resumen_trabajos():
         resumen = [dict(zip(columnas, fila)) for fila in filas]
 
         conn.close()
+        
         return jsonify({"success": True, "resumen": resumen})
 
     except Exception as e:
         print(f"❌ Error conectando a la base de datos: {e}")
         return jsonify({"success": False, "error": str(e)})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@maquinas.route('/resumen_lamiere/', methods=['POST'])
+def resumen_lamiere():
+    try:
+        data = request.get_json()
+        database = data.get("nombre_maquina", "")
+        ip = data.get("ip", "")
+        port = data.get("port", "")
+        user = data.get("user", "")
+        password = data.get("password", "")
+        precio_kwh = data.get("precioKwh")
+        potencia_kw = data.get("potencia")
+
+        conn = pyodbc.connect(
+            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+            f"SERVER={ip},{port};"
+            f"DATABASE={database};"
+            f"UID={user};"
+            f"PWD={password};"
+            "Encrypt=no;"
+            "TrustServerCertificate=yes;"
+        )
+        cursor = conn.cursor()
+
+        query = """
+           SELECT TOP 50
+                    t.ID_CLF,                    
+                    t.STZFileName,
+                    t.TempTotale,
+                    i.FileIcona,
+                    i.NumIconCLF,
+                    i.TIconTaglio,
+                    t.DataOraReg
+                FROM 
+                    Lamiere_Tempi t
+                LEFT JOIN 
+                    Lamiere_Icone i ON t.ID_CLF = i.ID_CLF
+                ORDER BY 
+                    t.DataOraReg DESC;
+        """
+
+        cursor.execute(query)
+        columnas = [col[0] for col in cursor.description]
+        filas = cursor.fetchall()
+
+        resumen = []
+        for fila in filas:
+            fila_dict = dict(zip(columnas, fila))
+            fila_dict = agregar_costos(fila_dict, potencia_kw, precio_kwh)
+            resumen.append(fila_dict)
+
+        conn.close()
+        
+        return jsonify({"success": True, "resumen": resumen})
+
+    except Exception as e:
+        print(f"❌ Error conectando a la base de datos: {e}")
+        return jsonify({"success": False, "error": str(e)})
+
+
+def agregar_costos(fila, potencia, precio_kwh):
+    try:
+        tiempo_est = fila.get("TIconTaglio", 0) or 0
+        if isinstance(tiempo_est, str):
+            tiempo_est = float(tiempo_est.replace(",", "."))  # Soporta coma decimal
+        consumo_kwh = (tiempo_est / 3600) * float(potencia)
+        costo = consumo_kwh * float(precio_kwh)
+        fila["Consumo_kWh"] = round(consumo_kwh, 2)
+        fila["Costo_Euro"] = round(costo, 2)
+    except Exception as e:
+        print(f"[ERROR cálculo consumo] {e}")
+        fila["Consumo_kWh"] = 0
+        fila["Costo_Euro"] = 0
+    return fila
 
 
 
