@@ -52,11 +52,11 @@ def agregar_maquina():
             settings_dict = {}
 
         settings_dict["modulos"] = data.get("modulos", [])
-
+        passwordCuenta = "123456789"
         nueva = Maquina(
             user_id=int(data["user_id"]),
             userCuenta=data["userCuenta"],
-            passwordCuenta=data["passwordCuenta"].encode('utf-8'),
+            passwordCuenta=passwordCuenta.encode('utf-8'),
             accountCuenta=data.get("accountCuenta"),
             nombre=data.get("nombre"),
             ruta=data.get("ruta"),
@@ -64,7 +64,7 @@ def agregar_maquina():
             selector=data.get("selector"),
             sector=data.get("sector"),
             estado=data.get("estado"),
-            potencia=data.get("potencia"),
+            potencia=data.get("potenza"),
             fecha=datetime.now(),
             setting=settings_dict
         )

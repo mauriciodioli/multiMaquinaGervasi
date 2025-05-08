@@ -132,6 +132,103 @@ document.querySelectorAll('[data-bs-target="#modal-modificar"]').forEach(button 
 
 
 
+
+
+
+// Capturar el clic en los botones de "Eliminar" usando el atributo data-bs-target
+document.querySelectorAll('[data-bs-target="#modal-eliminar"]').forEach(button => {
+    button.addEventListener('click', function() {
+        // Obtener el ID de la máquina desde el atributo data-maquina-id
+        const maquinaId = this.getAttribute('data-maquina-id');
+        
+        // Asignar el ID al campo oculto del modal
+        document.getElementById('maquina-id-eliminar-crud').value = maquinaId;
+
+        // Crear una instancia del modal de Bootstrap
+        const modalElement = document.getElementById('modal-eliminar-crud');
+        const modal = new bootstrap.Modal(modalElement);
+
+        // Mostrar el modal usando la API de Bootstrap
+        modal.show();  // Abre el modal correctamente
+    });
+});
+
+// Capturar el clic en el botón "Confirmar eliminar"
+document.getElementById("confirmar-eliminar").addEventListener("click", () => {
+    const maquinaId = document.getElementById("maquina-id-eliminar-crud").value;  // Obtiene el ID desde el campo oculto
+    
+    console.log("ID de la máquina a eliminar:", maquinaId);
+
+    // Realizar la solicitud DELETE al servidor
+    fetch(`/maquinas_crud/eliminar/${maquinaId}`, {
+        method: 'DELETE',  // Especificamos que es un método DELETE
+        headers: {
+            'Content-Type': 'application/json',  // El tipo de contenido es JSON
+        },
+    })
+    .then(response => response.json())  // Procesamos la respuesta como JSON
+    .then(data => {
+        if (data.success) {
+            console.log("Máquina eliminada con éxito");
+        
+            // Buscar el botón de eliminación usando el ID
+            const maquinaEliminada = document.querySelector(`button[data-maquina-id="${maquinaId}"]`);
+            if (maquinaEliminada) {
+                // Encontrar la fila completa <tr> que contiene el botón de eliminación
+                const trElement = maquinaEliminada.closest('tr'); // Encuentra el <tr> que contiene el <button>
+                trElement.remove();  // Elimina la fila completa (<tr>) del DOM
+            }
+        } else {
+            console.error("Error al eliminar la máquina:", data.message);
+            alert("Error al eliminar la máquina");
+        }
+        
+    })
+    .catch(error => {
+        console.error("Error al conectar con el servidor:", error);
+        alert("Error al conectar con el servidor");
+    });
+
+    // Cerrar el modal después de la eliminación usando la API de Bootstrap 5
+    const modalElement = document.getElementById('modal-eliminar-crud');
+    const modal = bootstrap.Modal.getInstance(modalElement);  // Obtener la instancia del modal
+    modal.hide();  // Cierra el modal correctamente
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const select = document.getElementById("modulos-select");
 const input = document.getElementById("nuevo-modulo");
 const btn = document.getElementById("btn-agregar-modulo");

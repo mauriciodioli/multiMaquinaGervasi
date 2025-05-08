@@ -12,7 +12,7 @@ document.querySelector('.close').onclick = function() {
 
 // MODAL ELIMINAR
 document.querySelector('.btn-eliminar').onclick = function() {
-    
+    debugger;
     nombreMaquina = localStorage.getItem("nombre_maquina");
     // Mostrar el nombre de la máquina en el modal
     if (nombreMaquina) {
