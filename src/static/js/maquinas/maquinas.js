@@ -52,46 +52,7 @@ window.onclick = function(event) {
     });
 };
 
-function enviarNombrePorAjax(iconoClicado, event) {
-  event.stopPropagation();
 
-  const summaryElement = iconoClicado.parentNode;
-  const nombreMaquina = summaryElement.getAttribute('data-nombre');
-  const idMaquina = summaryElement.getAttribute('data-id');
-  const userMaquina = summaryElement.getAttribute('data-user_id');
-
-  const confirmacion = confirm('¿Estás seguro de enviar los datos de: ' + nombreMaquina + '?');
-
-  if (confirmacion) {
-      fetch('/copiar_origen_destino/', {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: `nombre_maquina=${encodeURIComponent(nombreMaquina)}&id=${encodeURIComponent(idMaquina)}&user_id=${encodeURIComponent(userMaquina)}`
-      })
-      
-
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.text(); // O response.json()
-      })
-      .then(data => {
-        console.log('Respuesta del servidor:', data);
-        alert('Datos enviados correctamente.'); // Opcional: mostrar un mensaje de éxito
-      })
-      .catch(error => {
-        console.error('Error al enviar la petición AJAX:', error);
-        alert('Error al enviar los datos.'); // Opcional: mostrar un mensaje de error
-      });
-    } else {
-      // Si el usuario hace clic en "Cancelar", no se realiza la llamada AJAX
-      console.log('Envío cancelado por el usuario.');
-      alert('Envío cancelado.'); // Opcional: mostrar un mensaje de cancelación
-    }
-  }
 
 
 
@@ -126,7 +87,7 @@ function enviarNombrePorAjax(iconoClicado, event) {
     //const origen = '\\\\192.168.1.38\\c\\SiConfig\\Data\\DB';
     //const origen = 'C:\\Users\\Tecnico03\\Downloads';
     const destino = 'C:\\Users\\Tecnico03\\Documents\\ProyectoMultiMaquina';
-  
+    debugger;
     const confirmacion = confirm('¿Estás seguro de enviar los datos de: ' + nombre_archivo + '?');
   
     if (confirmacion) {
@@ -206,11 +167,12 @@ function enviarNombrePorAjax(iconoClicado, event) {
         data.maquinas.forEach(maquina => {
             const detalles = document.createElement("details");
             const summary = document.createElement("summary");
-            
+            debugger;
             // Asignación de los atributos de la máquina
             summary.setAttribute("data-nombre", maquina.nombre);
             summary.setAttribute("data-id", maquina.id);
             summary.setAttribute("data-user_id", maquina.user_id);
+            summary.setAttribute('data-ruta', maquina.ruta);
             summary.style.cursor = "pointer"; // Para que el nombre de la máquina sea clickeable
             summary.dataset.ruta = maquina.ruta;
             summary.dataset.nombre_db = maquina.nombreDb;
@@ -230,7 +192,7 @@ function enviarNombrePorAjax(iconoClicado, event) {
                 const dataRuta = clickedSummary.getAttribute('data-ruta');
                 const dataNombreDb = clickedSummary.getAttribute('data-nombre_db');
                 const dataEstado = clickedSummary.getAttribute('data-estado');
-
+          
                 // Log para verificar los datos obtenidos
                 console.log('data-id:', dataId);
                 console.log('data-nombre:', dataNombre);

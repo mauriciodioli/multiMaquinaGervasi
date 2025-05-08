@@ -75,7 +75,7 @@ function abrirModalAgregarMaquinas() {
                 li.addEventListener('click', () => {
                     items.forEach(el => el.style.color = 'black'); // Limpiar selección visual
                     li.style.color = 'red'; // Pintar la seleccionada
-                    debugger;
+                    
                     const idSeleccionado = li.dataset.id;
                     const maquina = data.maquinas.find(m => m.id.toString() === idSeleccionado);
             
@@ -83,10 +83,14 @@ function abrirModalAgregarMaquinas() {
                         maquinaSeleccionada = {
                             id: maquina.id,
                             nombre: maquina.nombre,
+                            userMaquina: maquina.user_id,
+                            ruta: maquina.ruta,
+                            nombreDb: maquina.nombreDb,
+                            estado: maquina.estado,
                             potencia: maquina.potencia,
                             modulos: maquina.modulos || []
                         };
-            
+                        debugger;
                         // 👇 Setear el id en el input oculto
                         const input = document.getElementById("maquina-id-eliminar");
                         if (input) input.value = idSeleccionado;
@@ -122,6 +126,10 @@ function agregarMaquinaAlContenedor(maquina) {
     const summary = document.createElement("summary");
 
     // Asignación de los atributos de la máquina
+    summary.setAttribute('data-user_id',maquina.userMaquina);
+    summary.setAttribute('data-ruta', maquina.ruta);
+    summary.setAttribute('data-nombre_archivo', maquina.nombreDb);
+    summary.setAttribute('data-estado', maquina.estado);
     summary.setAttribute("data-nombre", maquina.nombre);
     summary.setAttribute("data-id", maquina.id);
     summary.setAttribute("data-user_id", maquina.user_id);
