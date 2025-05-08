@@ -65,35 +65,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-document.querySelectorAll('[data-bs-target="#modal-eliminar"]').forEach(button => {
-    button.addEventListener('click', () => {
-        const id = button.dataset.maquinaId;
-        document.getElementById("maquina-id-eliminar").value = id;
-    });
-});
-document.getElementById("confirmar-eliminar").addEventListener("click", () => {
-    const id = document.getElementById("maquina-id-eliminar").value;
-
-    fetch(`/maquinas_crud/eliminar/${id}`, {
-        method: "DELETE",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    })
-    .then(res => res.json())
-    .then(res => {
-        if (res.success) {
-            alert("Máquina eliminada correctamente");
-            location.reload();
-        } else {
-            alert("Error al eliminar: " + res.message);
-        }
-    })
-    .catch(err => {
-        alert("Error al conectar con el servidor");
-        console.error(err);
-    });
-});
 
 
 

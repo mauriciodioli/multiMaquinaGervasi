@@ -1,5 +1,6 @@
 let maquinaSeleccionada = null; // Global temporal
 let maquinaAEliminar = null;
+
 // MODAL AGREGAR
 document.querySelector('.btn-agregar').onclick = function() {
     document.getElementById('modal-agregar').style.display = "block";
@@ -11,39 +12,27 @@ document.querySelector('.close').onclick = function() {
 
 // MODAL ELIMINAR
 document.querySelector('.btn-eliminar').onclick = function() {
+    
+    nombreMaquina = localStorage.getItem("nombre_maquina");
+    // Mostrar el nombre de la máquina en el modal
+    if (nombreMaquina) {
+        document.getElementById('modal-nombre-maquina').textContent = `${nombreMaquina}`;
+    }
     document.getElementById('modal-eliminar').style.display = "block";
+    // El modal de eliminar ya está abierto, la máquina seleccionada ya está guardada en maquinaAEliminar
+   
 };
 document.querySelector('.close-eliminar').onclick = function() {
     maquinaAEliminar = null;
     document.getElementById('modal-eliminar').style.display = "none";
 };
-document.getElementById("confirmar-eliminar").addEventListener("click", () => {
-    const id = document.getElementById("maquina-id-eliminar").value;
-
-    console.log("🧪 ID de máquina a eliminar:", id);  // 👈 LOG DE VERIFICACIÓN
-
-    fetch(`/maquinas_crud/eliminar/${id}`, {
-        method: "DELETE"
-    })
-    .then(res => res.json())
-    .then(res => {
-        if (res.success) {
-            alert("🗑️ Máquina eliminada correctamente");
-            location.reload();
-        } else {
-            alert("Error: " + res.message);
-        }
-    })
-    .catch(err => {
-        alert("Error al conectar con el servidor");
-        console.error(err);
-    });
-});
 
 
 
 
 
+
+// Abrir modal para agregar máquinas
 function abrirModalAgregarMaquinas() {
     const user_id = localStorage.getItem("user_id");
 
@@ -77,11 +66,10 @@ function abrirModalAgregarMaquinas() {
             </div>
             `;
 
-
             modal.innerHTML = html;
             modal.style.display = "block";
 
-            // Agregar eventos
+            // Agregar eventos a los elementos de la lista
             const items = modal.querySelectorAll('.item-maquina');
             items.forEach(li => {
                 li.addEventListener('click', () => {
@@ -98,7 +86,7 @@ function abrirModalAgregarMaquinas() {
                             modulos: maquina.modulos || []
                         };
             
-                        // 👇 Setear en el input hidden
+                        // 👇 Setear el id en el input oculto
                         const input = document.getElementById("maquina-id-eliminar");
                         if (input) input.value = idSeleccionado;
                     }
@@ -118,7 +106,7 @@ function abrirModalAgregarMaquinas() {
     });
 }
 
-
+// Agregar máquina al contenedor
 function agregarMaquinaAlContenedor(maquina) {
     const container = document.getElementById("contenedor-online");
 
@@ -134,10 +122,8 @@ function agregarMaquinaAlContenedor(maquina) {
     summary.setAttribute("data-nombre", maquina.nombre);
     summary.setAttribute("data-id", maquina.id);
     summary.style.cursor = "pointer";
-    summary.addEventListener("dblclick", function () {
-        maquinaAEliminar = summary.closest("details");
-        document.getElementById('modal-eliminar').style.display = "block";
-    });
+    
+    
     summary.innerHTML = `
         ${maquina.nombre}
         <i class="fas fa-cog icono-clic" onclick="enviarNombrePorAjax(this, event)"></i>
@@ -170,7 +156,36 @@ function agregarMaquinaAlContenedor(maquina) {
 
 
 
-function abrirModalEliminarMaquina(summaryElement) {
-    maquinaAEliminar = summaryElement.closest("details"); // Guarda el bloque completo
-    document.getElementById('modal-eliminar').style.display = "block";
-}
+
+
+document.getElementById("confirmar-eliminar").addEventListener("click", () => {
+    const dataId = localStorage.getItem("id_maquina");  // Obtiene el ID almacenado en localStorage
+
+    // Log para verificar el data-id obtenido
+    console.log("data-id de la máquina seleccionada:", dataId);
+
+    if (dataId) {
+        // Selecciona el contenedor que contiene los elementos 'details'
+        const container = document.getElementById("contenedor-online");
+
+        // Busca el elemento <details> con el data-id correspondiente
+        const maquinaEliminada = container.querySelector(`details summary[data-id="${dataId}"]`);
+
+        if (maquinaEliminada) {
+            // Elimina el <details> completo que contiene ese <summary> con el data-id
+            maquinaEliminada.closest('details').remove();
+
+            console.log(`Elemento con data-id ${dataId} eliminado.`);
+        } else {
+            console.log(`No se encontró un elemento con data-id: ${dataId}`);
+        }
+    } else {
+        console.log("No se encontró el data-id en localStorage");
+    }
+
+    // Cierra el modal después de la eliminación
+    document.getElementById('modal-eliminar').style.display = "none"; // Cierra el modal
+});
+
+
+

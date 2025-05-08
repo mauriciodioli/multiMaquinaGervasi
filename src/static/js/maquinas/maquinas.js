@@ -190,8 +190,6 @@ function enviarNombrePorAjax(iconoClicado, event) {
 
 
 
-
-
   fetch("/maquinas_online/", {
     method: "POST",
     headers: {
@@ -203,26 +201,54 @@ function enviarNombrePorAjax(iconoClicado, event) {
 .then(data => {
     if (data.success) {
         const container = document.getElementById("contenedor-online");
-        container.innerHTML = ""; // Limpiar
+        container.innerHTML = ""; // Limpiar el contenedor antes de agregar las nuevas máquinas
 
         data.maquinas.forEach(maquina => {
-           
-
             const detalles = document.createElement("details");
             const summary = document.createElement("summary");
+            
+            // Asignación de los atributos de la máquina
             summary.setAttribute("data-nombre", maquina.nombre);
             summary.setAttribute("data-id", maquina.id);
             summary.setAttribute("data-user_id", maquina.user_id);
-            summary.style.cursor = "pointer"; // Para el nombre de la máquina
+            summary.style.cursor = "pointer"; // Para que el nombre de la máquina sea clickeable
             summary.dataset.ruta = maquina.ruta;
             summary.dataset.nombre_db = maquina.nombreDb;
             summary.dataset.estado = maquina.estado;
 
-            summary.innerHTML = `
-                ${maquina.nombre}
-             
-                <i class="fas fa-cog icono-clic" onclick="Copiar_Origen_Destino_fuera_Data_Base(this, event)"></i>
-            `;
+            // Asignamos el contenido HTML dentro del summary
+            summary.innerHTML = `${maquina.nombre} <i class="fas fa-cog icono-clic" onclick="Copiar_Origen_Destino_fuera_Data_Base(this, event)"></i>`;
+
+            // Agregar el evento de clic al summary
+            summary.addEventListener("click", function(event) {
+                const clickedSummary = event.target;
+
+                // Obtener los atributos del summary clickeado
+                const dataId = clickedSummary.getAttribute('data-id');
+                const dataNombre = clickedSummary.getAttribute('data-nombre');
+                const dataUserId = clickedSummary.getAttribute('data-user_id');
+                const dataRuta = clickedSummary.getAttribute('data-ruta');
+                const dataNombreDb = clickedSummary.getAttribute('data-nombre_db');
+                const dataEstado = clickedSummary.getAttribute('data-estado');
+
+                // Log para verificar los datos obtenidos
+                console.log('data-id:', dataId);
+                console.log('data-nombre:', dataNombre);
+                console.log('data-user_id:', dataUserId);
+                console.log('data-ruta:', dataRuta);
+                console.log('data-nombre_db:', dataNombreDb);
+                console.log('data-estado:', dataEstado);
+                // Al hacer clic en el <summary> (por ejemplo, en el evento 'dblclick' o 'click')
+                localStorage.setItem("nombre_maquina", dataNombre);
+                localStorage.setItem("id_maquina", dataId);
+                localStorage.setItem("user_id", dataUserId);
+                localStorage.setItem("ruta", dataRuta);
+                localStorage.setItem("nombre_db", dataNombreDb);
+                localStorage.setItem("estado", dataEstado);
+            
+
+            });
+
             detalles.appendChild(summary);
 
             const ul = document.createElement("ul");
@@ -232,50 +258,38 @@ function enviarNombrePorAjax(iconoClicado, event) {
                     const li = document.createElement("li");
                     li.textContent = modulo.charAt(0).toUpperCase() + modulo.slice(1);
                     li.style.cursor = "pointer"; // Para cada subitem
-                    // ✅ Agregamos el evento click por módulo
-                    li.addEventListener("click", () => {
-                        
-                        // Acá podés hacer lo que quieras: redirigir, abrir modal, etc.
-                        // Por ejemplo:
-                        if (modulo === "history") {
-                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`); 
-                          cargarContenidoModuloHistory(maquina.nombre, modulo, maquina.clfile);
-                        }
-                        else if (modulo === "jobs") {
-                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
-                          cargarContenidoModuloJobs(maquina.nombre, modulo, maquina.clfile);
-                                                  
-                        }
-                        else if (modulo === "lamiere") {
-                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
-                          let precioKwh= localStorage.getItem("precio_kwh"); 
-                          let filtro_clfile ="";
-                        
-                          cargarContenidoModuloLamiere(maquina.nombre, modulo, filtro_clfile, precioKwh,maquina.potencia);
-                                                  
-                        }
-                        else if (modulo === "cost") {
-                       
-                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
-                          let filtro_clfile ="";
-                         
-                          if (localStorage.getItem("precio_kwh")) {             
-                              let precioKwh= localStorage.getItem("precio_kwh");          
-                              cargarContenidoModuloCosto(maquina.nombre, modulo, filtro_clfile, precioKwh,maquina.potencia);
-                          } else {
-                              alert("⚠️ No se ha configurado el precio del kWh");
-                          }
-                        }
-                        else if (modulo === "settings") {
-                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
-                          //cargarContenidoModulo(maquina.nombre, modulo);
-                        }
-                        else if (modulo === "statistics") {
 
-                          console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
-                         // cargarContenidoModulo(maquina.nombre, modulo);
+                    // Evento click por módulo
+                    li.addEventListener("click", () => {
+                        console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
+
+                        // Lógica para manejar cada módulo
+                        switch(modulo) {
+                            case "history":
+                                cargarContenidoModuloHistory(maquina.nombre, modulo, maquina.clfile);
+                                break;
+                            case "jobs":
+                                cargarContenidoModuloJobs(maquina.nombre, modulo, maquina.clfile);
+                                break;
+                            case "lamiere":
+                                let precioKwh = localStorage.getItem("precio_kwh");
+                                cargarContenidoModuloLamiere(maquina.nombre, modulo, "", precioKwh, maquina.potencia);
+                                break;
+                            case "cost":
+                                if (localStorage.getItem("precio_kwh")) {
+                                    let precioKwh = localStorage.getItem("precio_kwh");
+                                    cargarContenidoModuloCosto(maquina.nombre, modulo, "", precioKwh, maquina.potencia);
+                                } else {
+                                    alert("⚠️ No se ha configurado el precio del kWh");
+                                }
+                                break;
+                            case "settings":
+                                // Aquí iría la lógica para settings
+                                break;
+                            case "statistics":
+                                // Aquí iría la lógica para statistics
+                                break;
                         }
-                       
                     });
 
                     ul.appendChild(li);
@@ -297,6 +311,13 @@ function enviarNombrePorAjax(iconoClicado, event) {
 .catch(err => {
     console.error("🔥 Error de red:", err);
 });
+
+
+
+
+
+
+
 
 
 
