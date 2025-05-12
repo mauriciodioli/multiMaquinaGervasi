@@ -1,3 +1,14 @@
+//inicializacion de variables localStorage
+if (!localStorage.getItem("user_id")) {
+    localStorage.setItem("user_id", "1");
+ }
+if (!localStorage.getItem("precio_kwh")) {
+    localStorage.setItem("precio_kwh", "0.2");
+ }
+
+
+
+
 const resizer = document.getElementById('resizer');
 const sidebar = document.getElementById('sidebar');
 const container = document.querySelector('.contenedor-flex');
