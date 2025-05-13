@@ -239,12 +239,7 @@ img {
 <script src="{{ url_for('static', filename='js/maquinas/crud_maquinas.js') }}"></script>
 
 <script>
-    document.getElementById("btn-simular-login").addEventListener("click", () => {
-        localStorage.setItem("user_id", "1");
-        const nombre = "Usuario Demo";  // Si querés que se vea más humano
-        
-        showToast("Sesión iniciada como Usuario 1");
-    });
+
     
     function showToast(mensaje) {
         const toast = document.createElement("div");

@@ -14,7 +14,7 @@
             <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modal-agregar">
                 <i class="fas fa-server me-2"></i> Agregar Máquina
             </button>
-
+          <div class="table-responsive"></div>
             <table class="table table-striped">
                 <thead>
                     <tr>
@@ -53,39 +53,39 @@
                           {% endif %}
                       </td>
                       
-                        <td>
-                            <button type="button" class="btn btn-warning"
-                                data-bs-toggle="modal"
-                                data-bs-target="#modal-modificar"
-                                data-maquina-id="{{ maquina.id }}"
-                                data-user-cuenta="{{ maquina.userCuenta }}"
-                             
-                                data-nombre="{{ maquina.nombre }}"
-                                data-ruta="{{ maquina.ruta }}"
-                              
-                                data-nombre-db="{{ maquina.nombreDb }}"
-                              
-                                data-sector="{{ maquina.sector }}"
-                                data-estado="{{ maquina.estado }}"
-                                data-potencia="{{ maquina.potencia }}"
-                               data-setting='{{ maquina.setting | tojson | safe }}'
-                                >
-                                Modificar
-                            </button>
+                      <td>
+                        <div class="d-flex align-items-center gap-2">
+                          <button type="button" class="btn btn-warning btn-sm"
+                              data-bs-toggle="modal"
+                              data-bs-target="#modal-modificar"
+                              data-maquina-id="{{ maquina.id }}"
+                              data-user-cuenta="{{ maquina.userCuenta }}"
+                              data-nombre="{{ maquina.nombre }}"
+                              data-ruta="{{ maquina.ruta }}"
+                              data-nombre-db="{{ maquina.nombreDb }}"
+                              data-sector="{{ maquina.sector }}"
+                              data-estado="{{ maquina.estado }}"
+                              data-potencia="{{ maquina.potencia }}"
+                              data-setting='{{ maquina.setting | tojson | safe }}'>
+                              Modificar
+                          </button>
 
-                            <button type="button"
-                                    class="btn btn-sm btn-danger"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#modal-eliminar"
-                                    data-maquina-id="{{ maquina.id }}">
-                                Eliminar
-                            </button>
-                        </td>
+                          <button type="button"
+                              class="btn btn-danger btn-sm"
+                              data-bs-toggle="modal"
+                              data-bs-target="#modal-eliminar-crud"
+                              data-maquina-id="{{ maquina.id }}">
+                              Eliminar
+                          </button>
+                        </div>
+                      </td>
+
                     </tr>
                     {% endfor %}
                 </tbody>
                 
             </table>
+           </div>
         </div>
     </div>
 </div>
@@ -217,23 +217,24 @@
 
 
 
+
 <!-- Modal -->
 <div class="modal fade" id="modal-eliminar-crud" tabindex="-1" aria-labelledby="modal-eliminar-label" aria-hidden="true">
   <div class="modal-dialog">
-      <div class="modal-content">
-          <div class="modal-header">
-              <h5 class="modal-title" id="modal-eliminar-label">Elimina macchina</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-              <input type="hidden" id="maquina-id-eliminar-crud">
-              <p>Sei sicuro di voler eliminare questa macchina?</p>
-          </div>
-          <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-              <button type="button" class="btn btn-danger" id="confirmar-eliminar">Eliminar</button>
-          </div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-eliminar-label">Elimina macchina</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
+      <div class="modal-body">
+        <input type="hidden" id="maquina-id-eliminar-crud">
+        <p>Sei sicuro di voler eliminare questa macchina?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmar-eliminar">Eliminar</button>
+      </div>
+    </div>
   </div>
 </div>
 

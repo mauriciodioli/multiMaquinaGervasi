@@ -69,8 +69,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-const original = document.getElementById("confirmar-modificar");
-const nuevo = original.cloneNode(true);
+original = document.getElementById("confirmar-modificar");
+nuevo = original.cloneNode(true);
 original.parentNode.replaceChild(nuevo, original);
 
 nuevo.addEventListener("click", () => {
@@ -135,64 +135,46 @@ document.querySelectorAll('[data-bs-target="#modal-modificar"]').forEach(button 
 
 
 
-// Capturar el clic en los botones de "Eliminar" usando el atributo data-bs-target
-document.querySelectorAll('[data-bs-target="#modal-eliminar"]').forEach(button => {
-    button.addEventListener('click', function() {
-        // Obtener el ID de la máquina desde el atributo data-maquina-id
-        const maquinaId = this.getAttribute('data-maquina-id');
-        
-        // Asignar el ID al campo oculto del modal
-        document.getElementById('maquina-id-eliminar-crud').value = maquinaId;
-
-        // Crear una instancia del modal de Bootstrap
-        const modalElement = document.getElementById('modal-eliminar-crud');
-        const modal = new bootstrap.Modal(modalElement);
-
-        // Mostrar el modal usando la API de Bootstrap
-        modal.show();  // Abre el modal correctamente
+document.addEventListener("DOMContentLoaded", () => {
+  // Asignar el ID de la máquina al campo oculto cuando se abre el modal
+  document.querySelectorAll('[data-bs-target="#modal-eliminar-crud"]').forEach(button => {
+    button.addEventListener('click', function () {
+      const maquinaId = this.getAttribute('data-maquina-id');
+      document.getElementById('maquina-id-eliminar-crud').value = maquinaId;
     });
-});
+  });
 
-// Capturar el clic en el botón "Confirmar eliminar"
-document.getElementById("confirmar-eliminar").addEventListener("click", () => {
-    const maquinaId = document.getElementById("maquina-id-eliminar-crud").value;  // Obtiene el ID desde el campo oculto
-    
-    console.log("ID de la máquina a eliminar:", maquinaId);
+  // Confirmar eliminación
+  document.getElementById("confirmar-eliminar").addEventListener("click", () => {
+    const maquinaId = document.getElementById("maquina-id-eliminar-crud").value;
 
-    // Realizar la solicitud DELETE al servidor
     fetch(`/maquinas_crud/eliminar/${maquinaId}`, {
-        method: 'DELETE',  // Especificamos que es un método DELETE
-        headers: {
-            'Content-Type': 'application/json',  // El tipo de contenido es JSON
-        },
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
-    .then(response => response.json())  // Procesamos la respuesta como JSON
+    .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            console.log("Máquina eliminada con éxito");
-        
-            // Buscar el botón de eliminación usando el ID
-            const maquinaEliminada = document.querySelector(`button[data-maquina-id="${maquinaId}"]`);
-            if (maquinaEliminada) {
-                // Encontrar la fila completa <tr> que contiene el botón de eliminación
-                const trElement = maquinaEliminada.closest('tr'); // Encuentra el <tr> que contiene el <button>
-                trElement.remove();  // Elimina la fila completa (<tr>) del DOM
-            }
-        } else {
-            console.error("Error al eliminar la máquina:", data.message);
-            alert("Error al eliminar la máquina");
-        }
-        
+      if (data.success) {
+        // Eliminar fila del DOM
+        const boton = document.querySelector(`button[data-maquina-id="${maquinaId}"]`);
+        const fila = boton?.closest('tr');
+        if (fila) fila.remove();
+      } else {
+        alert("Error al eliminar la máquina: " + data.message);
+      }
     })
     .catch(error => {
-        console.error("Error al conectar con el servidor:", error);
-        alert("Error al conectar con el servidor");
+      alert("Error al conectar con el servidor");
+      console.error(error);
     });
 
-    // Cerrar el modal después de la eliminación usando la API de Bootstrap 5
+    // Cerrar modal correctamente
     const modalElement = document.getElementById('modal-eliminar-crud');
-    const modal = bootstrap.Modal.getInstance(modalElement);  // Obtener la instancia del modal
-    modal.hide();  // Cierra el modal correctamente
+    const modal = bootstrap.Modal.getInstance(modalElement);
+    if (modal) modal.hide();
+  });
 });
 
 
@@ -229,9 +211,10 @@ document.getElementById("confirmar-eliminar").addEventListener("click", () => {
 
 
 
-const select = document.getElementById("modulos-select");
-const input = document.getElementById("nuevo-modulo");
-const btn = document.getElementById("btn-agregar-modulo");
+
+select = document.getElementById("modulos-select");
+input = document.getElementById("nuevo-modulo");
+btn = document.getElementById("btn-agregar-modulo");
 
 // Cargar módulos al iniciar desde localStorage
 document.addEventListener("DOMContentLoaded", () => {
