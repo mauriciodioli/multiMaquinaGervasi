@@ -98,7 +98,7 @@ window.onclick = function(event) {
     //const origen = '\\\\192.168.1.38\\c\\SiConfig\\Data\\DB';
     //const origen = 'C:\\Users\\Tecnico03\\Downloads';
     const destino = 'C:\\Users\\Tecnico03\\Documents\\ProyectoMultiMaquina';
-    debugger;
+    
     const confirmacion = confirm('¿Estás seguro de enviar los datos de: ' + nombre_archivo + '?');
   
     if (confirmacion) {
@@ -125,24 +125,39 @@ window.onclick = function(event) {
         body: params.toString()
       })
       .then(response => {
-        if (!response.ok) {
+         // console.log('📥 Respuesta cruda:', response);
+         
+          if (!response.ok) {
             return response.text().then(text => {
               throw new Error(text || `HTTP error! status: ${response.status}`);
             });
           }
           return response.json();
-      })
-      .then(data => {
-        console.log('✅ Respuesta del servidor local:', data);
-        alert(data.mensaje || '✅ Archivo copiado correctamente.');
-      })
-      .catch(error => {
-        console.error('✅ Archivo copiado correctamente. capturado por catch en Copiar_Origen_Destino_fuera_Data_Base ', error);
-         alert('✅ Archivo copiado correctamente.');
-      })
-      .finally(() => {
-        document.getElementById("spinner").style.display = "none"; // 👈 Ocultar spinner
-      });
+        })
+        .then(data => {
+        //  console.log('✅ Respuesta del servidor local:', data);
+          //alert(data.mensaje || '✅ Archivo copiado correctamente.');
+          alert(`✅ File copiato correttamente.`);
+        })
+        .catch(error => {
+            console.error('❌ Error:', error); 
+            let data = {};
+            try {
+              data = JSON.parse(error.message);
+            } catch (e) {
+              // No era JSON, lo dejamos vacío
+            }
+
+            if (data.ruta_existe === false) {
+              alert("❌ La macchina è spenta.");
+            } else {
+              alert(`❌ Error durante la copia del archivo: ${data.mensaje || error.message}`);
+            }
+        })
+        .finally(() => {
+          document.getElementById("spinner").style.display = "none"; // 👈 Ocultar spinner
+        });
+
     } else {
       console.log('⛔ Envío cancelado por el usuario.');
       alert('Envío cancelado.');
@@ -178,7 +193,7 @@ window.onclick = function(event) {
         data.maquinas.forEach(maquina => {
             const detalles = document.createElement("details");
             const summary = document.createElement("summary");
-            debugger;
+            
             // Asignación de los atributos de la máquina
             summary.setAttribute("data-nombre", maquina.nombre);
             summary.setAttribute("data-id", maquina.id);
