@@ -195,165 +195,56 @@ img {
 <footer>
     <p>&copy; 2025 DPIA Solutions. Todos los derechos reservados.</p>
 </footer>
+<!-- Modal personalizado -->
 <!-- Modal Configuración SQL Server -->
-<div class="modal fade" id="modal-sqlserver" tabindex="-1" aria-labelledby="modal-sqlserver-label" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
+<div id="modal-sqlserver" class="modal" style="display: none;">
+    <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modal-sqlserver-label">Configurazione di SQL Server</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            <!-- Cerrar el modal -->
+            <span id="modal-close" class="close-btn">&times;</span>
+            <h5 class="modal-title">Configuración de SQL Server</h5>
         </div>
         <div class="modal-body">
-          <form id="form-sqlserver">
-            <div class="mb-3">
-              <label for="input-sql-ip" class="form-label">IP del server</label>
-              <input type="text" class="form-control" id="input-sql-ip" placeholder="192.168.1.250">
-            </div>
-            <div class="mb-3">
-              <label for="input-sql-port" class="form-label">Porta</label>
-              <input type="text" class="form-control" id="input-sql-port" placeholder="1433">
-            </div>
-             <div class="mb-3">
-                <label for="input-sql-user" class="form-label">User</label>
-                <input type="text" class="form-control" id="input-sql-user" placeholder="usuario_si_cam">
-              </div>
-              <div class="mb-3">
-                <label for="input-sql-password" class="form-label">Password</label>
-                <input type="text" class="form-control" id="input-sql-password" placeholder="Dpia1234!">
-              </div>
-          </form>
+            <form id="form-sqlserver">
+                <div class="mb-3">
+                    <label for="input-sql-ip" class="form-label">IP del Servidor</label>
+                    <input type="text" class="form-control" id="input-sql-ip" placeholder="Ejemplo: 192.168.1.250">
+                    <small id="ipHelp" class="form-text text-muted">Ingrese la dirección IP del servidor SQL.</small>
+                </div>
+                <div class="mb-3">
+                    <label for="input-sql-port" class="form-label">Puerto</label>
+                    <input type="text" class="form-control" id="input-sql-port" placeholder="Ejemplo: 1433">
+                    <small id="portHelp" class="form-text text-muted">Ingrese el puerto en el que está escuchando el servidor SQL.</small>
+                </div>
+                <div class="mb-3">
+                    <label for="input-sql-user" class="form-label">Usuario</label>
+                    <input type="text" class="form-control" id="input-sql-user" placeholder="Ejemplo: usuario_si_cam">
+                    <small id="userHelp" class="form-text text-muted">Ingrese el nombre de usuario para conectarse al servidor SQL.</small>
+                </div>
+                <div class="mb-3">
+                    <label for="input-sql-password" class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" id="input-sql-password" placeholder="Ejemplo: Dpia1234!">
+                    <small id="passwordHelp" class="form-text text-muted">Ingrese la contraseña para el usuario de SQL Server.</small>
+                </div>
+            </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancellare</button>
-          <button type="button" class="btn btn-primary" id="confirmar-sql">Mantenere</button>
+            <!-- Botón para cancelar y cerrar -->
+            <button type="button" class="btn btn-secondary" id="cancelar-sql">Cancelar</button>
+            <!-- Botón para guardar -->
+            <button type="button" class="btn btn-primary" id="confirmar-sql">Guardar</button>
         </div>
-      </div>
     </div>
-  </div>
-  
+</div>
+
+
 <!-- Scripts principales -->
 <!-- <script src="/static/js/main.js"></script> -->
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/layout.css') }}">
 <script src="{{ url_for('static', filename='js/maquinas/crud_maquinas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/layouts/layout.js') }}"></script>
 
-<script>
-
-    
-    function showToast(mensaje) {
-        const toast = document.createElement("div");
-        toast.className = "toast align-items-center text-bg-success border-0 position-fixed bottom-0 end-0 m-4 show";
-        toast.role = "alert";
-        toast.style.zIndex = "1055";
-        toast.innerHTML = `
-          <div class="d-flex">
-            <div class="toast-body">
-              ${mensaje}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-          </div>
-        `;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-    }
-    
-    
-
-
-
-
-
-
-    document.getElementById("conexionSqlServer").addEventListener("click", (e) => {
-        e.preventDefault();
-      
-        document.getElementById("input-sql-ip").value = localStorage.getItem("ipSqlServer") || "";
-        document.getElementById("input-sql-port").value = localStorage.getItem("portSqlServer") || "";
-        document.getElementById("input-sql-user").value = localStorage.getItem("userSqlServer") || "";
-        document.getElementById("input-sql-password").value = localStorage.getItem("pasSqlServer") || "";
-        const modal = new bootstrap.Modal(document.getElementById("modal-sqlserver"));
-        modal.show();
-      });
-      
-
-      document.getElementById("confirmar-sql").addEventListener("click", () => {
-        const ip = document.getElementById("input-sql-ip").value.trim();
-        const port = document.getElementById("input-sql-port").value.trim();
-        const user = document.getElementById("input-sql-user").value.trim();
-        const pas = document.getElementById("input-sql-password").value.trim();
-
-      
-        if (!ip || !port) {
-          alert("Por favor completá ambos campos.");
-          return;
-        }
-      
-        // Guardar en localStorage
-        localStorage.setItem("ipSqlServer", ip);
-        localStorage.setItem("portSqlServer", port);
-        localStorage.setItem("userSqlServer", user);
-        localStorage.setItem("pasSqlServer", pas);
-      
-        alert(`✅ IP y puerto guardados: ${ip}:${port}`);
-      
-        // Ocultar el modal
-        bootstrap.Modal.getInstance(document.getElementById("modal-sqlserver")).hide();
-      });
-      
-
-
-
-
-
-      document.addEventListener("DOMContentLoaded", () => {
-      
-        // Si no están en localStorage, los setea con lo que está precargado en el modal
-        const ip = localStorage.getItem("ipSqlServer");
-        const port = localStorage.getItem("portSqlServer");
-        const usuario= localStorage.getItem("userSqlServer");
-        const password= localStorage.getItem("pasSqlServer");
-      
-        if (!ip) {
-          localStorage.setItem("ipSqlServer","192.168.1.250");
-          console.log("[INFO] IP por defecto seteada en localStorage:", "192.168.1.250");
-        }
-      
-        if (!port) {
-          localStorage.setItem("portSqlServer","1433");
-          console.log("[INFO] Puerto por defecto seteado en localStorage:", "1433");
-        }
-        if (!usuario) {
-            localStorage.setItem("userSqlServer","usuario_si_cam");
-            console.log("[INFO] Usuario por defecto seteado en localStorage:", "usuario_si_cam");
-          }
-        if (!password) {
-        localStorage.setItem("pasSqlServer","Dpia1234!");
-        console.log("[INFO] Pass por defecto seteado en localStorage:", "Dpia1234!");
-        }
-
-
-      });
-      
-
-
-
-
-      
-      document.getElementById("descargar_tabla_excel").addEventListener("click", (e) => {
-          e.preventDefault();
-        const tabla = document.querySelector(".tabla-container table");
-        if (!tabla) return alert("No hay datos para exportar.");
-    
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.table_to_sheet(tabla);
-        XLSX.utils.book_append_sheet(wb, ws, "Datos");
-    
-        XLSX.writeFile(wb, "datos_maquina.xlsx");
-    });
-    
-
-
-      
-    </script>
     
