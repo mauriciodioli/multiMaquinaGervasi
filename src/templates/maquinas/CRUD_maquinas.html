@@ -12,8 +12,8 @@
                 <h1>Macchine di Database</h1>
             </div>
             <button type="button" class="btn btn-primary" id="btn-abrir-modal">
-  <i class="fas fa-server me-2"></i> Agregar Máquina
-</button>
+                <i class="fas fa-server me-2"></i> Aggiungi macchina
+              </button>
 
      
           <div class="table-responsive"></div>
@@ -21,17 +21,17 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>User Cuenta</th>                        
-                        <th>Nombre</th>
-                        <th>Ruta Origen</th>
+                        <th>Account utente</th>                        
+                        <th>Nome</th>
+                        <th>Percorso di origine</th>
                         
-                        <th>Nombre DB</th>                       
-                        <th>Sector</th>
-                        <th>Estado</th>
+                        <th>Nome del database</th>                       
+                        <th>Settore</th>
+                        <th>Stato</th>
                         <th>Potenza</th>
-                        <th>Fecha</th>
-                        <th>Settings</th>
-                        <th>Acciones</th>
+                        <th>Data</th>
+                        <th>Impostazioni</th>
+                        <th>Azioni</th>
                     </tr>
                 </thead>
                 
@@ -51,7 +51,7 @@
                           {% if maquina.setting and 'modulos' in maquina.setting %}
                               {{ maquina.setting.modulos | join(', ') }}
                           {% else %}
-                              <em>Sin módulos</em>
+                              <em>senza moduli</em>
                           {% endif %}
                       </td>
                       
@@ -104,7 +104,7 @@
           <form id="form-agregar-maquina">
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label class="form-label">Usuario Cuenta</label>
+                <label class="form-label">Account utente</label>
                 <input type="text" class="form-control" name="userCuenta" required>
               </div>
               <!--  <div class="col-md-6 mb-3">
@@ -154,9 +154,9 @@
                   <!-- Se llenará dinámicamente -->
                 </select>
               
-                <input type="text" id="nuevo-modulo" class="form-control mt-2" placeholder="Agregar módulo nuevo">
+                <input type="text" id="nuevo-modulo" class="form-control mt-2" placeholder="Aggiungi nuovo modulo">
                 <button type="button" class="btn btn-sm btn-secondary mt-1" id="btn-agregar-modulo">Aggiungi</button>
-              
+                
                 <small class="form-text text-muted">Utilizzare Ctrl o Maiusc per selezionare più moduli.</small>
               </div>
               
@@ -187,7 +187,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="crud-modal-modificar-label">Modificar Máquina</h5>
+                <h5 class="modal-title" id="crud-modal-modificar-label">Modifica macchina</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
@@ -205,8 +205,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-warning" id="confirmar-modificar">Modificar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancellare</button>
+                <button type="button" class="btn btn-warning" id="confirmar-modificar">Modificare</button>
             </div>
         </div>
     </div>
@@ -232,8 +232,8 @@
         <p>Sei sicuro di voler eliminare questa macchina?</p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-danger" id="confirmar-eliminar">Eliminar</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancellare</button>
+        <button type="button" class="btn btn-danger" id="confirmar-eliminar">Eliminare</button>
       </div>
     </div>
   </div>
