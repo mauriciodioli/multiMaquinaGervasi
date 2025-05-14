@@ -211,13 +211,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-
-select = document.getElementById("modulos-select");
-input = document.getElementById("nuevo-modulo");
-btn = document.getElementById("btn-agregar-modulo");
-
-// Cargar módulos al iniciar desde localStorage
 document.addEventListener("DOMContentLoaded", () => {
+    // Obtener los elementos del DOM
+    const select = document.getElementById("modulos-select");
+    const input = document.getElementById("nuevo-modulo");
+    const btn = document.getElementById("btn-agregar-modulo");
+
+    // Verificar que los elementos existan en el DOM
+    if (!select || !input || !btn) {
+        console.error("Faltan elementos en el DOM.");
+        return;
+    }
+
+    // Cargar módulos al iniciar desde localStorage
     const guardados = JSON.parse(localStorage.getItem("modulosPersonalizados")) || [];
 
     // Opciones iniciales por defecto
@@ -229,30 +235,30 @@ document.addEventListener("DOMContentLoaded", () => {
         const opt = new Option(valor, valor);
         select.add(opt);
     });
-});
 
-// Agregar nuevo módulo dinámicamente
-btn.addEventListener("click", () => {
-    const valor = input.value.trim();
-    if (!valor) return;
+    // Agregar nuevo módulo dinámicamente
+    btn.addEventListener("click", () => {
+        const valor = input.value.trim();
+        if (!valor) return;
 
-    // Verificar si ya existe
-    const existe = [...select.options].some(opt => opt.value === valor);
-    if (existe) {
-        alert("Ese módulo ya existe.");
-        return;
-    }
+        // Verificar si ya existe
+        const existe = [...select.options].some(opt => opt.value === valor);
+        if (existe) {
+            alert("Ese módulo ya existe.");
+            return;
+        }
 
-    // Crear y seleccionar la nueva opción
-    const nuevaOpcion = new Option(valor, valor, true, true);
-    select.add(nuevaOpcion);
-    input.value = "";
+        // Crear y seleccionar la nueva opción
+        const nuevaOpcion = new Option(valor, valor, true, true);
+        select.add(nuevaOpcion);
+        input.value = "";
 
-    // Guardar en localStorage
-    const existentes = JSON.parse(localStorage.getItem("modulosPersonalizados")) || [];
-    if (!existentes.includes(valor)) {
-        existentes.push(valor);
-        localStorage.setItem("modulosPersonalizados", JSON.stringify(existentes));
-    }
+        // Guardar en localStorage
+        const existentes = JSON.parse(localStorage.getItem("modulosPersonalizados")) || [];
+        if (!existentes.includes(valor)) {
+            existentes.push(valor);
+            localStorage.setItem("modulosPersonalizados", JSON.stringify(existentes));
+        }
+    });
 });
 
