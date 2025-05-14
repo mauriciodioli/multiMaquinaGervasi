@@ -71,3 +71,24 @@
 }
 
 
+
+
+
+
+@media (max-width: 768px) {
+  #menu-responsive {
+    display: none;
+    background: white;
+    position: absolute;
+    top: 60px;
+    right: 10px;
+    width: 90%;
+    padding: 1rem;
+    z-index: 9999;
+    box-shadow: 0 0 10px rgba(0,0,0,0.15);
+  }
+
+  #menu-responsive.show {
+    display: block;
+  }
+}

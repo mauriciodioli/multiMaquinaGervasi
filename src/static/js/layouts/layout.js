@@ -82,6 +82,10 @@ document.getElementById("cancelar-sql").addEventListener("click", () => {
 
 
 
+
+
+
+
     function showToast(mensaje) {
         const toast = document.createElement("div");
         toast.className = "toast align-items-center text-bg-success border-0 position-fixed bottom-0 end-0 m-4 show";

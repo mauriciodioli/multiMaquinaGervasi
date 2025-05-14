@@ -21,28 +21,34 @@ document.getElementById("crud-link").addEventListener("click", (e) => {
 
 
 
+document.addEventListener("DOMContentLoaded", () => {
+  const btnAbrir = document.getElementById('btn-abrir-modal');
 
+  if (!btnAbrir) {
+    console.warn('⚠️ No se encontró el botón #btn-abrir-modal');
+    return;
+  }
 
+  btnAbrir.addEventListener('click', function () {
+    const modal = document.getElementById('crud-modal-agregar');
+    modal.classList.add('show');
+    modal.style.display = 'block';
+    modal.removeAttribute('aria-hidden');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('role', 'dialog');
 
-document.getElementById('btn-abrir-modal').addEventListener('click', function () {
-  const modal = document.getElementById('crud-modal-agregar');
-  modal.classList.add('show');
-  modal.style.display = 'block';
-  modal.removeAttribute('aria-hidden');
-  modal.setAttribute('aria-modal', 'true');
-  modal.setAttribute('role', 'dialog');
+    inicializarModulosSelect(); // 👈 Ejecutás tu lógica cuando abrís el modal
+  });
 
-  inicializarModulosSelect(); // 👈 Ejecutás tu lógica cuando abrís el modal
-});
-
-// Cerrar el modal manualmente
-document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {
-  btn.addEventListener('click', function () {
-    const modal = btn.closest('.modal');
-    modal.classList.remove('show');
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
-    modal.removeAttribute('aria-modal');
+  // Cierre de modales
+  document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const modal = btn.closest('.modal');
+      modal.classList.remove('show');
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      modal.removeAttribute('aria-modal');
+    });
   });
 });
 
@@ -179,9 +185,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-
+document.addEventListener("DOMContentLoaded", () => {
 
 original = document.getElementById("confirmar-modificar");
+
+
+ if (!original) {
+    console.warn("⚠️ No se encontró el botón #confirmar-modificar");
+    return;
+  }
+
+  
 nuevo = original.cloneNode(true);
 original.parentNode.replaceChild(nuevo, original);
 
@@ -240,7 +254,7 @@ document.querySelectorAll('[data-bs-target="#modal-modificar"]').forEach(button 
 });
 
 
-
+});
 
 
 
