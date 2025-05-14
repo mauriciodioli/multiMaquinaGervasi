@@ -99,7 +99,7 @@ window.onclick = function(event) {
     //const origen = 'C:\\Users\\Tecnico03\\Downloads';
     const destino = 'C:\\Users\\Tecnico03\\Documents\\ProyectoMultiMaquina';
     
-    const confirmacion = confirm('¿Estás seguro de enviar los datos de: ' + nombre_archivo + '?');
+    const confirmacion = confirm('Sei sicuro di voler inviare i dati: ' + nombre_archivo + '?');
   
     if (confirmacion) {
       document.getElementById("spinner").style.display = "flex"; // 👈 Mostrar spinner
@@ -151,7 +151,7 @@ window.onclick = function(event) {
             if (data.ruta_existe === false) {
               alert("❌ La macchina è spenta.");
             } else {
-              alert(`❌ Error durante la copia del archivo: ${data.mensaje || error.message}`);
+              alert(`❌ Errore durante la copia del file: ${data.mensaje || error.message}`);
             }
         })
         .finally(() => {
@@ -160,7 +160,7 @@ window.onclick = function(event) {
 
     } else {
       console.log('⛔ Envío cancelado por el usuario.');
-      alert('Envío cancelado.');
+      alert('Spedizione annullata.');
     }
   }
   
@@ -275,7 +275,7 @@ window.onclick = function(event) {
                                     let precioKwh = localStorage.getItem("precio_kwh");
                                     cargarContenidoModuloCosto(maquina.nombre, modulo, "", precioKwh, maquina.potencia);
                                 } else {
-                                    alert("⚠️ No se ha configurado el precio del kWh");
+                                    alert("⚠️ Il prezzo del kWh non è ancora stato fissato.");
                                 }
                                 break;
                             case "settings":
@@ -301,7 +301,7 @@ window.onclick = function(event) {
         });
 
     } else {
-        alert("⚠️ Error cargando máquinas: " + data.message);
+        alert("⚠️ Errore nel caricamento delle macchine: " + data.message);
     }
 })
 .catch(err => {
@@ -776,11 +776,11 @@ function confirmarCosto() {
   if (!isNaN(valor) && valor > 0) {
       precioKwh = valor;
       localStorage.setItem("precio_kwh", precioKwh); // 👉 lo guarda en el navegador
-      alert(`✅ Nuevo precio aplicado: €${precioKwh}/kWh`);
+      alert(`✅ Nuovo prezzo applicato: €${precioKwh}/kWh`);
       cerrarModalCosto();
       // Si tenés una función para recargar datos con este valor, llamala acá.
   } else {
-      alert("⚠️ Precio inválido.");
+      alert("⚠️ Prezzo non valido.");
   }
 }
 

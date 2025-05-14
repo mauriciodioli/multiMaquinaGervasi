@@ -3,7 +3,7 @@ document.getElementById("crud-link").addEventListener("click", (e) => {
     const userId = localStorage.getItem("user_id");
     
     if (!userId) {
-        alert("No hay usuario en sesión");
+        alert("Nessun utente ha effettuato l'accesso.");
         return;
     }
 
@@ -162,7 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(res => res.json())
         .then(res => {
             if (res.success) {
-                alert("Máquina agregada correctamente");
+                alert("Macchina aggiunta correttamente");
                 location.reload();
             } else {
                 alert("Error: " + res.message);
@@ -201,14 +201,14 @@ nuevo.addEventListener("click", () => {
     .then(res => res.json())
     .then(res => {
         if (res.success) {
-            alert("Máquina modificada correctamente");
+            alert("Macchina modificata correttamente");
             location.reload();
         } else {
             alert("Error: " + res.message);
         }
     })
     .catch(err => {
-        alert("Error al conectar con el servidor");
+        alert("Errore durante la connessione al server");
         console.error(err);
     });
 });
@@ -291,7 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const fila = boton?.closest('tr');
         if (fila) fila.remove();
       } else {
-        alert("❌ Error al eliminar: " + data.message);
+        alert("❌ Errore durante l'eliminazione: " + data.message);
       }
 
       // Cerrar el modal manualmente
@@ -302,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
       modal.removeAttribute('aria-modal');
     })
     .catch(error => {
-      alert("⚠️ Error de conexión");
+      alert("⚠️ Errore di connessione");
       console.error(error);
     });
   });
@@ -377,7 +377,7 @@ function inicializarModulosSelect() {
 
     const existe = [...select.options].some(opt => opt.value === valor);
     if (existe) {
-      alert("Ese módulo ya existe.");
+      alert("Quel modulo esiste già.");
       return;
     }
 

@@ -34,7 +34,7 @@ document.getElementById("confirmar-sql").addEventListener("click", () => {
     const pas = document.getElementById("input-sql-password").value.trim();
 
     if (!ip || !port) {
-        alert("Por favor, complete ambos campos: IP y Puerto.");
+        alert("Compilare entrambi i campi: IP e Porta.");
         return;
     }
 
@@ -44,7 +44,7 @@ document.getElementById("confirmar-sql").addEventListener("click", () => {
     localStorage.setItem("userSqlServer", user);
     localStorage.setItem("pasSqlServer", pas);
 
-    alert(`✅ IP y puerto guardados: ${ip}:${port}`);
+    alert(`✅ IP e porta salvati: ${ip}:${port}`);
 
     // Ocultar el modal
     const modal = document.getElementById("modal-sqlserver");
@@ -109,7 +109,7 @@ document.getElementById("cancelar-sql").addEventListener("click", () => {
       document.getElementById("descargar_tabla_excel").addEventListener("click", (e) => {
           e.preventDefault();
         const tabla = document.querySelector(".tabla-container table");
-        if (!tabla) return alert("No hay datos para exportar.");
+        if (!tabla) return alert("Non ci sono dati da esportare.");
     
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.table_to_sheet(tabla);

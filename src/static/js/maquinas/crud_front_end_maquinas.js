@@ -62,7 +62,7 @@ function abrirModalAgregarMaquinas() {
                 </ul>
                 <input type="hidden" id="maquina-id-eliminar"> <!-- 👈 aquí -->
                 <hr>
-                <button id="confirmar-agregar">Agregar</button>
+                <button id="confirmar-agregar">Aggiungere</button>
             </div>
             `;
 
@@ -104,7 +104,7 @@ function abrirModalAgregarMaquinas() {
                     agregarMaquinaAlContenedor(maquinaSeleccionada); // 👇 Función para agregar
                     modal.style.display = "none";
                 } else {
-                    alert("⚠️ Selecciona una máquina primero.");
+                    alert("⚠️ Seleziona prima una macchina.");
                 }
             };
         }
@@ -118,7 +118,7 @@ function agregarMaquinaAlContenedor(maquina) {
     // ⚠️ Verificar si ya existe
     const yaExiste = container.querySelector(`summary[data-id="${maquina.id}"]`);
     if (yaExiste) {
-        alert(`⚠️ La máquina "${maquina.nombre}" ya está en la lista.`);
+        alert(`⚠️ La máquina "${maquina.nombre}" è già nella lista.`);
         return;
     }
 
@@ -203,7 +203,7 @@ function agregarMaquinaAlContenedor(maquina) {
                             debugger;
                             cargarContenidoModuloCosto(maquina.nombre, modulo, "", precioKwh, maquina.potencia);
                         } else {
-                            alert("⚠️ No se ha configurado el precio del kWh");
+                            alert("⚠️ Il prezzo del kWh non è ancora stato fissato.");
                         }
                         break;
                     case "settings":
