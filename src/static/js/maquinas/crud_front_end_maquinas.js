@@ -176,6 +176,14 @@ function agregarMaquinaAlContenedor(maquina) {
             // Evento click por módulo
             li.addEventListener("click", () => {
                 console.log(`🔍 Click en ${modulo} de ${maquina.nombre}`);
+                // Cambiar el fondo del elemento clickeado
+                // Primero, eliminar la clase 'activo' de todos los elementos
+                document.querySelectorAll('.modulo').forEach(el => {
+                    el.classList.remove('activo');
+                });
+
+                // Añadir la clase 'activo' al elemento clickeado
+                li.classList.add('activo');
 
                 // Lógica para manejar cada módulo
                 switch(modulo) {
@@ -206,7 +214,8 @@ function agregarMaquinaAlContenedor(maquina) {
                         break;
                 }
             });
-
+            // Añadir la clase 'modulo' para poder seleccionarlo más tarde
+            li.classList.add('modulo');
             ul.appendChild(li);
         });
     } else {

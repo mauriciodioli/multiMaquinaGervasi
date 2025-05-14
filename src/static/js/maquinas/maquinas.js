@@ -730,8 +730,12 @@ function cargarContenidoModuloCosto(nombreMaquina, modulo, clfile,precioKwh,pote
                 else if (costo > 1) cellClass = "costo-medio";
                 else cellClass = "costo-bajo";
             }
-    
-            html += `<td class="${cellClass}">${fila[col]}</td>`;
+             let valor = fila[col];
+            if (col === "DataOraReg" && valor) {
+              valor = valor.split(".")[0]; // elimina .0000000
+            }
+          
+            html += `<td class="${cellClass}">${valor}</td>`;
         });
     
         html += "</tr>";
