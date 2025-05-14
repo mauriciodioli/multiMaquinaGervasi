@@ -284,3 +284,19 @@ td, th {
     white-space: nowrap;
   }
   
+
+
+
+
+
+
+
+  /* Establecer el fondo por defecto */
+.modulo {
+    background-color: transparent; /* Fondo transparente por defecto */
+}
+
+/* Cambiar el fondo del elemento activo */
+.modulo.activo {
+    background-color: #dee0e0; /* Color deseado al hacer clic */
+}
