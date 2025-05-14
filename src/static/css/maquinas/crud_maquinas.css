@@ -1,0 +1,5 @@
+select option:checked {
+  background-color: #0d6efd !important;  /* azul Bootstrap */
+  color: rgb(172, 173, 173) !important;
+  font-weight: bold;
+}

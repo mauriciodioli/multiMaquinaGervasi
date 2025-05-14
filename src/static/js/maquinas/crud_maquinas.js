@@ -23,6 +23,118 @@ document.getElementById("crud-link").addEventListener("click", (e) => {
 
 
 
+
+document.getElementById('btn-abrir-modal').addEventListener('click', function () {
+  const modal = document.getElementById('crud-modal-agregar');
+  modal.classList.add('show');
+  modal.style.display = 'block';
+  modal.removeAttribute('aria-hidden');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('role', 'dialog');
+
+  inicializarModulosSelect(); // 👈 Ejecutás tu lógica cuando abrís el modal
+});
+
+// Cerrar el modal manualmente
+document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {
+  btn.addEventListener('click', function () {
+    const modal = btn.closest('.modal');
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    modal.removeAttribute('aria-modal');
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+ document.querySelectorAll('.btn-abrir-modal-modificar').forEach(btn => {
+    btn.addEventListener('click', function () {
+
+      // Mostrar modal manualmente
+      const modal = document.getElementById('crud-modal-modificar');
+      modal.classList.add('show');
+      modal.style.display = 'block';
+      modal.removeAttribute('aria-hidden');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('role', 'dialog');
+
+      // Cargar datos en el formulario
+      document.getElementById('maquina-id-modificar').value = btn.getAttribute('data-maquina-id');
+      document.querySelector('#form-modificar-maquina [name="userCuenta"]').value = btn.getAttribute('data-user-cuenta');
+      document.querySelector('#form-modificar-maquina [name="nombre"]').value = btn.getAttribute('data-nombre');
+      document.querySelector('#form-modificar-maquina [name="ruta"]').value = btn.getAttribute('data-ruta');
+      document.querySelector('#form-modificar-maquina [name="nombreDb"]').value = btn.getAttribute('data-nombre-db');
+      document.querySelector('#form-modificar-maquina [name="sector"]').value = btn.getAttribute('data-sector');
+      document.querySelector('#form-modificar-maquina [name="estado"]').value = btn.getAttribute('data-estado');
+      document.querySelector('#form-modificar-maquina [name="potencia"]').value = btn.getAttribute('data-potencia');
+
+      // Settings (JSON prettify)
+      const setting = btn.getAttribute('data-setting');
+      try {
+        const obj = JSON.parse(setting);
+        document.querySelector('#form-modificar-maquina [name="setting"]').value = JSON.stringify(obj, null, 2);
+      } catch (e) {
+        document.querySelector('#form-modificar-maquina [name="setting"]').value = setting;
+      }
+    });
+  });
+
+  // Cerrar el modal manualmente
+  document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const modal = btn.closest('.modal');
+      modal.classList.remove('show');
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      modal.removeAttribute('aria-modal');
+    });
+  });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 document.addEventListener("DOMContentLoaded", () => {
     const btn = document.getElementById("confirmar-agregar");
     const form = document.getElementById("form-agregar-maquina");
@@ -39,7 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
         data.modulos = Array.from(form.elements["modulos"].selectedOptions).map(opt => opt.value);
         
         data.user_id = localStorage.getItem("user_id");
-
+        debugger;
         fetch("/maquinas_crud/agregar/", {
             method: "POST",
             headers: {
@@ -134,20 +246,37 @@ document.querySelectorAll('[data-bs-target="#modal-modificar"]').forEach(button 
 
 
 
-
 document.addEventListener("DOMContentLoaded", () => {
-  // Asignar el ID de la máquina al campo oculto cuando se abre el modal
-  document.querySelectorAll('[data-bs-target="#modal-eliminar-crud"]').forEach(button => {
+  // Abrir modal eliminar y pasar ID
+  document.querySelectorAll('.btn-abrir-modal-eliminar').forEach(button => {
     button.addEventListener('click', function () {
       const maquinaId = this.getAttribute('data-maquina-id');
       document.getElementById('maquina-id-eliminar-crud').value = maquinaId;
+
+      const modal = document.getElementById('modal-eliminar-crud');
+      modal.classList.add('show');
+      modal.style.display = 'block';
+      modal.removeAttribute('aria-hidden');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('role', 'dialog');
+    });
+  });
+
+  // Cerrar modal manualmente
+  document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const modal = btn.closest('.modal');
+      modal.classList.remove('show');
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      modal.removeAttribute('aria-modal');
     });
   });
 
   // Confirmar eliminación
   document.getElementById("confirmar-eliminar").addEventListener("click", () => {
     const maquinaId = document.getElementById("maquina-id-eliminar-crud").value;
-
+    debugger;
     fetch(`/maquinas_crud/eliminar/${maquinaId}`, {
       method: 'DELETE',
       headers: {
@@ -157,23 +286,25 @@ document.addEventListener("DOMContentLoaded", () => {
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        // Eliminar fila del DOM
-        const boton = document.querySelector(`button[data-maquina-id="${maquinaId}"]`);
+        // Eliminar la fila de la tabla
+        const boton = document.querySelector(`.btn-abrir-modal-eliminar[data-maquina-id="${maquinaId}"]`);
         const fila = boton?.closest('tr');
         if (fila) fila.remove();
       } else {
-        alert("Error al eliminar la máquina: " + data.message);
+        alert("❌ Error al eliminar: " + data.message);
       }
+
+      // Cerrar el modal manualmente
+      const modal = document.getElementById('modal-eliminar-crud');
+      modal.classList.remove('show');
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      modal.removeAttribute('aria-modal');
     })
     .catch(error => {
-      alert("Error al conectar con el servidor");
+      alert("⚠️ Error de conexión");
       console.error(error);
     });
-
-    // Cerrar modal correctamente
-    const modalElement = document.getElementById('modal-eliminar-crud');
-    const modal = bootstrap.Modal.getInstance(modalElement);
-    if (modal) modal.hide();
   });
 });
 
@@ -211,54 +342,61 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-document.addEventListener("DOMContentLoaded", () => {
-    // Obtener los elementos del DOM
-    const select = document.getElementById("modulos-select");
-    const input = document.getElementById("nuevo-modulo");
-    const btn = document.getElementById("btn-agregar-modulo");
 
-    // Verificar que los elementos existan en el DOM
-    if (!select || !input || !btn) {
-        console.error("Faltan elementos en el DOM.");
-        return;
-    }
 
-    // Cargar módulos al iniciar desde localStorage
+
+function inicializarModulosSelect() {
+  const select = document.getElementById("modulos-select"); // ✅ FIJATE AQUÍ
+  const input = document.getElementById("nuevo-modulo");
+  const btn = document.getElementById("btn-agregar-modulo");
+
+  if (!select || !input || !btn) {
+    console.error("Faltan elementos en el DOM.");
+    return;
+  }
+ if (select.dataset.inicializado === "true") {
+    return;
+  }
+  select.dataset.inicializado = "true";
+  // Solo cargar si aún no tiene opciones
+  if (select.options.length === 0) {
     const guardados = JSON.parse(localStorage.getItem("modulosPersonalizados")) || [];
-
-    // Opciones iniciales por defecto
     const baseModulos = ["history", "jobs", "settings", "statistics", "logs"];
-
-    const todos = [...new Set([...baseModulos, ...guardados])]; // evita duplicados
+    const todos = [...new Set([...baseModulos, ...guardados])];
 
     todos.forEach(valor => {
-        const opt = new Option(valor, valor);
-        select.add(opt);
+      const opt = new Option(valor, valor);
+      select.add(opt);
     });
+  }
 
-    // Agregar nuevo módulo dinámicamente
-    btn.addEventListener("click", () => {
-        const valor = input.value.trim();
-        if (!valor) return;
+  // Agregar módulo dinámicamente
+  btn.onclick = () => {
+    const valor = input.value.trim();
+    if (!valor) return;
 
-        // Verificar si ya existe
-        const existe = [...select.options].some(opt => opt.value === valor);
-        if (existe) {
-            alert("Ese módulo ya existe.");
-            return;
-        }
+    const existe = [...select.options].some(opt => opt.value === valor);
+    if (existe) {
+      alert("Ese módulo ya existe.");
+      return;
+    }
 
-        // Crear y seleccionar la nueva opción
-        const nuevaOpcion = new Option(valor, valor, true, true);
-        select.add(nuevaOpcion);
-        input.value = "";
+    const nuevaOpcion = new Option(valor, valor, true, true);
+    select.add(nuevaOpcion);
+    input.value = "";
 
-        // Guardar en localStorage
-        const existentes = JSON.parse(localStorage.getItem("modulosPersonalizados")) || [];
-        if (!existentes.includes(valor)) {
-            existentes.push(valor);
-            localStorage.setItem("modulosPersonalizados", JSON.stringify(existentes));
-        }
-    });
-});
+    const existentes = JSON.parse(localStorage.getItem("modulosPersonalizados")) || [];
+    if (!existentes.includes(valor)) {
+      existentes.push(valor);
+      localStorage.setItem("modulosPersonalizados", JSON.stringify(existentes));
+    }
+  };
+
+  // Escuchar cambios en selección
+  select.addEventListener("change", () => {
+    const seleccionados = Array.from(select.selectedOptions).map(opt => opt.value);
+    console.log("👉 Módulos seleccionados:", seleccionados);
+
+  });
+}
 
