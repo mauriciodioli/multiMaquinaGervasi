@@ -1,0 +1,26 @@
+{% extends "layouts/layout.html" %}
+
+{% block title %}Calcolo della densità - Curva di Fuller{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2>Cálculo de múltiples mezclas - Curva de Fuller</h2>
+
+  
+
+  <button class="btn btn-danger" onclick="agregarMezcla()">Agregar mezcla</button>
+  <button class="btn btn-danger" onclick="calcularTodas()">Calcular todas</button>
+
+  <div id="mezclasContainer"></div>
+
+  <div id="resultados"></div>
+</div>
+
+  <script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js') }}"></script>
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/densidadFuller.css') }}">
+
+
+{% endblock %}
