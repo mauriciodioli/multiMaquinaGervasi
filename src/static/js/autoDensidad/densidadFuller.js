@@ -163,7 +163,15 @@ function calcularTodas() {
             return;
             }            
             window.ultimaCurvaPromedio = r;
-          
+            
+            //generarMezclaCorregida(); //sirvqa para calcular la mezcla optima
+           
+            
+            calcularMezclaOptima();    
+
+
+           
+            setTimeout(() => abrirModalExportar(), 100);
 
             finalHTML += `
                 <h2 style="color: #b30000;">🔎 Análisis final: Curva promedio del conjunto</h2>
@@ -183,11 +191,27 @@ function calcularTodas() {
                 <div id="accionesFinales" style="margin-top: 2rem;">
                     <h3>📌 Acciones</h3>
                     <button class="btn btn-primary" onclick="generarMezclaCorregida()">Generar mezcla corregida</button>
-                    <button class="btn btn-secondary" onclick="exportarPDF()">Exportar a PDF</button>
-                    <button class="btn btn-secondary" onclick="exportarCSV()">Exportar a CSV</button>
-                    <button class="btn btn-success" onclick="calcularMezclaOptima()">🧠 Calcular mezcla óptima</button>
-                </div>
+                    <button class="btn btn-primary" onclick="abrirModalExportar()">Mostrar resumen</button>
+  
+                     <button class="btn btn-secondary" onclick="exportarCSV()">Exportar a CSV</button>
+                    </div>
             `;
+                finalHTML += `
+                <div style="margin-top: 2rem; padding: 16px; background-color: #e6f4ea; border-left: 6px solid #2e7d32;">
+                    <h3>🧾 Diagnóstico general</h3>
+                    <ul>
+                    <li><strong>Evaluación:</strong> ${r.evaluacion}</li>
+                    <li><strong>Error promedio:</strong> ${r.error_promedio.toFixed(2)}%</li>
+                    <li><strong>Recomendaciones clave:</strong>
+                        <ul>
+                        ${r.ajustes.map(a => `<li>${a}</li>`).join("")}
+                        </ul>
+                    </li>
+                    <li>✅ Se generó una mezcla corregida y una mezcla óptima automáticamente.</li>
+                    <li>📄 Puedes exportar este informe como PDF o CSV.</li>
+                    </ul>
+                </div>
+                `;
 
             resultadosDiv.innerHTML = finalHTML;
 
@@ -301,39 +325,40 @@ function generarMezclaCorregida() {
 
 
 
-
-
-
-
-
-
-// Funciones para exportar a PDF y CSV
-
-function exportarPDF() {
-    const target = document.getElementById("resultados");
-
-    html2canvas(target, {
-        scale: 2,
-        useCORS: true
-    }).then(canvas => {
-        const imgData = canvas.toDataURL("image/png");
-
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-
-        // Escalar imagen a ancho de página
-        const imgProps = pdf.getImageProperties(imgData);
-        const ratio = imgProps.width / imgProps.height;
-        const imgWidth = pageWidth;
-        const imgHeight = pageWidth / ratio;
-
-        pdf.addImage(imgData, 'PNG', 0, 10, imgWidth, imgHeight);
-        pdf.save("analisis_curva_fuller.pdf");
-    });
+function asegurarModalExportar() {
+    if (!document.getElementById("modalExportar")) {
+        const modalHTML = `
+        <div id="modalExportar" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,0.7); z-index: 9999;">
+          <div style="background:white; padding:2rem; margin:5% auto; width:90%; max-width:800px; border-radius:10px; position:relative;">
+              <span onclick="cerrarModalExportar()" style="position:absolute; top:10px; right:20px; cursor:pointer; font-weight:bold; font-size:18px;">✖</span>
+              <h3>📋 Exportar análisis</h3>
+                <!-- 👇 Aca va el resumen dinámico -->
+                <div id="resumenModal" style="max-height:300px; overflow:auto;"></div>
+              <p>Podés descargar el análisis actual como PDF o CSV.</p>
+               <button class="btn btn-secondary" onclick="exportarCSV()">📊 Exportar CSV</button>
+          </div>
+        </div>`;
+        document.body.insertAdjacentHTML("beforeend", modalHTML);
+    }
 }
+
+function abrirModalExportar() {
+   
+    asegurarModalExportar();
+    document.getElementById("modalExportar").style.display = "block";
+}
+
+
+
+
+function cerrarModalExportar() {
+    document.getElementById("modalExportar").style.display = "none";
+}
+
+
+
+
+
 
 
 
@@ -444,3 +469,84 @@ function calcularMezclaOptima() {
         });
     });
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function cargarDatosPorDefecto() {
+  const mezclas = [
+    {
+      nombre: "Cemento Portland",
+      tamices: [0.3, 0.15, 0.075],
+      porcentajes: [100, 97, 90]
+    },
+    {
+      nombre: "Arena fina",
+      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
+      porcentajes: [100, 97, 90, 68, 45, 20, 6]
+    },
+    {
+      nombre: "Grava 3/4\"",
+      tamices: [25.0, 19.0, 12.5, 9.5],
+      porcentajes: [100, 95, 40, 8]
+    }
+  ];
+
+  mezclas.forEach(m => {
+    const container = document.getElementById("mezclasContainer");
+
+    const mezclaDiv = document.createElement("div");
+    mezclaDiv.className = "mezcla";
+
+    mezclaDiv.innerHTML = `
+      <h3>${m.nombre}</h3>
+      <input type="text" value="${m.nombre}" class="nombreProducto">
+      <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Agregar Fila</button>
+      <table class="tabla">
+        <thead>
+          <tr><th>Tamiz (mm)</th><th>% Real</th><th>Acción</th></tr>
+        </thead>
+        <tbody>
+          ${m.tamices.map((t, i) => `
+            <tr>
+              <td contenteditable="true">${t}</td>
+              <td contenteditable="true">${m.porcentajes[i]}</td>
+              <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+      <hr>
+    `;
+
+    container.appendChild(mezclaDiv);
+  });
+}
+
+
+window.addEventListener("DOMContentLoaded", cargarDatosPorDefecto);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
