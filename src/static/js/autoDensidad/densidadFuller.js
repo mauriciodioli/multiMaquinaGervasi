@@ -156,10 +156,18 @@ function calcularTodas() {
 
        // Bloque final con curva promedio
             const r = data.curva_resultante;
+           
+
+            if (!r || !r.tamices || !r.promedios) {
+            resultadosDiv.innerHTML += "<p style='color:red;'>❌ No se pudo generar el análisis final.</p>";
+            return;
+            }            
             window.ultimaCurvaPromedio = r;
+          
 
             finalHTML += `
                 <h2 style="color: #b30000;">🔎 Análisis final: Curva promedio del conjunto</h2>
+
                 <div style="border: 2px solid #b30000; padding: 16px; border-radius: 10px; background-color: #fff4f4;">
                     <img src="${r.grafico}" alt="Curva Promedio" style="max-width: 100%; margin-bottom: 12px;">
                     <p><strong>Evaluación general:</strong> <span style="color: #000;">${r.evaluacion}</span> 
@@ -177,6 +185,7 @@ function calcularTodas() {
                     <button class="btn btn-primary" onclick="generarMezclaCorregida()">Generar mezcla corregida</button>
                     <button class="btn btn-secondary" onclick="exportarPDF()">Exportar a PDF</button>
                     <button class="btn btn-secondary" onclick="exportarCSV()">Exportar a CSV</button>
+                    <button class="btn btn-success" onclick="calcularMezclaOptima()">🧠 Calcular mezcla óptima</button>
                 </div>
             `;
 
@@ -202,22 +211,131 @@ function calcularTodas() {
 
 
 function generarMezclaCorregida() {
-  alert("🚧 Próximamente: Generación automática de mezcla corregida basada en recomendaciones.");
-  // Aquí iría la lógica para aplicar los ajustes e inferir una nueva curva corregida
+    const r = window.ultimaCurvaPromedio;
+    if (!r) {
+        alert("No hay curva promedio cargada.");
+        return;
+    }
+
+    const corregida = [];
+
+    r.tamices.forEach((tamiz, i) => {
+        let valor = r.promedios[i];
+        let ajuste = 0;
+
+        if (tamiz < 0.3 && r.ajustes.some(a => a.includes("finos"))) {
+            ajuste = r.ajustes.find(a => a.includes("Reducir material finos")) ? -0.1 * valor : 0.1 * valor;
+        } else if (tamiz <= 4.75 && tamiz >= 0.3 && r.ajustes.some(a => a.includes("medios"))) {
+            ajuste = r.ajustes.find(a => a.includes("Reducir material medios")) ? -0.1 * valor : 0.1 * valor;
+        } else if (tamiz > 4.75 && r.ajustes.some(a => a.includes("gruesos"))) {
+            ajuste = r.ajustes.find(a => a.includes("Reducir material gruesos")) ? -0.1 * valor : 0.1 * valor;
+        }
+
+        const nuevo_valor = Math.max(0, Math.min(100, valor + ajuste));
+        corregida.push(nuevo_valor);
+    });
+
+    // Crear contenedor y canvas para el gráfico
+    const container = document.createElement("div");
+    container.innerHTML = `
+        <h3 style="color: #007bff;">🛠️ Mezcla Corregida Simulada</h3>
+        <canvas id="graficoCorregido" height="300"></canvas>
+        <pre>${JSON.stringify({ tamices: r.tamices, corregidos: corregida }, null, 2)}</pre>
+    `;
+    document.getElementById("resultados").appendChild(container);
+
+    // Calcular curva ideal de Fuller
+    const curvaIdeal = r.tamices.map(t => Math.pow(t / 25, 0.5) * 100); // usando dmax=25 y n=0.5
+
+    // Crear gráfico
+    new Chart(document.getElementById("graficoCorregido"), {
+        type: 'line',
+        data: {
+            labels: r.tamices.map(t => t.toFixed(2) + " mm"),
+            datasets: [
+                {
+                    label: "Curva Promedio Original",
+                    data: r.promedios,
+                    borderColor: "blue",
+                    fill: false
+                },
+                {
+                    label: "Curva de Fuller Ideal",
+                    data: curvaIdeal,
+                    borderColor: "orange",
+                    borderDash: [5, 5],
+                    fill: false
+                },
+                {
+                    label: "Curva Corregida Simulada",
+                    data: corregida,
+                    borderColor: "green",
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: "% que pasa"
+                    },
+                    min: 0,
+                    max: 100
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: "Tamiz (mm)"
+                    }
+                }
+            }
+        }
+    });
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+// Funciones para exportar a PDF y CSV
+
 function exportarPDF() {
-  const contenido = document.getElementById("resultados").innerHTML;
-  const ventana = window.open('', '_blank');
-  ventana.document.write(`
-    <html>
-    <head><title>Informe de Curva de Fuller</title></head>
-    <body>${contenido}</body>
-    </html>
-  `);
-  ventana.document.close();
-  ventana.print();
+    const target = document.getElementById("resultados");
+
+    html2canvas(target, {
+        scale: 2,
+        useCORS: true
+    }).then(canvas => {
+        const imgData = canvas.toDataURL("image/png");
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        // Escalar imagen a ancho de página
+        const imgProps = pdf.getImageProperties(imgData);
+        const ratio = imgProps.width / imgProps.height;
+        const imgWidth = pageWidth;
+        const imgHeight = pageWidth / ratio;
+
+        pdf.addImage(imgData, 'PNG', 0, 10, imgWidth, imgHeight);
+        pdf.save("analisis_curva_fuller.pdf");
+    });
 }
+
+
 
 function exportarCSV() {
   const r = window.ultimaCurvaPromedio; // asumimos que guardamos esto al generar
@@ -237,4 +355,92 @@ function exportarCSV() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+function calcularMezclaOptima() {
+    const mezclasDivs = document.querySelectorAll(".mezcla");
+    const payload = [];
+
+    mezclasDivs.forEach(mezcla => {
+        const nombre = mezcla.querySelector(".nombreProducto").value || "Sin nombre";
+        const filas = mezcla.querySelectorAll("tbody tr");
+
+        const tamices = [];
+        const porcentajes = [];
+
+        filas.forEach(fila => {
+            const celdas = fila.querySelectorAll("td");
+            tamices.push(parseFloat(celdas[0].textContent));
+            porcentajes.push(parseFloat(celdas[1].textContent));
+        });
+
+        payload.push({ nombre, tamices, porcentajes_reales: porcentajes });
+    });
+
+    fetch("/densidadFullerOptimo/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mezclas: payload, d_max: 25, n: 0.5 })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const contenedor = document.createElement("div");
+        contenedor.innerHTML = `
+            <h2 style="color:green;">🧠 Mezcla Óptima Calculada</h2>
+            <canvas id="graficoOptimo" height="300"></canvas>
+            <p><strong>Error promedio:</strong> ${data.error_promedio}%</p>
+            <p><strong>Proporciones óptimas:</strong></p>
+            <ul>
+                ${data.pesos.map((p, i) => `<li>Mezcla ${i + 1}: ${p}%</li>`).join("")}
+            </ul>
+            <pre>${JSON.stringify({ tamices: data.tamices, curva: data.curva_optima }, null, 2)}</pre>
+        `;
+        document.getElementById("resultados").appendChild(contenedor);
+
+        new Chart(document.getElementById("graficoOptimo"), {
+            type: 'line',
+            data: {
+                labels: data.tamices.map(t => t.toFixed(2) + " mm"),
+                datasets: [
+                    {
+                        label: "Curva Ideal de Fuller",
+                        data: data.curva_ideal,
+                        borderColor: "orange",
+                        borderDash: [5, 5],
+                        fill: false
+                    },
+                    {
+                        label: "Curva Óptima Combinada",
+                        data: data.curva_optima,
+                        borderColor: "green",
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        title: { display: true, text: "% que pasa" },
+                        min: 0,
+                        max: 100
+                    },
+                    x: {
+                        title: { display: true, text: "Tamiz (mm)" }
+                    }
+                }
+            }
+        });
+    });
 }

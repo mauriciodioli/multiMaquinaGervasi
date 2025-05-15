@@ -4,6 +4,9 @@ import base64
 from flask import Blueprint, request, render_template, send_file, jsonify
 from collections import defaultdict
 import numpy as np
+from flask import jsonify, request
+from scipy.optimize import minimize
+
 
 
 
@@ -238,3 +241,65 @@ def sugerir_ajustes(tamices, diferencias):
         return ["Mezcla equilibrada. No requiere ajustes."]
     
     return ajustes
+
+
+
+
+
+
+
+
+
+
+
+
+
+@densidadFuller.route('/densidadFullerOptimo/', methods=['POST'])
+def densidad_fuller_optimo():
+    data = request.get_json()
+    mezclas = data.get("mezclas", [])
+    d_max = float(data.get("d_max", 25))
+    n = float(data.get("n", 0.5))
+
+    # Eje común: tamices de la curva promedio (supuesto)
+    tamices_comunes = sorted(set(t for m in mezclas for t in m["tamices"]), reverse=True)
+
+    # Interpolar cada curva a los tamices comunes
+    curvas_interp = []
+    for mezcla in mezclas:
+        x = mezcla["tamices"]
+        y = mezcla["porcentajes_reales"]
+        curva_interp = np.interp(tamices_comunes, x[::-1], y[::-1])
+        curvas_interp.append(curva_interp)
+
+    materiales = np.array(curvas_interp)  # cada fila es una mezcla
+
+    curva_fuller = np.array([(d / d_max)**n * 100 for d in tamices_comunes])
+
+    def error_total(pesos):
+        curva = np.dot(pesos, materiales)
+        return np.mean(np.abs(curva - curva_fuller))
+
+    n_mezclas = len(mezclas)
+    bounds = [(0, 1)] * n_mezclas
+    constraints = [{'type': 'eq', 'fun': lambda w: np.sum(w) - 1}]
+    initial = [1/n_mezclas] * n_mezclas
+
+    result = minimize(error_total, initial, bounds=bounds, constraints=constraints)
+
+    pesos = result.x
+    curva_optima = np.dot(pesos, materiales)
+
+    return jsonify({
+        "pesos": [round(p * 100, 2) for p in pesos],  # como porcentaje
+        "tamices": tamices_comunes,
+        "curva_optima": list(curva_optima),
+        "curva_ideal": list(curva_fuller),
+        "error_promedio": round(error_total(pesos), 2)
+    })
+
+
+
+
+
+
