@@ -167,8 +167,8 @@ function calcularTodas() {
             //generarMezclaCorregida(); //sirvqa para calcular la mezcla optima
            
             
-            calcularMezclaOptima();    
-
+            
+            setTimeout(() =>   calcularMezclaOptima(), 100);
 
            
             setTimeout(() => abrirModalExportar(), 100);
@@ -192,27 +192,47 @@ function calcularTodas() {
                     <h3>📌 Acciones</h3>
                     <button class="btn btn-primary" onclick="generarMezclaCorregida()">Generar mezcla corregida</button>
                     <button class="btn btn-primary" onclick="abrirModalExportar()">Mostrar resumen</button>
-  
+                    <button class="btn btn-primary" onclick="abrirModalOptimo()">Calculo Optimo</button>
                      <button class="btn btn-secondary" onclick="exportarCSV()">Exportar a CSV</button>
                     </div>
             `;
-                finalHTML += `
-                <div style="margin-top: 2rem; padding: 16px; background-color: #e6f4ea; border-left: 6px solid #2e7d32;">
-                    <h3>🧾 Diagnóstico general</h3>
-                    <ul>
-                    <li><strong>Evaluación:</strong> ${r.evaluacion}</li>
-                    <li><strong>Error promedio:</strong> ${r.error_promedio.toFixed(2)}%</li>
-                    <li><strong>Recomendaciones clave:</strong>
+                // Diagnóstico para el modal
+                
+                    let diagnosticoHTML = `
+                    <div style="padding: 16px; background-color: #e6f4ea; border-left: 6px solid #2e7d32; margin-top: 1rem;">
+                        <h3>🧾 Diagnóstico general</h3>
                         <ul>
-                        ${r.ajustes.map(a => `<li>${a}</li>`).join("")}
+                        <li><strong>Evaluación:</strong> ${r.evaluacion}</li>
+                        <li><strong>Error promedio:</strong> ${r.error_promedio.toFixed(2)}%</li>
+                        <li><strong>Recomendaciones clave:</strong>
+                            <ul>${r.ajustes.map(a => `<li>${a}</li>`).join("")}</ul>
+                        </li>
+                        <li>✅ Se generó una mezcla corregida y una mezcla óptima automáticamente.</li>
+                        <li>📄 Puedes exportar este informe como CSV.</li>
                         </ul>
-                    </li>
-                    <li>✅ Se generó una mezcla corregida y una mezcla óptima automáticamente.</li>
-                    <li>📄 Puedes exportar este informe como PDF o CSV.</li>
-                    </ul>
-                </div>
-                `;
+                    </div>
+                    `;
 
+                    // Mezcla óptima calculada
+                    if (window.ultimaMezclaOptima) {
+                    const mezcla = window.ultimaMezclaOptima;
+                    diagnosticoHTML += `
+                        <div style="margin-top: 2rem; padding: 16px; background-color: #e3f2fd; border-left: 6px solid #1976d2;">
+                        <h3>🧠 Mezcla Óptima Calculada</h3>
+                        <p><strong>Error promedio:</strong> ${mezcla.error_promedio.toFixed(2)}%</p>
+                        <p><strong>Proporciones óptimas:</strong></p>
+                        <ul>
+                            ${mezcla.proporciones.map((p, i) => `<li>Mezcla ${i + 1}: ${p.toFixed(2)}%</li>`).join("")}
+                        </ul>
+                        </div>
+                    `;
+                    }
+
+                    // Ahora sí, insertamos el bloque completo en el modal
+                    document.getElementById("diagnosticoModal").innerHTML = diagnosticoHTML;
+
+
+                
             resultadosDiv.innerHTML = finalHTML;
 
 
@@ -325,26 +345,8 @@ function generarMezclaCorregida() {
 
 
 
-function asegurarModalExportar() {
-    if (!document.getElementById("modalExportar")) {
-        const modalHTML = `
-        <div id="modalExportar" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,0.7); z-index: 9999;">
-          <div style="background:white; padding:2rem; margin:5% auto; width:90%; max-width:800px; border-radius:10px; position:relative;">
-              <span onclick="cerrarModalExportar()" style="position:absolute; top:10px; right:20px; cursor:pointer; font-weight:bold; font-size:18px;">✖</span>
-              <h3>📋 Exportar análisis</h3>
-                <!-- 👇 Aca va el resumen dinámico -->
-                <div id="resumenModal" style="max-height:300px; overflow:auto;"></div>
-              <p>Podés descargar el análisis actual como PDF o CSV.</p>
-               <button class="btn btn-secondary" onclick="exportarCSV()">📊 Exportar CSV</button>
-          </div>
-        </div>`;
-        document.body.insertAdjacentHTML("beforeend", modalHTML);
-    }
-}
+function abrirModalExportar() {   
 
-function abrirModalExportar() {
-   
-    asegurarModalExportar();
     document.getElementById("modalExportar").style.display = "block";
 }
 
@@ -420,54 +422,64 @@ function calcularMezclaOptima() {
         body: JSON.stringify({ mezclas: payload, d_max: 25, n: 0.5 })
     })
     .then(res => res.json())
-    .then(data => {
-        const contenedor = document.createElement("div");
-        contenedor.innerHTML = `
-            <h2 style="color:green;">🧠 Mezcla Óptima Calculada</h2>
-            <canvas id="graficoOptimo" height="300"></canvas>
-            <p><strong>Error promedio:</strong> ${data.error_promedio}%</p>
-            <p><strong>Proporciones óptimas:</strong></p>
-            <ul>
-                ${data.pesos.map((p, i) => `<li>Mezcla ${i + 1}: ${p}%</li>`).join("")}
-            </ul>
-            <pre>${JSON.stringify({ tamices: data.tamices, curva: data.curva_optima }, null, 2)}</pre>
-        `;
-        document.getElementById("resultados").appendChild(contenedor);
+   .then(data => {
+  const html = `
+    <h2 style="color:green;">🧠 Mezcla Óptima Calculada</h2>
+    <canvas id="graficoOptimo" height="300"></canvas>
+    <p><strong>Error promedio:</strong> ${data.error_promedio}%</p>
+    <p><strong>Proporciones óptimas:</strong></p>
+    <ul>
+      ${data.pesos.map((p, i) => `<li>Mezcla ${i + 1}: ${p}%</li>`).join("")}
+    </ul>
+    <pre>${JSON.stringify({ tamices: data.tamices, curva: data.curva_optima }, null, 2)}</pre>
+  `;
 
-        new Chart(document.getElementById("graficoOptimo"), {
-            type: 'line',
-            data: {
-                labels: data.tamices.map(t => t.toFixed(2) + " mm"),
-                datasets: [
-                    {
-                        label: "Curva Ideal de Fuller",
-                        data: data.curva_ideal,
-                        borderColor: "orange",
-                        borderDash: [5, 5],
-                        fill: false
-                    },
-                    {
-                        label: "Curva Óptima Combinada",
-                        data: data.curva_optima,
-                        borderColor: "green",
-                        fill: false
-                    }
-                ]
-            },
-            options: {
-                scales: {
-                    y: {
-                        title: { display: true, text: "% que pasa" },
-                        min: 0,
-                        max: 100
-                    },
-                    x: {
-                        title: { display: true, text: "Tamiz (mm)" }
-                    }
-                }
-            }
-        });
-    });
+  const contenedor = document.getElementById("contenidoOptimo");
+  contenedor.innerHTML = html;
+
+  abrirModalOptimo(); // Mostrar el modal
+
+  new Chart(document.getElementById("graficoOptimo"), {
+    type: 'line',
+    data: {
+      labels: data.tamices.map(t => t.toFixed(2) + " mm"),
+      datasets: [
+        {
+          label: "Curva Ideal de Fuller",
+          data: data.curva_ideal,
+          borderColor: "orange",
+          borderDash: [5, 5],
+          fill: false
+        },
+        {
+          label: "Curva Óptima Combinada",
+          data: data.curva_optima,
+          borderColor: "green",
+          fill: false
+        }
+      ]
+    },
+    options: {
+      scales: {
+        y: {
+          title: { display: true, text: "% que pasa" },
+          min: 0,
+          max: 100
+        },
+        x: {
+          title: { display: true, text: "Tamiz (mm)" }
+        }
+      }
+    }
+  });
+
+  // Guardar para diagnóstico o exportación
+  window.ultimaMezclaOptima = {
+    error_promedio: data.error_promedio,
+    proporciones: data.pesos
+  };
+});
+
 }
 
 
@@ -545,6 +557,19 @@ window.addEventListener("DOMContentLoaded", cargarDatosPorDefecto);
 
 
 
+
+
+
+
+
+
+function abrirModalOptimo() {
+  document.getElementById("modalOptimo").style.display = "block";
+}
+
+function cerrarModalOptimo() {
+  document.getElementById("modalOptimo").style.display = "none";
+}
 
 
 
