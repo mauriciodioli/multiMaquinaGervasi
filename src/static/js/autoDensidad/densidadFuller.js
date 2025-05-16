@@ -9,13 +9,40 @@
     const norma = document.getElementById("selector-norma").value;
     localStorage.setItem("perfil_norma", norma);
 
-    if (norma === "personalizado") {
-      const dmax = parseFloat(document.getElementById("input-dmax").value);
-      const n = parseFloat(document.getElementById("input-n").value);
-      localStorage.setItem("d_max", dmax);
-      localStorage.setItem("n", n);
-    }
+     if (norma === "personalizado") {
+    const d_max = parseFloat(document.getElementById("input-dmax").value);
+    const n = parseFloat(document.getElementById("input-n").value);
 
+    // Setear parámetros base de Fuller
+    localStorage.setItem("d_max", d_max);
+    localStorage.setItem("n", n);
+
+    // 🔽 Agregá límites personalizados si vas a manejarlos
+    const limites_personalizados = {
+      grueso: {
+        umbral_min: 4.75,
+        limites: { ok: 40 }
+      },
+      medio: {
+        umbral_min: 0.6,
+        umbral_max: 4.75,
+        limites: {
+          exceso_grave: 70,
+          limite_superior: 50,
+          ok: 0
+        }
+      },
+      fino: {
+        umbral_max: 0.6,
+        limites: {
+          exceso_grave: 60,
+          exceso: 40,
+          ok: 0
+        }
+      }
+    };
+    localStorage.setItem("parametros_personalizados", JSON.stringify(limites_personalizados));
+  }
     alert("✅ Configuración guardada correctamente.");
     
     document.getElementById('modal-configuracion').style.display = "none";
@@ -244,6 +271,15 @@ function calcularTodas() {
     const perfil_norma = localStorage.getItem("perfil_norma") || "hormigon_argentino";
     const d_max = parseFloat(localStorage.getItem("d_max")) || 25;
     const n = parseFloat(localStorage.getItem("n")) || 0.5;
+
+
+
+    let parametros_personalizados = null;
+    if (perfil_norma === "personalizado") {
+      parametros_personalizados = JSON.parse(localStorage.getItem("parametros_personalizados")) || {};
+    }
+
+
     // 🔽 Enviar al backend
     fetch("/densidadFullerMultiple/", {
         method: "POST",
@@ -252,8 +288,8 @@ function calcularTodas() {
             mezclas: payload,
             d_max: d_max,
             n: n,
-            perfil:perfil_norma
-            
+            perfil:perfil_norma,
+            parametros_personalizados: parametros_personalizados            
         })
     })
     .then(res => res.json())

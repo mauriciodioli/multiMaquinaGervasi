@@ -99,6 +99,7 @@ def densidad_fuller_multiple():
     d_max = float(data.get("d_max", 25))    
     n = float(data.get("n", 0.5))
     perfil = data.get("perfil", "0.5")
+    parametros_personalizados = data.get("parametros_personalizados", None)
 
     resultados = []
 
@@ -147,7 +148,7 @@ def densidad_fuller_multiple():
 
 
           # 💥 Llamás a la nueva función acá
-        curva_resultante = calcular_curva_resultante(mezclas, d_max, n, perfil)
+        curva_resultante = calcular_curva_resultante(mezclas, d_max, n, perfil,parametros_personalizados)
         # Comparar la curva promedio con Fuller ideal
         tamices_res = curva_resultante["tamices"]
         promedios_res = curva_resultante["promedios"]
@@ -173,7 +174,7 @@ def densidad_fuller_multiple():
     })
 
 
-def calcular_curva_resultante(mezclas, d_max, n, perfil="hormigon_argentino"):
+def calcular_curva_resultante(mezclas, d_max, n, perfil="hormigon_argentino", parametros_personalizados=None):
     """Calcula la curva promedio de todas las mezclas y devuelve la imagen en base64 + datos"""
     tamiz_data = defaultdict(list)
 
@@ -187,7 +188,7 @@ def calcular_curva_resultante(mezclas, d_max, n, perfil="hormigon_argentino"):
     curva_fuller_resultante = [(t / d_max) ** n * 100 for t in tamices_ordenados]
 
     # Clasificaciones por tamiz
-    clasificaciones = [clasificar_tamiz(t, p,perfil) for t, p in zip(tamices_ordenados, promedio_reales)]
+    clasificaciones = [clasificar_tamiz(t, p,perfil,parametros_personalizados) for t, p in zip(tamices_ordenados, promedio_reales)]
 
     # Generar gráfico
     fig, ax = plt.subplots()
@@ -222,10 +223,15 @@ def calcular_curva_resultante(mezclas, d_max, n, perfil="hormigon_argentino"):
 # Clasificaciones por tamiz******************************************************
 
 
-def clasificar_tamiz(tamiz, porcentaje, perfil="hormigon_argentino"):
-    c = PERFILES_TAMICES.get(perfil)
-    if not c:
-        raise ValueError(f"Perfil desconocido: {perfil}")
+def clasificar_tamiz(tamiz, porcentaje, perfil, parametros_personalizados=None):
+    if perfil == "personalizado":
+        if not parametros_personalizados:
+            return "✅ Personalizado (sin clasificación detallada)"
+        c = parametros_personalizados
+    else:
+        c = PERFILES_TAMICES.get(perfil)
+        if not c:
+            raise ValueError(f"Perfil desconocido: {perfil}")
 
     if tamiz > c["grueso"]["umbral_min"]:
         tipo = "Grueso"
