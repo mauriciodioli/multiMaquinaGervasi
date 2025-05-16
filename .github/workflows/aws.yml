@@ -5,7 +5,7 @@ on:
       - main
 
 env:
-  DEPLOYMENT_VERSION: "ms202401"
+  DEPLOYMENT_VERSION: "msGervasi202505i"
 
 jobs:
   deploy-to-cluster:
@@ -51,10 +51,10 @@ jobs:
       - name: Build and Push to Docker Hub (if needed)
         id: build_and_push
         run: |
-          if ! docker pull ${{ secrets.DOCKER_USERNAME }}/ms202401i:latest; then
+          if ! docker pull ${{ secrets.DOCKER_USERNAME }}/msGervasi202505i:latest; then
             echo "Image not found, building and pushing to Docker Hub..."
-            docker build -t ${{ secrets.DOCKER_USERNAME }}/ms202401i:latest .
-            docker push ${{ secrets.DOCKER_USERNAME }}/ms202401i:latest
+            docker build -t ${{ secrets.DOCKER_USERNAME }}/msGervasi202505i:latest .
+            docker push ${{ secrets.DOCKER_USERNAME }}/msGervasi202505i:latest
           else
             echo "Image found in Docker Hub, skipping build."
           fi
@@ -62,7 +62,7 @@ jobs:
       - name: Verify Docker Image Push
         run: |
           echo "Verifying Docker image push..."
-          docker images | grep ms202401i
+          docker images | grep msGervasi202505i
 
       - name: Stop and remove existing container
         uses: appleboy/ssh-action@master
@@ -81,7 +81,7 @@ jobs:
            username: ubuntu
            key: ${{ secrets.SSH_PRIVATE_KEY }}
            script: |
-                 IMAGE_ID=$(docker images -q ${{ github.repository_owner }}/ms202401i)
+                 IMAGE_ID=$(docker images -q ${{ github.repository_owner }}/msGervasi202505i)
                  echo "IMAGE_ID is $IMAGE_ID"
                  if [ ! -z "$IMAGE_ID" ]; then
                    docker rmi $IMAGE_ID
@@ -90,9 +90,27 @@ jobs:
       - name: Copy Docker image to AWS instance
         uses: appleboy/ssh-action@master
         with:
-           host: ${{ env.EC2_HOST }}
-           username: ubuntu
-           key: ${{ secrets.SSH_PRIVATE_KEY }}
-           script: |
-             docker pull docker.io/${{ github.repository_owner }}/ms202401i:${{ github.sha }}
-             docker run -d --name ${{ env.DEPLOYMENT_VERSION }} -p 5002:5001 --restart always docker.io/${{ github.repository_owner }}/ms202401i:latest
+          host: ${{ env.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker pull docker.io/${{ github.repository_owner }}/msGervasi202505i:${{ github.sha }}
+            docker run -d --name ${{ env.DEPLOYMENT_VERSION }} -p  5002:5000 --restart always docker.io/${{ github.repository_owner }}/msGervasi202505i:${{ github.sha }}
+
+    
+      - name: Wait until container is running
+        run: |
+          until docker ps -q --filter name=${{ env.DEPLOYMENT_VERSION }}; do
+            echo "Waiting for container to start..."
+            sleep 5
+          done
+      - name: Install and start vim and ffmpeg inside the container
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |               
+                   docker exec $(docker ps -q --filter name=${{ env.DEPLOYMENT_VERSION }}) bash -c "
+                     apt update && apt-get install -y vim 
+                   "
