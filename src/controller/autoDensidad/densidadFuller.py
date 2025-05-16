@@ -290,15 +290,57 @@ def densidad_fuller_optimo():
     pesos = result.x
     curva_optima = np.dot(pesos, materiales)
 
+        # Generar etiquetas de mezcla y diccionario con pesos en %
+    etiquetas_mezclas = {
+        mezcla["nombre"]: round(p * 100, 2)
+        for mezcla, p in zip(mezclas, pesos)
+    }
+
+    explicacion = interpretar_mezcla_optima(etiquetas_mezclas, round(error_total(pesos), 2))
+
+    # Devolver todo junto
     return jsonify({
-        "pesos": [round(p * 100, 2) for p in pesos],  # como porcentaje
+        "pesos": list(etiquetas_mezclas.values()),
+        "nombres_mezclas": list(etiquetas_mezclas.keys()),
         "tamices": tamices_comunes,
         "curva_optima": list(curva_optima),
         "curva_ideal": list(curva_fuller),
-        "error_promedio": round(error_total(pesos), 2)
+        "error_promedio": round(error_total(pesos), 2),
+        "explicacion": explicacion
     })
 
 
+
+
+
+
+
+
+def interpretar_mezcla_optima(mezclas, error_promedio, error_anterior=None):
+    explicaciones = []
+    resumen = []
+
+    for nombre, porcentaje in mezclas.items():
+        if porcentaje == 0:
+            explicaciones.append(f"🔸 **{nombre} (0%)**: No aporta valor a la mezcla óptima y fue descartada automáticamente.")
+        elif porcentaje < 20:
+            explicaciones.append(f"🔸 **{nombre} ({porcentaje:.2f}%)**: Aporta en menor medida, posiblemente para ajustar detalles finos.")
+        elif porcentaje < 50:
+            explicaciones.append(f"🔸 **{nombre} ({porcentaje:.2f}%)**: Contribuye equilibradamente a mejorar la distribución de tamaños.")
+        else:
+            explicaciones.append(f"🔸 **{nombre} ({porcentaje:.2f}%)**: Representa la mayor parte de la mezcla y corrige un déficit clave.")
+
+    resumen.append(f"🧠 **Mezcla Óptima Calculada**")
+    resumen.append(f"**Error promedio**: {error_promedio:.2f}%")
+
+    if error_anterior is not None:
+        mejora = error_anterior - error_promedio
+        resumen.append(f"📉 Se redujo el error desde {error_anterior:.2f}% a {error_promedio:.2f}%, logrando una curva más cercana a la ideal.")
+
+    resumen.append("\n**Interpretación de las proporciones:**")
+    resumen.extend(explicaciones)
+
+    return "\n".join(resumen)
 
 
 

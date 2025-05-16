@@ -215,18 +215,47 @@ function calcularTodas() {
 
                     // Mezcla óptima calculada
                     if (window.ultimaMezclaOptima) {
-                    const mezcla = window.ultimaMezclaOptima;
-                    diagnosticoHTML += `
-                        <div style="margin-top: 2rem; padding: 16px; background-color: #e3f2fd; border-left: 6px solid #1976d2;">
-                        <h3>🧠 Mezcla Óptima Calculada</h3>
-                        <p><strong>Error promedio:</strong> ${mezcla.error_promedio.toFixed(2)}%</p>
-                        <p><strong>Proporciones óptimas:</strong></p>
-                        <ul>
-                            ${mezcla.proporciones.map((p, i) => `<li>Mezcla ${i + 1}: ${p.toFixed(2)}%</li>`).join("")}
-                        </ul>
-                        </div>
-                    `;
-                    }
+  const mezcla = window.ultimaMezclaOptima;
+  const pesos = mezcla.proporciones;
+  const nombres = mezcla.nombres_mezclas || [];
+
+  diagnosticoHTML += `
+    <div style="margin-top: 2rem; padding: 16px; background-color: #e3f2fd; border-left: 6px solid #1976d2; border-radius: 8px;">
+      <h3 style="color: #0d47a1;">🧠 Mezcla Óptima Calculada</h3>
+
+      <p><strong>📉 Error promedio:</strong> <span style="color:#d32f2f;">${mezcla.error_promedio.toFixed(2)}%</span></p>
+
+      <p><strong>📊 Interpretación de proporciones:</strong></p>
+      <ul style="padding-left: 1.2rem;">
+        ${
+          pesos.map((p, i) => {
+            const nombre = nombres[i] || `Mezcla ${i + 1}`;
+            let explicacion = '';
+            if (p === 0) {
+              explicacion = ' (❌ descartada por no aportar mejora)';
+            } else if (p < 20) {
+              explicacion = ' (🔧 aporte menor, ajuste fino)';
+            } else if (p >= 20 && p <= 50) {
+              explicacion = ' (⚖️ contribución equilibrada)';
+            } else {
+              explicacion = ' (💪 componente principal)';
+            }
+            return `<li><strong>${nombre}</strong>: ${p.toFixed(2)}% ${explicacion}</li>`;
+          }).join("")
+        }
+      </ul>
+
+      <details style="margin-top: 1rem;">
+        <summary style="cursor:pointer; color:#1976d2;">📄 Ver detalles técnicos</summary>
+        <pre style="background:#f1f1f1; padding:10px; border-radius:5px;">${JSON.stringify({
+          tamices: mezcla.tamices,
+          curva_optima: mezcla.curva_optima
+        }, null, 2)}</pre>
+      </details>
+    </div>
+  `;
+}
+
 
                     // Ahora sí, insertamos el bloque completo en el modal
                     document.getElementById("diagnosticoModal").innerHTML = diagnosticoHTML;
@@ -365,24 +394,25 @@ function cerrarModalExportar() {
 
 
 function exportarCSV() {
-  const r = window.ultimaCurvaPromedio; // asumimos que guardamos esto al generar
-  if (!r) return alert("No hay curva promedio para exportar");
+  const curva = window.ultimaCurvaPromedio;
+  if (!curva || !curva.tamices || !curva.promedios) {
+    alert("❌ No hay datos para exportar");
+    return;
+  }
 
-  const rows = [["Tamiz (mm)", "% Promedio"]];
-  r.tamices.forEach((t, i) => {
-    rows.push([t, r.promedios[i]]);
-  });
+  let csv = "Tamiz (mm);% Promedio\n";
+  for (let i = 0; i < curva.tamices.length; i++) {
+    csv += `${curva.tamices[i]};${curva.promedios[i]}\n`;
+  }
 
-  let csvContent = "data:text/csv;charset=utf-8,"
-    + rows.map(e => e.join(",")).join("\n");
-
-  const link = document.createElement("a");
-  link.setAttribute("href", encodeURI(csvContent));
-  link.setAttribute("download", "curva_promedio.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "curva_promedio.csv";
+  a.click();
 }
+
 
 
 
@@ -422,63 +452,93 @@ function calcularMezclaOptima() {
         body: JSON.stringify({ mezclas: payload, d_max: 25, n: 0.5 })
     })
     .then(res => res.json())
-   .then(data => {
-  const html = `
-    <h2 style="color:green;">🧠 Mezcla Óptima Calculada</h2>
-    <canvas id="graficoOptimo" height="300"></canvas>
-    <p><strong>Error promedio:</strong> ${data.error_promedio}%</p>
-    <p><strong>Proporciones óptimas:</strong></p>
-    <ul>
-      ${data.pesos.map((p, i) => `<li>Mezcla ${i + 1}: ${p}%</li>`).join("")}
-    </ul>
-    <pre>${JSON.stringify({ tamices: data.tamices, curva: data.curva_optima }, null, 2)}</pre>
-  `;
+        .then(data => {
+          const html = `
+                <h2 style="color: green;">🧠 Mezcla Óptima Calculada</h2>
+                <canvas id="graficoOptimo" height="300"></canvas>
 
-  const contenedor = document.getElementById("contenidoOptimo");
-  contenedor.innerHTML = html;
+                <p><strong>Error promedio:</strong> ${data.error_promedio}%</p>
+                <p>📉 Se redujo significativamente el error, ajustando la mezcla a una curva más cercana a la distribución ideal.</p>
 
-  abrirModalOptimo(); // Mostrar el modal
+                <p><strong>Interpretación de las proporciones óptimas:</strong></p>
+                <ul>
+                  ${ 
+                     data.pesos.map((p, i) => {
+                      const nombre = data.nombres_mezclas[i];
+                      let explicacion = '';
+                      if (p === 0) {
+                        explicacion = ' (❌ descartada por no aportar mejora)';
+                      } else if (p < 20) {
+                        explicacion = ' (🔧 aporte menor, ajuste fino)';
+                      } else if (p >= 20 && p <= 50) {
+                        explicacion = ' (⚖️ contribución equilibrada)';
+                      } else {
+                        explicacion = ' (💪 componente principal)';
+                      }
+                      return `<li><strong>${nombre}</strong>: ${p.toFixed(2)}% ${explicacion}</li>`;
+                    }).join("")
+                    }
+                </ul>
 
-  new Chart(document.getElementById("graficoOptimo"), {
-    type: 'line',
-    data: {
-      labels: data.tamices.map(t => t.toFixed(2) + " mm"),
-      datasets: [
-        {
-          label: "Curva Ideal de Fuller",
-          data: data.curva_ideal,
-          borderColor: "orange",
-          borderDash: [5, 5],
-          fill: false
-        },
-        {
-          label: "Curva Óptima Combinada",
-          data: data.curva_optima,
-          borderColor: "green",
-          fill: false
-        }
-      ]
-    },
-    options: {
-      scales: {
-        y: {
-          title: { display: true, text: "% que pasa" },
-          min: 0,
-          max: 100
-        },
-        x: {
-          title: { display: true, text: "Tamiz (mm)" }
-        }
-      }
-    }
-  });
+                <details>
+                  <summary style="cursor:pointer; color:#007bff;">🔧 Ver datos técnicos (tamices y curva óptima)</summary>
+                  <pre style="background:#f8f9fa; padding:10px; border-radius:5px;">${JSON.stringify({
+                    tamices: data.tamices,
+                    curva: data.curva_optima
+                  }, null, 2)}</pre>
+                </details>
+              `;
 
-  // Guardar para diagnóstico o exportación
-  window.ultimaMezclaOptima = {
-    error_promedio: data.error_promedio,
-    proporciones: data.pesos
-  };
-});
+
+          const contenedor = document.getElementById("contenidoOptimo");
+          contenedor.innerHTML = html;
+
+          abrirModalOptimo(); // Mostrar el modal
+
+          new Chart(document.getElementById("graficoOptimo"), {
+            type: 'line',
+            data: {
+              labels: data.tamices.map(t => t.toFixed(2) + " mm"),
+              datasets: [
+                {
+                  label: "Curva Ideal de Fuller",
+                  data: data.curva_ideal,
+                  borderColor: "orange",
+                  borderDash: [5, 5],
+                  fill: false
+                },
+                {
+                  label: "Curva Óptima Combinada",
+                  data: data.curva_optima,
+                  borderColor: "green",
+                  fill: false
+                }
+              ]
+            },
+            options: {
+              scales: {
+                y: {
+                  title: { display: true, text: "% que pasa" },
+                  min: 0,
+                  max: 100
+                },
+                x: {
+                  title: { display: true, text: "Tamiz (mm)" }
+                }
+              }
+            }
+          });
+
+          // Guardar para diagnóstico o exportación
+          window.ultimaMezclaOptima = {
+            error_promedio: data.error_promedio,
+            proporciones: data.pesos,
+            nombres_mezclas: data.nombres_mezclas,
+            tamizes: data.tamices,
+            curva_optima: data.curva_optima,
+            curva_ideal: data.curva_ideal
+          };
+      });
 
 }
 
