@@ -226,7 +226,7 @@ def calcular_curva_resultante(mezclas, d_max, n, perfil="hormigon_argentino", pa
 def clasificar_tamiz(tamiz, porcentaje, perfil, parametros_personalizados=None):
     if perfil == "personalizado":
         if not parametros_personalizados:
-            return "✅ Personalizado (sin clasificación detallada)"
+            return "Personalizado (sin clasificación detallada)"
         c = parametros_personalizados
     else:
         c = PERFILES_TAMICES.get(perfil)

@@ -244,7 +244,6 @@ function agregarFilaMultiple(btn) {
     `;
     tbody.appendChild(fila);
 }
-
 function calcularTodas() {
     const mezclasDivs = document.querySelectorAll(".mezcla");
     const payload = [];
@@ -258,27 +257,39 @@ function calcularTodas() {
 
         filas.forEach(fila => {
             const celdas = fila.querySelectorAll("td");
-            tamices.push(parseFloat(celdas[0].textContent));
-            porcentajes.push(parseFloat(celdas[1].textContent));
+            const tamiz = parseFloat(celdas[0].textContent);
+            const porcentaje = parseFloat(celdas[1].textContent);
+
+            if (!isNaN(tamiz) && !isNaN(porcentaje)) {
+                tamices.push(tamiz);
+                porcentajes.push(porcentaje);
+            }
         });
 
-        payload.push({
-            nombre: nombre,
-            tamices: tamices,
-            porcentajes_reales: porcentajes
-        });
+        // Solo incluir mezclas con datos válidos
+        if (tamices.length > 0 && porcentajes.length > 0) {
+            payload.push({
+                nombre: nombre,
+                tamices: tamices,
+                porcentajes_reales: porcentajes
+            });
+        }
     });
+
+    // ⚠️ Evitar enviar si no hay ninguna mezcla con datos
+    if (payload.length === 0) {
+        alert("Debe ingresar al menos una mezcla con datos válidos (tamiz y % real).");
+        return;
+    }
+
     const perfil_norma = localStorage.getItem("perfil_norma") || "hormigon_argentino";
     const d_max = parseFloat(localStorage.getItem("d_max")) || 25;
     const n = parseFloat(localStorage.getItem("n")) || 0.5;
 
-
-
     let parametros_personalizados = null;
     if (perfil_norma === "personalizado") {
-      parametros_personalizados = JSON.parse(localStorage.getItem("parametros_personalizados")) || {};
+        parametros_personalizados = JSON.parse(localStorage.getItem("parametros_personalizados")) || {};
     }
-
 
     // 🔽 Enviar al backend
     fetch("/densidadFullerMultiple/", {
@@ -288,8 +299,8 @@ function calcularTodas() {
             mezclas: payload,
             d_max: d_max,
             n: n,
-            perfil:perfil_norma,
-            parametros_personalizados: parametros_personalizados            
+            perfil: perfil_norma,
+            parametros_personalizados: parametros_personalizados
         })
     })
     .then(res => res.json())
@@ -572,13 +583,28 @@ function calcularMezclaOptima() {
 
       filas.forEach(fila => {
         const celdas = fila.querySelectorAll("td");
-        tamices.push(parseFloat(celdas[0].textContent));
-        porcentajes.push(parseFloat(celdas[1].textContent));
+        const tamiz = parseFloat(celdas[0].textContent);
+        const porcentaje = parseFloat(celdas[1].textContent);
+
+        if (!isNaN(tamiz) && !isNaN(porcentaje)) {
+          tamices.push(tamiz);
+          porcentajes.push(porcentaje);
+        }
       });
 
-      payload.push({ nombre, tamices, porcentajes_reales: porcentajes });
+      // Solo agregamos si tiene datos válidos
+      if (tamices.length > 0 && porcentajes.length > 0) {
+        payload.push({ nombre, tamices, porcentajes_reales: porcentajes });
+      }
     });
 
+    // Prevención si no hay mezclas válidas
+    if (payload.length === 0) {
+      alert("Debe agregar al menos una mezcla con datos válidos.");
+      return reject("Sin mezclas válidas");
+    }
+
+    
     fetch("/densidadFullerOptimo/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
