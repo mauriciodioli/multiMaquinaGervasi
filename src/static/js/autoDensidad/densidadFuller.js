@@ -1,4 +1,110 @@
 
+  document.getElementById("selector-norma").addEventListener("change", () => {
+    const seleccion = document.getElementById("selector-norma").value;
+    const fullerDiv = document.getElementById("configuracion-fuller");
+    fullerDiv.style.display = seleccion === "personalizado" ? "block" : "none";
+  });
+
+  document.getElementById("guardar-configuracion").addEventListener("click", () => {
+    const norma = document.getElementById("selector-norma").value;
+    localStorage.setItem("perfil_norma", norma);
+
+    if (norma === "personalizado") {
+      const dmax = parseFloat(document.getElementById("input-dmax").value);
+      const n = parseFloat(document.getElementById("input-n").value);
+      localStorage.setItem("d_max", dmax);
+      localStorage.setItem("n", n);
+    }
+
+    alert("✅ Configuración guardada correctamente.");
+    
+    document.getElementById('modal-configuracion').style.display = "none";
+  });
+
+
+
+
+function modalConfiguracionParametrosEntradaFuller() {
+    
+    document.getElementById('modal-configuracion').style.display = "block";
+};
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  inicializarConfiguracionFuller();
+
+});
+
+
+function inicializarConfiguracionFuller() {
+  if (!localStorage.getItem("perfil_norma")) {
+    localStorage.setItem("perfil_norma", "hormigon_argentino");
+  }
+  if (!localStorage.getItem("d_max")) {
+    localStorage.setItem("d_max", "25");
+  }
+  if (!localStorage.getItem("n")) {
+    localStorage.setItem("n", "0.5");
+  }
+
+  // Si tenés campos en un modal, actualizalos también visualmente
+  const selectorNorma = document.getElementById("selector-norma");
+  const inputDmax = document.getElementById("input-dmax");
+  const inputN = document.getElementById("input-n");
+
+  if (selectorNorma) {
+    selectorNorma.value = localStorage.getItem("perfil_norma");
+  }
+  if (inputDmax) {
+    inputDmax.value = localStorage.getItem("d_max");
+  }
+  if (inputN) {
+    inputN.value = localStorage.getItem("n");
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const selector = document.getElementById("selector-norma");
+
+  // Cargar si ya estaba guardado
+  const guardado = localStorage.getItem("perfil_norma");
+  if (guardado) {
+    selector.value = guardado;
+  }
+
+  // Escuchar cambios y guardar
+  selector.addEventListener("change", () => {
+    const valor = selector.value;
+    localStorage.setItem("perfil_norma", valor);
+    console.log(`🔧 Perfil de norma seleccionado: ${valor}`);
+  });
+});
+
+
+
+
+
+//*********************************************************************/
+// Función para calcular la densidad de Fuller simple****************/
+//*********************************************************************/
  
  
  function agregarFila() {
@@ -135,11 +241,20 @@ function calcularTodas() {
             porcentajes_reales: porcentajes
         });
     });
-
+    const perfil_norma = localStorage.getItem("perfil_norma") || "hormigon_argentino";
+    const d_max = parseFloat(localStorage.getItem("d_max")) || 25;
+    const n = parseFloat(localStorage.getItem("n")) || 0.5;
+    // 🔽 Enviar al backend
     fetch("/densidadFullerMultiple/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mezclas: payload, d_max: 25, n: 0.5 })  // d_max y n por ahora globales
+        body: JSON.stringify({
+            mezclas: payload,
+            d_max: d_max,
+            n: n,
+            perfil:perfil_norma
+            
+        })
     })
     .then(res => res.json())
     .then(data => {
@@ -400,9 +515,9 @@ function exportarCSV() {
     return;
   }
 
-  let csv = "Tamiz (mm);% Promedio\n";
+  let csv = "Tamiz (mm);% Promedio; ASTM C136 o IRAM 1505\n";
   for (let i = 0; i < curva.tamices.length; i++) {
-    csv += `${curva.tamices[i]};${curva.promedios[i]}\n`;
+    csv += `${curva.tamices[i]};${curva.promedios[i]};${curva.clasificaciones[i]}\n`;
   }
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

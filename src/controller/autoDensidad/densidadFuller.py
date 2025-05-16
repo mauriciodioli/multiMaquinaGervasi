@@ -13,6 +13,18 @@ from scipy.optimize import minimize
 densidadFuller = Blueprint('densidadFuller', __name__)
 
 
+PERFILES_TAMICES = {
+    "hormigon_argentino": {
+        "grueso": { "umbral_min": 4.75, "limites": { "ok": 40 } },
+        "medio":  { "umbral_min": 0.6, "umbral_max": 4.75, "limites": { "exceso_grave": 70, "limite_superior": 50, "ok": 0 } },
+        "fino":   { "umbral_max": 0.6, "limites": { "exceso_grave": 60, "exceso": 40, "ok": 0 } }
+    },
+    "granulometria_italiana": {
+        "grueso": { "umbral_min": 5, "limites": { "ok": 35 } },
+        "medio":  { "umbral_min": 0.8, "umbral_max": 5, "limites": { "exceso_grave": 75, "limite_superior": 55, "ok": 0 } },
+        "fino":   { "umbral_max": 0.8, "limites": { "exceso_grave": 65, "exceso": 45, "ok": 0 } }
+    }
+}
 
 
 
@@ -84,8 +96,9 @@ def densidad_fuller_multiple():
 
     data = request.get_json()
     mezclas = data.get("mezclas", [])
-    d_max = float(data.get("d_max", 25))
+    d_max = float(data.get("d_max", 25))    
     n = float(data.get("n", 0.5))
+    perfil = data.get("perfil", "0.5")
 
     resultados = []
 
@@ -134,7 +147,7 @@ def densidad_fuller_multiple():
 
 
           # 💥 Llamás a la nueva función acá
-        curva_resultante = calcular_curva_resultante(mezclas, d_max, n)
+        curva_resultante = calcular_curva_resultante(mezclas, d_max, n, perfil)
         # Comparar la curva promedio con Fuller ideal
         tamices_res = curva_resultante["tamices"]
         promedios_res = curva_resultante["promedios"]
@@ -160,9 +173,8 @@ def densidad_fuller_multiple():
     })
 
 
-def calcular_curva_resultante(mezclas, d_max, n):
+def calcular_curva_resultante(mezclas, d_max, n, perfil="hormigon_argentino"):
     """Calcula la curva promedio de todas las mezclas y devuelve la imagen en base64 + datos"""
-    
     tamiz_data = defaultdict(list)
 
     for mezcla in mezclas:
@@ -174,11 +186,14 @@ def calcular_curva_resultante(mezclas, d_max, n):
     promedio_reales = [np.mean(tamiz_data[t]) for t in tamices_ordenados]
     curva_fuller_resultante = [(t / d_max) ** n * 100 for t in tamices_ordenados]
 
+    # Clasificaciones por tamiz
+    clasificaciones = [clasificar_tamiz(t, p,perfil) for t, p in zip(tamices_ordenados, promedio_reales)]
+
     # Generar gráfico
     fig, ax = plt.subplots()
     ax.plot(tamices_ordenados, promedio_reales, marker='o', label='Promedio Real')
     ax.plot(tamices_ordenados, curva_fuller_resultante, marker='x', label='Fuller Ideal')
-    ax.invert_xaxis()  # invertir el eje x
+    ax.invert_xaxis()
     ax.set_title("Curva Promedio de Todas las Mezclas")
     ax.set_xlabel("Tamiz (mm)")
     ax.set_ylabel("% que pasa")
@@ -194,10 +209,43 @@ def calcular_curva_resultante(mezclas, d_max, n):
     return {
         "tamices": tamices_ordenados,
         "promedios": promedio_reales,
+        "clasificaciones": clasificaciones,
         "grafico": f"data:image/png;base64,{curva_global_base64}"
     }
     
     
+    
+# Clasificaciones por tamiz******************************************************
+# Clasificaciones por tamiz******************************************************
+# Clasificaciones por tamiz* segun norma  ASTM C136 o IRAM 1505******************
+# Clasificaciones por tamiz******************************************************
+# Clasificaciones por tamiz******************************************************
+
+
+def clasificar_tamiz(tamiz, porcentaje, perfil="hormigon_argentino"):
+    c = PERFILES_TAMICES.get(perfil)
+    if not c:
+        raise ValueError(f"Perfil desconocido: {perfil}")
+
+    if tamiz > c["grueso"]["umbral_min"]:
+        tipo = "Grueso"
+        return f"{tipo} ( OK)" if porcentaje >= c["grueso"]["limites"]["ok"] else f"{tipo} ( Bajo aporte)"
+    elif c["medio"]["umbral_min"] <= tamiz <= c["medio"]["umbral_max"]:
+        tipo = "Medio"
+        if porcentaje > c["medio"]["limites"]["exceso_grave"]:
+            return f"{tipo} ( Exceso grave)"
+        elif porcentaje > c["medio"]["limites"]["limite_superior"]:
+            return f"{tipo} ( Limite superior)"
+        else:
+            return f"{tipo} ( OK)"
+    else:
+        tipo = "Fino"
+        if porcentaje > c["fino"]["limites"]["exceso_grave"]:
+            return f"{tipo} ( Exceso grave)"
+        elif porcentaje > c["fino"]["limites"]["exceso"]:
+            return f"{tipo} ( Exceso)"
+        else:
+            return f"{tipo} ( OK)"
     
 def evaluar_mezcla(diferencias):
     error_promedio = np.mean([abs(d) for d in diferencias])
@@ -297,7 +345,7 @@ def densidad_fuller_optimo():
     }
 
     explicacion = interpretar_mezcla_optima(etiquetas_mezclas, round(error_total(pesos), 2))
-
+ 
     # Devolver todo junto
     return jsonify({
         "pesos": list(etiquetas_mezclas.values()),
@@ -341,6 +389,10 @@ def interpretar_mezcla_optima(mezclas, error_promedio, error_anterior=None):
     resumen.extend(explicaciones)
 
     return "\n".join(resumen)
+
+
+
+
 
 
 

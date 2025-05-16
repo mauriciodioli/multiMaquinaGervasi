@@ -10,6 +10,9 @@
 
   <button class="btn btn-danger" onclick="agregarMezcla()">Agregar mezcla</button>
   <button class="btn btn-danger" onclick="calcularTodas()">Calcular todas</button>
+  <button class="btn btn-danger" onclick="modalConfiguracionParametrosEntradaFuller()"> 🧪 Configurar mezcla</button>
+ 
+  
 
   <div id="mezclasContainer"></div>
 
@@ -37,6 +40,55 @@
         <div id="contenidoOptimo"></div>
       </div>
     </div>
+
+
+
+
+
+
+
+
+
+    <!-- Modal Configuración de Parámetros de Mezcla -->
+<div class="modal fade" id="modal-configuracion" tabindex="-1" aria-labelledby="modalConfiguracionLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConfiguracionLabel">⚙️ Configuración de Parámetros</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="selector-norma" class="form-label">🌍 Seleccioná el país / norma de referencia:</label>
+          <select class="form-select" id="selector-norma">
+            <option value="hormigon_argentino">🇦🇷 Argentina (Norma IRAM - Hormigón)</option>
+            <option value="granulometria_italiana">🇮🇹 Italia (UNI - Granulometría)</option>
+            <option value="personalizado">⚙️ Personalizado</option>
+          </select>
+        </div>
+
+        <div id="configuracion-fuller" style="display: none;">
+          <div class="mb-3">
+            <label for="input-dmax" class="form-label">🔢 d<sub>max</sub> (mm):</label>
+            <input type="number" id="input-dmax" class="form-control" value="25">
+          </div>
+
+          <div class="mb-3">
+            <label for="input-n" class="form-label">📈 Exponente n:</label>
+            <input type="number" step="0.01" id="input-n" class="form-control" value="0.5">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="guardar-configuracion">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
   
     <script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js') }}"></script>
