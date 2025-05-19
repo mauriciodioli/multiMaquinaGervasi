@@ -329,6 +329,7 @@ function calcularTodas() {
     .then(res => res.json())
     // ... tu código anterior hasta .then(data => {
 .then(data => {
+  debugger;
     const resultadosDiv = document.getElementById("resultados");
     let finalHTML = "<h2>Resultados</h2>";
     data.resultados.forEach(resultado => {
@@ -524,6 +525,7 @@ function generarMezclaCorregida() {
                     max: 100
                 },
                 x: {
+                    reverse: true, // 🔁 Esto invierte el eje y soluciona todo
                     title: {
                         display: true,
                         text: "Tamiz (mm)"
@@ -744,27 +746,28 @@ function calcularMezclaOptima() {
 
 
 
+
 function cargarDatosPorDefecto() {
   const mezclas = [
     {
       nombre: "0-8 Recilcado",
       tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
-      porcentajes: [100, 97, 90, 68, 45, 20, 6]
+      porcentajes: [0,9.7,44.49,62.42,74.51,87.47,94.82]
     },
     {
       nombre: "0-9 Recilcado",
       tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
-      porcentajes: [100, 97, 90, 68, 45, 20, 6]
+      porcentajes: [0,67.74,97.32,98.48,98.57,98.75,98.93]
     },
     {
       nombre: "Arena fina",
       tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
-      porcentajes: [100, 97, 90, 68, 45, 20, 6]
+      porcentajes: [0,0.2,0.39,1.17,6.45,61.33,89.94]
     },
      {
       nombre: "0-6 Natural Olavarria\"",
       tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
-      porcentajes: [100, 97, 90, 68, 45, 20, 6]
+      porcentajes: [0,3.89,27.05,49.80,67.01,79.71,89.55]
     }
   ];
 
@@ -822,43 +825,49 @@ window.addEventListener("DOMContentLoaded", cargarDatosPorDefecto);
 
 
 
-
 document.addEventListener("keydown", function (e) {
     const isEnter = e.key === "Enter";
     const isTab = e.key === "Tab";
 
-    // Solo si estás en una celda editable
     const active = document.activeElement;
     if (!active || !active.isContentEditable) return;
 
     if (isEnter || isTab) {
       e.preventDefault();
 
-      // Lista de todas las celdas editables
       const editables = Array.from(document.querySelectorAll("td[contenteditable='true']"));
       const index = editables.indexOf(active);
 
       if (index !== -1) {
         let nextIndex;
+
         if (isTab) {
           nextIndex = index + 1;
         } else if (isEnter) {
           const currentCell = active;
           const currentRow = currentCell.parentElement;
           const colIndex = Array.from(currentRow.children).indexOf(currentCell);
-
           const nextRow = currentRow.nextElementSibling;
+
           if (nextRow) {
             const targetCell = nextRow.children[colIndex];
             if (targetCell && targetCell.isContentEditable) {
-              targetCell.focus();
+              // 👉 Selecciona todo el texto automáticamente
+              setTimeout(() => {
+                targetCell.focus();
+                const range = document.createRange();
+                range.selectNodeContents(targetCell);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+              }, 0);
               return;
             }
           }
-          return; // no próxima fila
+          return;
         }
 
-        // Enfocar la siguiente celda para Tab
+        // Enfocar la siguiente celda con Tab
         if (editables[nextIndex]) {
           editables[nextIndex].focus();
         }
@@ -866,6 +875,14 @@ document.addEventListener("keydown", function (e) {
     }
   });
 
+  // Si escribe en celda ya con valor, reemplazarlo todo
+  document.addEventListener("beforeinput", function (e) {
+    const el = document.activeElement;
+    if (el && el.isContentEditable && window.getSelection().toString() === el.innerText) {
+      // si el texto está todo seleccionado, se reemplaza directamente
+      el.innerText = '';
+    }
+  });
 
 
 

@@ -42,7 +42,7 @@ def pantalla_densidad_fuller_multiple():
 
 
 def calcular_curva_fuller(tamices, d_max, n=0.5):
-    return [(d / d_max) ** n * 100 for d in tamices]
+    return [(d / d_max) ** n * 100 for d in tamices][::-1]
 
 def comparar_mezcla_real_vs_fuller(tamices, porcentajes_reales, d_max, n=0.5):
     curva_fuller = calcular_curva_fuller(tamices, d_max, n)
@@ -104,7 +104,7 @@ def densidad_fuller_multiple():
     resultados = []
 
     def calcular_curva_fuller(tamices, d_max, n):
-        return [(d / d_max) ** n * 100 for d in tamices]
+        return [(d / d_max) ** n * 100 for d in tamices][::-1]
 
     for mezcla in mezclas:
         nombre = mezcla.get("nombre", "Sin nombre")
@@ -152,7 +152,7 @@ def densidad_fuller_multiple():
         # Comparar la curva promedio con Fuller ideal
         tamices_res = curva_resultante["tamices"]
         promedios_res = curva_resultante["promedios"]
-        curva_fuller_res = [(t / d_max) ** n * 100 for t in tamices_res]
+        curva_fuller_res = [(t / d_max) ** n * 100 for t in tamices_res][::-1]
         diferencias_res = [r - f for r, f in zip(promedios_res, curva_fuller_res)]
 
         # Evaluar y sugerir
@@ -185,7 +185,7 @@ def calcular_curva_resultante(mezclas, d_max, n, perfil="hormigon_argentino", pa
     # Ordenar y calcular promedio por tamiz
     tamices_ordenados = sorted(tamiz_data.keys(), reverse=True)
     promedio_reales = [np.mean(tamiz_data[t]) for t in tamices_ordenados]
-    curva_fuller_resultante = [(t / d_max) ** n * 100 for t in tamices_ordenados]
+    curva_fuller_resultante = [(t / d_max) ** n * 100 for t in tamices_ordenados][::-1]
 
     # Clasificaciones por tamiz
     clasificaciones = [clasificar_tamiz(t, p,perfil,parametros_personalizados) for t, p in zip(tamices_ordenados, promedio_reales)]
@@ -328,7 +328,7 @@ def densidad_fuller_optimo():
 
     materiales = np.array(curvas_interp)  # cada fila es una mezcla
 
-    curva_fuller = np.array([(d / d_max)**n * 100 for d in tamices_comunes])
+    curva_fuller = np.array([(d / d_max)**n * 100 for d in tamices_comunes][::-1])
 
     def error_total(pesos):
         curva = np.dot(pesos, materiales)
