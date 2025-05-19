@@ -63,7 +63,9 @@ def obtener_conexiones_db():
 # 3. Obtener una conexión por ID
 @conexion_db_crud.route('/conexion_db/<int:id>', methods=['GET'])
 def obtener_conexion_db(id):
-    conexion = Conexion_db.query.get(id)
+    conexion = db.session.query(Conexion_db).filter_by(id=id).first()
+
+    
     if conexion:
         return jsonify(mer_schema.dump(conexion)), 200
     return jsonify({"error": "Conexión no encontrada"}), 404

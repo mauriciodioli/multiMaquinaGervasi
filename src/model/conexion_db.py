@@ -54,7 +54,7 @@ class Conexion_db(db.Model):
 # Schema para serializar
 class MerShema(ma.Schema):
     class Meta:
-        fields = ("id", "user_id", "database", "portSqlServer", "ipSqlServer", "driver")
+        fields = ("id", "user_id", "database","userSqlServer","pasSqlServer","portSqlServer", "ipSqlServer", "driver")
 
 # Crear las instancias del esquema
 mer_schema = MerShema()  # Para un solo objeto
