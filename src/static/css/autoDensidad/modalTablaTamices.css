@@ -1,0 +1,20 @@
+ .fila-seleccionada {
+    background-color: #d1e7dd !important;
+  }
+
+  tr.copiable:hover {
+    cursor: pointer;
+    background-color: #f8f9fa;
+  }
+   tr.fila-seleccionada td {
+    background-color: #d1e7dd !important; /* verde suave */
+    font-weight: bold;
+  }
+
+  tr.copiable:hover td {
+    background-color: #f8f9fa;
+    cursor: pointer;
+  }
+
+  
+

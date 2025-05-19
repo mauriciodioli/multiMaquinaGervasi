@@ -9,11 +9,17 @@
 
   
 
-  <button class="btn btn-danger" onclick="agregarMezcla()">Agregar mezcla</button>
+   <button class="btn btn-danger" onclick="agregarMezcla()">Agregar mezcla</button>
+    <!-- Botón para mostrar ayuda -->
+  <button class="btn btn-danger" onclick="tablTamizes()"> 📘 Ver tabla de equivalencias de tamices</button>
+  
   <button class="btn btn-danger" onclick="calcularTodas()">Calcular todas</button>
   <button class="btn btn-danger" onclick="modalConfiguracionParametrosEntradaFuller()"> 🧪 Configurar mezcla</button>
  
-  
+
+
+
+
 
   <div id="mezclasContainer"></div>
 
@@ -91,8 +97,63 @@
 
 
 
+<div class="modal fade" id="modal-tablaTamices" tabindex="-1" aria-labelledby="modaltablaTamicesLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modaltablaTamicesLabel">📘 Table de Parámetros Tamises</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+
+        <table border="1" cellpadding="5" cellspacing="0">
+          <thead>
+            <tr><th>Tamiz comercial</th><th>Diámetro (mm)</th></tr>
+          </thead>
+          <tbody>
+            <tbody>
+                <tr class="copiable" onclick="copiarFilaTamiz(event, '25.4')"><td>1"</td><td>25.4</td></tr>
+                <tr class="copiable" onclick="copiarFilaTamiz(event, '19.0')"><td>3/4"</td><td>19.0</td></tr>
+                <tr class="copiable" onclick="copiarFilaTamiz(event, '12.5')"><td>1/2"</td><td>12.5</td></tr>
+                <tr class="copiable" onclick="copiarFilaTamiz(event, '9.5')"><td>3/8"</td><td>9.5</td></tr>
+                <tr class="copiable" onclick="copiarFilaTamiz(event, '4.75')"><td>N° 4</td><td>4.75</td></tr>
+                <tr class="copiable" onclick="copiarFilaTamiz(event, '2.36')"><td>N° 8</td><td>2.36</td></tr>
+                <tr class="copiable" onclick="copiarFilaTamiz(event, '1.18')"><td>N° 16</td><td>1.18</td></tr>
+                <tr class="copiable" onclick="copiarFilaTamiz(event, '0.60')"><td>N° 30</td><td>0.60</td></tr>
+                <tr class="copiable" onclick="copiarFilaTamiz(event, '0.30')"><td>N° 50</td><td>0.30</td></tr>
+                <tr class="copiable" onclick="copiarFilaTamiz(event, '0.15')"><td>N° 100</td><td>0.15</td></tr>
+                <tr class="copiable" onclick="copiarFilaTamiz(event, '0.075')"><td>N° 200</td><td>0.075</td></tr>
+
+
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-danger" onclick="cerrarModalTamices()">Cerrar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="mensaje-copiado" style="
+  position: absolute;
+  display: none;
+  padding: 6px 10px;
+  background: #212529;
+  color: #fff;
+  border-radius: 5px;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 9999;
+"></div>
+
+</div>
   
     <script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/autoDensidad/modalTablaTamices.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/modalTablaTamices.css') }}">
 {% endblock %}
 
 {% block extra_js %}
