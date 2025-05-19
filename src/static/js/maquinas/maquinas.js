@@ -320,6 +320,7 @@ window.onclick = function(event) {
 
 
 function cargarContenidoModuloHistory(nombreMaquina, modulo, clfile, precioKwh, potencia) {
+  debugger;
   const tablaContainer = document.querySelector(".tabla-container");
   const spinner = document.getElementById("spinner");
   const ip = localStorage.getItem("ipSqlServer"); // Cambia esto si es necesario

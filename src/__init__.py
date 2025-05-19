@@ -6,6 +6,10 @@ from src.controller.maquinas import maquinas
 from src.controller.automatizacion import automatizacion
 from src.controller.crud_maquinas import crud_maquinas
 from src.controller.autoDensidad.densidadFuller import densidadFuller
+from src.utils.conexion_db_crud import conexion_db_crud
+
+
+
  # from src.controller.crud_usuarios import crud_usuarios
 from src.model import Usuario, Maquina
 from utils.db import db
@@ -22,6 +26,7 @@ def create_app():
     app.register_blueprint(automatizacion)
     app.register_blueprint(crud_maquinas)
     app.register_blueprint(densidadFuller)
+    app.register_blueprint(conexion_db_crud)  # Puedes ajustar la URL base
 
     return app
 

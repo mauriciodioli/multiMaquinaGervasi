@@ -1,6 +1,6 @@
 document.getElementById("conexionSqlServer").addEventListener("click", (e) => {
     e.preventDefault();
-
+    debugger;
     // Llenar los inputs con los valores de localStorage
     document.getElementById("input-sql-ip").value = localStorage.getItem("ipSqlServer") || "";
     document.getElementById("input-sql-port").value = localStorage.getItem("portSqlServer") || "";
@@ -46,13 +46,41 @@ document.getElementById("confirmar-sql").addEventListener("click", () => {
 
     alert(`✅ IP e porta salvati: ${ip}:${port}`);
 
-    // Ocultar el modal
-    const modal = document.getElementById("modal-sqlserver");
-    modal.style.display = "none";
-});
+    // Datos a enviar al servidor
+    const data = {
+        user_id: 1,  // Este es solo un ejemplo, ajusta según tu lógica
+        driver: "SQL Server",  // Ajusta según los campos que necesites
+        ipSqlServer: ip,
+        portSqlServer: port,
+        userSqlServer: user,
+        pasSqlServer: pas,
+        encrypt: "yes",  // Ajusta si es necesario
+        trustServerCertificate: "yes",  // Ajusta si es necesario
+        sector: "multiMaquinaDB",  // Ajusta si es necesario
+        fecha: new Date().toISOString(),  // Usa la fecha actual
+        estado: "Activo"  // Ajusta según sea necesario
+    };
 
-// Función para cancelar y cerrar el modal
-document.getElementById("cancelar-sql").addEventListener("click", () => {
+    // Enviar los datos con fetch (AJAX)
+    fetch("/conexion_db/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)  // Convierte los datos a formato JSON
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data) {
+            alert("Conexión guardada exitosamente.");
+        }
+    })
+    .catch(error => {
+        console.error("Error al guardar la conexión:", error);
+        alert("Hubo un error al guardar la conexión.");
+    });
+
+    // Ocultar el modal
     const modal = document.getElementById("modal-sqlserver");
     modal.style.display = "none";
 });

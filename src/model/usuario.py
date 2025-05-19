@@ -22,6 +22,7 @@ class Usuario(db.Model):
     calendly_url = db.Column(db.String(255), nullable=True)
     
     maquinas = relationship('Maquina', back_populates='usuario')
+    conexion_db = relationship('Conexion_db', back_populates='usuario')
 
     def __init__(self, correo_electronico, password, roll='regular', activo=False,
                  token=None, refresh_token=None, calendly_url=None):

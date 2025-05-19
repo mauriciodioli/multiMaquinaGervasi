@@ -66,11 +66,20 @@ def listar_maquina_sql_filtrado_history():
     try:
         data = request.get_json()
         filtro_clfile = data.get("clfile", "")  # puede venir vacío
-        database =   data.get("nombre_maquina", "")
+        database = data.get("nombre_maquina", "").strip()
         ip = data.get("ip", "")
         port = data.get("port", "")
         user = data.get("user", "")
         password = data.get("password", "")
+      
+         # Imprimir detalles antes de conectar
+         # print(f"Intentando conectar a la base de datos...")
+         # print(f"Base de datos: {database}")
+         # print(f"IP: {ip}")
+         # print(f"Puerto: {port}")
+         # print(f"Usuario: {user}")
+         # print(f"Contraseña: {password}")  # Ojo con la contraseña, para evitar logueo no deseado
+
         conn = pyodbc.connect(
             f"DRIVER={{ODBC Driver 17 for SQL Server}};"
             f"SERVER={ip},{port};"
