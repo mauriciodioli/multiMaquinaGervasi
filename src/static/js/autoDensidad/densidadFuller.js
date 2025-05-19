@@ -209,7 +209,6 @@ function enviarDatos() {
 // Función para calcular la densidad de Fuller multiple****************/
 //*********************************************************************/
 let mezclaId = 0;
-
 function agregarMezcla() {
     const container = document.getElementById("mezclasContainer");
 
@@ -217,21 +216,45 @@ function agregarMezcla() {
     mezclaDiv.className = "mezcla";
     mezclaDiv.dataset.id = mezclaId++;
 
+    const tamices = [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15];
+
+    const filasHTML = tamices.map(t => `
+        <tr>
+            <td contenteditable="true">${t}</td>
+            <td contenteditable="true"></td>
+            <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
+        </tr>
+    `).join("");
+
     mezclaDiv.innerHTML = `
-        <h3>Producto</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Producto</h3>
+          <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Eliminar mezcla</button>
+        </div>
         <input type="text" placeholder="Nombre del producto" class="nombreProducto">
         <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Agregar Fila</button>
         <table class="tabla">
             <thead>
                 <tr><th>Tamiz (mm)</th><th>% Real</th><th>Acción</th></tr>
             </thead>
-            <tbody></tbody>
+            <tbody>
+                ${filasHTML}
+            </tbody>
         </table>
         <hr>
     `;
 
     container.appendChild(mezclaDiv);
 }
+function eliminarMezcla(boton) {
+    const mezclaDiv = boton.closest('.mezcla');
+    mezclaDiv.remove();
+}
+
+
+
+
+
 
 function agregarFilaMultiple(btn) {
     const tbody = btn.nextElementSibling.querySelector("tbody");
@@ -724,19 +747,24 @@ function calcularMezclaOptima() {
 function cargarDatosPorDefecto() {
   const mezclas = [
     {
-      nombre: "Cemento Portland",
-      tamices: [0.3, 0.15, 0.075],
-      porcentajes: [100, 97, 90]
+      nombre: "0-8 Recilcado",
+      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
+      porcentajes: [100, 97, 90, 68, 45, 20, 6]
+    },
+    {
+      nombre: "0-9 Recilcado",
+      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
+      porcentajes: [100, 97, 90, 68, 45, 20, 6]
     },
     {
       nombre: "Arena fina",
       tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
       porcentajes: [100, 97, 90, 68, 45, 20, 6]
     },
-    {
-      nombre: "Grava 3/4\"",
-      tamices: [25.0, 19.0, 12.5, 9.5],
-      porcentajes: [100, 95, 40, 8]
+     {
+      nombre: "0-6 Natural Olavarria\"",
+      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
+      porcentajes: [100, 97, 90, 68, 45, 20, 6]
     }
   ];
 
@@ -747,6 +775,10 @@ function cargarDatosPorDefecto() {
     mezclaDiv.className = "mezcla";
 
     mezclaDiv.innerHTML = `
+     <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Producto</h3>
+          <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Eliminar mezcla</button>
+        </div>
       <h3>${m.nombre}</h3>
       <input type="text" value="${m.nombre}" class="nombreProducto">
       <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Agregar Fila</button>
@@ -772,10 +804,67 @@ function cargarDatosPorDefecto() {
 }
 
 
+
 window.addEventListener("DOMContentLoaded", cargarDatosPorDefecto);
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+document.addEventListener("keydown", function (e) {
+    const isEnter = e.key === "Enter";
+    const isTab = e.key === "Tab";
+
+    // Solo si estás en una celda editable
+    const active = document.activeElement;
+    if (!active || !active.isContentEditable) return;
+
+    if (isEnter || isTab) {
+      e.preventDefault();
+
+      // Lista de todas las celdas editables
+      const editables = Array.from(document.querySelectorAll("td[contenteditable='true']"));
+      const index = editables.indexOf(active);
+
+      if (index !== -1) {
+        let nextIndex;
+        if (isTab) {
+          nextIndex = index + 1;
+        } else if (isEnter) {
+          const currentCell = active;
+          const currentRow = currentCell.parentElement;
+          const colIndex = Array.from(currentRow.children).indexOf(currentCell);
+
+          const nextRow = currentRow.nextElementSibling;
+          if (nextRow) {
+            const targetCell = nextRow.children[colIndex];
+            if (targetCell && targetCell.isContentEditable) {
+              targetCell.focus();
+              return;
+            }
+          }
+          return; // no próxima fila
+        }
+
+        // Enfocar la siguiente celda para Tab
+        if (editables[nextIndex]) {
+          editables[nextIndex].focus();
+        }
+      }
+    }
+  });
 
 
 
