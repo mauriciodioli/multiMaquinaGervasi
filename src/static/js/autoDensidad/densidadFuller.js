@@ -480,12 +480,63 @@ function generarMezclaCorregida() {
     container.innerHTML = `
         <h3 style="color: #007bff;">🛠️ Mezcla Corregida Simulada</h3>
         <canvas id="graficoCorregido" height="300"></canvas>
-        <pre>${JSON.stringify({ tamices: r.tamices, corregidos: corregida }, null, 2)}</pre>
+        <table style="margin-top: 15px; border-collapse: collapse; width: 100%;">
+        <thead>
+          <tr style="background: #f0f0f0;">
+            <th style="padding: 6px; border: 1px solid #ccc;">Tamiz (mm)</th>
+            <th style="padding: 6px; border: 1px solid #ccc;">% Acumulado</th>
+            <th style="padding: 6px; border: 1px solid #ccc;">% Retorno</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${r.tamices.map((t, i) => {
+              const acumulado = corregida[i].toFixed(2);
+              const retorno = i === 0
+                  ? acumulado
+                  : (corregida[i] - corregida[i - 1]).toFixed(2);
+              return `
+                <tr>
+                  <td style="padding: 6px; border: 1px solid #ccc;">${t.toFixed(2)}</td>
+                  <td style="padding: 6px; border: 1px solid #ccc;">${acumulado} %</td>
+                  <td style="padding: 6px; border: 1px solid #ccc;">${retorno} %</td>
+                </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+
     `;
+
+
+      const retorno = corregida.map((val, i) => i === 0 ? val : val - corregida[i - 1]);
+
+      // Agrupar por fracción (usando los índices correctos)
+      const fracciones = {
+          Gruesos: retorno[1],  // 4.75 - 0
+          Medios: retorno[2] + retorno[3], // 2.36 a 1.18
+          Finos: retorno[4] + retorno[5] + retorno[6] // 0.6 a 0.15
+      };
+
+      // Mostrar debajo de la tabla
+      const resumen = `
+      <h4 style="margin-top: 10px;">Resumen por fracción </h4>
+      <ul>
+        <li>🟦 Gruesos: ${fracciones.Gruesos.toFixed(2)} %</li>
+        <li>🟨 Medios: ${fracciones.Medios.toFixed(2)} %</li>
+        <li>🟥 Finos: ${fracciones.Finos.toFixed(2)} %</li>
+      </ul>
+      `;
+
+      container.innerHTML += resumen;
+
+
+
+
+
     document.getElementById("resultados").appendChild(container);
 
     // Calcular curva ideal de Fuller
-    const curvaIdeal = r.tamices.map(t => Math.pow(t / 25, 0.5) * 100); // usando dmax=25 y n=0.5
+    const curvaIdeal = r.tamices.map(t => Math.pow(t / 25, 0.5) * 100).reverse();
+ // usando dmax=25 y n=0.5
 
     // Crear gráfico
     new Chart(document.getElementById("graficoCorregido"), {
@@ -525,7 +576,7 @@ function generarMezclaCorregida() {
                     max: 100
                 },
                 x: {
-                    reverse: true, // 🔁 Esto invierte el eje y soluciona todo
+                    
                     title: {
                         display: true,
                         text: "Tamiz (mm)"

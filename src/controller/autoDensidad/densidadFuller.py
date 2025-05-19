@@ -103,8 +103,7 @@ def densidad_fuller_multiple():
 
     resultados = []
 
-    def calcular_curva_fuller(tamices, d_max, n):
-        return [(d / d_max) ** n * 100 for d in tamices][::-1]
+   
 
     for mezcla in mezclas:
         nombre = mezcla.get("nombre", "Sin nombre")
@@ -327,8 +326,9 @@ def densidad_fuller_optimo():
         curvas_interp.append(curva_interp)
 
     materiales = np.array(curvas_interp)  # cada fila es una mezcla
-
-    curva_fuller = np.array([(d / d_max)**n * 100 for d in tamices_comunes][::-1])
+                          
+   
+    curva_fuller = np.array(calcular_curva_fuller(tamices_comunes, d_max, n=0.5))
 
     def error_total(pesos):
         curva = np.dot(pesos, materiales)
