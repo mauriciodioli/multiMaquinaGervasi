@@ -327,9 +327,8 @@ function calcularTodas() {
         })
     })
     .then(res => res.json())
-    // ... tu código anterior hasta .then(data => {
-.then(data => {
-  debugger;
+  .then(data => {
+    const resumenProporciones = generarResumenProporciones(data.mezcla_optima.pesos, data.resultados);
     const resultadosDiv = document.getElementById("resultados");
     let finalHTML = "<h2>Resultados</h2>";
     data.resultados.forEach(resultado => {
@@ -348,67 +347,101 @@ function calcularTodas() {
         return;
     }
 
-    window.ultimaCurvaPromedio = r;
+    window.ultimaCurvaPromedio = {
+                                  ...r,
+                                  mezcla_optima: data.mezcla_optima,
+                                  resultados: data.resultados
+                                };
+
 
     let diagnosticoHTML = `
-        <div style="padding: 16px; background-color: #e6f4ea; border-left: 6px solid #2e7d32; margin-top: 1rem;">
-            <h3>🧾 Diagnóstico general</h3>
-            <ul>
-            <li><strong>Evaluación:</strong> ${r.evaluacion}</li>
-            <li><strong>Error promedio:</strong> ${r.error_promedio.toFixed(2)}%</li>
-            <li><strong>Recomendaciones clave:</strong>
-                <ul>${r.ajustes.map(a => `<li>${a}</li>`).join("")}</ul>
-            </li>
-            <li>✅ Se generó una mezcla corregida y una mezcla óptima automáticamente.</li>
-            <li>📄 Puedes exportar este informe como CSV.</li>
-            </ul>
-        </div>
-    `;
+                    <div style="padding: 16px; background-color: #e6f4ea; border-left: 6px solid #2e7d32; margin-top: 1rem;">
+                        <h3>🧾 Diagnóstico general</h3>
+                        <ul>
+                            <li><strong>Evaluación:</strong> ${r.evaluacion}</li>
+                            <li><strong>Error promedio:</strong> ${r.error_promedio.toFixed(2)}%</li>
+                            <li><strong>Recomendaciones clave:</strong>
+                                <ul>${r.ajustes.map(a => `<li>${a}</li>`).join("")}</ul>
+                            </li>
+                        </ul>
+                        ${resumenProporciones}
+                        <li>✅ Se generó una mezcla corregida y una mezcla óptima automáticamente.</li>
+                        <li>📄 Puedes exportar este informe como CSV.</li>
+                        <details style="margin-top: 1rem;">
+                        <summary style="cursor: pointer; font-weight: bold; font-size: 1.1rem;">
+                          📊 Ver gráfico de proporciones óptimas
+                        </summary>
+                        <canvas id="graficoProporciones" width="400" height="250" style="margin-top: 1rem;"></canvas>
+                                              <div id="bloqueOptimo"></div>
+                      </details>
+
+                       
+                    </div>
+                `;
+
+       // Cargar HTML inicial
+    document.getElementById("diagnosticoModal").innerHTML = diagnosticoHTML;
 
     calcularMezclaOptima().then(mezcla => {
         const pesos = mezcla.proporciones;
         const nombres = mezcla.nombres_mezclas || [];
 
         diagnosticoHTML += `
-            <div style="margin-top: 2rem; padding: 16px; background-color: #e3f2fd; border-left: 6px solid #1976d2; border-radius: 8px;">
-              <h3 style="color: #0d47a1;">🧠 Mezcla Óptima Calculada</h3>
+        <details style="margin-top: 1rem;">
+              <summary style="cursor: pointer; font-weight: bold; font-size: 1.1rem;">
+                🧠 Ver detalles de mezcla óptima calculada
+              </summary>
+                <div style="margin-top: 2rem; padding: 16px; background-color: #e3f2fd; border-left: 6px solid #1976d2; border-radius: 8px;">
+                          <h3 style="color: #0d47a1;">🧠 Mezcla Óptima Calculada</h3>
 
-              <p><strong>📉 Error promedio:</strong> <span style="color:#d32f2f;">${mezcla.error_promedio.toFixed(2)}%</span></p>
+                          <p><strong>📉 Error promedio:</strong> <span style="color:#d32f2f;">${mezcla.error_promedio.toFixed(2)}%</span></p>
 
-              <p><strong>📊 Interpretación de proporciones:</strong></p>
-              <ul style="padding-left: 1.2rem;">
-                ${
-                  pesos.map((p, i) => {
-                    const nombre = nombres[i] || `Mezcla ${i + 1}`;
-                    let explicacion = '';
-                    if (p === 0) {
-                      explicacion = ' (❌ descartada por no aportar mejora)';
-                    } else if (p < 20) {
-                      explicacion = ' (🔧 aporte menor, ajuste fino)';
-                    } else if (p >= 20 && p <= 50) {
-                      explicacion = ' (⚖️ contribución equilibrada)';
-                    } else {
-                      explicacion = ' (💪 componente principal)';
-                    }
-                    return `<li><strong>${nombre}</strong>: ${p.toFixed(2)}% ${explicacion}</li>`;
-                  }).join("")
-                }
-              </ul>
+                          <p><strong>📊 Interpretación de proporciones:</strong></p>
+                          <ul style="padding-left: 1.2rem;">
+                            ${
+                              pesos.map((p, i) => {
+                                const nombre = nombres[i] || `Mezcla ${i + 1}`;
+                                let explicacion = '';
+                                if (p === 0) {
+                                  explicacion = ' (❌ descartada por no aportar mejora)';
+                                } else if (p < 20) {
+                                  explicacion = ' (🔧 aporte menor, ajuste fino)';
+                                } else if (p >= 20 && p <= 50) {
+                                  explicacion = ' (⚖️ contribución equilibrada)';
+                                } else {
+                                  explicacion = ' (💪 componente principal)';
+                                }
+                                return `<li><strong>${nombre}</strong>: ${p.toFixed(2)}% ${explicacion}</li>`;
+                              }).join("")
+                            }
+                          </ul>
 
-              <details style="margin-top: 1rem;">
-                <summary style="cursor:pointer; color:#1976d2;">📄 Ver detalles técnicos</summary>
-                <pre style="background:#f1f1f1; padding:10px; border-radius:5px;">${JSON.stringify({
-                  tamices: mezcla.tamices,
-                  curva_optima: mezcla.curva_optima
-                }, null, 2)}</pre>
-              </details>
-            </div>
+                          <details style="margin-top: 1rem;">
+                            <summary style="cursor:pointer; color:#1976d2;">📄 Ver detalles técnicos</summary>
+                            <pre style="background:#f1f1f1; padding:10px; border-radius:5px;">${JSON.stringify({
+                              tamices: mezcla.tamices,
+                              curva_optima: mezcla.curva_optima
+                            }, null, 2)}</pre>
+                          </details>
+                        </div>
+             
+            </details>
+            
         `;
 
         document.getElementById("diagnosticoModal").innerHTML = diagnosticoHTML;
+        setTimeout(() => {
+            generarGraficoProporciones(mezcla.proporciones, mezcla.nombres_mezclas);
+        }, 0);
+
         abrirModalExportar();
     });
 
+
+
+    
+    
+    
     finalHTML += `
         <h2 style="color: #b30000;">🔎 Análisis final: Curva promedio del conjunto</h2>
 
@@ -419,9 +452,10 @@ function calcularTodas() {
 
             <p><strong>Recomendaciones automáticas:</strong></p>
             <ul>${r.ajustes.map(a => `<li>${a}</li>`).join("")}</ul>
-
+            ${resumenProporciones}
             <p><strong>Datos base:</strong></p>
             <pre>${JSON.stringify({ tamices: r.tamices, promedios: r.promedios }, null, 2)}</pre>
+           
         </div>
 
         <div id="accionesFinales" style="margin-top: 2rem;">
@@ -432,10 +466,97 @@ function calcularTodas() {
             <button class="btn btn-secondary" onclick="exportarCSV()">Exportar a CSV</button>
         </div>
     `;
-
+  
     resultadosDiv.innerHTML = finalHTML;
 });
 
+}
+
+
+
+function generarResumenProporciones(pesos, resultados) {
+    if (!pesos || !Array.isArray(pesos)) return "<p><em>No hay proporciones óptimas para mostrar.</em></p>";
+
+    let html = "<p><strong>📊 Interpretación de las proporciones óptimas:</strong></p><ul>";
+
+    pesos.forEach((peso, i) => {
+        const nombre = resultados[i]?.nombre;
+
+        if (!nombre) return; // 🛑 si no hay nombre, no mostrar nada
+
+        let comentario = "";
+        if (peso < 1) comentario = "❌ descartada por no aportar mejora";
+        else if (peso < 10) comentario = "🔧 aporte menor, ajuste fino";
+        else if (peso > 50) comentario = "💪 componente principal";
+        else comentario = "⚖️ contribución equilibrada";
+
+        html += `<li>${nombre}: ${peso.toFixed(2)}% (${comentario})</li>`;
+    });
+
+    html += "</ul>";
+    return html;
+}
+
+
+
+
+
+
+function generarGraficoProporciones(pesos, nombres) {
+    console.log("📊 Datos para graficar proporciones:");
+    nombres.forEach((nombre, i) => {
+        console.log(`${nombre}: ${pesos[i].toFixed(2)}%`);
+    });
+
+    const ctx = document.getElementById("graficoProporciones").getContext("2d");
+
+    const comentarios = pesos.map(p => {
+        if (p < 1) return "❌ Descartada";
+        if (p < 10) return "🔧 Ajuste fino";
+        if (p > 50) return "💪 Principal";
+        return "⚖️ Equilibrada";
+    });
+
+    const colores = pesos.map(p => {
+        if (p < 1) return "#ccc";
+        if (p < 10) return "#f4c542";
+        if (p > 50) return "#28a745";
+        return "#007bff";
+    });
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: nombres,
+            datasets: [{
+                label: "% proporción óptima",
+                data: pesos,
+                backgroundColor: colores
+            }]
+        },
+        options: {
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            const i = ctx.dataIndex;
+                            return `${pesos[i].toFixed(2)}% - ${comentarios[i]}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: "% proporción óptima"
+                    }
+                }
+            }
+        }
+    });
 }
 
 
@@ -619,10 +740,31 @@ function exportarCSV() {
     return;
   }
 
-  let csv = "Tamiz (mm);% Promedio; ASTM C136 o IRAM 1505\n";
+  let csv = "Tamiz (mm);% Promedio;ASTM C136 o IRAM 1505\n";
   for (let i = 0; i < curva.tamices.length; i++) {
-    csv += `${curva.tamices[i]};${curva.promedios[i]};${curva.clasificaciones[i]}\n`;
+    csv += `${curva.tamices[i]};${curva.promedios[i]}%;${curva.clasificaciones[i]}\n`;
   }
+
+  // Añadir encabezado para separarlo visualmente
+  if (curva.mezcla_optima?.pesos && curva.resultados?.length) {
+    csv += "\nProducto;Porcentaje;Comentario\n";
+
+    for (let i = 0; i < curva.resultados.length; i++) {
+      const peso = curva.mezcla_optima.pesos[i];
+      const nombre = curva.resultados[i]?.nombre;
+      if (!nombre) continue;
+
+      let comentario = "";
+      if (peso < 1) comentario = "descartada por no aportar mejora";
+      else if (peso < 10) comentario = "aporte menor, ajuste fino";
+      else if (peso > 50) comentario = "componente principal";
+      else comentario = "contribucion equilibrada";
+
+      csv += `${nombre};${peso.toFixed(2)}%;${comentario}\n`;
+    }
+  }
+
+  //console.log("📤 CSV generado para exportar:\n", csv);
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -631,6 +773,9 @@ function exportarCSV() {
   a.download = "curva_promedio.csv";
   a.click();
 }
+
+
+
 
 
 

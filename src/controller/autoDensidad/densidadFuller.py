@@ -6,6 +6,7 @@ from collections import defaultdict
 import numpy as np
 from flask import jsonify, request
 from scipy.optimize import minimize
+from controller.autoDensidad.calcularMezclaOptima import calcular_mezcla_optima
 
 
 
@@ -102,6 +103,9 @@ def densidad_fuller_multiple():
     parametros_personalizados = data.get("parametros_personalizados", None)
 
     resultados = []
+    curvas_individuales = []
+    nombres_mezclas = []
+
 
    
 
@@ -112,6 +116,8 @@ def densidad_fuller_multiple():
 
         if not tamices or not reales or len(tamices) != len(reales):
             continue  # O agregar error al resultado
+        curvas_individuales.append(reales)
+        nombres_mezclas.append(nombre)
 
         curva_fuller = calcular_curva_fuller(tamices, d_max, n)
         diferencias = [r - f for r, f in zip(reales, curva_fuller)]
@@ -165,11 +171,27 @@ def densidad_fuller_multiple():
         curva_resultante["error_promedio"] = error_prom_res
         curva_resultante["ajustes"] = ajustes_res
 
-        
+     # Armar lista de curvas y tamices para la optimización
+    resultado_optimo = calcular_mezcla_optima(curvas_individuales, tamices, d_max, n)
+    if "pesos" in resultado_optimo:
+        for i, r in enumerate(resultados):
+            r["proporcion_optima"] = resultado_optimo["pesos"][i]
+
+    for mezcla in mezclas:
+        porcentajes = mezcla.get("porcentajes_reales", [])
+        if porcentajes:
+            curvas_individuales.append(porcentajes)
+
+    if curvas_individuales:
+        tamices_base = mezclas[0].get("tamices", [])
+        resultado_optimo = calcular_mezcla_optima(curvas_individuales, tamices_base, d_max, n)
+    else:
+        resultado_optimo = {"error": "No hay mezclas válidas para optimizar."}   
 
     return jsonify({
         "resultados": resultados,
-        "curva_resultante": curva_resultante
+        "curva_resultante": curva_resultante,
+        "mezcla_optima": resultado_optimo  
     })
 
 
