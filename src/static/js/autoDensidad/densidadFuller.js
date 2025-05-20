@@ -368,14 +368,10 @@ function calcularTodas() {
                         <li>✅ Se generó una mezcla corregida y una mezcla óptima automáticamente.</li>
                         <li>📄 Puedes exportar este informe como CSV.</li>
                         <details style="margin-top: 1rem;">
-                        <summary style="cursor: pointer; font-weight: bold; font-size: 1.1rem;">
-                          📊 Ver gráfico de proporciones óptimas
-                        </summary>
+                        <summary style="cursor:pointer; color:#0d47a1; font-weight:bold;">📊 Ver gráfico de proporciones óptimas</summary>
                         <canvas id="graficoProporciones" width="400" height="250" style="margin-top: 1rem;"></canvas>
                                               <div id="bloqueOptimo"></div>
                       </details>
-
-                       
                     </div>
                 `;
 
@@ -388,7 +384,7 @@ function calcularTodas() {
 
         diagnosticoHTML += `
         <details style="margin-top: 1rem;">
-              <summary style="cursor: pointer; font-weight: bold; font-size: 1.1rem;">
+              <summary style="cursor: pointer; color:#0d47a1; font-weight: bold; font-size: 1.1rem;">
                 🧠 Ver detalles de mezcla óptima calculada
               </summary>
                 <div style="margin-top: 2rem; padding: 16px; background-color: #e3f2fd; border-left: 6px solid #1976d2; border-radius: 8px;">
