@@ -117,7 +117,7 @@ window.onclick = function(event) {
       params.append('tablas', JSON.stringify(tablas));
     
   
-      fetch("http://localhost:5001/copiar_origen_destino/", {
+      fetch("http://localhost:5010/copiar_origen_destino/", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded"

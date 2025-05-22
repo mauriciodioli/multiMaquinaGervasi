@@ -235,7 +235,7 @@ function agregarMezcla() {
         <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Agregar Fila</button>
         <table class="tabla">
             <thead>
-                <tr><th>Tamiz (mm)</th><th>% Real</th><th>Acción</th></tr>
+                <tr><th>Tamiz </th><th>% Real</th><th>Acción</th></tr>
             </thead>
             <tbody>
                 ${filasHTML}
@@ -327,144 +327,147 @@ function calcularTodas() {
         })
     })
     .then(res => res.json())
-  .then(data => {
-    const resumenProporciones = generarResumenProporciones(data.mezcla_optima.pesos, data.resultados);
-    const resultadosDiv = document.getElementById("resultados");
-    let finalHTML = "<h2>Resultados</h2>";
-    data.resultados.forEach(resultado => {
-        finalHTML += `
-            <h4>${resultado.nombre}</h4>
-            <img src="${resultado.grafico}" alt="Curva de ${resultado.nombre}">
-            <pre>${JSON.stringify(resultado, null, 2)}</pre>
-            <hr>
-        `;
-    });
+          .then(data => {
+            debugger;
+          
+            console.log(data);
+            const resumenProporciones = generarResumenProporciones(data.mezcla_optima.pesos, data.resultados);
+            const resultadosDiv = document.getElementById("resultados");
+            let finalHTML = "<h2>Resultados</h2>";
+            data.resultados.forEach(resultado => {
+                finalHTML += `
+                    <h4>${resultado.nombre}</h4>
+                    <img src="${resultado.grafico}" alt="Curva de ${resultado.nombre}">
+                    <pre>${JSON.stringify(resultado, null, 2)}</pre>
+                    <hr>
+                `;
+            });
 
-    const r = data.curva_resultante;
+            const r = data.curva_resultante;
 
-    if (!r || !r.tamices || !r.promedios) {
-        resultadosDiv.innerHTML += "<p style='color:red;'>❌ No se pudo generar el análisis final.</p>";
-        return;
-    }
+            if (!r || !r.tamices || !r.promedios) {
+                resultadosDiv.innerHTML += "<p style='color:red;'>❌ No se pudo generar el análisis final.</p>";
+                return;
+            }
 
-    window.ultimaCurvaPromedio = {
-                                  ...r,
-                                  mezcla_optima: data.mezcla_optima,
-                                  resultados: data.resultados
-                                };
+            window.ultimaCurvaPromedio = {
+                                          ...r,
+                                          mezcla_optima: data.mezcla_optima,
+                                          resultados: data.resultados
+                                        };
 
 
-    let diagnosticoHTML = `
-                    <div style="padding: 16px; background-color: #e6f4ea; border-left: 6px solid #2e7d32; margin-top: 1rem;">
-                        <h3>🧾 Diagnóstico general</h3>
-                        <ul>
-                            <li><strong>Evaluación:</strong> ${r.evaluacion}</li>
-                            <li><strong>Error promedio:</strong> ${r.error_promedio.toFixed(2)}%</li>
-                            <li><strong>Recomendaciones clave:</strong>
-                                <ul>${r.ajustes.map(a => `<li>${a}</li>`).join("")}</ul>
-                            </li>
-                        </ul>
-                        ${resumenProporciones}
-                        <li>✅ Se generó una mezcla corregida y una mezcla óptima automáticamente.</li>
-                        <li>📄 Puedes exportar este informe como CSV.</li>
-                        <details style="margin-top: 1rem;">
-                        <summary style="cursor:pointer; color:#0d47a1; font-weight:bold;">📊 Ver gráfico de proporciones óptimas</summary>
-                        <canvas id="graficoProporciones" width="400" height="250" style="margin-top: 1rem;"></canvas>
-                                              <div id="bloqueOptimo"></div>
-                      </details>
-                    </div>
+            let diagnosticoHTML = `
+                            <div style="padding: 16px; background-color: #e6f4ea; border-left: 6px solid #2e7d32; margin-top: 1rem;">
+                                <h3>🧾 Diagnóstico general</h3>
+                                <ul>
+                                    <li><strong>Evaluación:</strong> ${r.evaluacion}</li>
+                                    <li><strong>Error promedio:</strong> ${r.error_promedio.toFixed(2)}%</li>
+                                    <li><strong>Recomendaciones clave:</strong>
+                                        <ul>${r.ajustes.map(a => `<li>${a}</li>`).join("")}</ul>
+                                    </li>
+                                </ul>
+                                ${resumenProporciones}
+                                <li>✅ Se generó una mezcla corregida y una mezcla óptima automáticamente.</li>
+                                <li>📄 Puedes exportar este informe como CSV.</li>
+                                <details style="margin-top: 1rem;">
+                                <summary style="cursor:pointer; color:#0d47a1; font-weight:bold;">📊 Ver gráfico de proporciones óptimas</summary>
+                                <canvas id="graficoProporciones" width="400" height="250" style="margin-top: 1rem;"></canvas>
+                                                      <div id="bloqueOptimo"></div>
+                              </details>
+                            </div>
+                        `;
+
+              // Cargar HTML inicial
+            document.getElementById("diagnosticoModal").innerHTML = diagnosticoHTML;
+
+            calcularMezclaOptima().then(mezcla => {
+                const pesos = mezcla.proporciones;
+                const nombres = mezcla.nombres_mezclas || [];
+
+                diagnosticoHTML += `
+                <details style="margin-top: 1rem;">
+                      <summary style="cursor: pointer; color:#0d47a1; font-weight: bold; font-size: 1.1rem;">
+                        🧠 Ver detalles de mezcla óptima calculada
+                      </summary>
+                        <div style="margin-top: 2rem; padding: 16px; background-color: #e3f2fd; border-left: 6px solid #1976d2; border-radius: 8px;">
+                                  <h3 style="color: #0d47a1;">🧠 Mezcla Óptima Calculada</h3>
+
+                                  <p><strong>📉 Error promedio:</strong> <span style="color:#d32f2f;">${mezcla.error_promedio.toFixed(2)}%</span></p>
+
+                                  <p><strong>📊 Interpretación de proporciones:</strong></p>
+                                  <ul style="padding-left: 1.2rem;">
+                                    ${
+                                      pesos.map((p, i) => {
+                                        const nombre = nombres[i] || `Mezcla ${i + 1}`;
+                                        let explicacion = '';
+                                        if (p === 0) {
+                                          explicacion = ' (❌ descartada por no aportar mejora)';
+                                        } else if (p < 20) {
+                                          explicacion = ' (🔧 aporte menor, ajuste fino)';
+                                        } else if (p >= 20 && p <= 50) {
+                                          explicacion = ' (⚖️ contribución equilibrada)';
+                                        } else {
+                                          explicacion = ' (💪 componente principal)';
+                                        }
+                                        return `<li><strong>${nombre}</strong>: ${p.toFixed(2)}% ${explicacion}</li>`;
+                                      }).join("")
+                                    }
+                                  </ul>
+
+                                  <details style="margin-top: 1rem;">
+                                    <summary style="cursor:pointer; color:#1976d2;">📄 Ver detalles técnicos</summary>
+                                    <pre style="background:#f1f1f1; padding:10px; border-radius:5px;">${JSON.stringify({
+                                      tamices: mezcla.tamices,
+                                      curva_optima: mezcla.curva_optima
+                                    }, null, 2)}</pre>
+                                  </details>
+                                </div>
+                    
+                    </details>
+                    
                 `;
 
-       // Cargar HTML inicial
-    document.getElementById("diagnosticoModal").innerHTML = diagnosticoHTML;
+                document.getElementById("diagnosticoModal").innerHTML = diagnosticoHTML;
+                setTimeout(() => {
+                    generarGraficoProporciones(mezcla.proporciones, mezcla.nombres_mezclas);
+                }, 0);
 
-    calcularMezclaOptima().then(mezcla => {
-        const pesos = mezcla.proporciones;
-        const nombres = mezcla.nombres_mezclas || [];
+                abrirModalExportar();
+            });
 
-        diagnosticoHTML += `
-        <details style="margin-top: 1rem;">
-              <summary style="cursor: pointer; color:#0d47a1; font-weight: bold; font-size: 1.1rem;">
-                🧠 Ver detalles de mezcla óptima calculada
-              </summary>
-                <div style="margin-top: 2rem; padding: 16px; background-color: #e3f2fd; border-left: 6px solid #1976d2; border-radius: 8px;">
-                          <h3 style="color: #0d47a1;">🧠 Mezcla Óptima Calculada</h3>
 
-                          <p><strong>📉 Error promedio:</strong> <span style="color:#d32f2f;">${mezcla.error_promedio.toFixed(2)}%</span></p>
 
-                          <p><strong>📊 Interpretación de proporciones:</strong></p>
-                          <ul style="padding-left: 1.2rem;">
-                            ${
-                              pesos.map((p, i) => {
-                                const nombre = nombres[i] || `Mezcla ${i + 1}`;
-                                let explicacion = '';
-                                if (p === 0) {
-                                  explicacion = ' (❌ descartada por no aportar mejora)';
-                                } else if (p < 20) {
-                                  explicacion = ' (🔧 aporte menor, ajuste fino)';
-                                } else if (p >= 20 && p <= 50) {
-                                  explicacion = ' (⚖️ contribución equilibrada)';
-                                } else {
-                                  explicacion = ' (💪 componente principal)';
-                                }
-                                return `<li><strong>${nombre}</strong>: ${p.toFixed(2)}% ${explicacion}</li>`;
-                              }).join("")
-                            }
-                          </ul>
-
-                          <details style="margin-top: 1rem;">
-                            <summary style="cursor:pointer; color:#1976d2;">📄 Ver detalles técnicos</summary>
-                            <pre style="background:#f1f1f1; padding:10px; border-radius:5px;">${JSON.stringify({
-                              tamices: mezcla.tamices,
-                              curva_optima: mezcla.curva_optima
-                            }, null, 2)}</pre>
-                          </details>
-                        </div>
-             
-            </details>
             
-        `;
+            
+            
+            finalHTML += `
+                <h2 style="color: #b30000;">🔎 Análisis final: Curva promedio del conjunto</h2>
 
-        document.getElementById("diagnosticoModal").innerHTML = diagnosticoHTML;
-        setTimeout(() => {
-            generarGraficoProporciones(mezcla.proporciones, mezcla.nombres_mezclas);
-        }, 0);
+                <div style="border: 2px solid #b30000; padding: 16px; border-radius: 10px; background-color: #fff4f4;">
+                    <img src="${r.grafico}" alt="Curva Promedio" style="max-width: 100%; margin-bottom: 12px;">
+                    <p><strong>Evaluación general:</strong> <span style="color: #000;">${r.evaluacion}</span> 
+                    <em>(Error promedio: ${r.error_promedio.toFixed(2)}%)</em></p>
 
-        abrirModalExportar();
-    });
+                    <p><strong>Recomendaciones automáticas:</strong></p>
+                    <ul>${r.ajustes.map(a => `<li>${a}</li>`).join("")}</ul>
+                    ${resumenProporciones}
+                    <p><strong>Datos base:</strong></p>
+                    <pre>${JSON.stringify({ tamices: r.tamices, promedios: r.promedios }, null, 2)}</pre>
+                  
+                </div>
 
-
-
-    
-    
-    
-    finalHTML += `
-        <h2 style="color: #b30000;">🔎 Análisis final: Curva promedio del conjunto</h2>
-
-        <div style="border: 2px solid #b30000; padding: 16px; border-radius: 10px; background-color: #fff4f4;">
-            <img src="${r.grafico}" alt="Curva Promedio" style="max-width: 100%; margin-bottom: 12px;">
-            <p><strong>Evaluación general:</strong> <span style="color: #000;">${r.evaluacion}</span> 
-            <em>(Error promedio: ${r.error_promedio.toFixed(2)}%)</em></p>
-
-            <p><strong>Recomendaciones automáticas:</strong></p>
-            <ul>${r.ajustes.map(a => `<li>${a}</li>`).join("")}</ul>
-            ${resumenProporciones}
-            <p><strong>Datos base:</strong></p>
-            <pre>${JSON.stringify({ tamices: r.tamices, promedios: r.promedios }, null, 2)}</pre>
-           
-        </div>
-
-        <div id="accionesFinales" style="margin-top: 2rem;">
-            <h3>📌 Acciones</h3>
-            <button class="btn btn-primary" onclick="generarMezclaCorregida()">Generar mezcla corregida</button>
-            <button class="btn btn-primary" onclick="abrirModalExportar()">Mostrar resumen</button>
-            <button class="btn btn-primary" onclick="abrirModalOptimo()">Calculo Optimo</button>
-            <button class="btn btn-secondary" onclick="exportarCSV()">Exportar a CSV</button>
-        </div>
-    `;
-  
-    resultadosDiv.innerHTML = finalHTML;
-});
+                <div id="accionesFinales" style="margin-top: 2rem;">
+                    <h3>📌 Acciones</h3>
+                    <button class="btn btn-primary" onclick="generarMezclaCorregida()">Generar mezcla corregida</button>
+                    <button class="btn btn-primary" onclick="abrirModalExportar()">Mostrar resumen</button>
+                    <button class="btn btn-primary" onclick="abrirModalOptimo()">Calculo Optimo</button>
+                    <button class="btn btn-secondary" onclick="exportarCSV()">Exportar a CSV</button>
+                </div>
+            `;
+          
+            resultadosDiv.innerHTML = finalHTML;
+        });
 
 }
 
@@ -652,7 +655,7 @@ function generarMezclaCorregida() {
     document.getElementById("resultados").appendChild(container);
 
     // Calcular curva ideal de Fuller
-    const curvaIdeal = r.tamices.map(t => Math.pow(t / 25, 0.5) * 100).reverse();
+    const curvaIdeal = r.tamices.map(t => Math.pow(t / 25, 0.5) * 100);
  // usando dmax=25 y n=0.5
 
     // Crear gráfico
@@ -685,6 +688,7 @@ function generarMezclaCorregida() {
         options: {
             scales: {
                 y: {
+                  
                     title: {
                         display: true,
                         text: "% que pasa"
@@ -693,7 +697,7 @@ function generarMezclaCorregida() {
                     max: 100
                 },
                 x: {
-                    
+                   
                     title: {
                         display: true,
                         text: "Tamiz (mm)"
@@ -892,11 +896,14 @@ function calcularMezclaOptima() {
         options: {
           scales: {
             y: {
+              reverse: true,
               title: { display: true, text: "% que pasa" },
               min: 0,
               max: 100
             },
-            x: {
+            x: 
+            {
+              
               title: { display: true, text: "Tamiz (mm)" }
             }
           }
@@ -979,7 +986,7 @@ function cargarDatosPorDefecto() {
       <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Agregar Fila</button>
       <table class="tabla">
         <thead>
-          <tr><th>Tamiz (mm)</th><th>% Real</th><th>Acción</th></tr>
+          <tr><th>Tamiz</th><th>% Real</th><th>Acción</th></tr>
         </thead>
         <tbody>
           ${m.tamices.map((t, i) => `

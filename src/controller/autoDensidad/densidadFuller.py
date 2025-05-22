@@ -5,6 +5,7 @@ from flask import Blueprint, request, render_template, send_file, jsonify
 from collections import defaultdict
 import numpy as np
 from flask import jsonify, request
+import pandas as pd
 from scipy.optimize import minimize
 from controller.autoDensidad.calcularMezclaOptima import calcular_mezcla_optima
 
@@ -43,7 +44,7 @@ def pantalla_densidad_fuller_multiple():
 
 
 def calcular_curva_fuller(tamices, d_max, n=0.5):
-    return [(d / d_max) ** n * 100 for d in tamices][::-1]
+    return [(d / d_max) ** n * 100 for d in tamices]
 
 def comparar_mezcla_real_vs_fuller(tamices, porcentajes_reales, d_max, n=0.5):
     curva_fuller = calcular_curva_fuller(tamices, d_max, n)
@@ -94,7 +95,6 @@ def densidad_fuller_route():
 @densidadFuller.route('/densidadFullerMultiple/', methods=['POST'])
 def densidad_fuller_multiple():
 
-
     data = request.get_json()
     mezclas = data.get("mezclas", [])
     d_max = float(data.get("d_max", 25))    
@@ -106,14 +106,11 @@ def densidad_fuller_multiple():
     curvas_individuales = []
     nombres_mezclas = []
 
-
-   
-
     for mezcla in mezclas:
         nombre = mezcla.get("nombre", "Sin nombre")
         tamices = mezcla.get("tamices", [])
         reales = mezcla.get("porcentajes_reales", [])
-
+        reales = reales[::-1]
         if not tamices or not reales or len(tamices) != len(reales):
             continue  # O agregar error al resultado
         curvas_individuales.append(reales)
@@ -132,14 +129,22 @@ def densidad_fuller_multiple():
         ax.set_ylabel("% que pasa")
         ax.grid(True)
         ax.legend()
+        # Preparar DataFrame para visualizar
+        df = pd.DataFrame({
+            'Tamiz (mm)': tamices,
+            'P reales (%)': reales,
+            'P Fuller (%)': curva_fuller,
+            'ΔP (%)': diferencias
+        })
+        # print(df.to_string())
 
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
         buf.seek(0)
         img_base64 = base64.b64encode(buf.getvalue()).decode()
         plt.close()
-        evaluacion, error_promedio = evaluar_mezcla(diferencias)
-        ajustes = sugerir_ajustes(tamices, diferencias)
+        evaluacion, error_promedio = evaluar_mezcla(diferencias)  # 💥 Obtenemos la evaluación y el error promedio de cada mezcla
+        ajustes = sugerir_ajustes(tamices, diferencias) # 💥 Sugerimos ajustes según las diferencias
 
         resultados.append({
             "nombre": nombre,
@@ -157,20 +162,18 @@ def densidad_fuller_multiple():
         # Comparar la curva promedio con Fuller ideal
         tamices_res = curva_resultante["tamices"]
         promedios_res = curva_resultante["promedios"]
-        curva_fuller_res = [(t / d_max) ** n * 100 for t in tamices_res][::-1]
-        diferencias_res = [r - f for r, f in zip(promedios_res, curva_fuller_res)]
-
+        curva_fuller_res = calcular_curva_fuller(tamices_res, d_max, n)
+        promedios_res1 = promedios_res[::-1]
+        diferencias_res = [r - f for r, f in zip(promedios_res1, curva_fuller_res)]
+        diferencias_res = diferencias_res[::-1]
         # Evaluar y sugerir
         evaluacion_res, error_prom_res = evaluar_mezcla(diferencias_res)
-        ajustes_res = sugerir_ajustes(tamices_res, diferencias_res)
-
-        # Agregarlo al dict de la curva resultante
-        curva_resultante["curva_ideal"] = curva_fuller_res
-        curva_resultante["diferencias"] = diferencias_res
-        curva_resultante["evaluacion"] = evaluacion_res
-        curva_resultante["error_promedio"] = error_prom_res
-        curva_resultante["ajustes"] = ajustes_res
-
+       
+       
+       
+       
+       
+       
      # Armar lista de curvas y tamices para la optimización
     resultado_optimo = calcular_mezcla_optima(curvas_individuales, tamices, d_max, n)
     if "pesos" in resultado_optimo:
@@ -194,26 +197,46 @@ def densidad_fuller_multiple():
         "mezcla_optima": resultado_optimo  
     })
 
+def calcular_curva_corregida(curvas_individuales, pesos):
+    # Ponderar cada punto por los pesos
+    return [
+        sum(peso * curva[i] for peso, curva in zip(pesos, curvas_individuales))
+        for i in range(len(curvas_individuales[0]))
+    ]
 
 def calcular_curva_resultante(mezclas, d_max, n, perfil="hormigon_argentino", parametros_personalizados=None):
-    """Calcula la curva promedio de todas las mezclas y devuelve la imagen en base64 + datos"""
+    """Calcula la curva promedio de todas las mezclas y devuelve el análisis completo"""
     tamiz_data = defaultdict(list)
 
     for mezcla in mezclas:
         for t, p in zip(mezcla["tamices"], mezcla["porcentajes_reales"]):
             tamiz_data[t].append(p)
 
-    # Ordenar y calcular promedio por tamiz
+    # ✅ Ordenar tamices de menor a mayor
     tamices_ordenados = sorted(tamiz_data.keys(), reverse=True)
-    promedio_reales = [np.mean(tamiz_data[t]) for t in tamices_ordenados]
-    curva_fuller_resultante = [(t / d_max) ** n * 100 for t in tamices_ordenados][::-1]
+    promedio_reales = [np.mean(tamiz_data[t]) for t in tamiz_data]
 
-    # Clasificaciones por tamiz
-    clasificaciones = [clasificar_tamiz(t, p,perfil,parametros_personalizados) for t, p in zip(tamices_ordenados, promedio_reales)]
+    # Calcular curva ideal
+    # Calcular curva ideal con tamices en orden ascendente y luego invertir para que coincida con el gráfico
+    tamices_asc = sorted(tamiz_data.keys())
+    curva_fuller_resultante = calcular_curva_fuller(tamices_asc, d_max, n)[::-1]
+
+
+    # Clasificar cada tamiz con el perfil adecuado
+    clasificaciones = [
+        clasificar_tamiz(t, p, perfil, parametros_personalizados)
+        for t, p in zip(tamices_ordenados, promedio_reales)
+    ]
+
+    # ✅ Calcular diferencias, evaluación y ajustes
+    diferencias = [r - f for r, f in zip(promedio_reales, curva_fuller_resultante)]
+    evaluacion, error_promedio = evaluar_mezcla(diferencias)# Obenemos la evaluación y el error promedio de cada mezcla
+    ajustes = sugerir_ajustes(tamices_ordenados, diferencias)
 
     # Generar gráfico
+    promedios_invertidos = promedio_reales[::-1]
     fig, ax = plt.subplots()
-    ax.plot(tamices_ordenados, promedio_reales, marker='o', label='Promedio Real')
+    ax.plot(tamices_ordenados, promedios_invertidos, marker='o', label='Promedio Real')
     ax.plot(tamices_ordenados, curva_fuller_resultante, marker='x', label='Fuller Ideal')
     ax.invert_xaxis()
     ax.set_title("Curva Promedio de Todas las Mezclas")
@@ -221,7 +244,13 @@ def calcular_curva_resultante(mezclas, d_max, n, perfil="hormigon_argentino", pa
     ax.set_ylabel("% que pasa")
     ax.grid(True)
     ax.legend()
-
+    df = pd.DataFrame({
+            'Tamiz (mm)': tamices_ordenados,
+            'P reales (%)': promedios_invertidos,
+            'P Fuller (%)': curva_fuller_resultante,
+            'ΔP (%)': diferencias
+        })
+    print(df.to_string())
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
     buf.seek(0)
@@ -230,10 +259,16 @@ def calcular_curva_resultante(mezclas, d_max, n, perfil="hormigon_argentino", pa
 
     return {
         "tamices": tamices_ordenados,
-        "promedios": promedio_reales,
+        "promedios": promedios_invertidos,
         "clasificaciones": clasificaciones,
+        "curva_ideal": curva_fuller_resultante,
+        "diferencias": diferencias,
+        "evaluacion": evaluacion,
+        "error_promedio": error_promedio,
+        "ajustes": ajustes,
         "grafico": f"data:image/png;base64,{curva_global_base64}"
     }
+
     
     
     
