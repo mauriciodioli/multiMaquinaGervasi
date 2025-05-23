@@ -136,3 +136,33 @@ td[contenteditable="true"]:focus {
   background-color: #f8f9fa;
   padding: 1rem;
 }
+
+
+
+
+
+
+
+
+
+
+
+.tabla-interpretacion {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-family: 'Segoe UI', sans-serif;
+}
+.tabla-interpretacion th,
+.tabla-interpretacion td {
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  text-align: left;
+}
+.tabla-interpretacion th {
+  background-color: #f8f8f8;
+  font-weight: bold;
+}
+.tabla-interpretacion td:first-child {
+  font-weight: bold;
+}

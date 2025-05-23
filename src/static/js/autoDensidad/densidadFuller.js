@@ -187,11 +187,13 @@ function enviarDatos() {
     })
     .then(res => res.json())
     .then(data => {
+      debugger;
     document.getElementById("resultado").innerHTML = `
         <h3>Risultato</h3>
         <img src="${data.grafico}" alt="Grafico della curva di Fuller">
         <pre>${JSON.stringify(data, null, 2)}</pre>
     `;
+
     })
     .catch(err => {
     console.error("Error:", err);
@@ -267,6 +269,12 @@ function agregarFilaMultiple(btn) {
     `;
     tbody.appendChild(fila);
 }
+
+
+
+let curvas = []; // guardar aquí
+let pesos = [];
+let nombreProductos = [];
 function calcularTodas() {
     const mezclasDivs = document.querySelectorAll(".mezcla");
     const payload = [];
@@ -328,9 +336,11 @@ function calcularTodas() {
     })
     .then(res => res.json())
           .then(data => {
-            debugger;
-          
+             curvas = data.resultados.map(r => r.curva_ideal); 
+             pesos = data.resultados.map(r => r.proporcion_optima);
+             nombreProductos = data.resultados.map(r => r.nombre);
             console.log(data);
+            
             const resumenProporciones = generarResumenProporciones(data.mezcla_optima.pesos, data.resultados);
             const resultadosDiv = document.getElementById("resultados");
             let finalHTML = "<h2>Resultados</h2>";
@@ -571,142 +581,101 @@ function generarGraficoProporciones(pesos, nombres) {
 
 
 function generarMezclaCorregida() {
-    const r = window.ultimaCurvaPromedio;
-    if (!r) {
-        alert("No hay curva promedio cargada.");
-        return;
-    }
+    fetch('/calcularCurvaCorregida/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            curvas: curvas,
+            pesos: pesos,
+            nombreProductos: nombreProductos,
+            tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15]
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.grafico_base64) {
+              const contenedor = document.getElementById("contenedorGraficoCurva");
 
-    const corregida = [];
+              // Insertar imagen y tabla vacía
+              contenedor.innerHTML = `
+                  <img src="${data.grafico_base64}" style="max-width:100%; height:auto; margin-bottom: 15px;">
+                  <h6>📊 Automatic recommendationsInterpretation of optimal proportions:</h6>
+                  <table class="tabla-interpretacion">
+                      <thead>
+                          <tr>
+                              <th>Material</th>
+                              <th>Proporción</th>
+                              <th>Interpretación</th>
+                          </tr>
+                      </thead>
+                      <tbody id="tablaInterpretacionCuerpo"></tbody>
+                  </table>
+              `;
 
-    r.tamices.forEach((tamiz, i) => {
-        let valor = r.promedios[i];
-        let ajuste = 0;
+              // Cargar datos en la tabla
+              const cuerpo = document.getElementById("tablaInterpretacionCuerpo");
+              data.interpretacion_materiales.forEach(item => {
+                  const [nombre, resto] = item.split(": ");
+                  const [proporcion, ...restoInterpretacion] = resto.split(" ");
+                  const interpretacion = restoInterpretacion.join(" ");
+                  const fila = `
+                      <tr>
+                          <td>${nombre}</td>
+                          <td>${proporcion}</td>
+                          <td>${interpretacion}</td>
+                      </tr>
+                  `;
+                  cuerpo.innerHTML += fila;
+              });
 
-        if (tamiz < 0.3 && r.ajustes.some(a => a.includes("finos"))) {
-            ajuste = r.ajustes.find(a => a.includes("Reducir material finos")) ? -0.1 * valor : 0.1 * valor;
-        } else if (tamiz <= 4.75 && tamiz >= 0.3 && r.ajustes.some(a => a.includes("medios"))) {
-            ajuste = r.ajustes.find(a => a.includes("Reducir material medios")) ? -0.1 * valor : 0.1 * valor;
-        } else if (tamiz > 4.75 && r.ajustes.some(a => a.includes("gruesos"))) {
-            ajuste = r.ajustes.find(a => a.includes("Reducir material gruesos")) ? -0.1 * valor : 0.1 * valor;
+              // Insertar recomendaciones automáticas si hay
+              if (data.acciones_recomendadas && data.acciones_recomendadas.length > 0) {
+                 let tablaRecomendaciones = `
+                                              <h6>🛠️ Automatic recommendations:</h6>
+                                              <table class="tabla-interpretacion">
+                                                <thead>
+                                                  <tr>
+                                                    <th>#</th>
+                                                    <th>Recomendación</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                            `;
+
+                                            data.acciones_recomendadas.forEach((rec, index) => {
+                                                tablaRecomendaciones += `
+                                                  <tr>
+                                                    <td>${index + 1}</td>
+                                                    <td>${rec}</td>
+                                                  </tr>
+                                                `;
+                                            });
+
+                                            tablaRecomendaciones += `
+                                                </tbody>
+                                              </table>
+                                            `;
+
+                  contenedor.innerHTML += tablaRecomendaciones;
+
+              }
+
+          // Mostrar modal
+          abrirModalGraficoCorreccion();
+
+
+        } else if (data.error) {
+            alert("Error: " + data.error);
         }
-
-        const nuevo_valor = Math.max(0, Math.min(100, valor + ajuste));
-        corregida.push(nuevo_valor);
-    });
-
-    // Crear contenedor y canvas para el gráfico
-    const container = document.createElement("div");
-    container.innerHTML = `
-        <h3 style="color: #007bff;">🛠️ Mezcla Corregida Simulada</h3>
-        <canvas id="graficoCorregido" height="300"></canvas>
-        <table style="margin-top: 15px; border-collapse: collapse; width: 100%;">
-        <thead>
-          <tr style="background: #f0f0f0;">
-            <th style="padding: 6px; border: 1px solid #ccc;">Tamiz (mm)</th>
-            <th style="padding: 6px; border: 1px solid #ccc;">% Acumulado</th>
-            <th style="padding: 6px; border: 1px solid #ccc;">% Retorno</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${r.tamices.map((t, i) => {
-              const acumulado = corregida[i].toFixed(2);
-              const retorno = i === 0
-                  ? acumulado
-                  : (corregida[i] - corregida[i - 1]).toFixed(2);
-              return `
-                <tr>
-                  <td style="padding: 6px; border: 1px solid #ccc;">${t.toFixed(2)}</td>
-                  <td style="padding: 6px; border: 1px solid #ccc;">${acumulado} %</td>
-                  <td style="padding: 6px; border: 1px solid #ccc;">${retorno} %</td>
-                </tr>`;
-          }).join("")}
-        </tbody>
-      </table>
-
-    `;
-
-
-      const retorno = corregida.map((val, i) => i === 0 ? val : val - corregida[i - 1]);
-
-      // Agrupar por fracción (usando los índices correctos)
-      const fracciones = {
-          Gruesos: retorno[1],  // 4.75 - 0
-          Medios: retorno[2] + retorno[3], // 2.36 a 1.18
-          Finos: retorno[4] + retorno[5] + retorno[6] // 0.6 a 0.15
-      };
-
-      // Mostrar debajo de la tabla
-      const resumen = `
-      <h4 style="margin-top: 10px;">Resumen por fracción </h4>
-      <ul>
-        <li>🟦 Gruesos: ${fracciones.Gruesos.toFixed(2)} %</li>
-        <li>🟨 Medios: ${fracciones.Medios.toFixed(2)} %</li>
-        <li>🟥 Finos: ${fracciones.Finos.toFixed(2)} %</li>
-      </ul>
-      `;
-
-      container.innerHTML += resumen;
-
-
-
-
-
-    document.getElementById("resultados").appendChild(container);
-
-    // Calcular curva ideal de Fuller
-    const curvaIdeal = r.tamices.map(t => Math.pow(t / 25, 0.5) * 100);
- // usando dmax=25 y n=0.5
-
-    // Crear gráfico
-    new Chart(document.getElementById("graficoCorregido"), {
-        type: 'line',
-        data: {
-            labels: r.tamices.map(t => t.toFixed(2) + " mm"),
-            datasets: [
-                {
-                    label: "Curva Promedio Original",
-                    data: r.promedios,
-                    borderColor: "blue",
-                    fill: false
-                },
-                {
-                    label: "Curva de Fuller Ideal",
-                    data: curvaIdeal,
-                    borderColor: "orange",
-                    borderDash: [5, 5],
-                    fill: false
-                },
-                {
-                    label: "Curva Corregida Simulada",
-                    data: corregida,
-                    borderColor: "green",
-                    fill: false
-                }
-            ]
-        },
-        options: {
-            scales: {
-                y: {
-                  
-                    title: {
-                        display: true,
-                        text: "% que pasa"
-                    },
-                    min: 0,
-                    max: 100
-                },
-                x: {
-                   
-                    title: {
-                        display: true,
-                        text: "Tamiz (mm)"
-                    }
-                }
-            }
-        }
+    })
+    .catch(err => {
+        console.error("Error al obtener curva corregida:", err);
     });
 }
+
+
+
+
 
 
 
@@ -896,7 +865,7 @@ function calcularMezclaOptima() {
         options: {
           scales: {
             y: {
-              reverse: true,
+             
               title: { display: true, text: "% que pasa" },
               min: 0,
               max: 100
@@ -959,7 +928,7 @@ function cargarDatosPorDefecto() {
       porcentajes: [0,67.74,97.32,98.48,98.57,98.75,98.93]
     },
     {
-      nombre: "Arena fina",
+      nombre: "Sabbia fine",
       tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
       porcentajes: [0,0.2,0.39,1.17,6.45,61.33,89.94]
     },
@@ -1102,6 +1071,25 @@ function cerrarModalOptimo() {
 }
 
 
+
+
+
+
+
+
+function abrirModalGraficoCorreccion() {
+  document.getElementById('ModalGraficoCorreccion').style.display = "block";
+}
+
+function cerrarModalGraficoCorreccion() {
+  
+  document.getElementById('ModalGraficoCorreccion').style.display = "none";
+}
+
+// Opcional: cerrar con Escape
+  document.addEventListener('keydown', function (event) {
+    if (event.key === "Escape") cerrarModalGraficoCorreccion();
+  });
 
 
 
