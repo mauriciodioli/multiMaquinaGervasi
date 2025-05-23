@@ -153,11 +153,13 @@ def densidad_fuller_multiple():
         resultados.append({
             "nombre": nombre,
             "curva_ideal": curva_fuller,
+            "reales": reales,
             "diferencias": diferencias,
             "grafico": f"data:image/png;base64,{img_base64}",
             "evaluacion": evaluacion,
             "error_promedio": error_promedio,
-            "ajustes": ajustes
+            "ajustes": ajustes,
+            "tamices": tamices
         })
 
 
@@ -198,7 +200,8 @@ def densidad_fuller_multiple():
     return jsonify({
         "resultados": resultados,
         "curva_resultante": curva_resultante,
-        "mezcla_optima": resultado_optimo  
+        "mezcla_optima": resultado_optimo,
+        "tamices_res": tamices_res 
     })
     
     
@@ -228,17 +231,14 @@ def densidad_fuller_multiple():
     
     
 @densidadFuller.route('/calcularCurvaCorregida/', methods=['POST'])
-def calcular_curva_corregida():
-    import matplotlib.pyplot as plt
-    import pandas as pd
-    import io, base64
+def calcular_curva_corregida():  
 
     data = request.get_json()
     curvas = data.get("curvas")
     pesos = data.get("pesos")
     tamices = data.get("tamices")      
     nombres_materiales = data.get("nombreProductos", [])  # Lista como ["0-8 Reciclado", "Arena fina", ...]
-  
+    print(tamices)
 
     if not curvas or not pesos or not tamices:
         return jsonify({"error": "Faltan datos de curvas, pesos o tamices"}), 400
@@ -285,16 +285,25 @@ def calcular_curva_corregida():
     for i, (t, y_real, y_ideal) in enumerate(zip(tamices, curva_promedio, curva_fuller_resultante)):
         ax.plot([t, t], [y_real, y_ideal], color='red', linestyle='-', linewidth=1)
         diferencia = round(y_real - y_ideal, 1)
+    
 
-        etiqueta_valor = f"{diferencia:+.1f}%"
-        ax.text(t, y_ideal, etiqueta_valor, color='red', fontsize=8, ha='right', va='center')
-
+        # Determinar la zona
         if t > 4:
             zona = "gruesos"
         elif t > 1:
             zona = "medios"
         else:
             zona = "finos"
+
+        etiqueta_valor = f"{diferencia:+.1f}%"
+        etiqueta_zona = f"{zona}"
+
+        # Mostrar diferencia (%)
+        ax.text(t, y_ideal + 3, etiqueta_valor, color='red', fontsize=8, ha='right', fontweight='normal')
+
+        # Mostrar zona granulométrica en azul y negrita justo debajo
+        ax.text(t, y_ideal - 3, f"{etiqueta_zona}", color='blue', fontsize=8, ha='right', fontweight='bold')
+
 
         contribuciones_en_punto = [curva[i] for curva in curvas_individuales_por_material]
         indice_material_max = contribuciones_en_punto.index(max(contribuciones_en_punto))
@@ -328,13 +337,28 @@ def calcular_curva_corregida():
     ax.legend()
 
     # Mostrar DataFrame en consola (debug)
-    df = pd.DataFrame({
-        'Tamiz (mm)': tamices,
-        'P Promedio (%)': curva_promedio,
-        'P Fuller (%)': curva_fuller_resultante,
-        'ΔP (%)': diferencias
-    })
-    print(df.to_string())
+   # Crear DataFrame base con tamices
+    df_debug = pd.DataFrame({'Tamiz (mm)': tamices})
+
+    # Curvas individuales sin peso
+    for idx, curva in enumerate(curvas):
+        df_debug[f"{nombres_materiales[idx]} (sin peso)"] = curva
+
+    # Curvas individuales ponderadas
+    for idx, curva in enumerate(curvas):
+        ponderada = [p * pesos_normalizados[idx] for p in curva]
+        df_debug[f"{nombres_materiales[idx]} (ponderada)"] = ponderada
+
+    # Agregar promedio, corregida e ideal
+    df_debug['Promedio'] = curva_promedio
+    df_debug['Corregida'] = curva_corregida
+    df_debug['Fuller Ideal'] = curva_fuller_resultante
+    df_debug['Δ Promedio - Ideal'] = diferencias
+
+    # Mostrar
+    print("\n==== Debug Completo de Curvas ====")
+    print(df_debug.to_string(index=False))
+
 
     # Exportar como imagen base64
     buf = io.BytesIO()

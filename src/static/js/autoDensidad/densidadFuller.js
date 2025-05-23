@@ -275,6 +275,7 @@ function agregarFilaMultiple(btn) {
 let curvas = []; // guardar aquí
 let pesos = [];
 let nombreProductos = [];
+let tamices = [];
 function calcularTodas() {
     const mezclasDivs = document.querySelectorAll(".mezcla");
     const payload = [];
@@ -336,9 +337,10 @@ function calcularTodas() {
     })
     .then(res => res.json())
           .then(data => {
-             curvas = data.resultados.map(r => r.curva_ideal); 
+             curvas = data.resultados.map(r => r.reales); 
              pesos = data.resultados.map(r => r.proporcion_optima);
              nombreProductos = data.resultados.map(r => r.nombre);
+             tamices = data.tamices_res;
             console.log(data);
             
             const resumenProporciones = generarResumenProporciones(data.mezcla_optima.pesos, data.resultados);
@@ -588,7 +590,7 @@ function generarMezclaCorregida() {
             curvas: curvas,
             pesos: pesos,
             nombreProductos: nombreProductos,
-            tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15]
+            tamices: tamices
         })
     })
     .then(res => res.json())
