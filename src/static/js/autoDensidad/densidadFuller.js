@@ -350,7 +350,7 @@ function calcularTodas() {
     })
     .then(res => res.json())
           .then(data => {
-             debugger;
+            
              curvas = data.resultados.map(r => r.reales); 
              pesos = data.resultados.map(r => r.proporcion_optima);
              nombreProductos = data.resultados.map(r => r.nombre);
@@ -596,6 +596,21 @@ function generarGraficoProporciones(pesos, nombres) {
 
 
 function generarMezclaCorregida() {
+
+   let input = prompt("Ingresar un número entre 0 y 1 (dejar vacío para usar 1):", "1");
+
+    // Si el usuario aprieta "Cancelar" o deja vacío, se usa 1
+    if (input === null || input.trim() === "") {
+        input = "1";
+    }
+
+    const factor = parseFloat(input);
+
+    if (isNaN(factor) || factor < 0 || factor > 1) {
+        alert("❌ Número inválido. Ingresá un valor entre 0 y 1.");
+        return;
+    }
+
     fetch('/calcularCurvaCorregida/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -603,7 +618,8 @@ function generarMezclaCorregida() {
             curvas: curvas,
             pesos: pesos,
             nombreProductos: nombreProductos,
-            tamices: tamices
+            tamices: tamices,
+            factor: factor
         })
     })
     .then(res => res.json())

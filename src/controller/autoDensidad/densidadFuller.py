@@ -205,7 +205,24 @@ def densidad_fuller_multiple():
     
     
     
-    
+def ajustar_pesos_por_factor(pesos_por_zona, factor):
+    """
+    Ajusta los pesos por zona aplicando un factor de corrección hacia el ideal.
+    Por ejemplo, si el factor es 0.5, se hace una corrección del 50%.
+    """
+    pesos_ajustados = {}
+
+    for mezcla, zonas in pesos_por_zona.items():
+        total_original = sum(zonas.values())
+        pesos_ajustados[mezcla] = {}
+
+        for zona, valor in zonas.items():
+            # Aplica el factor de ajuste proporcional
+            ajuste = (valor - (total_original / 3)) * factor
+            nuevo_valor = (total_original / 3) + ajuste
+            pesos_ajustados[mezcla][zona] = round(nuevo_valor, 2)
+
+    return pesos_ajustados  
     
     
     
@@ -220,28 +237,41 @@ def calcular_curva_corregida():
     data = request.get_json()
     curvas = data.get("curvas")
     pesos = data.get("pesos")
-    tamices = data.get("tamices")      
+    tamices = data.get("tamices")    
+    factor = data.get("factor",1)  # Factor de ajuste, por defecto 0.5  
     nombres_materiales = data.get("nombreProductos", [])
-    print(tamices)
+    print("\n=== DEBUG: Datos recibidos ===")
+    print("Curvas:", curvas)
+    print("Pesos:", pesos)
+    print("Tamices:", tamices)
+    print("Nombres de materiales:", nombres_materiales)
+    print("Tipo de curvas:", type(curvas))
+    print("Tipo de pesos:", type(pesos))
 
-    if not curvas or not pesos or not tamices:
-        return jsonify({"error": "Faltan datos de curvas, pesos o tamices"}), 400
+    pesos_por_zona_dicts = pesos  # Guardamos el original antes de transformarlo
 
+    # Llamar a función solo con los dicts originales
+    pesos_finales_normalizados = calcular_pesos_finales_normalizados(pesos_por_zona_dicts)
+
+    # Ahora sí transformar pesos para otras cosas si hace falta
     if isinstance(pesos, dict):
         pesos = list(pesos.values())
     elif isinstance(pesos, list) and isinstance(pesos[0], dict):
         pesos = [list(p.values())[0] for p in pesos]
+    if not curvas or not pesos or not tamices:
+        return jsonify({"error": "Faltan datos de curvas, pesos o tamices"}), 400
+
+    
 
     total_pesos = sum(pesos)
     if total_pesos == 0:
         return jsonify({"error": "Los pesos no pueden ser todos cero"}), 400
 
     pesos_normalizados = [p / total_pesos for p in pesos]
+   
 
-    curva_corregida = [
-        sum(p * curva[i] for p, curva in zip(pesos_normalizados, curvas))
-        for i in range(len(curvas[0]))
-    ]
+  
+
 
     d_max = max(tamices)
     n_optimo, curva_fuller_resultante, error_promedio = encontrar_n_optimo(tamices, curvas, d_max)
@@ -251,7 +281,7 @@ def calcular_curva_corregida():
         sum(curva[i] for curva in curvas) / len(curvas)
         for i in range(len(curvas[0]))
     ]
-
+    curva_corregida = calcular_curva_corregida_con_ajuste(curva_promedio, curva_fuller_resultante, factor)
     diferencias = [real - ideal for real, ideal in zip(curva_promedio, curva_fuller_resultante)]
 
     fig, ax = plt.subplots(figsize=(6, 4))
@@ -271,7 +301,8 @@ def calcular_curva_corregida():
 
     for i, (t, y_real, y_ideal) in enumerate(zip(tamices, curva_promedio, curva_fuller_resultante)):
         ax.plot([t, t], [y_real, y_ideal], color='red', linestyle='-', linewidth=1)
-        diferencia = round(y_real - y_ideal, 1)
+        diferencia = y_real - y_ideal
+        diferencia_ajustada = diferencia * factor  # ← Aplicamos el factor
 
         if t > 4:
             zona = "gruesos"
@@ -280,7 +311,7 @@ def calcular_curva_corregida():
         else:
             zona = "finos"
 
-        etiqueta_valor = f"{diferencia:+.1f}%"
+        etiqueta_valor = f"{diferencia_ajustada:+.1f}%"
         ax.text(t, y_ideal + 3, etiqueta_valor, color='red', fontsize=8, ha='right')
         ax.text(t, y_ideal - 3, f"{zona}", color='blue', fontsize=8, ha='right', fontweight='bold')
 
@@ -298,12 +329,16 @@ def calcular_curva_corregida():
         nombre_material = nombres_materiales[indice_material_max]
         mezcla_origen = material_por_indice.get(indice_material_max, "sconosciuto")
 
-        if diferencia > 0:
+        if diferencia_ajustada > 0:
             accion = f"→ reducir {nombre_material} (de mezcla: {mezcla_origen})"
-            acciones_textuales.append(f"Ridurre il materiale {zona} ({nombre_material}) - eccesso di {abs(diferencia):.1f}% (mezcla: {mezcla_origen})")
-        elif diferencia < 0:
+            acciones_textuales.append(
+                f"Ridurre il materiale {zona} ({nombre_material}) - eccesso di {abs(diferencia_ajustada):.1f}% (mezcla: {mezcla_origen})"
+            )
+        elif diferencia_ajustada < 0:
             accion = f"→ agregar {nombre_material} (de mezcla: {mezcla_origen})"
-            acciones_textuales.append(f"Aumentare il materiale {zona} ({nombre_material}) - deficit di {abs(diferencia):.1f}% (mezcla: {mezcla_origen})")
+            acciones_textuales.append(
+                f"Aumentare il materiale {zona} ({nombre_material}) - deficit di {abs(diferencia_ajustada):.1f}% (mezcla: {mezcla_origen})"
+            )
         else:
             accion = ""
 
@@ -348,7 +383,7 @@ def calcular_curva_corregida():
             interpretaciones.append(f"{nombre}: {peso_redondeado:.2f}% (⚖️ balanced contribution)")
         else:
             interpretaciones.append(f"{nombre}: {peso_redondeado:.2f}% (❔ marginal contribution)")
-
+   
     # Calcular pesos redistribuidos por zona
     pesos_por_zona = {}
     for nombre in nombres_materiales:
@@ -362,6 +397,8 @@ def calcular_curva_corregida():
     print("\n=== Pesos redistribuidos por mezcla y zona ===")
     for nombre, zonas in pesos_por_zona.items():
         print(f"{nombre}: {zonas}")
+    # Aplica ajuste con un factor de 0.5 (50%)
+    pesos_ajustados = ajustar_pesos_por_factor(pesos_por_zona, factor)
 
     return jsonify({
         "curva_corregida": curva_corregida,
@@ -369,8 +406,44 @@ def calcular_curva_corregida():
         "diferencias": diferencias,
         "interpretacion_materiales": interpretaciones,
         "acciones_recomendadas": acciones_textuales,
-        "pesos_por_zona": pesos_por_zona
+        "pesos_por_zona": pesos_ajustados
     })
+    
+    
+    
+    
+    
+def calcular_curva_corregida_con_ajuste(curva_promedio, curva_fuller, factor=1.0):
+    """
+    Genera una curva corregida a partir de la curva promedio y la curva ideal (Fuller),
+    aplicando un factor de corrección.
+
+    :param curva_promedio: List[float], valores reales promedio
+    :param curva_fuller: List[float], valores ideales de Fuller
+    :param factor: float, cuánta proporción de la corrección aplicar (entre 0 y 1)
+    :return: List[float], curva corregida
+    """
+    if len(curva_promedio) != len(curva_fuller):
+        raise ValueError("Las curvas deben tener la misma longitud")
+
+    return [
+        curva_promedio[i] + factor * (curva_fuller[i] - curva_promedio[i])
+        for i in range(len(curva_promedio))
+    ]
+
+def calcular_pesos_finales_normalizados(pesos_por_zona):
+    pesos_finales = []
+    for zonas in pesos_por_zona:
+        total = zonas.get("gruesos", 0) + zonas.get("medios", 0) + zonas.get("finos", 0)
+        pesos_finales.append(total)
+
+    suma = sum(pesos_finales)
+    if suma == 0:
+        return [1 / len(pesos_finales)] * len(pesos_finales)
+
+    return [p / suma for p in pesos_finales]
+
+
 
 
 
