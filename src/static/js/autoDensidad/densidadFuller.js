@@ -234,7 +234,7 @@ function agregarMezcla() {
           <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Eliminar mezcla</button>
         </div>
         <input type="text" placeholder="Nombre del producto" class="nombreProducto">
-        <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Agregar Fila</button>
+        <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Aggiungi riga</button>
         <table class="tabla">
             <thead>
                 <tr><th>Tamiz </th><th>% Real</th><th>Acción</th></tr>
@@ -359,7 +359,7 @@ function calcularTodas() {
             
             const resumenProporciones = generarResumenProporciones(data.mezcla_optima.pesos, data.resultados);
             const resultadosDiv = document.getElementById("resultados");
-            let finalHTML = "<h2>Resultados</h2>";
+            let finalHTML = "<h2>Risultati</h2>";
             data.resultados.forEach(resultado => {
                 finalHTML += `
                     <h4>${resultado.nombre}</h4>
@@ -916,12 +916,12 @@ function cargarDatosPorDefecto() {
 
     mezclaDiv.innerHTML = `
      <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3>Producto</h3>
-          <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Eliminar mezcla</button>
+          <h3>Prodotto</h3>
+          <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il mix</button>
         </div>
       <h3>${m.nombre}</h3>
       <input type="text" value="${m.nombre}" class="nombreProducto">
-      <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Agregar Fila</button>
+      <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Aggiungi Riga</button>
       <table class="tabla">
         <thead>
           <tr><th>Tamiz</th><th>% Real</th><th>Acción</th></tr>
@@ -931,7 +931,7 @@ function cargarDatosPorDefecto() {
             <tr>
               <td contenteditable="true">${t}</td>
               <td contenteditable="true">${m.porcentajes[i]}</td>
-              <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
+              <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminare</button></td>
             </tr>
           `).join("")}
         </tbody>

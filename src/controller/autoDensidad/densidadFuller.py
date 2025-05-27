@@ -102,10 +102,10 @@ def densidad_fuller_multiple():
         y_constante = [0] * len(tamices)
         # Generar gráfico
         fig, ax = plt.subplots()
-        ax.plot(tamices, reales, marker='o', label='Real')
-        ax.plot(tamices, curva_fuller, marker='x', label='Fuller Ideal')             
+        ax.plot(tamices, reales, marker='o', label='Vero')
+        ax.plot(tamices, curva_fuller, marker='x', label='Ideale più completo')             
         # Graficar la línea horizontal
-        ax.plot(tamices, y_constante, linestyle='-', marker='o', label='valores en mm' , color='black', alpha=0.5)  
+        ax.plot(tamices, y_constante, linestyle='-', marker='o', label='milimeters' , color='black', alpha=0.5)  
         # Mostrar los valores de tamiz sobre los puntos de la curva horizontal
         for x in tamices:
             ax.text(x, 0.5, str(x), color='black', fontsize=8, ha='center')
@@ -303,10 +303,10 @@ def calcular_curva_corregida():
     # Valores de Y constantes en 0
     y_constante = [0] * len(tamices)
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.plot(tamices, curva_promedio, marker='o', label='Promedio Real', color='blue')
-    ax.plot(tamices, curva_fuller_resultante, marker='x', label='Fuller Ideal', color='orange')
-    ax.plot(tamices, curva_corregida, marker='s', linestyle='--', label='Corregida Óptima', color='green')
-    ax.plot(tamices, y_constante, linestyle='-', marker='o', label='valores en mm' , color='black', alpha=0.5)  
+    ax.plot(tamices, curva_promedio, marker='o', label='Media effettiva', color='blue')
+    ax.plot(tamices, curva_fuller_resultante, marker='x', label='Ideale più completo', color='orange')
+    ax.plot(tamices, curva_corregida, marker='s', linestyle='--', label='Corretto Ottimale', color='green')
+    ax.plot(tamices, y_constante, linestyle='-', marker='o', label='milimeters' , color='black', alpha=0.5)  
     
     
     for x in tamices:
@@ -559,9 +559,9 @@ def calcular_curva_resultante(resultados, d_max, n_optimo):
     y_constante = [0] * len(tamices)
     # 6. Graficar
     fig, ax = plt.subplots()
-    ax.plot(tamices, promedio_reales, marker='o', label='Promedio Real')
-    ax.plot(tamices, promedio_fuller, marker='x', label='Promedio Fuller')
-    ax.plot(tamices, y_constante, linestyle='-', marker='o', label='valores en mm' , color='black', alpha=0.5)  
+    ax.plot(tamices, promedio_reales, marker='o', label='Media effettiva')
+    ax.plot(tamices, promedio_fuller, marker='x', label='Media di Fuller')
+    ax.plot(tamices, y_constante, linestyle='-', marker='o', label='milimeters' , color='black', alpha=0.5)  
     # Mostrar los valores de tamiz sobre los puntos de la curva horizontal
     for x in tamices:
         ax.text(x, 0.5, str(x), color='black', fontsize=8, ha='center')
