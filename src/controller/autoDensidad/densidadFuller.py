@@ -95,11 +95,27 @@ def densidad_fuller_multiple():
 
         curva_fuller = calcular_curva_fuller(tamices, d_max, n_optimo)
         diferencias = [r - f for r, f in zip(reales, curva_fuller)]
+        # Valores de X (los tamices, de mayor a menor)
+      
 
+        # Valores de Y constantes en 1
+        y_constante = [0] * len(tamices)
         # Generar gráfico
         fig, ax = plt.subplots()
         ax.plot(tamices, reales, marker='o', label='Real')
-        ax.plot(tamices, curva_fuller, marker='x', label='Fuller Ideal')
+        ax.plot(tamices, curva_fuller, marker='x', label='Fuller Ideal')             
+        # Graficar la línea horizontal
+        ax.plot(tamices, y_constante, linestyle='-', marker='o', label='valores en mm' , color='black', alpha=0.5)  
+        # Mostrar los valores de tamiz sobre los puntos de la curva horizontal
+        for x in tamices:
+            ax.text(x, 0.5, str(x), color='black', fontsize=8, ha='center')
+        
+        # Líneas verticales desde la curva negra a los valores máximos por tamiz
+        for i, x in enumerate(tamices):
+            y_max = max(reales[i], curva_fuller[i])
+            ax.plot([x, x], [0, y_max], linestyle='--', color='gray', alpha=0.4)
+
+
         ax.invert_xaxis() # invertir el eje x
         ax.set_title(f"{nombre} - Curva de Fuller")
         ax.set_xlabel("Tamiz (mm)")
@@ -108,6 +124,7 @@ def densidad_fuller_multiple():
         ax.legend()
         # Preparar DataFrame para visualizar
         df = pd.DataFrame({
+            
             'Tamiz (mm)': tamices,
             'P reales (%)': reales,
             'P Fuller (%)': curva_fuller,
@@ -283,11 +300,23 @@ def calcular_curva_corregida():
     ]
     curva_corregida = calcular_curva_corregida_con_ajuste(curva_promedio, curva_fuller_resultante, factor)
     diferencias = [real - ideal for real, ideal in zip(curva_promedio, curva_fuller_resultante)]
-
+    # Valores de Y constantes en 0
+    y_constante = [0] * len(tamices)
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.plot(tamices, curva_promedio, marker='o', label='Promedio Real', color='blue')
     ax.plot(tamices, curva_fuller_resultante, marker='x', label='Fuller Ideal', color='orange')
     ax.plot(tamices, curva_corregida, marker='s', linestyle='--', label='Corregida Óptima', color='green')
+    ax.plot(tamices, y_constante, linestyle='-', marker='o', label='valores en mm' , color='black', alpha=0.5)  
+    
+    
+    for x in tamices:
+        ax.text(x, 0.5, str(x), color='black', fontsize=8, ha='center')
+    
+    # Líneas verticales desde la curva negra a los valores máximos por tamiz
+    for i, x in enumerate(tamices):
+        y_max = max(curva_promedio[i], curva_fuller_resultante[i])
+        ax.plot([x, x], [0, y_max], linestyle='--', color='gray', alpha=0.4)
+  
 
     acciones_textuales = []
     curvas_individuales_por_material = [
@@ -526,12 +555,23 @@ def calcular_curva_resultante(resultados, d_max, n_optimo):
     print("Diferencias que se pasan a sugerir_ajustes:")
     print(diferencias)
     ajustes = sugerir_ajustes(tamices, diferencias)
-
+    # Valores de Y constantes en 0
+    y_constante = [0] * len(tamices)
     # 6. Graficar
     fig, ax = plt.subplots()
     ax.plot(tamices, promedio_reales, marker='o', label='Promedio Real')
     ax.plot(tamices, promedio_fuller, marker='x', label='Promedio Fuller')
-  
+    ax.plot(tamices, y_constante, linestyle='-', marker='o', label='valores en mm' , color='black', alpha=0.5)  
+    # Mostrar los valores de tamiz sobre los puntos de la curva horizontal
+    for x in tamices:
+        ax.text(x, 0.5, str(x), color='black', fontsize=8, ha='center')
+    
+    # Líneas verticales desde la curva negra a los valores máximos por tamiz
+    for i, x in enumerate(tamices):
+        y_max = max(promedio_reales[i], promedio_fuller[i])
+        ax.plot([x, x], [0, y_max], linestyle='--', color='gray', alpha=0.4)
+
+
 
     # 💬 Anotar valores sobre cada punto
     for x, y in zip(tamices, promedio_reales):
