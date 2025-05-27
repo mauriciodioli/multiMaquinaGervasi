@@ -350,6 +350,7 @@ function calcularTodas() {
     })
     .then(res => res.json())
           .then(data => {
+             debugger;
              curvas = data.resultados.map(r => r.reales); 
              pesos = data.resultados.map(r => r.proporcion_optima);
              nombreProductos = data.resultados.map(r => r.nombre);
@@ -612,15 +613,16 @@ function generarMezclaCorregida() {
               
               // Insertar imagen y tabla vacía
               contenedor.innerHTML = `
-                  <img src="${data.grafico_base64}" style="max-width:100%; height:auto; margin-bottom: 15px;">
-                  <h6>📊 Automatic recommendationsInterpretation of optimal proportions:</h6>
+                 <img src="${data.grafico_base64}" style="max-width:100%; height:auto; margin-bottom: 15px;">
+                   <h6>⚖️ Pesos proporcionales por zona y mezcla:</h6>
                   <table class="tabla-interpretacion">
                       <thead>
                           <tr>
-                              <th>Material</th>
-                              <th>Proporción</th>
-                              <th>Interpretación</th>
-                          </tr>
+                              <th>Mezcla</th>
+                                <th>Gruesos (%)</th>
+                                <th>Medios (%)</th>
+                                <th>Finos (%)</th>
+                              </tr>
                       </thead>
                       <tbody id="tablaInterpretacionCuerpo"></tbody>
                   </table>
@@ -628,18 +630,16 @@ function generarMezclaCorregida() {
 
               // Cargar datos en la tabla
               const cuerpo = document.getElementById("tablaInterpretacionCuerpo");
-              data.interpretacion_materiales.forEach(item => {
-                  const [nombre, resto] = item.split(": ");
-                  const [proporcion, ...restoInterpretacion] = resto.split(" ");
-                  const interpretacion = restoInterpretacion.join(" ");
-                  const fila = `
-                      <tr>
-                          <td>${nombre}</td>
-                          <td>${proporcion}</td>
-                          <td>${interpretacion}</td>
-                      </tr>
+              Object.entries(data.pesos_por_zona).forEach(([mezcla, zonas]) => {
+              const filaZona = `
+                  <tr>
+                      <td>${mezcla}</td>
+                      <td>${zonas.gruesos?.toFixed(2) ?? "0.00"}</td>
+                      <td>${zonas.medios?.toFixed(2) ?? "0.00"}</td>
+                      <td>${zonas.finos?.toFixed(2) ?? "0.00"}</td>
+                  </tr>
                   `;
-                  cuerpo.innerHTML += fila;
+                  cuerpo.innerHTML += filaZona;
               });
 
               // Insertar recomendaciones automáticas si hay

@@ -214,7 +214,6 @@ def densidad_fuller_multiple():
     
     
     
-    
 @densidadFuller.route('/calcularCurvaCorregida/', methods=['POST'])
 def calcular_curva_corregida():  
 
@@ -222,12 +221,12 @@ def calcular_curva_corregida():
     curvas = data.get("curvas")
     pesos = data.get("pesos")
     tamices = data.get("tamices")      
-    nombres_materiales = data.get("nombreProductos", [])  # Lista como ["0-8 Reciclado", "Arena fina", ...]
+    nombres_materiales = data.get("nombreProductos", [])
     print(tamices)
 
     if not curvas or not pesos or not tamices:
         return jsonify({"error": "Faltan datos de curvas, pesos o tamices"}), 400
-   
+
     if isinstance(pesos, dict):
         pesos = list(pesos.values())
     elif isinstance(pesos, list) and isinstance(pesos[0], dict):
@@ -245,7 +244,6 @@ def calcular_curva_corregida():
     ]
 
     d_max = max(tamices)
-   
     n_optimo, curva_fuller_resultante, error_promedio = encontrar_n_optimo(tamices, curvas, d_max)
     curva_fuller_resultante = [(d / d_max) ** n_optimo * 100 for d in tamices]
 
@@ -254,31 +252,27 @@ def calcular_curva_corregida():
         for i in range(len(curvas[0]))
     ]
 
-    # Calcular diferencias
     diferencias = [real - ideal for real, ideal in zip(curva_promedio, curva_fuller_resultante)]
 
-    # Generar gráfico
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.plot(tamices, curva_promedio, marker='o', label='Promedio Real', color='blue')
     ax.plot(tamices, curva_fuller_resultante, marker='x', label='Fuller Ideal', color='orange')
     ax.plot(tamices, curva_corregida, marker='s', linestyle='--', label='Corregida Óptima', color='green')
 
     acciones_textuales = []
-
-    # Precalcular curvas individuales con peso aplicado
-    pesos_normalizados = [p / sum(pesos) for p in pesos]
     curvas_individuales_por_material = [
         [peso * curva[i] for i in range(len(tamices))]
         for peso, curva in zip(pesos_normalizados, curvas)
     ]
     material_por_indice = {i: nombre for i, nombre in enumerate(nombres_materiales)}
 
+    zonas_materiales = {nombre: {"gruesos": 0, "medios": 0, "finos": 0} for nombre in nombres_materiales}
+    zonas_totales = {"gruesos": 0, "medios": 0, "finos": 0}
+
     for i, (t, y_real, y_ideal) in enumerate(zip(tamices, curva_promedio, curva_fuller_resultante)):
         ax.plot([t, t], [y_real, y_ideal], color='red', linestyle='-', linewidth=1)
         diferencia = round(y_real - y_ideal, 1)
-    
 
-        # Determinar la zona
         if t > 4:
             zona = "gruesos"
         elif t > 1:
@@ -287,21 +281,22 @@ def calcular_curva_corregida():
             zona = "finos"
 
         etiqueta_valor = f"{diferencia:+.1f}%"
-        etiqueta_zona = f"{zona}"
-
-        # Mostrar diferencia (%)
-        ax.text(t, y_ideal + 3, etiqueta_valor, color='red', fontsize=8, ha='right', fontweight='normal')
-
-        # Mostrar zona granulométrica en azul y negrita justo debajo
-        ax.text(t, y_ideal - 3, f"{etiqueta_zona}", color='blue', fontsize=8, ha='right', fontweight='bold')
-
+        ax.text(t, y_ideal + 3, etiqueta_valor, color='red', fontsize=8, ha='right')
+        ax.text(t, y_ideal - 3, f"{zona}", color='blue', fontsize=8, ha='right', fontweight='bold')
 
         contribuciones_en_punto = [curva[i] for curva in curvas_individuales_por_material]
+        total_punto = sum(contribuciones_en_punto)
+        if total_punto == 0:
+            continue
+
+        for idx, contrib in enumerate(contribuciones_en_punto):
+            nombre = nombres_materiales[idx]
+            zonas_materiales[nombre][zona] += contrib
+            zonas_totales[zona] += contrib
+
         indice_material_max = contribuciones_en_punto.index(max(contribuciones_en_punto))
         nombre_material = nombres_materiales[indice_material_max]
         mezcla_origen = material_por_indice.get(indice_material_max, "sconosciuto")
-        
-
 
         if diferencia > 0:
             accion = f"→ reducir {nombre_material} (de mezcla: {mezcla_origen})"
@@ -315,11 +310,6 @@ def calcular_curva_corregida():
         if accion:
             ax.text(t, y_real, accion, color='red', fontsize=8, ha='left', va='center')
 
-
-
-
-
-
     ax.invert_xaxis()
     ax.set_title("Average, Corrected and Fuller Curve")
     ax.set_xlabel("Tamiz (mm)")
@@ -327,20 +317,12 @@ def calcular_curva_corregida():
     ax.grid(True)
     ax.legend()
 
-    # Mostrar DataFrame en consola (debug)
-   # Crear DataFrame base con tamices
     df_debug = pd.DataFrame({'Tamiz (mm)': tamices})
-
-    # Curvas individuales sin peso
     for idx, curva in enumerate(curvas):
         df_debug[f"{nombres_materiales[idx]} (sin peso)"] = curva
-
-    # Curvas individuales ponderadas
     for idx, curva in enumerate(curvas):
         ponderada = [p * pesos_normalizados[idx] for p in curva]
         df_debug[f"{nombres_materiales[idx]} (ponderada)"] = ponderada
-
-    # Agregar promedio, corregida e ideal
     df_debug['Promedio'] = curva_promedio
     df_debug['Corregida'] = curva_corregida
     df_debug['Fuller Ideal'] = curva_fuller_resultante
@@ -348,38 +330,54 @@ def calcular_curva_corregida():
     df_debug['d_max'] = d_max
     df_debug['n'] = n_optimo
 
-    # Mostrar
     print("\n==== Debug Completo de Curvas ====")
     print(df_debug.to_string(index=False))
 
-
-    # Exportar como imagen base64
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
     buf.seek(0)
     img_base64 = base64.b64encode(buf.getvalue()).decode()
     plt.close()
-    interpretaciones = []
 
+    interpretaciones = []
     for nombre, peso in zip(nombres_materiales, pesos):
         peso_redondeado = round(peso, 2)
         if peso_redondeado <= 0.01:
             interpretaciones.append(f"{nombre}: {peso_redondeado:.2f}% (❌ scartato per non aver apportato miglioramenti)")
-        elif peso_redondeado >= 5:  # o el umbral que consideres "aporta"
+        elif peso_redondeado >= 5:
             interpretaciones.append(f"{nombre}: {peso_redondeado:.2f}% (⚖️ balanced contribution)")
         else:
             interpretaciones.append(f"{nombre}: {peso_redondeado:.2f}% (❔ marginal contribution)")
-    
+
+    # Calcular pesos redistribuidos por zona
+    pesos_por_zona = {}
+    for nombre in nombres_materiales:
+        contribs = zonas_materiales[nombre]
+        redistrib = {
+            zona: round((contribs[zona] / zonas_totales[zona]) * 100, 2) if zonas_totales[zona] > 0 else 0.0
+            for zona in ["gruesos", "medios", "finos"]
+        }
+        pesos_por_zona[nombre] = redistrib
+
+    print("\n=== Pesos redistribuidos por mezcla y zona ===")
+    for nombre, zonas in pesos_por_zona.items():
+        print(f"{nombre}: {zonas}")
+
     return jsonify({
-            "curva_corregida": curva_corregida,
-            "grafico_base64": f"data:image/png;base64,{img_base64}",
-            "diferencias": diferencias,
-            "interpretacion_materiales": interpretaciones,
-            "acciones_recomendadas": acciones_textuales
-            })
+        "curva_corregida": curva_corregida,
+        "grafico_base64": f"data:image/png;base64,{img_base64}",
+        "diferencias": diferencias,
+        "interpretacion_materiales": interpretaciones,
+        "acciones_recomendadas": acciones_textuales,
+        "pesos_por_zona": pesos_por_zona
+    })
 
 
 
+
+ 
+
+   
 
 
 
