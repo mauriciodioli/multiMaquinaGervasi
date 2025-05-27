@@ -52,7 +52,7 @@
 
 
 function modalConfiguracionParametrosEntradaFuller() {
-    
+  // Mostrar el modal de configuración
     document.getElementById('modal-configuracion').style.display = "block";
 };
 
@@ -276,9 +276,11 @@ let curvas = []; // guardar aquí
 let pesos = [];
 let nombreProductos = [];
 let tamices = [];
-function calcularTodas() {
+function calcularTodas() { 
     const mezclasDivs = document.querySelectorAll(".mezcla");
     const payload = [];
+
+    let dMaxFinal = null;
 
     mezclasDivs.forEach(mezcla => {
         const nombre = mezcla.querySelector(".nombreProducto").value || "Sin nombre";
@@ -287,7 +289,7 @@ function calcularTodas() {
         const tamices = [];
         const porcentajes = [];
 
-        filas.forEach(fila => {
+        for (let fila of filas) {
             const celdas = fila.querySelectorAll("td");
             const tamiz = parseFloat(celdas[0].textContent);
             const porcentaje = parseFloat(celdas[1].textContent);
@@ -295,10 +297,14 @@ function calcularTodas() {
             if (!isNaN(tamiz) && !isNaN(porcentaje)) {
                 tamices.push(tamiz);
                 porcentajes.push(porcentaje);
-            }
-        });
 
-        // Solo incluir mezclas con datos válidos
+                // Buscar primer tamiz con < 100% pasante → posible d_max
+                if (porcentaje < 100 && (dMaxFinal === null || tamiz > dMaxFinal)) {
+                    dMaxFinal = tamiz;
+                }
+            }
+        }
+
         if (tamices.length > 0 && porcentajes.length > 0) {
             payload.push({
                 nombre: nombre,
@@ -308,10 +314,17 @@ function calcularTodas() {
         }
     });
 
-    // ⚠️ Evitar enviar si no hay ninguna mezcla con datos
     if (payload.length === 0) {
         alert("Debe ingresar al menos una mezcla con datos válidos (tamiz y % real).");
         return;
+    }
+
+    // Guardar d_max calculado si corresponde
+    if (dMaxFinal !== null) {
+        localStorage.setItem("d_max", dMaxFinal.toFixed(2));
+        console.log("✅ d_max calculado automáticamente:", dMaxFinal.toFixed(2));
+    } else {
+        console.warn("⚠️ No se detectó retención en ningún tamiz. Se usará el valor por defecto (25 mm)");
     }
 
     const perfil_norma = localStorage.getItem("perfil_norma") || "hormigon_argentino";
@@ -341,7 +354,7 @@ function calcularTodas() {
              pesos = data.resultados.map(r => r.proporcion_optima);
              nombreProductos = data.resultados.map(r => r.nombre);
              tamices = data.tamices_res;
-            console.log(data);
+             console.log(data);
             
             const resumenProporciones = generarResumenProporciones(data.mezcla_optima.pesos, data.resultados);
             const resultadosDiv = document.getElementById("resultados");
@@ -473,7 +486,6 @@ function calcularTodas() {
                     <h3>📌 Acciones</h3>
                     <button class="btn btn-primary" onclick="generarMezclaCorregida()">Generar mezcla corregida</button>
                     <button class="btn btn-primary" onclick="abrirModalExportar()">Mostrar resumen</button>
-                    <button class="btn btn-primary" onclick="abrirModalOptimo()">Calculo Optimo</button>
                     <button class="btn btn-secondary" onclick="exportarCSV()">Exportar a CSV</button>
                 </div>
             `;
@@ -597,7 +609,7 @@ function generarMezclaCorregida() {
     .then(data => {
         if (data.grafico_base64) {
               const contenedor = document.getElementById("contenedorGraficoCurva");
-
+              
               // Insertar imagen y tabla vacía
               contenedor.innerHTML = `
                   <img src="${data.grafico_base64}" style="max-width:100%; height:auto; margin-bottom: 15px;">
@@ -806,80 +818,16 @@ function calcularMezclaOptima() {
     .then(data => {
       // Renderizar mezcla óptima
       const html = `
-        <h2 style="color: green;">🧠 Mezcla Óptima Calculada</h2>
-        <canvas id="graficoOptimo" height="300"></canvas>
-
-        <p><strong>Error promedio:</strong> ${data.error_promedio}%</p>
-        <p>📉 Se redujo significativamente el error, ajustando la mezcla a una curva más cercana a la distribución ideal.</p>
-
-        <p><strong>Interpretación de las proporciones óptimas:</strong></p>
-        <ul>
-          ${data.pesos.map((p, i) => {
-            const nombre = data.nombres_mezclas[i];
-            let explicacion = '';
-            if (p === 0) {
-              explicacion = ' (❌ descartada por no aportar mejora)';
-            } else if (p < 20) {
-              explicacion = ' (🔧 aporte menor, ajuste fino)';
-            } else if (p >= 20 && p <= 50) {
-              explicacion = ' (⚖️ contribución equilibrada)';
-            } else {
-              explicacion = ' (💪 componente principal)';
-            }
-            return `<li><strong>${nombre}</strong>: ${p.toFixed(2)}% ${explicacion}</li>`;
-          }).join("")}
-        </ul>
-
-        <details>
-          <summary style="cursor:pointer; color:#007bff;">🔧 Ver datos técnicos (tamices y curva óptima)</summary>
-          <pre style="background:#f8f9fa; padding:10px; border-radius:5px;">${JSON.stringify({
-            tamices: data.tamices,
-            curva: data.curva_optima
-          }, null, 2)}</pre>
-        </details>
+       
+       
       `;
 
       const contenedor = document.getElementById("contenidoOptimo");
       contenedor.innerHTML = html;
 
-      abrirModalOptimo(); // Mostrar modal
+      generarMezclaCorregida(); // Mostrar modal
 
-      new Chart(document.getElementById("graficoOptimo"), {
-        type: 'line',
-        data: {
-          labels: data.tamices.map(t => t.toFixed(2) + " mm"),
-          datasets: [
-            {
-              label: "Curva Ideal de Fuller",
-              data: data.curva_ideal,
-              borderColor: "orange",
-              borderDash: [5, 5],
-              fill: false
-            },
-            {
-              label: "Curva Óptima Combinada",
-              data: data.curva_optima,
-              borderColor: "green",
-              fill: false
-            }
-          ]
-        },
-        options: {
-          scales: {
-            y: {
-             
-              title: { display: true, text: "% que pasa" },
-              min: 0,
-              max: 100
-            },
-            x: 
-            {
-              
-              title: { display: true, text: "Tamiz (mm)" }
-            }
-          }
-        }
-      });
+      
 
       // Guardar en variable global
       const mezclaFinal = {
@@ -920,24 +868,19 @@ function calcularMezclaOptima() {
 function cargarDatosPorDefecto() {
   const mezclas = [
     {
-      nombre: "0-8 Recilcado",
-      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
-      porcentajes: [0,9.7,44.49,62.42,74.51,87.47,94.82]
+      nombre: "Telares 2",
+      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15, 0.074],
+      porcentajes: [99.67,94.22,67.18,42.86,23.88,11.78,3.6,0.65]
     },
     {
-      nombre: "0-9 Recilcado",
-      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
-      porcentajes: [0,67.74,97.32,98.48,98.57,98.75,98.93]
+      nombre: "Piedra Negra",
+      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15, 0.074],
+      porcentajes: [100,89.36,54,31.13,18.73,12.49,6.24,0.88]
     },
     {
-      nombre: "Sabbia fine",
-      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
-      porcentajes: [0,0.2,0.39,1.17,6.45,61.33,89.94]
-    },
-     {
-      nombre: "0-6 Natural Olavarria\"",
-      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15],
-      porcentajes: [0,3.89,27.05,49.80,67.01,79.71,89.55]
+      nombre: "Telares 1",
+      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15, 0.074],
+      porcentajes: [100,98.76,67.02,41.33,24.62,14.58,6.31,1.6]
     }
   ];
 
@@ -1064,13 +1007,7 @@ document.addEventListener("keydown", function (e) {
 
 
 
-function abrirModalOptimo() {
-  document.getElementById("modalOptimo").style.display = "block";
-}
 
-function cerrarModalOptimo() {
-  document.getElementById("modalOptimo").style.display = "none";
-}
 
 
 
