@@ -364,7 +364,11 @@ function calcularTodas() {
                 finalHTML += `
                     <h4>${resultado.nombre}</h4>
                     <img src="${resultado.grafico}" alt="Curva de ${resultado.nombre}">
-                    <pre>${JSON.stringify(resultado, null, 2)}</pre>
+                    <details style="margin-top: 0.5rem;">
+                      <summary style="cursor: pointer; color: #1976d2;">📄 Ver datos técnicos</summary>
+                      <pre style="background:#f1f1f1; padding:10px; border-radius:5px; overflow-x:auto;">${JSON.stringify(resultado, null, 2)}</pre>
+                    </details>
+
                     <hr>
                 `;
             });
@@ -468,7 +472,7 @@ function calcularTodas() {
             
             
             finalHTML += `
-                <h2 style="color: #b30000;">🔎 Análisis final: Curva promedio del conjunto</h2>
+                <h2 style="color: #b30000;">🔎 Analisi finale: curva media dell'insieme</h2>
 
                 <div style="border: 2px solid #b30000; padding: 16px; border-radius: 10px; background-color: #fff4f4;">
                     <img src="${r.grafico}" alt="Curva Promedio" style="max-width: 100%; margin-bottom: 12px;">
@@ -479,7 +483,11 @@ function calcularTodas() {
                     <ul>${r.ajustes.map(a => `<li>${a}</li>`).join("")}</ul>
                     ${resumenProporciones}
                     <p><strong>Datos base:</strong></p>
-                    <pre>${JSON.stringify({ tamices: r.tamices, promedios: r.promedios }, null, 2)}</pre>
+                    <details style="margin-top: 0.5rem;">
+                      <summary style="cursor: pointer; color: #1976d2;">📄 Ver datos técnicos</summary>
+                      <pre style="background:#f1f1f1; padding:10px; border-radius:5px; overflow-x:auto;">${JSON.stringify({ tamices: r.tamices, promedios: r.promedios }, null, 2)}</pre>
+                    </details>
+                
                   
                 </div>
 
