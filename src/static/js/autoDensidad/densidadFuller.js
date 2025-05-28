@@ -397,34 +397,41 @@ function calcularTodas() {
 
             let diagnosticoHTML = `
                             <div style="padding: 16px; background-color: #e6f4ea; border-left: 6px solid #2e7d32; margin-top: 1rem;">
-                                <h3>🧾 Diagnóstico general</h3>
-                                <ul>
-                                    <li><strong>Evaluación:</strong> ${r.evaluacion}</li>
-                                    <li><strong>Error promedio:</strong> ${r.error_promedio.toFixed(2)}%</li>
-                                    <li><strong>Recomendaciones clave:</strong>
-                                        <ul>${r.ajustes.map(a => `<li>${a}</li>`).join("")}</ul>
-                                    </li>
-                                </ul>
+                               
+                              <details>
+                                  <summary style="cursor:pointer; color:#0d47a1; font-weight:bold;">🔍 Ver diagnostico técnico completo</summary>
+                   
+                                            
+                                            
+                                            <h3>🧾 Diagnóstico general</h3>
+                                                <ul>
+                                                    <li><strong>Evaluación:</strong> ${r.evaluacion}</li>
+                                                    <li><strong>Error promedio:</strong> ${r.error_promedio.toFixed(2)}%</li>
+                                                    <li><strong>Recomendaciones clave:</strong>
+                                                        <ul>${r.ajustes.map(a => `<li>${a}</li>`).join("")}</ul>
+                                                    </li>
+                                                </ul>
 
-                                <!-- 📌 Mejor combinación encontrada -->
-                                <div style="margin-bottom: 1rem;">
-                                  <h3>📌 Mejor combinación encontrada</h3>
-                                  <ul>
-                                    <li><strong>Telares 2:</strong> 25.00%</li>
-                                    <li><strong>Piedra Negra:</strong> 20.00%</li>
-                                    <li><strong>Telares 1:</strong> 55.00%</li>
-                                  </ul>
-                                  <p><strong>🧪 Error medio respecto a la curva ideal:</strong> <span style="color: green;">2.79%</span></p>
-                                </div>
+                                                <!-- 📌 Mejor combinación encontrada -->
+                                                <div style="margin-bottom: 1rem;">
+                                                  <h3>📌 Mejor combinación encontrada</h3>
+                                                  <ul>
+                                                    <li><strong>Telares 2:</strong> 25.00%</li>
+                                                    <li><strong>Piedra Negra:</strong> 20.00%</li>
+                                                    <li><strong>Telares 1:</strong> 55.00%</li>
+                                                  </ul>
+                                                  <p><strong>🧪 Error medio respecto a la curva ideal:</strong> <span style="color: green;">2.79%</span></p>
+                                                </div>
 
-                                
-                                ${resumenProporciones}
-                                <li>✅ Se generó una mezcla corregida y una mezcla óptima automáticamente.</li>
-                                <li>📄 Puedes exportar este informe como CSV.</li>
-                                <details style="margin-top: 1rem;">
-                                <summary style="cursor:pointer; color:#0d47a1; font-weight:bold;">📊 Ver gráfico de proporciones óptimas</summary>
-                                <canvas id="graficoProporciones" width="400" height="250" style="margin-top: 1rem;"></canvas>
-                                                      <div id="bloqueOptimo"></div>
+                                                
+                                                ${resumenProporciones}
+                                                <li>✅ Se generó una mezcla corregida y una mezcla óptima automáticamente.</li>
+                                                <li>📄 Puedes exportar este informe como CSV.</li>
+                                                <details style="margin-top: 1rem;">
+                                                <summary style="cursor:pointer; color:#0d47a1; font-weight:bold;">📊 Ver gráfico de proporciones óptimas</summary>
+                                                <canvas id="graficoProporciones" width="400" height="250" style="margin-top: 1rem;"></canvas>
+                                                                      <div id="bloqueOptimo"></div>
+                                              </details>
                               </details>
                             </div>
                         `;
@@ -442,37 +449,37 @@ function calcularTodas() {
 
 
                 diagnosticoHTML += `
-                <details style="margin-top: 1rem;">
-                  <summary style="cursor: pointer; color:#0d47a1; font-weight: bold; font-size: 1.1rem;">
-                    🧠 Ver detalles de mezcla óptima calculada
-                  </summary>
+               
                   <div style="margin-top: 1rem; padding: 16px; background-color: #e3f2fd; border-left: 6px solid #1976d2; border-radius: 8px;">
                     
-                    
+                    <details>
+                      <summary style="cursor:pointer; color:#0d47a1; font-weight:bold;">🔍 Ver análisis técnico completo</summary>
+                      <!-- 📊 Tabla comparativa -->
+                          <div style="overflow-x:auto; margin-bottom: 1rem;">
+                            <table style="width:100%; border-collapse: collapse;">
+                              <thead style="background: #f1f1f1;">
+                                <tr>
+                                  <th>Tamiz (mm)</th>
+                                  <th>Curva resultante (%)</th>
+                                  <th>Curva ideal (%)</th>
+                                  <th>Diferencia (%)</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr><td>9.5</td><td>99.92</td><td>100.00</td><td>-0.08 ✅</td></tr>
+                                <tr><td>4.75</td><td>95.74</td><td>96.00</td><td>-0.26 ✅</td></tr>
+                                <tr><td>2.36</td><td>64.46</td><td>59.00</td><td>+5.46 ⚠️</td></tr>
+                                <tr><td>1.18</td><td>39.67</td><td>45.00</td><td>-5.33 ⚠️</td></tr>
+                                <tr><td>0.6</td><td>23.26</td><td>24.60</td><td>-1.34 ✅</td></tr>
+                                <tr><td>0.3</td><td>13.46</td><td>14.80</td><td>-1.34 ✅</td></tr>
+                                <tr><td>0.15</td><td>5.62</td><td>6.35</td><td>-0.73 ✅</td></tr>
+                                <tr><td>0.074</td><td>1.22</td><td>1.26</td><td>-0.04 ✅</td></tr>
+                              </tbody>
+                            </table>
+                          </div>
+                    </details>
 
-                    <!-- 📊 Tabla comparativa -->
-                    <div style="overflow-x:auto; margin-bottom: 1rem;">
-                      <table style="width:100%; border-collapse: collapse;">
-                        <thead style="background: #f1f1f1;">
-                          <tr>
-                            <th>Tamiz (mm)</th>
-                            <th>Curva resultante (%)</th>
-                            <th>Curva ideal (%)</th>
-                            <th>Diferencia (%)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr><td>9.5</td><td>99.92</td><td>100.00</td><td>-0.08 ✅</td></tr>
-                          <tr><td>4.75</td><td>95.74</td><td>96.00</td><td>-0.26 ✅</td></tr>
-                          <tr><td>2.36</td><td>64.46</td><td>59.00</td><td>+5.46 ⚠️</td></tr>
-                          <tr><td>1.18</td><td>39.67</td><td>45.00</td><td>-5.33 ⚠️</td></tr>
-                          <tr><td>0.6</td><td>23.26</td><td>24.60</td><td>-1.34 ✅</td></tr>
-                          <tr><td>0.3</td><td>13.46</td><td>14.80</td><td>-1.34 ✅</td></tr>
-                          <tr><td>0.15</td><td>5.62</td><td>6.35</td><td>-0.73 ✅</td></tr>
-                          <tr><td>0.074</td><td>1.22</td><td>1.26</td><td>-0.04 ✅</td></tr>
-                        </tbody>
-                      </table>
-                    </div>
+                   
 
                     <!-- 📉 Recomendaciones -->
                     <div style="margin-top: 1rem; padding: 12px; background-color: #fff3cd; border-left: 6px solid #ff9800;">
@@ -499,7 +506,7 @@ function calcularTodas() {
                     </div>
 
                   </div>
-                </details>
+                
                 `;
 
                 document.getElementById("diagnosticoModal").innerHTML = diagnosticoHTML;
