@@ -10,6 +10,7 @@ from scipy.optimize import minimize
 from controller.autoDensidad.calcularMezclaOptima import calcular_mezcla_optima
 from controller.autoDensidad.calcularMezclaOptima import mostrar_datos_crudos_entrada
 from controller.autoDensidad.calcularMezclaOptima import encontrar_n_optimo
+from controller.autoDensidad.optimizar_fuller import generar_informe_ajuste
 
 
 
@@ -428,14 +429,28 @@ def calcular_curva_corregida():
         print(f"{nombre}: {zonas}")
     # Aplica ajuste con un factor de 0.5 (50%)
     pesos_ajustados = ajustar_pesos_por_factor(pesos_por_zona, factor)
+    
+    
+    
+    
+    
+    
+    curva_objetivo = [100.0, 96.0, 59.0, 45.0, 24.6, 14.8, 6.35, 1.26]
 
+    informe = generar_informe_ajuste(
+                                        curvas=[np.array(c) for c in curvas],
+                                        nombres=nombres_materiales,
+                                        curva_objetivo=curva_objetivo
+                                    )
     return jsonify({
         "curva_corregida": curva_corregida,
         "grafico_base64": f"data:image/png;base64,{img_base64}",
         "diferencias": diferencias,
         "interpretacion_materiales": interpretaciones,
         "acciones_recomendadas": acciones_textuales,
-        "pesos_por_zona": pesos_ajustados
+        "pesos_por_zona": pesos_ajustados,
+        "reporte_ajuste": informe
+
     })
     
     
