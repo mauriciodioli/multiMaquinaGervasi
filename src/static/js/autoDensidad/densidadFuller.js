@@ -69,7 +69,7 @@ function inicializarConfiguracionFuller() {
     localStorage.setItem("perfil_norma", "hormigon_argentino");
   }
   if (!localStorage.getItem("d_max")) {
-    localStorage.setItem("d_max", "25");
+    localStorage.setItem("d_max", "9.5");
   }
   if (!localStorage.getItem("n")) {
     localStorage.setItem("n", "0.5");
@@ -321,7 +321,7 @@ function calcularTodas() {
 
     // Guardar d_max calculado si corresponde
     if (dMaxFinal !== null) {
-        localStorage.setItem("d_max", dMaxFinal.toFixed(2));
+       // localStorage.setItem("d_max", dMaxFinal.toFixed(2));
         console.log("✅ d_max calculado automáticamente:", dMaxFinal.toFixed(2));
     } else {
         console.warn("⚠️ No se detectó retención en ningún tamiz. Se usará el valor por defecto (25 mm)");
@@ -606,7 +606,7 @@ function generarGraficoProporciones(pesos, nombres) {
 function generarMezclaCorregida() {
 
    let input = prompt("Ingresar un número entre 0 y 1 (dejar vacío para usar 1):", "1");
-
+   let tipo_objetivo = localStorage.getItem('tipo_objetivo')
     // Si el usuario aprieta "Cancelar" o deja vacío, se usa 1
     if (input === null || input.trim() === "") {
         input = "1";
@@ -627,7 +627,8 @@ function generarMezclaCorregida() {
             pesos: pesos,
             nombreProductos: nombreProductos,
             tamices: tamices,
-            factor: factor
+            factor: factor,
+            tipo_objetivo:tipo_objetivo
         })
     })
     .then(res => res.json())
@@ -1055,4 +1056,25 @@ function cerrarModalGraficoCorreccion() {
   });
 
 
+
+
+
+
+
+  //esto sieve para abrir el modal de cuarvas objetivos tipo de 
+  //material bloques, hormigon, relleno ypersonalizada
+function abrirModalTipoCurva() {
+  document.getElementById("modalCurvaObjetivo").style.display = "block";
+}
+
+function cerrarModal() {
+  document.getElementById("modalCurvaObjetivo").style.display = "none";
+}
+
+function guardarTipoCurva() {
+  const seleccion = document.getElementById("tipoCurvaObjetivo").value;
+  localStorage.setItem("tipo_objetivo", seleccion);
+  console.log("✅ Tipo de curva objetivo guardado en localStorage:", seleccion);
+  cerrarModal();
+}
 

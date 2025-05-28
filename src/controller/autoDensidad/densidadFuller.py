@@ -258,6 +258,7 @@ def calcular_curva_corregida():
     tamices = data.get("tamices")    
     factor = data.get("factor",1)  # Factor de ajuste, por defecto 0.5  
     nombres_materiales = data.get("nombreProductos", [])
+    tipo_objetivo = data.get("tipo_objetivo", "bloques")
     print("\n=== DEBUG: Datos recibidos ===")
     print("Curvas:", curvas)
     print("Pesos:", pesos)
@@ -434,14 +435,14 @@ def calcular_curva_corregida():
     
     
     
-    
-    curva_objetivo = [100.0, 96.0, 59.0, 45.0, 24.6, 14.8, 6.35, 1.26]
+
 
     informe = generar_informe_ajuste(
                                         curvas=[np.array(c) for c in curvas],
                                         nombres=nombres_materiales,
-                                        curva_objetivo=curva_objetivo
+                                        objetivo=tipo_objetivo
                                     )
+
     return jsonify({
         "curva_corregida": curva_corregida,
         "grafico_base64": f"data:image/png;base64,{img_base64}",
