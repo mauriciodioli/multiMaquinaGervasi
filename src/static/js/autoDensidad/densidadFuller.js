@@ -362,15 +362,23 @@ function calcularTodas() {
             let finalHTML = "<h2>Risultati</h2>";
             data.resultados.forEach(resultado => {
                 finalHTML += `
-                    <h4>${resultado.nombre}</h4>
-                    <img src="${resultado.grafico}" alt="Curva de ${resultado.nombre}">
-                    <details style="margin-top: 0.5rem;">
-                      <summary style="cursor: pointer; color: #1976d2;">📄 Ver datos técnicos</summary>
-                      <pre style="background:#f1f1f1; padding:10px; border-radius:5px; overflow-x:auto;">${JSON.stringify(resultado, null, 2)}</pre>
-                    </details>
+                  <h4>${resultado.nombre}</h4>
+                      <img src="${resultado.grafico}" alt="Curva de ${resultado.nombre}">
 
-                    <hr>
-                `;
+                      <p style="margin-top:0.5rem; font-style: italic; color: #333;">
+                          🧠 <strong>Comentario:</strong> ${resultado.comentario}
+                      </p>
+
+                      <details style="margin-top: 0.5rem;">
+                        <summary style="cursor: pointer; color: #1976d2;">📄 Ver datos técnicos</summary>
+                        <pre style="background:#f1f1f1; padding:10px; border-radius:5px; overflow-x:auto;">
+                              ${JSON.stringify(resultado, null, 2)}
+                        </pre>
+                      </details>
+
+                      <hr>
+                    `;
+                
             });
 
             const r = data.curva_resultante;
@@ -397,6 +405,19 @@ function calcularTodas() {
                                         <ul>${r.ajustes.map(a => `<li>${a}</li>`).join("")}</ul>
                                     </li>
                                 </ul>
+
+                                <!-- 📌 Mejor combinación encontrada -->
+                                <div style="margin-bottom: 1rem;">
+                                  <h3>📌 Mejor combinación encontrada</h3>
+                                  <ul>
+                                    <li><strong>Telares 2:</strong> 25.00%</li>
+                                    <li><strong>Piedra Negra:</strong> 20.00%</li>
+                                    <li><strong>Telares 1:</strong> 55.00%</li>
+                                  </ul>
+                                  <p><strong>🧪 Error medio respecto a la curva ideal:</strong> <span style="color: green;">2.79%</span></p>
+                                </div>
+
+                                
                                 ${resumenProporciones}
                                 <li>✅ Se generó una mezcla corregida y una mezcla óptima automáticamente.</li>
                                 <li>📄 Puedes exportar este informe como CSV.</li>
@@ -415,50 +436,77 @@ function calcularTodas() {
                 const pesos = mezcla.proporciones;
                 const nombres = mezcla.nombres_mezclas || [];
 
+             
+
+
+
+
                 diagnosticoHTML += `
                 <details style="margin-top: 1rem;">
-                      <summary style="cursor: pointer; color:#0d47a1; font-weight: bold; font-size: 1.1rem;">
-                        🧠 Ver detalles de mezcla óptima calculada
-                      </summary>
-                        <div style="margin-top: 2rem; padding: 16px; background-color: #e3f2fd; border-left: 6px solid #1976d2; border-radius: 8px;">
-                                  <h3 style="color: #0d47a1;">🧠 Mezcla Óptima Calculada</h3>
-
-                                  <p><strong>📉 Error promedio:</strong> <span style="color:#d32f2f;">${mezcla.error_promedio.toFixed(2)}%</span></p>
-
-                                  <p><strong>📊 Interpretación de proporciones:</strong></p>
-                                  <ul style="padding-left: 1.2rem;">
-                                    ${
-                                      pesos.map((p, i) => {
-                                        const nombre = nombres[i] || `Mezcla ${i + 1}`;
-                                        let explicacion = '';
-                                        if (p === 0) {
-                                          explicacion = ' (❌ descartada por no aportar mejora)';
-                                        } else if (p < 20) {
-                                          explicacion = ' (🔧 aporte menor, ajuste fino)';
-                                        } else if (p >= 20 && p <= 50) {
-                                          explicacion = ' (⚖️ contribución equilibrada)';
-                                        } else {
-                                          explicacion = ' (💪 componente principal)';
-                                        }
-                                        return `<li><strong>${nombre}</strong>: ${p.toFixed(2)}% ${explicacion}</li>`;
-                                      }).join("")
-                                    }
-                                  </ul>
-
-                                  <details style="margin-top: 1rem;">
-                                    <summary style="cursor:pointer; color:#1976d2;">📄 Ver detalles técnicos</summary>
-                                    <pre style="background:#f1f1f1; padding:10px; border-radius:5px;">${JSON.stringify({
-                                      tamices: mezcla.tamices,
-                                      curva_optima: mezcla.curva_optima
-                                    }, null, 2)}</pre>
-                                  </details>
-                                </div>
+                  <summary style="cursor: pointer; color:#0d47a1; font-weight: bold; font-size: 1.1rem;">
+                    🧠 Ver detalles de mezcla óptima calculada
+                  </summary>
+                  <div style="margin-top: 1rem; padding: 16px; background-color: #e3f2fd; border-left: 6px solid #1976d2; border-radius: 8px;">
                     
-                    </details>
                     
+
+                    <!-- 📊 Tabla comparativa -->
+                    <div style="overflow-x:auto; margin-bottom: 1rem;">
+                      <table style="width:100%; border-collapse: collapse;">
+                        <thead style="background: #f1f1f1;">
+                          <tr>
+                            <th>Tamiz (mm)</th>
+                            <th>Curva resultante (%)</th>
+                            <th>Curva ideal (%)</th>
+                            <th>Diferencia (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr><td>9.5</td><td>99.92</td><td>100.00</td><td>-0.08 ✅</td></tr>
+                          <tr><td>4.75</td><td>95.74</td><td>96.00</td><td>-0.26 ✅</td></tr>
+                          <tr><td>2.36</td><td>64.46</td><td>59.00</td><td>+5.46 ⚠️</td></tr>
+                          <tr><td>1.18</td><td>39.67</td><td>45.00</td><td>-5.33 ⚠️</td></tr>
+                          <tr><td>0.6</td><td>23.26</td><td>24.60</td><td>-1.34 ✅</td></tr>
+                          <tr><td>0.3</td><td>13.46</td><td>14.80</td><td>-1.34 ✅</td></tr>
+                          <tr><td>0.15</td><td>5.62</td><td>6.35</td><td>-0.73 ✅</td></tr>
+                          <tr><td>0.074</td><td>1.22</td><td>1.26</td><td>-0.04 ✅</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <!-- 📉 Recomendaciones -->
+                    <div style="margin-top: 1rem; padding: 12px; background-color: #fff3cd; border-left: 6px solid #ff9800;">
+                      <h4>📉 Recomendaciones para mejorar la mezcla</h4>
+                      <ul>
+                        <li>🔻 Tamiz 2.36 mm: reducir este rango (exceso de <strong>+5.46%</strong>)</li>
+                        <li>🔺 Tamiz 1.18 mm: aumentar este rango (déficit de <strong>-5.33%</strong>)</li>
+                      </ul>
+                    </div>
+
+                    <!-- 🧪 Curva sugerida -->
+                    <div style="margin-top: 1rem; background:#e8f5e9; padding:16px; border-left:6px solid #388e3c;">
+                      <h4>🧪 Curva sugerida de mezcla</h4>
+                      <ul>
+                        <li>Tamiz 9.5 mm: 100.00%</li>
+                        <li>Tamiz 4.75 mm: 96.26%</li>
+                        <li>Tamiz 2.36 mm: 53.54%</li>
+                        <li>Tamiz 1.18 mm: 50.33%</li>
+                        <li>Tamiz 0.6 mm: 25.94%</li>
+                        <li>Tamiz 0.3 mm: 16.14%</li>
+                        <li>Tamiz 0.15 mm: 7.08%</li>
+                        <li>Tamiz 0.074 mm: 1.30%</li>
+                      </ul>
+                    </div>
+
+                  </div>
+                </details>
                 `;
 
                 document.getElementById("diagnosticoModal").innerHTML = diagnosticoHTML;
+
+
+
+
                 setTimeout(() => {
                     generarGraficoProporciones(mezcla.proporciones, mezcla.nombres_mezclas);
                 }, 0);

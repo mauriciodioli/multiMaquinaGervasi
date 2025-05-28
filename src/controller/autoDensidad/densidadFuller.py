@@ -98,31 +98,29 @@ def densidad_fuller_multiple():
         diferencias = [r - f for r, f in zip(reales, curva_fuller)]
         # Valores de X (los tamices, de mayor a menor)
       
+        fig, ax_main = plt.subplots()
 
-        # Valores de Y constantes en 1
-        y_constante = [0] * len(tamices)
-        # Generar gráfico
-        fig, ax = plt.subplots()
-        ax.plot(tamices, reales, marker='o', label='Vero')
-        ax.plot(tamices, curva_fuller, marker='x', label='Ideale più completo')             
-        # Graficar la línea horizontal
-        ax.plot(tamices, y_constante, linestyle='-', marker='o', label='milimeters' , color='black', alpha=0.5)  
-        # Mostrar los valores de tamiz sobre los puntos de la curva horizontal
-        for x in tamices:
-            ax.text(x, 0.5, str(x), color='black', fontsize=8, ha='center')
-        
-        # Líneas verticales desde la curva negra a los valores máximos por tamiz
-        for i, x in enumerate(tamices):
-            y_max = max(reales[i], curva_fuller[i])
-            ax.plot([x, x], [0, y_max], linestyle='--', color='gray', alpha=0.4)
+        # Escala logarítmica para el gráfico original
+        ax_main.set_xscale('log')
+        ax_main.plot(tamices, reales, marker='o', label='Media effettiva')
+        ax_main.plot(tamices, curva_fuller, marker='x', label='Media di Fuller')
 
+      
 
-        ax.invert_xaxis() # invertir el eje x
-        ax.set_title(f"{nombre} - Curva de Fuller")
-        ax.set_xlabel("Tamiz (mm)")
-        ax.set_ylabel("% que pasa")
-        ax.grid(True)
-        ax.legend()
+        # Crear segundo eje inferior solo para etiquetas personalizadas
+        ax_main.set_xticks(tamices)
+        ax_main.set_xticklabels([str(x) for x in tamices])
+        ax_main.tick_params(axis='x', rotation=0)
+
+        # Invertir el eje X para seguir la convención de tamices
+        ax_main.invert_xaxis()
+
+        # Estilo
+        ax_main.set_title(f"{nombre} - Curva de Fuller")
+        ax_main.set_xlabel("Tamiz (mm)")
+        ax_main.set_ylabel("% que pasa")
+        ax_main.grid(True)
+        ax_main.legend()
         # Preparar DataFrame para visualizar
         df = pd.DataFrame({
             
@@ -142,6 +140,7 @@ def densidad_fuller_multiple():
         plt.close()
         evaluacion, error_promedio = evaluar_mezcla(diferencias)  # 💥 Obtenemos la evaluación y el error promedio de cada mezcla
         ajustes = sugerir_ajustes(tamices, diferencias) # 💥 Sugerimos ajustes según las diferencias
+        comentario = ajustes.pop()  # ⚠️ El último ítem es la conclusión general
 
         resultados.append({
             "nombre": nombre,
@@ -152,6 +151,7 @@ def densidad_fuller_multiple():
             "evaluacion": evaluacion,
             "error_promedio": error_promedio,
             "ajustes": ajustes,
+            "comentario": comentario,  # el diagnóstico global
             "tamices": tamices
         })
 
@@ -302,49 +302,62 @@ def calcular_curva_corregida():
     ]
     curva_corregida = calcular_curva_corregida_con_ajuste(curva_promedio, curva_fuller_resultante, factor)
     diferencias = [real - ideal for real, ideal in zip(curva_promedio, curva_fuller_resultante)]
-    # Valores de Y constantes en 0
-    y_constante = [0] * len(tamices)
+
+    # Convertir los tamices a etiquetas string
+    etiquetas_x = [str(t) for t in tamices]
+    posiciones_eje_x = list(range(len(tamices)))  # Posiciones enteras para el eje X
+
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.plot(tamices, curva_promedio, marker='o', label='Media effettiva', color='blue')
-    ax.plot(tamices, curva_fuller_resultante, marker='x', label='Ideale più completo', color='orange')
-    ax.plot(tamices, curva_corregida, marker='s', linestyle='--', label='Corretto Ottimale', color='green')
-    ax.plot(tamices, y_constante, linestyle='-', marker='o', label='milimeters' , color='black', alpha=0.5)  
     
-    
-    for x in tamices:
-        ax.text(x, 0.5, str(x), color='black', fontsize=8, ha='center')
-    
-    # Líneas verticales desde la curva negra a los valores máximos por tamiz
-    for i, x in enumerate(tamices):
-        y_max = max(curva_promedio[i], curva_fuller_resultante[i])
-        ax.plot([x, x], [0, y_max], linestyle='--', color='gray', alpha=0.4)
-  
+    ax.plot(posiciones_eje_x, curva_promedio, marker='o', label='Media effettiva', color='blue')
+    ax.plot(posiciones_eje_x, curva_fuller_resultante, marker='x', label='Ideale più completo', color='orange')
+    ax.plot(posiciones_eje_x, curva_corregida, marker='s', linestyle='--', label='Corretto Ottimale', color='green')
 
     acciones_textuales = []
     curvas_individuales_por_material = [
         [peso * curva[i] for i in range(len(tamices))]
         for peso, curva in zip(pesos_normalizados, curvas)
     ]
-    material_por_indice = {i: nombre for i, nombre in enumerate(nombres_materiales)}
+    
+    
+    # Colores predefinidos para cada tipo de curva
+    colores_fijos = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']  # Se repiten si hay más
+    estilos_sin_peso = [':'] * len(curvas)
+    estilos_ponderado = ['--'] * len(curvas)
 
+    # Agregar curvas individuales originales (sin peso)
+    for idx, curva in enumerate(curvas):
+        color = colores_fijos[idx % len(colores_fijos)]
+        ax.plot(posiciones_eje_x, curva, linestyle=estilos_sin_peso[idx], color=color, alpha=0.4, label=f"{nombres_materiales[idx]} (sin peso)")
+
+    # Agregar curvas ponderadas
+    for idx, curva in enumerate(curvas_individuales_por_material):
+        color = colores_fijos[idx % len(colores_fijos)]
+        ax.plot(posiciones_eje_x, curva, linestyle=estilos_ponderado[idx], color=color, alpha=0.6, label=f"{nombres_materiales[idx]} (ponderada)")
+
+    
+    
+    
+    
+    material_por_indice = {i: nombre for i, nombre in enumerate(nombres_materiales)}
     zonas_materiales = {nombre: {"gruesos": 0, "medios": 0, "finos": 0} for nombre in nombres_materiales}
     zonas_totales = {"gruesos": 0, "medios": 0, "finos": 0}
 
-    for i, (t, y_real, y_ideal) in enumerate(zip(tamices, curva_promedio, curva_fuller_resultante)):
-        ax.plot([t, t], [y_real, y_ideal], color='red', linestyle='-', linewidth=1)
+    for i, (tamiz, y_real, y_ideal) in enumerate(zip(tamices, curva_promedio, curva_fuller_resultante)):
+        ax.plot([i, i], [y_real, y_ideal], color='red', linestyle='-', linewidth=1)
         diferencia = y_real - y_ideal
-        diferencia_ajustada = diferencia * factor  # ← Aplicamos el factor
+        diferencia_ajustada = diferencia * factor
 
-        if t > 4:
+        if tamiz > 4:
             zona = "gruesos"
-        elif t > 1:
+        elif tamiz > 1:
             zona = "medios"
         else:
             zona = "finos"
 
         etiqueta_valor = f"{diferencia_ajustada:+.1f}%"
-        ax.text(t, y_ideal + 3, etiqueta_valor, color='red', fontsize=8, ha='right')
-        ax.text(t, y_ideal - 3, f"{zona}", color='blue', fontsize=8, ha='right', fontweight='bold')
+        ax.text(i, y_ideal + 3, etiqueta_valor, color='red', fontsize=8, ha='right')
+        ax.text(i, y_ideal - 3, f"{zona}", color='blue', fontsize=8, ha='right', fontweight='bold')
 
         contribuciones_en_punto = [curva[i] for curva in curvas_individuales_por_material]
         total_punto = sum(contribuciones_en_punto)
@@ -374,14 +387,17 @@ def calcular_curva_corregida():
             accion = ""
 
         if accion:
-            ax.text(t, y_real, accion, color='red', fontsize=8, ha='left', va='center')
+            ax.text(i, y_real, accion, color='red', fontsize=8, ha='left', va='center')
 
-    ax.invert_xaxis()
+    ax.set_xticks(posiciones_eje_x)
+    ax.set_xticklabels(etiquetas_x)
+  
     ax.set_title("Average, Corrected and Fuller Curve")
     ax.set_xlabel("Tamiz (mm)")
     ax.set_ylabel("% que pasa")
     ax.grid(True)
-    ax.legend()
+    ax.legend(loc='best', fontsize='small')
+
 
     df_debug = pd.DataFrame({'Tamiz (mm)': tamices})
     for idx, curva in enumerate(curvas):
@@ -404,6 +420,7 @@ def calcular_curva_corregida():
     buf.seek(0)
     img_base64 = base64.b64encode(buf.getvalue()).decode()
     plt.close()
+
 
     interpretaciones = []
     for nombre, peso in zip(nombres_materiales, pesos):
@@ -574,40 +591,38 @@ def calcular_curva_resultante(resultados, d_max, n_optimo):
     # Valores de Y constantes en 0
     y_constante = [0] * len(tamices)
     # 6. Graficar
-    fig, ax = plt.subplots()
-    ax.plot(tamices, promedio_reales, marker='o', label='Media effettiva')
-    ax.plot(tamices, promedio_fuller, marker='x', label='Media di Fuller')
-    ax.plot(tamices, y_constante, linestyle='-', marker='o', label='milimeters' , color='black', alpha=0.5)  
-    # Mostrar los valores de tamiz sobre los puntos de la curva horizontal
-    for x in tamices:
-        ax.text(x, 0.5, str(x), color='black', fontsize=8, ha='center')
     
-    # Líneas verticales desde la curva negra a los valores máximos por tamiz
-    for i, x in enumerate(tamices):
-        y_max = max(promedio_reales[i], promedio_fuller[i])
-        ax.plot([x, x], [0, y_max], linestyle='--', color='gray', alpha=0.4)
+    
+    
+    # Convertir los tamices a etiquetas string
+    etiquetas_x = [str(t) for t in tamices]
+    x = list(range(len(tamices)))  # Posiciones para eje X lineal
+    fig, ax = plt.subplots()
+   # Curvas
+    ax.plot(x, promedio_reales, marker='o', label='Media effettiva')
+    ax.plot(x, promedio_fuller, marker='x', label='Media di Fuller')
+    
 
 
+  # Anotar valores individuales
+    for xi, y in zip(x, promedio_reales):
+        ax.text(xi, y + 2, f"{y:.1f}%", ha='center', fontsize=8, color='blue')
 
-    # 💬 Anotar valores sobre cada punto
-    for x, y in zip(tamices, promedio_reales):
-        ax.text(x, y + 2, f"{y:.1f}%", ha='center', fontsize=8, color='blue')
-
-    for x, y in zip(tamices, promedio_fuller):
-        ax.text(x, y - 4, f"{y:.1f}%", ha='center', fontsize=8, color='orange')
+    for xi, y in zip(x, promedio_fuller):
+        ax.text(xi, y - 4, f"{y:.1f}%", ha='center', fontsize=8, color='orange')
         
     # Mostrar diferencia en % entre curvas, coloreado por zona
     zonas = []
     diferencias_grafico  = []
-    for x, real, ideal in zip(tamices, promedio_reales, promedio_fuller):
+  # Diferencias + zona como texto
+    for xi, tamiz, real, ideal in zip(x, tamices, promedio_reales, promedio_fuller):
         diferencia = real - ideal
-        diferencias_grafico.append(diferencia)
         etiqueta = f"{diferencia:+.1f}%"
 
-        if x > 4.75:
+        if tamiz > 4.75:
             zona = "gruesos"
             color = "darkred"
-        elif x > 0.6:
+        elif tamiz > 0.6:
             zona = "medios"
             color = "darkorange"
         else:
@@ -615,9 +630,12 @@ def calcular_curva_resultante(resultados, d_max, n_optimo):
             color = "green"
 
         zonas.append(zona)
-        ax.text(x, (real + ideal) / 2, etiqueta, fontsize=8, color=color, ha='left')
-
-    ax.invert_xaxis()
+          # Diferencia entre curvas
+        ax.text(xi, (real + ideal) / 2, etiqueta, fontsize=8, color=color, ha='left')
+   
+  
+    ax.set_xticks(x)
+    ax.set_xticklabels(etiquetas_x)
     ax.set_title("Curva Promedio de Todas las Mezclas")
     ax.set_xlabel("Tamiz (mm)")
     ax.set_ylabel("% que pasa")
@@ -727,14 +745,16 @@ def sugerir_ajustes(tamices, diferencias):
             zonas["gruesos"].append(d)
 
     ajustes = []
+    resumen = {}
 
     for zona, valores in zonas.items():
         if not valores:
             ajustes.append(f"{zona.capitalize()}: sin datos.")
+            resumen[zona] = 0
             continue
 
         promedio = np.mean(valores)
-        signo = "+" if promedio >= 0 else "-"
+        resumen[zona] = promedio
 
         if promedio > 0:
             ajustes.append(f"Reducir material {zona} (exceso de {promedio:.1f}%)")
@@ -743,7 +763,32 @@ def sugerir_ajustes(tamices, diferencias):
         else:
             ajustes.append(f"Material {zona} equilibrado (±0%)")
 
-    return ajustes
+    # Diagnóstico general automático
+    comentario = "Conclusión: "
+    partes = []
+
+    if resumen["gruesos"] > 5:
+        partes.append("demasiadas partículas gruesas")
+    elif resumen["gruesos"] < -5:
+        partes.append("faltan partículas gruesas")
+
+    if resumen["medios"] > 5:
+        partes.append("demasiadas partículas medias")
+    elif resumen["medios"] < -5:
+        partes.append("faltan partículas medias")
+
+    if resumen["finos"] > 3:
+        partes.append("exceso de finos")
+    elif resumen["finos"] < -3:
+        partes.append("déficit de finos")
+
+    if partes:
+        comentario += ", ".join(partes).capitalize() + ". Esto podría afectar la trabajabilidad y cohesión de la mezcla."
+    else:
+        comentario += "la mezcla está bien balanceada respecto a la curva ideal."
+
+    return ajustes + [comentario]
+
 
 
 
