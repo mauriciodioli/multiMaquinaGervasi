@@ -362,21 +362,26 @@ function calcularTodas() {
             let finalHTML = "<h2>Risultati</h2>";
             data.resultados.forEach(resultado => {
                 finalHTML += `
-                  <h4>${resultado.nombre}</h4>
-                      <img src="${resultado.grafico}" alt="Curva de ${resultado.nombre}">
 
-                      <p style="margin-top:0.5rem; font-style: italic; color: #333;">
-                          🧠 <strong>Comentario:</strong> ${resultado.comentario}
-                      </p>
+                <details>
+                           <summary style="cursor:pointer; color:#0d47a1; font-weight:bold;">🔍 Ver análisis técnico completo</summary>
+                             <h4>${resultado.nombre}</h4>
+                              <img src="${resultado.grafico}" alt="Curva de ${resultado.nombre}">
 
-                      <details style="margin-top: 0.5rem;">
-                        <summary style="cursor: pointer; color: #1976d2;">📄 Ver datos técnicos</summary>
-                        <pre style="background:#f1f1f1; padding:10px; border-radius:5px; overflow-x:auto;">
-                              ${JSON.stringify(resultado, null, 2)}
-                        </pre>
-                      </details>
+                              <p style="margin-top:0.5rem; font-style: italic; color: #333;">
+                                  🧠 <strong>Comentario:</strong> ${resultado.comentario}
+                              </p>
 
-                      <hr>
+                              <details style="margin-top: 0.5rem;">
+                                <summary style="cursor: pointer; color: #1976d2;">📄 Ver datos técnicos</summary>
+                                <pre style="background:#f1f1f1; padding:10px; border-radius:5px; overflow-x:auto;">
+                                      ${JSON.stringify(resultado, null, 2)}
+                                </pre>
+                              </details>
+
+                              <hr>
+                </details>
+                  
                     `;
                 
             });
