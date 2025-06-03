@@ -19,12 +19,7 @@ analisis_densidad = Blueprint('analisis_densidad', __name__)
 
 
 
-# Curvas predefinidas para simulación rápida
-CURVAS_SIMULADAS = {
-    'telares_2_': [100, 90, 60, 30, 15, 8, 2, 0.5],
-    'piedra_negra_': [100, 85, 50, 25, 10, 5, 1, 0.2],
-    'telares_1_': [100, 92, 65, 40, 22, 10, 3, 0.7],
-}
+
 
 TAMICES_DEFAULT = [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15, 0.074]
 

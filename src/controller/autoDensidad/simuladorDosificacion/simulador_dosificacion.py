@@ -58,11 +58,37 @@ def simular_mezcla_manual():
 
 
 def generar_recomendacion(zonas):
-    if zonas.get('finos', 0) > zonas.get('gruesos', 0):
-        return "Reduce finos o aumenta gruesos como Piedra Negra."
-    elif zonas.get('gruesos', 0) > zonas.get('medios', 0):
-        return "Sube proporción de materiales medios como Telares."
-    else:
-        return "La mezcla está bastante equilibrada. Podés probar en planta."
+    errores = zonas.get("error_por_zona", {})
+    gruesos = errores.get("gruesos", 0)
+    medios = errores.get("medios", 0)
+    finos = errores.get("finos", 0)
+
+    delta = 5  # Tolerancia mínima para sugerencia
+
+    zona_dominante = max(
+        [("gruesos", gruesos), ("medios", medios), ("finos", finos)],
+        key=lambda x: abs(x[1])
+    )
+
+    zona, valor = zona_dominante
+
+    if abs(valor) < delta:
+        return "✅ Il mix è abbastanza equilibrato. Puoi provarlo in impianto."
+
+    if zona == "finos":
+        if valor > 0:
+            return "⚠️ C'è un eccesso di multe. Riduci la grana fine o aumenta quella grossa come la Pietra Nera."
+        else:
+            return "⚠️ Mancano le multe. Aggiungi materiale più fine."
+    elif zona == "medios":
+        if valor > 0:
+            return "⚠️ Eccesso di materiali medi. Riduci telai o simili."
+        else:
+            return "⚠️ Deficit nei materiali medi. Aumenta telai o componenti intermedi."
+    elif zona == "gruesos":
+        if valor > 0:
+            return "⚠️ Eccesso di materiali grossi. Riduci la componente grossa come la Pietra Nera."
+        else:
+            return "⚠️ Mancano materiali grossi. Aggiungi Pietra Nera o simili."
 
 
