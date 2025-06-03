@@ -8,7 +8,11 @@ from src.controller.crud_maquinas import crud_maquinas
 from src.controller.autoDensidad.densidadFuller import densidadFuller
 from src.controller.autoDensidad.calcularMezclaOptima import calcularMezclaOptima
 from src.controller.autoDensidad.optimizar_fuller import optimizar_fuller
+from src.controller.autoDensidad.simuladorDosificacion.simulador_dosificacion import simulador_dosificacion
+from src.controller.autoDensidad.analisis_densidad import analisis_densidad
+
 from src.utils.conexion_db_crud import conexion_db_crud
+
 
 
 
@@ -31,6 +35,8 @@ def create_app():
     app.register_blueprint(conexion_db_crud)  # Puedes ajustar la URL base
     app.register_blueprint(calcularMezclaOptima)
     app.register_blueprint(optimizar_fuller)
+    app.register_blueprint(simulador_dosificacion)
+    app.register_blueprint(analisis_densidad)
 
     return app
 

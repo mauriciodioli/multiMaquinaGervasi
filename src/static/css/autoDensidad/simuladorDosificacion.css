@@ -1,0 +1,66 @@
+.resultado-simulacion {
+  margin-top: 1.5rem;
+  padding: 1rem 1.5rem;
+  border: 2px solid #4caf50;
+  border-radius: 10px;
+  background-color: #f1fdf4;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.05);
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.simulacion-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.icono-check {
+  font-size: 1.8rem;
+  animation: pop 0.3s ease-in-out;
+}
+
+.titulo-simulacion {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #2e7d32;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  70%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+
+.btn-ocultar-resultado {
+  margin-top: 1rem;
+  padding: 0.4rem 1rem;
+  font-size: 0.95rem;
+  background-color: #c62828;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-ocultar-resultado:hover {
+  background-color: #b71c1c;
+}
+
+
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.95); }
+}
+
+.desaparecer {
+  animation: fadeOut 0.3s forwards;
+}

@@ -231,7 +231,7 @@ function agregarMezcla() {
     mezclaDiv.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h3>Producto</h3>
-          <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Eliminar mezcla</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il mix<</button>
         </div>
         <input type="text" placeholder="Nombre del producto" class="nombreProducto">
         <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Aggiungi riga</button>
@@ -250,8 +250,35 @@ function agregarMezcla() {
 }
 function eliminarMezcla(boton) {
     const mezclaDiv = boton.closest('.mezcla');
+
+    // Obtener el nombre del producto desde el input o dataset
+    const inputNombre = mezclaDiv.querySelector('.nombreProducto');
+    const nombre = inputNombre?.value?.trim() || mezclaDiv.dataset.nombre;
+
+    if (!nombre) {
+        alert("❌ No se pudo identificar el nombre del producto.");
+        return;
+    }
+
+    // Eliminar visualmente
     mezclaDiv.remove();
+
+    // Eliminar de la cookie
+    let productos = [];
+    const match = document.cookie.match(/(?:^|; )nombres_productos=([^;]*)/);
+    if (match) {
+        productos = JSON.parse(decodeURIComponent(match[1]));
+    }
+
+    // Filtrar el nombre a eliminar
+    productos = productos.filter(p => p !== nombre);
+
+    // Reescribir la cookie sin ese producto
+    document.cookie = "nombres_productos=" + encodeURIComponent(JSON.stringify(productos)) + "; path=/";
+
+    alert(`🗑 Producto "${nombre}" eliminado.`);
 }
+
 
 
 
@@ -976,28 +1003,30 @@ function cargarDatosPorDefecto() {
     mezclaDiv.className = "mezcla";
 
     mezclaDiv.innerHTML = `
-     <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3>Prodotto</h3>
-          <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il mix</button>
-        </div>
-      <h3>${m.nombre}</h3>
-      <input type="text" value="${m.nombre}" class="nombreProducto">
-      <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Aggiungi Riga</button>
-      <table class="tabla">
-        <thead>
-          <tr><th>Tamiz</th><th>% Real</th><th>Acción</th></tr>
-        </thead>
-        <tbody>
-          ${m.tamices.map((t, i) => `
-            <tr>
-              <td contenteditable="true">${t}</td>
-              <td contenteditable="true">${m.porcentajes[i]}</td>
-              <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminare</button></td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-      <hr>
+    <div class="contenedor-producto">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+              <h3>Prodotto</h3>
+              <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il mix</button>
+            </div>
+          <h3>${m.nombre}</h3>     
+        <input type="text" value="${m.nombre}" class="nombreProducto" data-original="${m.nombre}">
+          <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Aggiungi Riga</button>
+          <table class="tabla">
+            <thead>
+              <tr><th>Tamiz</th><th>% Real</th><th>Acción</th></tr>
+            </thead>
+            <tbody>
+              ${m.tamices.map((t, i) => `
+                <tr>
+                  <td contenteditable="true">${t}</td>
+                  <td contenteditable="true">${m.porcentajes[i]}</td>
+                  <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminare</button></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+          <hr>
+    </div>
     `;
 
     container.appendChild(mezclaDiv);
@@ -1138,3 +1167,121 @@ function guardarTipoCurva() {
   cerrarModal();
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+document.addEventListener("keydown", function(event) {
+  if (event.target.classList.contains("nombreProducto") && event.key === "Enter") {
+    event.preventDefault();
+
+    const input = event.target;
+    const nuevoNombre = input.value.trim();
+    const original = input.dataset.original;
+    if (!nuevoNombre) return;
+
+    let productos = [];
+
+    // Leer desde cookie
+    const match = document.cookie.match(/(?:^|; )nombres_productos=([^;]*)/);
+    if (match) {
+      productos = JSON.parse(decodeURIComponent(match[1]));
+    }
+
+    if (nuevoNombre === original) {
+      alert(`ℹ️ El nombre no cambió.`);
+      return;
+    }
+
+    if (productos.includes(nuevoNombre)) {
+      alert(`⚠️ El producto "${nuevoNombre}" ya existe.`);
+      input.value = original;
+      return;
+    }
+
+    const index = productos.indexOf(original);
+    if (index !== -1) {
+      productos[index] = nuevoNombre;
+    } else {
+      productos.push(nuevoNombre);
+    }
+
+    // Guardar en cookie
+    document.cookie = "nombres_productos=" + encodeURIComponent(JSON.stringify(productos)) + "; path=/";
+    input.dataset.original = nuevoNombre;
+    alert(`✅ Nombre actualizado a "${nuevoNombre}".`);
+    input.blur();
+
+
+
+
+
+      // Buscar tabla asociada al producto
+      const tabla = input.closest(".contenedor-producto")?.querySelector("table");
+      const tamices = [];
+      const reales = [];
+
+      if (tabla) {
+        tabla.querySelectorAll("tbody tr").forEach(fila => {
+          const celdas = fila.querySelectorAll("td");
+          const tamiz = parseFloat(celdas[0]?.textContent);
+          const real = parseFloat(celdas[1]?.textContent);
+          if (!isNaN(tamiz) && !isNaN(real)) {
+            tamices.push(tamiz);
+            reales.push(real);
+          }
+        });
+      }
+      debugger;
+      guardarMezclaEnCookie(nuevoNombre, tamices, reales);
+
+
+
+
+
+
+
+
+  }
+});
+
+
+
+
+
+
+
+
+function guardarMezclaEnCookie(nombreProducto, tamices, porcentajesReales) {
+  if (!nombreProducto || tamices.length !== porcentajesReales.length) return;
+
+  const normalizedKey = nombreProducto.trim().toLowerCase().replace(/\s+/g, "_");
+
+  let datosGuardados = {};
+  const match = document.cookie.match(/(?:^|; )mezclas_guardadas=([^;]*)/);
+  if (match) {
+    try {
+      datosGuardados = JSON.parse(decodeURIComponent(match[1]));
+    } catch (e) {
+      console.warn("❌ Error al parsear cookie de mezclas:", e);
+    }
+  }
+
+  datosGuardados[normalizedKey] = {
+    tamices: tamices,
+    reales: porcentajesReales
+  };
+
+  document.cookie = "mezclas_guardadas=" + encodeURIComponent(JSON.stringify(datosGuardados)) + "; path=/";
+  console.log(`✅ Mezcla "${nombreProducto}" guardada como "${normalizedKey}"`);
+}

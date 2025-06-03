@@ -10,6 +10,7 @@ from scipy.optimize import minimize
 from controller.autoDensidad.calcularMezclaOptima import calcular_mezcla_optima
 from controller.autoDensidad.calcularMezclaOptima import mostrar_datos_crudos_entrada
 from controller.autoDensidad.calcularMezclaOptima import encontrar_n_optimo
+from controller.autoDensidad.calcularMezclaOptima import calcular_curva_fuller
 from controller.autoDensidad.optimizar_fuller import generar_informe_ajuste
 
 
@@ -44,22 +45,6 @@ def pantalla_densidad_fuller():
 @densidadFuller.route('/pantalla_densidad_fuller_multiple/')
 def pantalla_densidad_fuller_multiple():
     return render_template('autoDensidad/densidadFullerMultiple.html')
-
-
-
- 
-    
-# calcular_curva_fuller ******************************************************
-# calcular_curva_fuller ******************************************************
-# calcular_curva_fuller ******************************************************
-# calcular_curva_fuller ******************************************************
-# calcular_curva_fuller ******************************************************
-def calcular_curva_fuller(tamices, d_max, n=0.5):
-    return [(d / d_max) ** n * 100 for d in tamices]
-
-
-
-
 
 
 
