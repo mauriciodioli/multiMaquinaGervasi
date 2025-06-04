@@ -13,9 +13,8 @@ class Categoria_mezcla(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nombre = db.Column(db.String(200), nullable=False)
     descripcion = db.Column(db.String(500), nullable=True)
-    familia_id = db.Column(db.Integer, ForeignKey('mix_familiari.id'))
-
-    tipos = db.relationship("Tipo_mezcla", backref="categoria", cascade="all, delete")
+    familia_id = db.Column(db.Integer, db.ForeignKey('mix_familiari.id'))  # 👈 esto tiene que ir con snake_case
+    tipos = db.relationship("Tipo_mezcla", back_populates="categoria", cascade="all, delete")
 
 class Categoria_mezclaSchema(ma.Schema):
     class Meta:
