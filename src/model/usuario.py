@@ -23,6 +23,12 @@ class Usuario(db.Model):
     
     maquinas = relationship('Maquina', back_populates='usuario')
     conexion_db = relationship('Conexion_db', back_populates='usuario')
+    agregados = relationship("Agregado", back_populates="usuario")
+    analisis = relationship("AnalisisGranulometrico", back_populates="usuario", cascade="all, delete")
+    entidades = relationship("UsuarioEntidad", back_populates="usuario", cascade="all, delete")
+
+
+
 
     def __init__(self, correo_electronico, password, roll='regular', activo=False,
                  token=None, refresh_token=None, calendly_url=None):
@@ -43,3 +49,7 @@ class MerShema(ma.Schema):
         fields = ("id",  "correo_electronico","token","refresh_token","activo","password","roll")
 mer_schema = MerShema()
 mer_shema = MerShema(many=True)
+
+from src.model.mixFamiliari.analisis_granulometrico import AnalisisGranulometrico
+from src.model.mixFamiliari.usuario_entidad import UsuarioEntidad
+

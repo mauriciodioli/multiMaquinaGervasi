@@ -9,16 +9,14 @@ class Tipo_mezcla(db.Model):
     __tablename__ = 'tipo_mezcla'
     __table_args__ = {'extend_existing': True}
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(200), nullable=False)
-    descripcion = db.Column(db.String(500), nullable=True)
-    categoria_id = db.Column(db.Integer, db.ForeignKey('categoria_mezcla.id'))
+    descripcion = db.Column(db.String(500))
 
-    categoria = db.relationship("Categoria_mezcla", back_populates="tipos")
+    componentes = relationship("Componente_quimico", back_populates="tipo_mezcla", cascade="all, delete")
 
-    # 🔧 ESTA LÍNEA FALTABA (definís el lado inverso del back_populates)
-    componentes = db.relationship("Componente_quimico", back_populates="tipo", cascade="all, delete")
+
 
 class Tipo_mezclaSchema(ma.Schema):
     class Meta:
-        fields = ("id", "nombre", "descripcion", "categoria_id")
+         fields = ("id", "nombre", "descripcion")

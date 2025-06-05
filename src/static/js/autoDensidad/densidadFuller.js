@@ -231,7 +231,7 @@ function agregarMezcla() {
     mezclaDiv.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h3>Producto</h3>
-          <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il mix<</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il aggregato<</button>
         </div>
         <input type="text" placeholder="Nombre del producto" class="nombreProducto">
         <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Aggiungi riga</button>
@@ -1005,8 +1005,8 @@ function cargarDatosPorDefecto() {
     mezclaDiv.innerHTML = `
     <div class="contenedor-producto">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-              <h3>Prodotto</h3>
-              <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il mix</button>
+              <h3>Aggregato</h3>
+              <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il aggregato</button>
             </div>
           <h3>${m.nombre}</h3>     
         <input type="text" value="${m.nombre}" class="nombreProducto" data-original="${m.nombre}">

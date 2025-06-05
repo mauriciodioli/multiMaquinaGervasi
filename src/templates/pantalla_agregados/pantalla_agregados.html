@@ -1,0 +1,90 @@
+{% extends "layouts/layout.html" %}
+
+{% block title %}Listado de Mezclas Familiares{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <h1 class="mb-4">Composizione dell'aggregati</h1>
+      <button type="button" class="btn btn-success mb-3" id="btn-abrir-modal-agregar">Aggiungi </button>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Descrizione</th>
+            <th>Lingua</th>                
+            <th>Stato</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-mix-familiari">
+          {% for famiglia in mix_familiari %}
+          <tr>
+            <td>{{ famiglia.id }}</td>
+            <td>{{ famiglia.nome }}</td>
+            <td>{{ famiglia.descrizione }}</td>
+            <td>{{ famiglia.idioma }}</td>                   
+            <td>{{ famiglia.estado }}</td>
+            <td>
+              <button class="btn btn-warning btn-sm" onclick="modificarMix({{ famiglia.id }})">Modifica</button>
+              <button class="btn btn-danger btn-sm" onclick="eliminarMix({{ famiglia.id }})">Elimina</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Agregar -->
+<div class="modal fade" id="modal-agregar-mix" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalLabel">Aggiungi Aggregato</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="form-agregar-mix">
+          <div class="mb-3">
+            <label for="nome" class="form-label">Nome</label>
+            <input type="text" class="form-control" name="nome" required>
+          </div>
+          <div class="mb-3">
+            <label for="descrizione" class="form-label">Descrizione</label>
+            <input type="text" class="form-control" name="descrizione">
+          </div>
+          <div class="mb-3">
+            <label for="idioma" class="form-label">Lingua</label>
+            <select class="form-select" name="idioma" id="select-idioma">
+                <option value="">🌐 Seleziona una lingua</option>
+                <option value="Italiano">🇮🇹 Italiano</option>
+                <option value="Español">🇪🇸 Español</option>
+                <option value="English">🇬🇧 English</option>
+                <option value="Deutsch">🇩🇪 Deutsch</option>
+                <option value="Français">🇫🇷 Français</option>
+            </select>
+            </div>
+
+       
+        
+          <div class="mb-3">
+            <label for="estado" class="form-label">Stato</label>
+            <input type="text" class="form-control" name="estado">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-primary" id="btn-confirmar-aggiungi">Salva</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+{% endblock %}
