@@ -43,23 +43,27 @@ def crear_entidad():
     
     
 # ✏️ Editar (actualizar)
-@crud_entidad.route('/editar_entidad/<int:id>', methods=['PUT'])
-def editar_entidad(id):
+@crud_entidad.route('/administracion_crud_entidad_modifica_entidades/', methods=['POST'])
+def administracion_crud_entidad_modifica_entidades():
+    data = request.get_json()
     try:
-        entidad = db.session.get(EntidadContexto, id)
-        if not entidad:
-            return jsonify({"status": "error", "message": "Entidad no encontrada"}), 404
-
-        data = request.get_json()
-        entidad.nombre = data.get("nombre", entidad.nombre)
-        entidad.tipo = data.get("tipo", entidad.tipo)
-        entidad.descripcion = data.get("descripcion", entidad.descripcion)
-
+        entidad = db.session.get(EntidadContexto, int(data["id"]))
+        entidad.nombre = data["nombre"]
+        entidad.tipo = data["tipo"]
+        entidad.descripcion = data["descripcion"]
+        entidad.estado = int(data["estado"])
         db.session.commit()
-        return jsonify({"status": "ok"})
-    except SQLAlchemyError as e:
+        return jsonify(success=True, entidad={
+            "id": entidad.id,
+            "nombre": entidad.nombre,
+            "tipo": entidad.tipo,
+            "descripcion": entidad.descripcion,
+            "estado": entidad.estado
+        })
+    except Exception as e:
         db.session.rollback()
-        return jsonify({"status": "error", "message": str(e)}), 400
+        return jsonify(success=False, message=str(e)), 400
+
     
     
     

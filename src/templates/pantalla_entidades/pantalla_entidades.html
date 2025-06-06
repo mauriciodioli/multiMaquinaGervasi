@@ -30,7 +30,7 @@
 
           <tbody id="tabla-entidades">
             {% for entidad in entidades %}
-            <tr>
+            <tr data-fila-id="{{ entidad.id }}">
               <td>{{ entidad.id }}</td>
               <td>{{ entidad.nombre }}</td>
               <td>{{ entidad.tipo }}</td>
@@ -65,5 +65,6 @@
   </div>
 </div>
 {% include 'pantalla_entidades/modals/modal_agregar_entidad.html' %}
+{% include 'pantalla_entidades/modals/modal_modifica_entidad.html' %}
 <script src="{{ url_for('static', filename='js/autoDensidad/entidades/crud_entidad.js') }}"></script>
 {% endblock %}

@@ -30,31 +30,31 @@ document.getElementById("form-agregar-entidad").addEventListener("submit", async
       document.getElementById('modal-agregar-entidad').style.display = "none";
       // Insertar fila a la tabla
       const nuevaFila = document.createElement("tr");
-      nuevaFila.innerHTML = `
+        nuevaFila.setAttribute("data-fila-id", respuesta.entidad.id);
+        nuevaFila.innerHTML = `
         <td>${respuesta.entidad.id}</td>
         <td>${respuesta.entidad.nombre}</td>
         <td>${respuesta.entidad.tipo || ''}</td>
         <td>${respuesta.entidad.descripcion || ''}</td>
         <td>${respuesta.entidad.estado}</td>
         <td>
-          <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2">
             <button type="button" class="btn btn-warning btn-sm btn-abrir-modal-modificar-entidad"
-              data-entidad-id="${respuesta.entidad.id}"
-              data-nombre="${respuesta.entidad.nombre}"
-              data-tipo="${respuesta.entidad.tipo || ''}"
-              data-descripcion="${respuesta.entidad.descripcion || ''}"
-              data-estado="${respuesta.entidad.estado}">
-              Modificare
+                data-entidad-id="${respuesta.entidad.id}"
+                data-nombre="${respuesta.entidad.nombre}"
+                data-tipo="${respuesta.entidad.tipo || ''}"
+                data-descripcion="${respuesta.entidad.descripcion || ''}"
+                data-estado="${respuesta.entidad.estado}">
+                Modificare
             </button>
             <button type="button" class="btn btn-danger btn-sm btn-abrir-modal-eliminar-entidad"
-              data-entidad-id="${respuesta.entidad.id}">
-              Eliminare
+                data-entidad-id="${respuesta.entidad.id}">
+                Eliminare
             </button>
-
-            
-          </div>
+            </div>
         </td>
-      `;
+        `;
+
 
       document.getElementById("tabla-entidades").appendChild(nuevaFila);
 
@@ -109,3 +109,86 @@ function eliminarEntidad(id, boton) {
     });
 }
 
+
+
+
+
+
+document.addEventListener("click", function (e) {
+  if (e.target && e.target.classList.contains("btn-abrir-modal-modificar-entidad")) {
+    const btn = e.target;
+
+    // Precargar los datos al modal
+    document.getElementById("mod-id").value = btn.dataset.entidadId;
+    document.getElementById("mod-nombre").value = btn.dataset.nombre;
+    document.getElementById("mod-tipo").value = btn.dataset.tipo;
+    document.getElementById("mod-descripcion").value = btn.dataset.descripcion;
+    document.getElementById("mod-estado").value = btn.dataset.estado;
+
+    // Guardamos referencia al botón para después saber qué fila modificar
+    document.getElementById("form-modificar-entidad").dataset.filaOrigen = btn.closest("tr").dataset.filaId;
+
+    // Mostramos el modal
+    document.getElementById('modal-modificar-entidad').style.display = "block";
+  }
+});
+
+
+
+document.getElementById("form-modificar-entidad").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const formData = new FormData(this);
+  const data = Object.fromEntries(formData);
+  const filaId = this.dataset.filaOrigen;
+
+  try {
+    const res = await fetch("/administracion_crud_entidad_modifica_entidades/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    const respuesta = await res.json();
+
+    if (res.ok && respuesta.success) {
+      alert("✅ Entidad modificada correctamente.");
+
+      // Ocultar el modal
+      document.getElementById('modal-modificar-entidad').style.display = "none";
+     
+      // Actualizar la fila en pantalla
+      const fila = document.querySelector(`tr[data-fila-id="${filaId}"]`);
+      if (fila) {
+        fila.innerHTML = `
+          <td>${respuesta.entidad.id}</td>
+          <td>${respuesta.entidad.nombre}</td>
+          <td>${respuesta.entidad.tipo || ''}</td>
+          <td>${respuesta.entidad.descripcion || ''}</td>
+          <td>${respuesta.entidad.estado}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-warning btn-sm btn-abrir-modal-modificar-entidad"
+                data-entidad-id="${respuesta.entidad.id}"
+                data-nombre="${respuesta.entidad.nombre}"
+                data-tipo="${respuesta.entidad.tipo || ''}"
+                data-descripcion="${respuesta.entidad.descripcion || ''}"
+                data-estado="${respuesta.entidad.estado}">
+                Modificare
+              </button>
+              <button type="button" class="btn btn-danger btn-sm btn-abrir-modal-eliminar-entidad"
+                data-entidad-id="${respuesta.entidad.id}">
+                Eliminare
+              </button>
+            </div>
+          </td>
+        `;
+      }
+    } else {
+      alert("⚠️ Error: " + (respuesta.message || "No se pudo modificar la entidad."));
+    }
+  } catch (err) {
+    console.error(err);
+    alert("💥 Error en la solicitud: " + err.message);
+  }
+});
