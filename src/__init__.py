@@ -14,6 +14,7 @@ from controller.mixFamiliari.crud_agregado import crud_agregado
 from src.controller.mixFamiliari.componente_bp import componente_bp
 from src.controller.mixFamiliari.tipo_bp import tipo_bp
 
+from src.controller.administracion.crud_usuario import crud_usuario
 from src.controller.administracion.crud_entidad import crud_entidad
 
 from src.utils.conexion_db_crud import conexion_db_crud
@@ -30,7 +31,7 @@ def create_app():
     app.config.from_object(Config)  # ✅ Primero la config
     db.init_app(app)                # ✅ Luego inicializás la DB con esa config
     CORS(app)
-
+    app.register_blueprint(crud_usuario)
     app.register_blueprint(crud_entidad)
 
     app.register_blueprint(trabajos_bp)

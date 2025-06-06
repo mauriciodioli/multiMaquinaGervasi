@@ -1,0 +1,84 @@
+{% extends "layouts/layout.html" %}
+
+{% block title %}Gestión de Usuarios{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <h1 class="mb-4">👥 List of Users</h1>
+
+      <button type="button" class="btn btn-primary mb-3" id="btn-abrir-modal-usuario">
+        ➕ Add User
+      </button>
+
+      <div class="table-responsive">
+        <table class="table table-striped">
+    
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Risorsa</th>
+                    <th>Entità</th>
+                    <th>Azioni</th>
+             
+                </tr>
+            </thead>
+                    <tbody id="tabla-usuarios">
+                    {% for usuario in usuarios %}
+                    <tr data-fila-id="{{ usuario.id }}">
+                        <td>{{ usuario.id }}</td>
+                        <td>{{ usuario.correo_electronico }}</td>
+                        <td>{{ usuario.roll }}</td>
+                        <td>{{ usuario.activo }}</td>
+                        <td>
+                        {% if usuario.entidades %}
+                            {% for entidad in usuario.entidades %}
+                            <div>🏷️ {{ entidad.nombre }} ({{ entidad.tipo }})</div>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">Nessuna entità</span>
+                        {% endif %}
+                        </td>
+                        <td>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-info btn-sm btn-abrir-modal-entidad-usuario"
+                                    data-id="{{ usuario.id }}">
+                                    ➕ Entità
+                            </button>
+
+                            <button type="button" class="btn btn-warning btn-sm btn-abrir-modal-modificar-usuario"
+                            data-id="{{ usuario.id }}"
+                            data-email="{{ usuario.correo_electronico }}"
+                            data-roll="{{ usuario.roll }}"
+                            data-activo="{{ usuario.activo|int }}">
+                            Modificare
+                            </button>
+
+                            <button type="button" class="btn btn-danger btn-sm btn-abrir-modal-eliminar-usuario"
+                            data-id="{{ usuario.id }}">
+                            Eliminare
+                            </button>
+
+                           
+                        </div>
+
+                        </td>
+                        
+                    </tr>
+                    {% endfor %}
+            </tbody>
+
+
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include 'pantalla_usuarios/modals/modal_crea_usuario.html' %}
+{% include 'pantalla_usuarios/modals/modal_modifica_usuario.html' %}
+<script src="{{ url_for('static', filename='js/usuarios/crud_usuarios.js') }}"></script>
+{% endblock %}

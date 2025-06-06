@@ -1,0 +1,62 @@
+<!-- Modal Agregar Usuario Mejorado -->
+<div class="modal fade" id="modal-agregar-usuario" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="form-agregar-usuario">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">➕ Aggiungi utente</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <div class="mb-3">
+            <label for="correo_electronico" class="form-label">E-mail</label>
+            <input type="email" class="form-control" name="correo_electronico" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <div class="input-group">
+              <input type="password" class="form-control" name="password" id="password" required>
+              <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('password')">
+                👁️
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="confirmar_password" class="form-label">Conferma password</label>
+            <div class="input-group">
+              <input type="password" class="form-control" id="confirmar_password" required>
+              <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('confirmar_password')">
+                👁️
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="roll" class="form-label">Ruolo</label>
+            <input type="text" class="form-control" name="roll" value="regular">
+          </div>
+
+          <div class="mb-3">
+            <label for="activo" class="form-label">Stato</label>
+            <select class="form-select" name="activo">
+              <option value="1" selected>Risorsa</option>
+              <option value="0">Oziare</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Mantenere</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancellare</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
