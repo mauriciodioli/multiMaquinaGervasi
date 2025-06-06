@@ -13,6 +13,7 @@ class EntidadContexto(db.Model):
     nombre = db.Column(db.String(200), nullable=False)
     tipo = db.Column(db.String(100), nullable=False)
     descripcion = db.Column(db.String(500))
+    estado = db.Column(db.Integer, nullable=False, default=1)
 
     agregados = relationship("Agregado", back_populates="entidad")
     usuarios = relationship("UsuarioEntidad", back_populates="entidad", cascade="all, delete")  # ⚠️ esta línea necesita que UsuarioEntidad esté ya cargada

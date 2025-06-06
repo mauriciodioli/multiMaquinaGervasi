@@ -14,21 +14,27 @@ print("📌 Inicio app.py")
 app = create_app()
 def verificar_conexion_db():
     try:
-        # Intentar realizar una consulta de prueba para verificar la conexión
         with app.app_context():
-              db.session.execute(text('SELECT 1'))  # Consulta con text() para SQLAlchemy
+            db.session.execute(text('SELECT 1'))
         logger.info("✅ Conexión a la base de datos exitosa.")
     except Exception as e:
         logger.error(f"❌ Error conectando a la base de datos: {str(e)}")
-        # Si hay un error, detiene el arranque de la aplicación
-        raise SystemExit("⚠️ No se pudo conectar a la base de datos. El servidor no se iniciará.")
 
-# Verificar la conexión a la base de datos
-verificar_conexion_db()
-print("✅ app creada")
+        # 🔒 Solo detenemos si estamos en entorno de producción
+        if os.environ.get("FLASK_ENV") == "production":
+            raise SystemExit("⚠️ No se pudo conectar a la base de datos. El servidor no se iniciará.")
+        else:
+            logger.warning("⚠️ Modo desarrollo: se ignora fallo de conexión a DB.")
+
+
+
+
 
 if __name__ == "__main__":
-    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+    # Verificar la conexión a la base de datos
+    verificar_conexion_db()
+    print("✅ app creada")
+    if os.environ.get("WERKZEUG_RUN_MAIN"):
         print("🧠 Contexto activo, creando tablas...")
         with app.app_context():
             db.create_all()

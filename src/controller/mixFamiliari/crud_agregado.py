@@ -62,22 +62,33 @@ def listar_agregados():
 
 @crud_agregado.route('/mixFamiliari_crear_agregado_agregados/', methods=['POST'])
 def crear_agregado():
-    try:
+     #try:
         data = request.get_json()
+        if not data.get('malla_id'):
+            malla_id = 0
+        else:
+            malla_id = int(data.get('malla_id'))
+        
+        estado_raw = data.get('estado')
+        estado = True if estado_raw == "Attivo" else False
+
         nuevo = Agregado(
-            nombre=data['nombre'],
-            descripcion=data.get('descripcion'),
-            idioma=data.get('idioma'),
-            estado=data.get('estado', True),
-            usuario_id=data['usuario_id'],
-            malla_id=data.get('malla_id')
-        )
+                    nombre=data.get('nombre'),
+                    descripcion=data.get('descripcion'),
+                    idioma=data.get('idioma'),
+                    estado=estado,
+                    usuario_id=int(data.get('usuario_id')),
+                    entidad_id=int(data.get('entidad_id')),
+                    malla_id=malla_id,
+                    pais=data.get('pais')  # ✅ agregado correctamente
+                )
+
         db.session.add(nuevo)
         db.session.commit()
         return agregado_schema.jsonify(nuevo)
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 400
+     #except SQLAlchemyError as e:
+       #  db.session.rollback()
+        # return jsonify({'error': str(e)}), 400
 
 
 @crud_agregado.route('/agregados/<int:id>', methods=['PUT'])

@@ -39,52 +39,8 @@
   </div>
 </div>
 
-<!-- Modal Agregar -->
-<div class="modal fade" id="modal-agregar-mix" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalLabel">Aggiungi Aggregato</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="form-agregar-mix">
-          <div class="mb-3">
-            <label for="nome" class="form-label">Nome</label>
-            <input type="text" class="form-control" name="nome" required>
-          </div>
-          <div class="mb-3">
-            <label for="descrizione" class="form-label">Descrizione</label>
-            <input type="text" class="form-control" name="descrizione">
-          </div>
-          <div class="mb-3">
-            <label for="idioma" class="form-label">Lingua</label>
-            <select class="form-select" name="idioma" id="select-idioma">
-                <option value="">🌐 Seleziona una lingua</option>
-                <option value="Italiano">🇮🇹 Italiano</option>
-                <option value="Español">🇪🇸 Español</option>
-                <option value="English">🇬🇧 English</option>
-                <option value="Deutsch">🇩🇪 Deutsch</option>
-                <option value="Français">🇫🇷 Français</option>
-            </select>
-            </div>
-
-       
-        
-          <div class="mb-3">
-            <label for="estado" class="form-label">Stato</label>
-            <input type="text" class="form-control" name="estado">
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-        <button type="button" class="btn btn-primary" id="btn-confirmar-aggiungi">Salva</button>
-      </div>
-    </div>
-  </div>
-</div>
+{% include 'pantalla_agregados/modals/modal_agregar_agregado.html' %}
 
 
-
+<script src="{{ url_for('static', filename='js/autoDensidad/agregados/crud_agregados.js') }}"></script>
 {% endblock %}

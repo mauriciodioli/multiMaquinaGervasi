@@ -33,12 +33,7 @@ class Agregado(db.Model):
     malla = relationship("Malla", back_populates="agregados")
     
 
-    def __init__(self, nombre, descripcion, idioma=None, pais=None, estado=True):
-        self.nombre = nombre
-        self.descripcion = descripcion
-        self.idioma = idioma
-        self.pais = pais
-        self.estado = estado
+
 
     @classmethod
     def crear_tabla(cls):
@@ -48,10 +43,14 @@ class Agregado(db.Model):
 
 class AgregadoSchema(ma.Schema):
     class Meta:
-        fields = ("id", "nombre", "descripcion", "estado", "idioma", "pais", "usuario_id", "entidad_id")
+        fields = (
+            "id", "nombre", "descripcion", "estado", "idioma",
+            "usuario_id", "entidad_id", "pais", "malla_id"
+        )
+
 
 # 👇 Import necesario al final para evitar errores de relación
-from src.model.mixFamiliari.entidad_contexto import EntidadContexto
+from src.model.entidad_contexto import EntidadContexto
 from src.model.mixFamiliari.composicion_agregado import ComposicionAgregado
 from src.model.mixFamiliari.agregado_malla import AgregadoMalla
 

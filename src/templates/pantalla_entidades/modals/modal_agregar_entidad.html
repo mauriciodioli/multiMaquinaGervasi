@@ -1,0 +1,38 @@
+<!-- Modal Agregar Entidad -->
+<div class="modal fade" id="modal-agregar-entidad" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="form-agregar-entidad">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">➕ Aggiungi Entità</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="nombre" class="form-label">Nome</label>
+            <input type="text" class="form-control" id="nombre" name="nombre" required>
+          </div>
+          <div class="mb-3">
+            <label for="tipo" class="form-label">Tipo</label>
+            <input type="text" class="form-control" id="tipo" name="tipo">
+          </div>
+          <div class="mb-3">
+            <label for="descripcion" class="form-label">Descrizione</label>
+            <textarea class="form-control" id="descripcion" name="descripcion"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="estado" class="form-label">Stato</label>
+            <select class="form-control" id="estado" name="estado">
+              <option value="1" selected>Attivo</option>
+              <option value="0">Inattivo</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Salva</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

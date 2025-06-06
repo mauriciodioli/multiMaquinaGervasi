@@ -1,0 +1,69 @@
+{% extends "layouts/layout.html" %}
+
+{% block title %}Listado de Trabajos{% endblock %}
+
+{% block content %}
+
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <div class="titulo-maquinas">
+        <h1>ENTITÀ di Database</h1>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btn-abrir-modal-entidad">
+        <i class="fas fa-server me-2"></i> Aggiungi ENTITÀ
+      </button>
+
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>Tipo</th>
+              <th>Descripcione</th>
+              <th>Stato</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+
+          <tbody id="tabla-entidades">
+            {% for entidad in entidades %}
+            <tr>
+              <td>{{ entidad.id }}</td>
+              <td>{{ entidad.nombre }}</td>
+              <td>{{ entidad.tipo }}</td>
+              <td>{{ entidad.descripcion }}</td>
+              <td>{{ entidad.estado }}</td>
+
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button"
+                          class="btn btn-warning btn-sm btn-abrir-modal-modificar-entidad"
+                          data-entidad-id="{{ entidad.id }}"
+                          data-nombre="{{ entidad.nombre }}"
+                          data-tipo="{{ entidad.tipo }}"
+                          data-descripcion="{{ entidad.descripcion }}"
+                          data-estado="{{ entidad.estado }}">
+                    Modificare
+                  </button>
+
+                  <button type="button"
+                          class="btn btn-danger btn-sm btn-abrir-modal-eliminar-entidad"
+                          data-entidad-id="{{ entidad.id }}">
+                    Eliminare
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% include 'pantalla_entidades/modals/modal_agregar_entidad.html' %}
+<script src="{{ url_for('static', filename='js/autoDensidad/entidades/crud_entidad.js') }}"></script>
+{% endblock %}
