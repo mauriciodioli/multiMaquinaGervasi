@@ -1,0 +1,62 @@
+{% extends "layouts/layout.html" %}
+
+{% block title %}Listado de Mallas{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <div class="titulo-maquinas">
+        <h1>Maglie Registrate</h1>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btn-abrir-modal-malla">
+        <i class="fas fa-border-all me-2"></i> Aggiungere Malla
+      </button>
+
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome commerciale</th>
+              <th>Diametro (mm)</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-mallas">
+            {% for malla in mallas %}
+            <tr data-fila-id="{{ malla.id }}">
+              <td>{{ malla.id }}</td>
+              <td>{{ malla.nombre_comercial }}</td>
+              <td>{{ malla.diametro_mm }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button"
+                          class="btn btn-warning btn-sm btn-abrir-modal-modificar-malla"
+                          data-id="{{ malla.id }}"
+                          data-nombre_comercial="{{ malla.nombre_comercial }}"
+                          data-diametro_mm="{{ malla.diametro_mm }}">
+                    Modificare
+                  </button>
+
+                  <button type="button"
+                          class="btn btn-danger btn-sm btn-abrir-modal-eliminar-malla"
+                          data-id="{{ malla.id }}">
+                    Eliminare
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+         
+{% include 'pantalla_mallas/modals/modal_agregar_malla.html' %}
+{% include 'pantalla_mallas/modals/modal_modificar_malla.html' %}
+<script src="{{ url_for('static', filename='js/autoDensidad/mallas/crud_mallas.js') }}"></script>
+{% endblock %}

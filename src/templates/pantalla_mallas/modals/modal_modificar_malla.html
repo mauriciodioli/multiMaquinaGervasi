@@ -1,0 +1,29 @@
+<!-- Modal Modificar Malla -->
+<div class="modal fade" id="modal-modificar-malla" tabindex="-1" aria-labelledby="modalModificarMallaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="form-modificar-malla">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">✏️ Modificar Malla</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="mod-id" name="id">
+
+          <div class="mb-3">
+            <label for="mod-nombre_comercial" class="form-label">Nombre Comercial</label>
+            <input type="text" class="form-control" id="mod-nombre_comercial" name="nombre_comercial" required>
+          </div>
+          <div class="mb-3">
+            <label for="mod-diametro_mm" class="form-label">Diámetro (mm)</label>
+            <input type="number" step="0.01" class="form-control" id="mod-diametro_mm" name="diametro_mm" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Guardar Cambios</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

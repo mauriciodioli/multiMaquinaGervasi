@@ -34,7 +34,7 @@ def administracion_crud_usuario_pantalla_usuario():
                     "entidades": []
                 }
 
-            if entidad:  # Si hay entidad relacionada
+            if entidad:
                 usuarios_dict[usuario.id]["entidades"].append({
                     "id": entidad.id,
                     "nombre": entidad.nombre,
@@ -42,29 +42,23 @@ def administracion_crud_usuario_pantalla_usuario():
                     "roll": relacion.roll if relacion else None
                 })
 
-        usuarios_con_entidades = list(usuarios_dict.values())
-
-        return render_template(
-            "pantalla_usuarios/pantalla_crud_usuarios.html",
-            usuarios=usuarios_con_entidades
-        )
-
+        return render_template("pantalla_usuarios/pantalla_crud_usuarios.html", usuarios=list(usuarios_dict.values()))
     except Exception as e:
         return f"Error al cargar usuarios: {str(e)}", 500
-
+    finally:
+        db.session.close()
 
 
 @crud_usuario.route('/administracion_crud_usuario_crear_usuario/', methods=['POST'])
 def administracion_crud_usuario_crear_usuario():
     data = request.get_json()
-
     try:
         token = secrets.token_urlsafe(32)
         refresh_token = secrets.token_urlsafe(64)
 
         nuevo = Usuario(
             correo_electronico=data.get('correo_electronico'),
-            password=data.get('password').encode('utf-8'),  # guardar en binario
+            password=data.get('password').encode('utf-8'),
             roll=data.get('roll', 'regular'),
             token=token,
             refresh_token=refresh_token,
@@ -81,20 +75,15 @@ def administracion_crud_usuario_crear_usuario():
             "roll": nuevo.roll,
             "activo": nuevo.activo
         }))
-       
-        # Guardar tokens en cookies HTTPOnly
-        response.set_cookie("token", token, httponly=True, max_age=3600)  # 1 hora
-        response.set_cookie("refresh_token", refresh_token, httponly=True, max_age=3600 * 24 * 7)  # 1 semana
+        response.set_cookie("token", token, httponly=True, max_age=3600)
+        response.set_cookie("refresh_token", refresh_token, httponly=True, max_age=3600 * 24 * 7)
 
         return response
-
     except Exception as e:
         db.session.rollback()
         return jsonify(success=False, message=str(e)), 400
     finally:
         db.session.close()
-
-
 
 
 @crud_usuario.route('/asignar_entidad_usuario/', methods=['POST'])
@@ -107,7 +96,6 @@ def asignar_entidad_usuario():
         if not usuario_id or not entidad_id:
             return jsonify(success=False, error="Faltan datos")
 
-        # Verificamos si ya existe la relación
         existe = db.session.query(UsuarioEntidad).filter_by(
             usuario_id=usuario_id,
             entidad_id=entidad_id
@@ -116,48 +104,46 @@ def asignar_entidad_usuario():
         if existe:
             return jsonify(success=False, error="Ya existe esa asignación")
 
-        # Creamos la relación
         nueva_relacion = UsuarioEntidad(
             usuario_id=usuario_id,
             entidad_id=entidad_id,
-            roll='visualizador'  # por defecto, o lo que necesites
+            roll='visualizador'
         )
 
         db.session.add(nueva_relacion)
         db.session.commit()
-        return jsonify(success=True, entidad={"nombre": nueva_relacion.entidad.nombre, "tipo": nueva_relacion.entidad.tipo})
 
-       
+        entidad = db.session.query(EntidadContexto).get(entidad_id)
+        return jsonify(success=True, entidad={"nombre": entidad.nombre, "tipo": entidad.tipo})
     except Exception as e:
+        db.session.rollback()
         return jsonify(success=False, error=str(e))
-
-
-
+    finally:
+        db.session.close()
 
 
 @crud_usuario.route('/administracion_crud_usuario_eliminar_usuario/<int:id>', methods=['DELETE'])
 def eliminar_usuario(id):
     try:
-        usuario = db.session.query(Usuario).get(id)
+        usuario = db.session.get(Usuario, id)
         if not usuario:
             return jsonify(success=False, error="Usuario no encontrado"), 404
 
         db.session.delete(usuario)
         db.session.commit()
-
         return jsonify(success=True)
     except Exception as e:
-        print(f"Error al eliminar usuario: {e}")
+        db.session.rollback()
         return jsonify(success=False, error=str(e)), 500
-
-
+    finally:
+        db.session.close()
 
 
 @crud_usuario.route('/administracion_crud_usuario_modificar_usuario/<int:id>', methods=['PUT'])
 def modificar_usuario(id):
     try:
         data = request.get_json()
-        usuario = db.session.query(Usuario).filter_by(id=id).first()
+        usuario = db.session.get(Usuario, id)
 
         if not usuario:
             return jsonify(success=False, error="Usuario no encontrado")
@@ -169,4 +155,7 @@ def modificar_usuario(id):
         db.session.commit()
         return jsonify(success=True)
     except Exception as e:
+        db.session.rollback()
         return jsonify(success=False, error=str(e))
+    finally:
+        db.session.close()

@@ -11,7 +11,9 @@ from src.controller.autoDensidad.optimizar_fuller import optimizar_fuller
 from src.controller.autoDensidad.simuladorDosificacion.simulador_dosificacion import simulador_dosificacion
 from src.controller.autoDensidad.analisis_densidad import analisis_densidad
 from controller.mixFamiliari.crud_agregado import crud_agregado
+from src.controller.mixFamiliari.crud_mallas import crud_mallas
 from src.controller.mixFamiliari.componente_bp import componente_bp
+
 from src.controller.mixFamiliari.tipo_bp import tipo_bp
 
 from src.controller.administracion.crud_usuario import crud_usuario
@@ -49,6 +51,7 @@ def create_app():
         
     
     app.register_blueprint(crud_agregado)
+    app.register_blueprint(crud_mallas)
     app.register_blueprint(componente_bp)
     app.register_blueprint(tipo_bp)
     
