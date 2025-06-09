@@ -39,7 +39,7 @@ def administracion_crud_usuario_pantalla_usuario():
                     "id": entidad.id,
                     "nombre": entidad.nombre,
                     "tipo": entidad.tipo,
-                    "rol": relacion.rol if relacion else None
+                    "roll": relacion.roll if relacion else None
                 })
 
         usuarios_con_entidades = list(usuarios_dict.values())
@@ -93,3 +93,80 @@ def administracion_crud_usuario_crear_usuario():
         return jsonify(success=False, message=str(e)), 400
     finally:
         db.session.close()
+
+
+
+
+@crud_usuario.route('/asignar_entidad_usuario/', methods=['POST'])
+def asignar_entidad_usuario():
+    try:
+        data = request.get_json()
+        usuario_id = data.get('usuario_id')
+        entidad_id = data.get('entidad_id')
+
+        if not usuario_id or not entidad_id:
+            return jsonify(success=False, error="Faltan datos")
+
+        # Verificamos si ya existe la relación
+        existe = db.session.query(UsuarioEntidad).filter_by(
+            usuario_id=usuario_id,
+            entidad_id=entidad_id
+        ).first()
+
+        if existe:
+            return jsonify(success=False, error="Ya existe esa asignación")
+
+        # Creamos la relación
+        nueva_relacion = UsuarioEntidad(
+            usuario_id=usuario_id,
+            entidad_id=entidad_id,
+            roll='visualizador'  # por defecto, o lo que necesites
+        )
+
+        db.session.add(nueva_relacion)
+        db.session.commit()
+        return jsonify(success=True, entidad={"nombre": nueva_relacion.entidad.nombre, "tipo": nueva_relacion.entidad.tipo})
+
+       
+    except Exception as e:
+        return jsonify(success=False, error=str(e))
+
+
+
+
+
+@crud_usuario.route('/administracion_crud_usuario_eliminar_usuario/<int:id>', methods=['DELETE'])
+def eliminar_usuario(id):
+    try:
+        usuario = db.session.query(Usuario).get(id)
+        if not usuario:
+            return jsonify(success=False, error="Usuario no encontrado"), 404
+
+        db.session.delete(usuario)
+        db.session.commit()
+
+        return jsonify(success=True)
+    except Exception as e:
+        print(f"Error al eliminar usuario: {e}")
+        return jsonify(success=False, error=str(e)), 500
+
+
+
+
+@crud_usuario.route('/administracion_crud_usuario_modificar_usuario/<int:id>', methods=['PUT'])
+def modificar_usuario(id):
+    try:
+        data = request.get_json()
+        usuario = db.session.query(Usuario).filter_by(id=id).first()
+
+        if not usuario:
+            return jsonify(success=False, error="Usuario no encontrado")
+
+        usuario.correo_electronico = data.get('correo_electronico', usuario.correo_electronico)
+        usuario.roll = data.get('roll', usuario.roll)
+        usuario.activo = bool(int(data.get('activo', usuario.activo)))
+
+        db.session.commit()
+        return jsonify(success=True)
+    except Exception as e:
+        return jsonify(success=False, error=str(e))

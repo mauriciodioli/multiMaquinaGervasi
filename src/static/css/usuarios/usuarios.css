@@ -1,0 +1,5 @@
+.fila-entidad.seleccionada {
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+}

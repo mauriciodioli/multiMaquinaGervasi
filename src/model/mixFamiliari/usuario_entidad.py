@@ -13,11 +13,12 @@ class UsuarioEntidad(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     entidad_id = db.Column(db.Integer, db.ForeignKey('entidadcontexto.id'), nullable=False)
-
+    roll = db.Column(db.String(20), nullable=True)  
+    
     usuario = relationship("Usuario", back_populates="entidades")
     entidad = relationship("EntidadContexto", back_populates="usuarios")
 
 
 class UsuarioEntidadSchema(ma.Schema):
     class Meta:
-        fields = ("id", "usuario_id", "entidad_id")
+        fields = ("id", "usuario_id", "entidad_id", "roll") 

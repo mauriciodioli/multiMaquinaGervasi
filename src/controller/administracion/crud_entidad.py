@@ -4,9 +4,11 @@ from src.model.entidad_contexto import EntidadContexto, EntidadContextoSchema
 from utils.db import db
 from sqlalchemy.exc import SQLAlchemyError
 
-crud_entidad = Blueprint("crud_entidad", __name__)
 
-entidad_schema = EntidadContextoSchema()
+
+
+crud_entidad = Blueprint("crud_entidad", __name__)
+entidad_schema = EntidadContextoSchema(many=True)
 entidades_schema = EntidadContextoSchema(many=True)
 
 # 👉 Ruta para mostrar la pantalla con entidades existentes
@@ -81,3 +83,16 @@ def administracion_crud_entidad_eliminar_entidad(id):
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 400
+
+
+
+@crud_entidad.route('/administracion_crud_entidad_contexto_listar/', methods=['GET'])
+def listar_entidades():
+    try:
+            entidades = db.session.query(EntidadContexto).all()
+            resultado = entidad_schema.dump(entidades)
+            return jsonify({"success": True, "entidades": resultado})
+         
+    except Exception as e:
+        print("Error:", e)
+        return jsonify({'success': False, 'error': str(e)})

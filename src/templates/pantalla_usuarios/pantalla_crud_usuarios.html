@@ -36,7 +36,7 @@
                         <td>
                         {% if usuario.entidades %}
                             {% for entidad in usuario.entidades %}
-                            <div>🏷️ {{ entidad.nombre }} ({{ entidad.tipo }})</div>
+                            <div>🏷️ {{ entidad.nombre }} </div>
                             {% endfor %}
                         {% else %}
                             <span class="text-muted">Nessuna entità</span>
@@ -49,6 +49,14 @@
                                     ➕ Entità
                             </button>
 
+
+                            <button type="button" class="btn btn-danger btn-sm btn-abrir-modal-eliminar-usuario"
+                            data-id="{{ usuario.id }}">
+                            Eliminare
+                            </button>
+
+
+
                             <button type="button" class="btn btn-warning btn-sm btn-abrir-modal-modificar-usuario"
                             data-id="{{ usuario.id }}"
                             data-email="{{ usuario.correo_electronico }}"
@@ -57,10 +65,7 @@
                             Modificare
                             </button>
 
-                            <button type="button" class="btn btn-danger btn-sm btn-abrir-modal-eliminar-usuario"
-                            data-id="{{ usuario.id }}">
-                            Eliminare
-                            </button>
+                           
 
                            
                         </div>
@@ -80,5 +85,9 @@
 
 {% include 'pantalla_usuarios/modals/modal_crea_usuario.html' %}
 {% include 'pantalla_usuarios/modals/modal_modifica_usuario.html' %}
+{% include 'pantalla_usuarios/modals/modal_mostrar_entidad.html' %}
 <script src="{{ url_for('static', filename='js/usuarios/crud_usuarios.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/usuarios/usuarios.css') }}">
+
+
 {% endblock %}

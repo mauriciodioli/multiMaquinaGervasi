@@ -1,0 +1,30 @@
+<!-- Modal para listado -->
+<div class="modal fade" id="modalListaEntidades" tabindex="-1" aria-labelledby="modalListaEntidadesLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalListaEntidadesLabel">Listado de Entidades</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody id="tablaEntidadesBody">
+            <!-- Se llena dinámicamente con JS -->
+          </tbody>
+        </table>
+        <div class="modal-footer">
+             <button type="button" class="btn btn-primary" id="btnGuardarEntidadSeleccionada">Mantenere</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
