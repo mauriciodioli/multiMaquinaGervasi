@@ -16,10 +16,7 @@ class Componente_quimico(db.Model):
     pais = db.Column(db.String(100))
     descripcion = db.Column(db.String(500))
 
-    agregado_id = db.Column(db.Integer, db.ForeignKey('agregados.id'))
     tipo_mezcla_id = db.Column(db.Integer, db.ForeignKey('tipo_mezcla.id'))
-
-    agregado = relationship("Agregado", back_populates="componentes")
     tipo_mezcla = relationship("Tipo_mezcla", back_populates="componentes")
 
 class Componente_quimicoSchema(ma.Schema):

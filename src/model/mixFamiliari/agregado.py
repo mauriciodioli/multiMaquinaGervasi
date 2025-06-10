@@ -26,7 +26,6 @@ class Agregado(db.Model):
     usuario = relationship("Usuario", back_populates="agregados")
     entidad = relationship("EntidadContexto", back_populates="agregados")
 
-    componentes = relationship("Componente_quimico", back_populates="agregado", cascade="all, delete")
     analisis = relationship("AnalisisGranulometrico", back_populates="agregado", cascade="all, delete")
     composiciones = relationship("ComposicionAgregado", back_populates="agregado", cascade="all, delete")
     mallas = relationship("AgregadoMalla", back_populates="agregado", cascade="all, delete")

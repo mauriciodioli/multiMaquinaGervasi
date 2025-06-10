@@ -1,0 +1,27 @@
+<!-- Modal Agregar/Modificar Tipo de Mezcla -->
+<div class="modal fade" id="modal-agregar-tipo-mezcla" tabindex="-1" aria-labelledby="modalTipoMezclaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="form-agregar-tipo-mezcla">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTipoMezclaLabel">➕ Aggiungi Tipo di Miscela</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="nombre" class="form-label">Nome</label>
+            <input type="text" class="form-control" id="nombre" name="nombre" required>
+          </div>
+          <div class="mb-3">
+            <label for="descripcion" class="form-label">Descrizione</label>
+            <textarea class="form-control" id="descripcion" name="descripcion" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Salvare</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

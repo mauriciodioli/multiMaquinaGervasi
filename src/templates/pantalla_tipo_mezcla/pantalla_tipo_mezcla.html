@@ -1,0 +1,63 @@
+{% extends "layouts/layout.html" %}
+
+{% block title %}Listado de Tipi di Miscela{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <div class="titulo-maquinas">
+        <h1>Tipi di Miscela Registrati</h1>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btn-abrir-modal-tipo-mezcla">
+        <i class="fas fa-plus-circle me-2"></i> Aggiungi Tipo Miscela
+      </button>
+
+      <div class="table-responsive mt-3">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>Descrizione</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-tipo-mezcla">
+            {% for tipo in tipos %}
+            <tr data-fila-id="{{ tipo.id }}">
+              <td>{{ tipo.id }}</td>
+              <td>{{ tipo.nombre }}</td>
+              <td>{{ tipo.descripcion }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button"
+                          class="btn btn-warning btn-sm btn-abrir-modal-modificar-tipo-mezcla"
+                          data-id="{{ tipo.id }}"
+                          data-nombre="{{ tipo.nombre }}"
+                          data-descripcion="{{ tipo.descripcion }}">
+                    Modificare
+                  </button>
+
+                  <button type="button"
+                          class="btn btn-danger btn-sm btn-abrir-modal-eliminar-tipo-mezcla"
+                          data-id="{{ tipo.id }}">
+                    Eliminare
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include 'pantalla_tipo_mezcla/modals/modal_agregar_tipo_mezcla.html' %}
+{% include 'pantalla_tipo_mezcla/modals/modal_modificar_tipo_mezcla.html' %}
+
+<script src="{{ url_for('static', filename='js/autoDensidad/comp_quimico/crud_tipo_mezcla.js') }}"></script>
+{% endblock %}

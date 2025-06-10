@@ -1,0 +1,78 @@
+{% extends "layouts/layout.html" %}
+
+{% block title %}Listado de Componentes Químicos{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <div class="titulo-maquinas">
+        <h1>Componenti Chimici Registrati</h1>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btn-abrir-modal-componente">
+        <i class="fas fa-plus-circle me-2"></i> Aggiungi Componente
+      </button>
+
+      <div class="table-responsive mt-3">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>Paese</th>
+              <th>Descrizione</th>
+              <th>Tipo Miscela</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-componentes">
+            {% for componente in componentes %}
+            <tr data-fila-id="{{ componente.id }}">
+              <td>{{ componente.id }}</td>
+              <td>{{ componente.nombre }}</td>
+              <td>{{ componente.pais }}</td>
+              <td>{{ componente.descripcion }}</td>
+              <td>{{ componente.tipo_mezcla.nombre }}</td>
+              <td>
+                 <button type="button"
+                          class="btn btn-danger btn-sm btn-abrir-modal-tipoMezcla-componente"
+                           data-id="{{ componente.id }}">
+                    Agregar Tipo Mezcla
+                  </button>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button"
+                          class="btn btn-warning btn-sm btn-abrir-modal-modificar-componente"
+                          data-id="{{ componente.id }}"
+                          data-nombre="{{ componente.nombre }}"
+                          data-pais="{{ componente.pais }}"
+                          data-descripcion="{{ componente.descripcion }}"
+                          data-tipo_mezcla_id="{{ componente.tipo_mezcla_id }}"
+                          data-tipo_mezcla_nome="{{ componente.tipo_mezcla.nombre }}"
+                          >
+                          
+                    Modificare
+                  </button>
+
+                  <button type="button"
+                          class="btn btn-danger btn-sm btn-abrir-modal-eliminar-componente"
+                          data-id="{{ componente.id }}">
+                    Eliminare
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include 'pantalla_componente_quimico/modals/modal_agregar_comp_quimico.html' %}
+{% include 'pantalla_componente_quimico/modals/modal_modificar_comp_quimico.html' %}
+{% include 'pantalla_componente_quimico/modals/modal_tipo_mezla.html' %}
+
+<script src="{{ url_for('static', filename='js/autoDensidad/comp_quimico/crud_comp_quimico.js') }}"></script>
+{% endblock %}
