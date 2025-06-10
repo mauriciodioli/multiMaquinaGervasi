@@ -240,10 +240,16 @@ document.getElementById('btn-guardar-tipo-mezcla').addEventListener('click', asy
       document.getElementById('modal-tipo-mezla').classList.remove('show');
       // Actualiza la celda en la tabla
       const fila = document.querySelector(`tr[data-fila-id="${componenteId}"]`);
-      if (fila) {
-        // Suponiendo que la columna "Tipo Miscela" es la 5ta (índice 4)
-        fila.children[4].textContent = tipoMezclaNombre;
-      }
+     if (fila) {
+    // Usa el nombre y el id que vienen del backend
+    fila.children[4].textContent = data.componente_quimico.tipo_mezcla_nome;
+
+    const btnModificar = fila.querySelector('.btn-abrir-modal-modificar-componente');
+    if (btnModificar) {
+      btnModificar.dataset.tipo_mezcla_id = data.componente_quimico.tipo_mezcla_id;
+      btnModificar.dataset.tipo_mezcla_nome = data.componente_quimico.tipo_mezcla_nome;
+    }
+  }
     } else {
       alert("❌ Error al actualizar tipo de mezcla.");
     }

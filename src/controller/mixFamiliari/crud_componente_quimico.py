@@ -105,13 +105,16 @@ def mixFamiliari_crud_componente_quimico_pantalla_modificar_tipo_Mezcla(id):
         componente.tipo_mezcla_id = int(data.get("tipo_mezcla_id"))
 
         db.session.commit()
+       # Obtener el nombre del tipo de mezcla actualizado
+        tipo_mezcla_nome = componente.tipo_mezcla.nombre if componente.tipo_mezcla else ""
 
         return jsonify(success=True, componente_quimico={
             "id": componente.id,
             "nombre": componente.nombre,
             "pais": componente.pais,
             "descripcion": componente.descripcion,
-            "tipo_mezcla_id": componente.tipo_mezcla_id
+            "tipo_mezcla_id": componente.tipo_mezcla_id,
+            "tipo_mezcla_nome": tipo_mezcla_nome
         })
 
     except SQLAlchemyError as e:
