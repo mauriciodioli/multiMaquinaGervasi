@@ -5,7 +5,7 @@ document.getElementById("btn-abrir-modal-componente").addEventListener("click", 
 document.addEventListener("click", function (e) {
   if (e.target && e.target.classList.contains("btn-abrir-modal-modificar-componente")) {
     const btn = e.target;
-
+    debugger;
     document.getElementById("mod-id").value = btn.dataset.id;
     document.getElementById("mod-nombre").value = btn.dataset.nombre;
     document.getElementById("mod-pais").value = btn.dataset.pais;
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
       nombre: document.getElementById('nombre').value,
       pais: document.getElementById('pais').value,
       descripcion: document.getElementById('descripcion').value,   
-        
+
     };
 
     try {
@@ -124,8 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 data-nombre="${c.nombre}"
                 data-pais="${c.pais}"
                 data-descripcion="${c.descripcion}"
-                data-tipo_mezcla_id="${c.tipo_mezcla_id}">
-                data-tipo_mezcla_id="${c.tipo_mezcla_id}">
+                data-tipo_mezcla_id="${c.tipo_mezcla_id}">              
                 Modificare
               </button>
               <button type="button" class="btn btn-danger btn-sm btn-abrir-modal-eliminar-componente"
@@ -227,7 +226,7 @@ document.getElementById('btn-guardar-tipo-mezcla').addEventListener('click', asy
   const componenteId = this.dataset.componenteId;
   // Obtén el nombre del tipo de mezcla seleccionado
   const tipoMezclaNombre = document.getElementById('select-tipo-mezcla').selectedOptions[0].textContent;
-  debugger;
+  
   try {
     const res = await fetch(`/mixFamiliari_crud_componente_quimico_pantalla_modificar_tipo_Mezcla/${componenteId}`, {
       method: "PUT",

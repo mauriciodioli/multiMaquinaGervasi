@@ -67,7 +67,11 @@ def mixFamiliari_crud_componente_quimico_pantalla_modificar(id):
         componente.nombre = data.get("nombre")
         componente.pais = data.get("pais")
         componente.descripcion = data.get("descripcion")
-        componente.tipo_mezcla_id = data.get("tipo_mezcla_id")
+        tipo_mezcla_id = data.get("tipo_mezcla_id")
+        if tipo_mezcla_id in [None, '', 'null']:
+            componente.tipo_mezcla_id = None
+        else:
+            componente.tipo_mezcla_id = int(tipo_mezcla_id)
         tipo_mezcla_nome = data.get("tipo_mezcla_nome")
 
         db.session.commit()
