@@ -13,27 +13,29 @@
           <tr>
             <th>ID</th>
             <th>Nome</th>
-            <th>Descrizione</th>
-            <th>Lingua</th>                
+            <th>Descrizione</th>   
+            <th>Entidad</th> 
             <th>Stato</th>
             <th>Azioni</th>
           </tr>
         </thead>
-        <tbody id="tabla-mix-familiari">
-          {% for famiglia in mix_familiari %}
-          <tr>
-            <td>{{ famiglia.id }}</td>
-            <td>{{ famiglia.nome }}</td>
-            <td>{{ famiglia.descrizione }}</td>
-            <td>{{ famiglia.idioma }}</td>                   
-            <td>{{ famiglia.estado }}</td>
-            <td>
-              <button class="btn btn-warning btn-sm" onclick="modificarMix({{ famiglia.id }})">Modifica</button>
-              <button class="btn btn-danger btn-sm" onclick="eliminarMix({{ famiglia.id }})">Elimina</button>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
+          <tbody id="tabla-mix-familiari">
+            {% for mezcla in mezclas %}
+            <tr>
+              <td>{{ mezcla.id }}</td>
+              <td>{{ mezcla.nombre }}</td>
+              <td>{{ mezcla.descripcion }}</td>             
+              <td>{{ mezcla.entidad.nombre if mezcla.entidad else '' }}</td>
+              <td>{{ mezcla.estado }}</td>
+              <td>
+                <button class="btn btn-sm btn-warning btn-componente-quimico-agregado" data-id="{{ mezcla.id }}">🧱</i> </button>
+          
+                <button class="btn btn-sm btn-warning btn-editar-agregado" data-id="{{ mezcla.id }}">✏️</button>
+                <button class="btn btn-sm btn-danger btn-eliminar-agregado" data-id="{{ mezcla.id }}">🗑️</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
       </table>
     </div>
   </div>
@@ -41,6 +43,4 @@
 
 {% include 'pantalla_agregados/modals/modal_agregar_agregado.html' %}
 
-
-<script src="{{ url_for('static', filename='js/autoDensidad/agregados/crud_agregados.js') }}"></script>
 {% endblock %}

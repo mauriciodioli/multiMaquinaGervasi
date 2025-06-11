@@ -15,6 +15,7 @@ class ComposicionAgregado(db.Model):
     componente_id = db.Column(db.Integer, ForeignKey('componente_quimico.id'))
     agregado_id = db.Column(db.Integer, ForeignKey('agregados.id'))
     porcentaje = db.Column(db.Float, nullable=False)
+    orden = db.Column(db.Integer) 
 
     componente = relationship("Componente_quimico", backref="composiciones")
     agregado = relationship("Agregado", back_populates="composiciones")
@@ -22,4 +23,4 @@ class ComposicionAgregado(db.Model):
 
 class ComposicionAgregadoSchema(ma.Schema):
     class Meta:
-        fields = ("id", "componente_id", "agregado_id", "porcentaje")
+        fields = ("id", "componente_id", "agregado_id", "porcentaje", "orden")

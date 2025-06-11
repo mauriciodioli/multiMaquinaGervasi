@@ -8,14 +8,20 @@
         </div>
         <div class="modal-body">
           <input type="hidden" name="id" id="mod-id">
+
+          <label for="mod-email" class="form-label">E-mail</label>
           <input type="email" class="form-control mb-2" name="correo_electronico" id="mod-email" required>
+
+          <label for="mod-roll" class="form-label">Ruolo</label>
           <input type="text" class="form-control mb-2" name="roll" id="mod-roll">
+
+          <label for="mod-activo" class="form-label">Stato</label>
           <select class="form-control mb-2" name="activo" id="mod-activo">
-            <option value="1">Risorsa</option>
-            <option value="0">Oziare</option>
+            <option value="1">&#9989; Risorsa</option> <!-- ✅ -->
+            <option value="0">&#10060; Oziare</option> <!-- ❌ -->
           </select>
         </div>
-        <div class="modal-footer">
+         <div class="modal-footer" style="margin-top: 1rem;">
           <button type="submit" class="btn btn-success">Salva modifiche</button>
           <button type="button" id="btn-cancelar-modificar" class="btn btn-secondary">Cancellare</button>
         </div>

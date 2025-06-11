@@ -21,19 +21,14 @@ class Agregado(db.Model):
 
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
     entidad_id = db.Column(db.Integer, db.ForeignKey('entidadcontexto.id'))
-    malla_id = db.Column(db.Integer, db.ForeignKey('mallas.id'))
-
+    
     usuario = relationship("Usuario", back_populates="agregados")
     entidad = relationship("EntidadContexto", back_populates="agregados")
 
     analisis = relationship("AnalisisGranulometrico", back_populates="agregado", cascade="all, delete")
     composiciones = relationship("ComposicionAgregado", back_populates="agregado", cascade="all, delete")
     mallas = relationship("AgregadoMalla", back_populates="agregado", cascade="all, delete")
-    malla = relationship("Malla", back_populates="agregados")
-    
-
-
-
+  
     @classmethod
     def crear_tabla(cls):
         insp = inspect(db.engine)
@@ -44,7 +39,8 @@ class AgregadoSchema(ma.Schema):
     class Meta:
         fields = (
             "id", "nombre", "descripcion", "estado", "idioma",
-            "usuario_id", "entidad_id", "pais", "malla_id"
+            "usuario_id", "entidad_id", "pais"
+            # "malla_id"  # Eliminado
         )
 
 
@@ -52,5 +48,3 @@ class AgregadoSchema(ma.Schema):
 from src.model.entidad_contexto import EntidadContexto
 from src.model.mixFamiliari.composicion_agregado import ComposicionAgregado
 from src.model.mixFamiliari.agregado_malla import AgregadoMalla
-
-

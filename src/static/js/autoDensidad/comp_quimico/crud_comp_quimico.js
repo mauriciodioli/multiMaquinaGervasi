@@ -5,7 +5,7 @@ document.getElementById("btn-abrir-modal-componente").addEventListener("click", 
 document.addEventListener("click", function (e) {
   if (e.target && e.target.classList.contains("btn-abrir-modal-modificar-componente")) {
     const btn = e.target;
-    debugger;
+    
     document.getElementById("mod-id").value = btn.dataset.id;
     document.getElementById("mod-nombre").value = btn.dataset.nombre;
     document.getElementById("mod-pais").value = btn.dataset.pais;

@@ -1,0 +1,83 @@
+{% extends "layouts/layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>🧱 Composición del agregado: <strong>{{ agregado.nombre }}</strong></h2>
+  <hr>
+  <p>📦 <strong>Descripción:</strong> {{ agregado.descripcion }}</p>
+  <p>🏗️ <strong>Estado:</strong> {{ 'Activo' if agregado.estado else 'Inactivo' }}</p>
+  <p>📍 <strong>País:</strong> {{ agregado.pais }}</p>
+  <p>🌐 <strong>Idioma:</strong> {{ agregado.idioma or "—" }}</p>
+  <p>🏢 <strong>Entidad:</strong> {{ entidad.nombre }}</p>
+
+  <hr>
+<div class="mb-3">
+  <h4 style="display: flex; align-items: center; gap: 10px;">
+    🧱 Mallas asociadas
+    <button class="btn btn-sm btn-outline-dark" id="toggle-mallas">
+      🔽 Mostrar / Ocultar
+    </button>
+  </h4>
+
+  <div id="seccion-mallas" style="display: none;">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Nombre comercial</th>
+          <th>Diámetro (mm)</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for am in agregado_mallas %}
+        <tr>
+          <td>{{ am.malla.nombre_comercial }}</td>
+          <td>{{ am.malla.diametro_mm }}</td>
+          <td>
+            <button class="btn btn-sm btn-danger btn-eliminar-malla" data-id="{{ am.id }}">🗑️</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <button class="btn btn-sm btn-warning btn-modalAgregarMalla-agregado" data-id="{{ agregado.id }}">
+      ➕
+    </button>
+  </div>
+</div>
+
+
+  <hr>
+  <h4>🧪 Componentes químicos</h4>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Porcentaje (%)</th>
+        <th>Orden</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for comp in composicion %}
+      <tr>
+        <td>{{ comp.componente.nombre }}</td>
+        <td>{{ comp.porcentaje }}</td>
+        <td>{{ comp.orden }}</td>
+        <td>
+          <button class="btn btn-sm btn-warning">✏️</button>
+          <button class="btn btn-sm btn-danger">🗑️</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <button class="btn btn-outline-primary">➕ Agregar componente</button>
+</div>
+
+
+{% include 'pantalla_agregados/modals/modal_agregar_malla.html' %}
+
+<script src="{{ url_for('static', filename='js/autoDensidad/agregados/crud_agregados_mallas.js') }}"></script>
+{% endblock %}

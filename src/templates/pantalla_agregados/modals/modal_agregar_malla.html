@@ -1,0 +1,35 @@
+<style>
+  .modal-body select.form-select {
+    margin-bottom: 1.5rem !important;
+  }
+</style>
+
+<div class="modal fade" id="modalAgregarMalla" tabindex="-1" aria-labelledby="modalMallaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="post" action="{{ url_for('crud_agregado.mixFamiliari_crud_agregado_agregados_mallas', agregado_id=agregado.id) }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalMallaLabel">Agregar Malla al Agregado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="malla_id" class="form-label">Seleccionar malla:</label>
+            <select class="form-select" id="malla_id" name="malla_id" required>
+              <option value="">Seleccioná una malla</option>
+              {% for malla in mallas_disponibles %}
+                <option value="{{ malla.id }}">{{ malla.nombre_comercial }} ({{ malla.diametro_mm }} mm)</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Agregar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

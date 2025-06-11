@@ -1,7 +1,31 @@
-//inicializacion de variables localStorage
+// Inicialización de user_id si no está definido
 if (!localStorage.getItem("user_id")) {
-    localStorage.setItem("user_id", "1");
- }
+    const userId = "1";
+
+    // Guardar en localStorage
+    localStorage.setItem("user_id", userId);
+
+    // Guardar en cookies (expira en 7 días)
+    const fechaExp = new Date();
+    fechaExp.setTime(fechaExp.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 días
+    document.cookie = "user_id=" + userId + ";expires=" + fechaExp.toUTCString() + ";path=/";
+}
+
+
+
+// Inicialización de entidad_id si no está definido
+if (!localStorage.getItem("entidad_id")) {
+    const entidadId = "2";
+
+    // Guardar en localStorage
+    localStorage.setItem("entidad_id", entidadId);
+
+    // Guardar en cookies (expira en 7 días)
+    const fechaExp = new Date();
+    fechaExp.setTime(fechaExp.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 días
+    document.cookie = "entidad_id=" + entidadId + ";expires=" + fechaExp.toUTCString() + ";path=/";
+}
+
 if (!localStorage.getItem("precio_kwh")) {
     localStorage.setItem("precio_kwh", "0.2");
  }
