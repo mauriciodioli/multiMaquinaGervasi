@@ -169,37 +169,48 @@ def mixFamiliari_modificar_agregado(id):
 
 @crud_agregado.route('/mixFamiliari_crud_agregado_agregados/<int:agregado_id>/detalle')
 def mixFamiliari_crud_agregado_agregados(agregado_id):
-    agregado = Agregado.query.get_or_404(agregado_id)
+    try:
+        agregado = db.session.query(Agregado).get(agregado_id)
+        if not agregado:
+            return "Agregado no encontrado", 404
 
-    agregado_mallas = (
-        db.session.query(AgregadoMalla)
-        .filter_by(agregado_id=agregado_id)
-        .join(Malla)
-        .all()
-    )
+        agregado_mallas = (
+            db.session.query(AgregadoMalla)
+            .filter_by(agregado_id=agregado_id)
+            .join(Malla)
+            .all()
+        )
 
-    composicion = (
-        db.session.query(ComposicionAgregado)
-        .filter_by(agregado_id=agregado_id)
-        .join(Componente_quimico)
-        .order_by(ComposicionAgregado.orden.asc())
-        .all()
-    )
+        composicion = (
+            db.session.query(ComposicionAgregado)
+            .filter_by(agregado_id=agregado_id)
+            .join(Componente_quimico)
+            .order_by(ComposicionAgregado.orden.asc())
+            .all()
+        )
 
-    mallas_disponibles = Malla.query.all()
+        mallas_disponibles = db.session.query(Malla).all()
+        componentes_disponibles = db.session.query(Componente_quimico).all()
 
-    return render_template(
-        'pantalla_agregados/agregado_detalle.html',
-        agregado=agregado,
-        entidad=agregado.entidad,
-        agregado_mallas=agregado_mallas,
-        composicion=composicion,
-        mallas_disponibles=mallas_disponibles
-    )
+        return render_template(
+            'pantalla_agregados/agregado_detalle.html',
+            agregado=agregado,
+            entidad=agregado.entidad,
+            agregado_mallas=agregado_mallas,
+            composicion=composicion,
+            mallas_disponibles=mallas_disponibles,
+            componentes_disponibles=componentes_disponibles
+        )
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return f"Error al cargar el detalle del agregado: {str(e)}", 500
+
+    finally:
+        db.session.close()
 
 
 
-@crud_agregado.route('/mixFamiliari_crud_agregado_agregados_mallas/<int:agregado_id>/agregar_malla', methods=['POST'])
 @crud_agregado.route('/mixFamiliari_crud_agregado_agregados_mallas/<int:agregado_id>/agregar_malla', methods=['POST'])
 def mixFamiliari_crud_agregado_agregados_mallas(agregado_id):
     try:
@@ -260,3 +271,56 @@ def eliminar_malla_de_agregado(malla_agregada_id):
         db.session.close()
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@crud_agregado.route('/mixFamiliari_crud_agregado_composicion/<int:agregado_id>/agregar', methods=['POST'])
+def agregar_componente_agregado(agregado_id):
+    try:
+        componente_id = request.form.get("componente_id")
+        porcentaje = request.form.get("porcentaje")
+        orden = request.form.get("orden")
+
+        if not all([componente_id, porcentaje, orden]):
+            return jsonify({"error": "Faltan campos obligatorios"}), 400
+
+        nuevo = ComposicionAgregado(
+            agregado_id=agregado_id,
+            componente_id=int(componente_id),
+            porcentaje=float(porcentaje),
+            orden=int(orden)
+        )
+
+        db.session.add(nuevo)
+        db.session.commit()
+
+        componente = db.session.query(Componente_quimico).get(int(componente_id))
+
+        return jsonify({
+            "success": True,
+            "id": nuevo.id,
+            "nombre": componente.nombre,
+            "porcentaje": nuevo.porcentaje,
+            "orden": nuevo.orden
+        })
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        db.session.close()

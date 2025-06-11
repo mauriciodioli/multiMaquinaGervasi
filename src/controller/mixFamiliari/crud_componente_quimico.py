@@ -92,6 +92,8 @@ def mixFamiliari_crud_componente_quimico_pantalla_modificar(id):
     finally:
         db.session.close()
 
+
+
 # Modificar tipo_Mezcla
 @crud_componente_quimico.route("/mixFamiliari_crud_componente_quimico_pantalla_modificar_tipo_Mezcla/<int:id>", methods=["PUT"])
 def mixFamiliari_crud_componente_quimico_pantalla_modificar_tipo_Mezcla(id):

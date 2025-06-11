@@ -13,7 +13,7 @@
   <hr>
 <div class="mb-3">
   <h4 style="display: flex; align-items: center; gap: 10px;">
-    🧱 Mallas asociadas
+    🧱 Maglie associate
     <button class="btn btn-sm btn-outline-dark" id="toggle-mallas">
       🔽 Mostrar / Ocultar
     </button>
@@ -40,44 +40,62 @@
         {% endfor %}
       </tbody>
     </table>
+   
+  </div>
 
-    <button class="btn btn-sm btn-warning btn-modalAgregarMalla-agregado" data-id="{{ agregado.id }}">
+   <button class="btn btn-sm btn-warning btn-modalAgregarMalla-agregado" data-id="{{ agregado.id }}">
       ➕
     </button>
-  </div>
 </div>
 
 
   <hr>
-  <h4>🧪 Componentes químicos</h4>
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>Nombre</th>
-        <th>Porcentaje (%)</th>
-        <th>Orden</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for comp in composicion %}
-      <tr>
-        <td>{{ comp.componente.nombre }}</td>
-        <td>{{ comp.porcentaje }}</td>
-        <td>{{ comp.orden }}</td>
-        <td>
-          <button class="btn btn-sm btn-warning">✏️</button>
-          <button class="btn btn-sm btn-danger">🗑️</button>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <button class="btn btn-outline-primary">➕ Agregar componente</button>
+ <div class="mb-3">
+  <h4 style="display: flex; align-items: center; gap: 10px;">
+    🧪 Componenti chimici
+    <button class="btn btn-sm btn-outline-dark" id="toggle-componentes">
+      🔽 Mostrar / Ocultar
+    </button>
+  </h4>
+
+  <div id="seccion-componentes" style="display: none;">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Porcentaje (%)</th>
+          <th>Orden</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-componentes">
+            {% for comp in composicion %}
+            <tr>
+              <td>{{ comp.componente.nombre }}</td>
+              <td>{{ comp.porcentaje }}</td>
+              <td>{{ comp.orden }}</td>
+              <td>
+                <button class="btn btn-sm btn-warning">✏️</button>
+                <button class="btn btn-sm btn-danger btn-eliminar-componente" data-id="{{ comp.id }}">🗑️</button>
+              </td>
+            </tr>
+            {% endfor %}
+      </tbody>
+
+    </table>
+  </div>
+  
+  
+  <button class="btn btn-outline-primary btn-modalAgregarComponente-agregado" data-id="{{ agregado.id }}">
+      ➕ Agregar componente
+    </button>
 </div>
 
 
+
 {% include 'pantalla_agregados/modals/modal_agregar_malla.html' %}
+{% include 'pantalla_agregados/modals/modal_agregar_comp_quimi.html' %}
 
 <script src="{{ url_for('static', filename='js/autoDensidad/agregados/crud_agregados_mallas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/autoDensidad/agregados/crud_agregados_comp_quimi.js') }}"></script>
 {% endblock %}
