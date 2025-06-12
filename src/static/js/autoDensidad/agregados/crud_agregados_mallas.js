@@ -30,7 +30,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         `;
         tabla.appendChild(row);
-
+        // Mostrar la sección si estaba oculta
+        document.getElementById("seccion-mallas").style.display = "block";
         form.reset();
         document.getElementById('modalAgregarMalla').style.display = "none"; // cerramos el modal manualmente
       } else {

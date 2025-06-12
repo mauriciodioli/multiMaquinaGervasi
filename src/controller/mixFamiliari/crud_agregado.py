@@ -324,3 +324,61 @@ def agregar_componente_agregado(agregado_id):
 
     finally:
         db.session.close()
+
+
+
+
+
+@crud_agregado.route('/mixFamiliari_crud_agregado_agregados_componente/<int:componente_agregada_id>/modificar', methods=['PUT'])
+def modificar_componente_de_agregado(componente_agregada_id):
+    try:
+        data = request.get_json()  # Solo get_json, ya no request.form
+        relacion = db.session.query(ComposicionAgregado).get(componente_agregada_id)
+        if not relacion:
+            return jsonify({"error": "Componente no encontrado"}), 404
+
+        relacion.porcentaje = data.get('porcentaje')
+        relacion.orden = data.get('orden')
+        # Si permites cambiar el componente:
+        # relacion.componente_id = data.get('componente_id')
+
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "id": relacion.id,
+            "nombre": relacion.componente.nombre,
+            "porcentaje": relacion.porcentaje,
+            "orden": relacion.orden
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.session.close()
+
+
+
+
+
+
+
+
+
+@crud_agregado.route('/mixFamiliari_crud_agregado_agregados_componente/<int:componente_agregada_id>/eliminar', methods=['DELETE'])
+def eliminar_componente_de_agregado(componente_agregada_id):
+    try:
+        relacion = db.session.query(ComposicionAgregado).get(componente_agregada_id)
+        if not relacion:
+            return jsonify({"error": "Relación componente-agregado no encontrada"}), 404
+
+        db.session.delete(relacion)
+        db.session.commit()
+        return jsonify({"success": True})
+    
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+    
+    finally:
+        db.session.close()
