@@ -186,7 +186,7 @@ document.getElementById("form-registro").addEventListener("submit", function (e)
     return;
   }
 
-  fetch("/api/registrar_usuario", {
+  fetch("/api/registrar_usuario/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ correo_electronico: correo, password , lang : lang})
@@ -195,6 +195,8 @@ document.getElementById("form-registro").addEventListener("submit", function (e)
     .then(data => {
       if (data.success) {
          localStorage.setItem("registro_email", correo); // ⬅ necesario para reenviar
+         const lang = localStorage.getItem("lang") || "es";
+         document.cookie = `lang=${lang}; path=/`;
          window.location.href = "/verifica_email/";
       } else {
         errorDiv.textContent = data.error || "Error desconocido.";

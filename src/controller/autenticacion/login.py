@@ -46,7 +46,7 @@ def generar_token_confirmacion(correo):
 
 
 
-@login.route("/api/registrar_usuario", methods=["POST"])
+@login.route("/api/registrar_usuario/", methods=["POST"])
 def registrar_usuario():
         data = request.get_json()
 
@@ -122,8 +122,8 @@ def registrar_usuario():
 
 @login.route("/confirmar/<token>")
 def confirmar_correo(token):
-    s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
     try:
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         correo = s.loads(token, salt='confirmacion-correo', max_age=3600)
     except Exception:
         return "Token inválido o expirado", 400
@@ -132,12 +132,14 @@ def confirmar_correo(token):
     if not usuario:
         return "Usuario no encontrado", 404
 
-    if usuario.activo:
-        return "Cuenta ya confirmada", 200
+    if not usuario.activo:
+        usuario.activo = True
+        db.session.commit()
 
-    usuario.activo = True
-    db.session.commit()
-    return "Cuenta confirmada con éxito. Ya podés iniciar sesión."
+    lang = request.cookies.get("lang", "es")
+    textos = get_textos_confirmacion(lang)
+
+    return render_template("AutenticacionLogin/confirmado.html", t=textos)
 
 
 
@@ -279,3 +281,22 @@ def obtener_textos_confirmacion(lang):
 
 
 
+def get_textos_confirmacion(lang):
+    textos = {
+        "es": {
+            "titulo": "Cuenta confirmada con éxito",
+            "mensaje": "Ya podés iniciar sesión en el sistema.",
+            "boton": "Iniciar sesión"
+        },
+        "en": {
+            "titulo": "Account successfully confirmed",
+            "mensaje": "You can now log in to the system.",
+            "boton": "Log in"
+        },
+        "it": {
+            "titulo": "Account confermato con successo",
+            "mensaje": "Ora puoi accedere al sistema.",
+            "boton": "Accedi"
+        }
+    }
+    return textos.get(lang, textos["es"])

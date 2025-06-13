@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ t.titulo }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/autenticacion/login.css') }}">
+</head>
+<body>
+  <div class="login-container">
+    <h2>✅ {{ t.titulo }}</h2>
+    <p>{{ t.mensaje }}</p>
+    <a href="/" class="btn btn-primary">{{ t.boton }}</a>
+  </div>
+
+  <script>
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 5000);
+  </script>
+</body>
+</html>
