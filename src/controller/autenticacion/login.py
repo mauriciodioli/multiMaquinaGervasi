@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, make_response, render_template, url_for, current_app,has_app_context
+from flask import Blueprint, request, jsonify, make_response, redirect, render_template, url_for, current_app,has_app_context
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_mail import Message
 from src.model.usuario import Usuario
@@ -21,6 +21,104 @@ MAIL_USE_TLS = os.getenv("MAIL_USE_TLS") == "true"
 MAIL_USERNAME = os.getenv("MAIL_USERNAME")
 MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
 MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")
+
+textos_login = {
+    "es": {
+        "no_encontrado": "Usuario no encontrado",
+        "inactivo": "Usuario inactivo",
+        "incorrecta": "Contraseña incorrecta",
+        "error": "Error interno del servidor"
+    },
+    "en": {
+        "no_encontrado": "User not found",
+        "inactivo": "User is inactive",
+        "incorrecta": "Incorrect password",
+        "error": "Internal server error"
+    },
+    "it": {
+        "no_encontrado": "Utente non trovato",
+        "inactivo": "Utente inattivo",
+        "incorrecta": "Password errata",
+        "error": "Errore interno del server"
+    }
+}
+
+
+
+# ========== LOGIN ==========
+@login.route('/login_usuario/', methods=['POST'])
+def login_usuario():
+    data = request.get_json()
+    correo = data.get("correo_electronico")
+    password = data.get("password")
+    lang = data.get("lang", "es")
+    t = textos_login.get(lang, textos_login["es"])
+
+    try:
+        usuario = db.session.query(Usuario).filter_by(correo_electronico=correo).first()
+
+        if not usuario:
+            return jsonify(success=False, error=t["no_encontrado"]), 404
+
+        if not usuario.activo:
+            return jsonify(success=False, error=t["inactivo"]), 403
+
+        if not check_password_hash(usuario.password, password):
+            return jsonify(success=False, error=t["incorrecta"]), 401
+
+        token = secrets.token_urlsafe(32)
+        refresh_token = secrets.token_urlsafe(64)
+        usuario.token = token
+        usuario.refresh_token = refresh_token
+
+        db.session.commit()
+
+        response = make_response(jsonify(
+            success=True,
+            roll=usuario.roll,
+            redireccion="/listar_maquinas/" if usuario.roll == "admin" else "/pantalla_densidad_fuller_multiple/"
+        ))
+        response.set_cookie("token", token, httponly=True, samesite="Strict", secure=False, max_age=3600)
+        response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Strict", secure=False, max_age=3600 * 24 * 7)
+        response.set_cookie("user_id", str(usuario.id), max_age=3600 * 24 * 7)
+
+        return response
+
+    except Exception as e:
+        return jsonify(success=False, error=t["error"]), 500
+    finally:
+        db.session.close()
+
+
+@login.route("/logout/")
+def logout():
+    response = redirect("/")
+    response.delete_cookie("token")
+    response.delete_cookie("refresh_token")
+    response.delete_cookie("user_id")
+    return response
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ========== REGISTRO + CONFIRMACIÓN ==========
@@ -73,7 +171,7 @@ def registrar_usuario():
 
             nuevo = Usuario(
                 correo_electronico=correo,
-                password=password.encode('utf-8'),
+                password=generate_password_hash(password),
                 roll='regular',
                 token=token,
                 refresh_token=refresh_token,
@@ -92,7 +190,8 @@ def registrar_usuario():
             
             t = obtener_textos_confirmacion(lang)
 
-            
+            print(f"Enviando correo de confirmación a: {correo}")
+
 
             mensaje = Message(t["asunto"], recipients=[correo])
             mensaje.html = f"""
@@ -125,21 +224,26 @@ def confirmar_correo(token):
     try:
         s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         correo = s.loads(token, salt='confirmacion-correo', max_age=3600)
+
+        usuario = db.session.query(Usuario).filter_by(correo_electronico=correo).first()
+        if not usuario:
+            return "Usuario no encontrado", 404
+
+        if not usuario.activo:
+            usuario.activo = True
+            db.session.commit()
+
+        lang = request.cookies.get("lang", "es")
+        textos = get_textos_confirmacion(lang)
+
+        return render_template("AutenticacionLogin/confirmado.html", t=textos)
+
     except Exception:
         return "Token inválido o expirado", 400
 
-    usuario = db.session.query(Usuario).filter_by(correo_electronico=correo).first()
-    if not usuario:
-        return "Usuario no encontrado", 404
+    finally:
+        db.session.close()
 
-    if not usuario.activo:
-        usuario.activo = True
-        db.session.commit()
-
-    lang = request.cookies.get("lang", "es")
-    textos = get_textos_confirmacion(lang)
-
-    return render_template("AutenticacionLogin/confirmado.html", t=textos)
 
 
 
@@ -175,62 +279,6 @@ def reenviar_confirmacion():
         return jsonify(success=True, mensaje="Correo reenviado correctamente")
     except Exception as e:
         return jsonify(success=False, error=f"Error al reenviar correo: {str(e)}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ========== LOGIN ==========
-@login.route('/login_usuario/', methods=['POST'])
-def login_usuario():
-    data = request.get_json()
-    correo = data.get("correo_electronico")
-    password = data.get("password")
-
-    try:
-        usuario = db.session.query(Usuario).filter_by(correo_electronico=correo).first()
-
-        if not usuario:
-            return jsonify(success=False, error="Usuario no encontrado"), 404
-
-        if not usuario.activo:
-            return jsonify(success=False, error="Usuario inactivo"), 403
-
-        if not check_password_hash(usuario.password, password):
-            return jsonify(success=False, error="Contraseña incorrecta"), 401
-
-        token = secrets.token_urlsafe(32)
-        refresh_token = secrets.token_urlsafe(64)
-        usuario.token = token
-        usuario.refresh_token = refresh_token
-
-        db.session.commit()
-
-        response = make_response(jsonify(
-            success=True,
-            roll=usuario.roll,
-            redireccion="/admin" if usuario.roll == "admin" else "/dashboard"
-        ))
-        response.set_cookie("token", token, httponly=True, samesite="Strict", secure=False, max_age=3600)
-        response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Strict", secure=False, max_age=3600 * 24 * 7)
-        response.set_cookie("user_id", str(usuario.id), max_age=3600 * 24 * 7)
-
-        return response
-
-    except Exception as e:
-        return jsonify(success=False, error=str(e)), 500
-    finally:
-        db.session.close()
-
 
 
 
@@ -300,3 +348,6 @@ def get_textos_confirmacion(lang):
         }
     }
     return textos.get(lang, textos["es"])
+
+
+

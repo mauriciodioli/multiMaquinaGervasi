@@ -1,5 +1,7 @@
 import pyodbc
 from flask import Blueprint, request, render_template
+from src.model.usuario import Usuario
+from utils.db import db
 trabajos_bp = Blueprint('trabajos', __name__)
 
 # Ruta para ver los trabajos
@@ -27,17 +29,16 @@ def listar_trabajos():
 @trabajos_bp.route('/listar_maquinas/')
 def listar_maquinas():
     try:
-        #conn = pyodbc.connect(  r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};' r'DBQ=C:\Users\Tecnico03\Documents\ProyectoMultiMaquina\si-cam.mdb;')
-        #cursor = conn.cursor()
-        #cursor.execute('SELECT * FROM Lamiere_Tempi')  # O la tabla que tengas
-        #trabajos = cursor.fetchall()
-        #columnas = [column[0] for column in cursor.description]
-        #conn.close()
-        trabajos=''
-        columnas=''
-        return render_template('maquinas/maquinas.html', trabajos=trabajos, columnas=columnas)
+        user_id = request.cookies.get("user_id")
+        usuario = db.session.get(Usuario, int(user_id)) if user_id else None
+
+        trabajos = ''
+        columnas = ''
+        return render_template('maquinas/maquinas.html', trabajos=trabajos, columnas=columnas, usuario=usuario)
     except Exception as e:
         return f"Error conectando a la base de datos: {e}"
+    finally:
+        db.session.close()
     
 @trabajos_bp.route('/trabajos/<int:id>')
 def ver_trabajo(id):

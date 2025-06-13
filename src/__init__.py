@@ -70,6 +70,14 @@ def create_app():
     app.register_blueprint(crud_mallas)
     app.register_blueprint(crud_componente_quimico)
     app.register_blueprint(crud_tipo_mezcla)
+    @app.context_processor
+    def inject_user():
+        try:
+            user_id = request.cookies.get("user_id")
+            usuario = db.session.get(Usuario, int(user_id)) if user_id else None
+            return dict(usuario=usuario)
+        finally:
+            db.session.close()
 
     # Ruta raíz
     @app.route('/')
@@ -84,9 +92,9 @@ def create_app():
                 return render_template("AutenticacionLogin/login.html")
 
             if user.roll == "admin":
-                return redirect("/admin")
+                return redirect("/listar_maquinas/")
             else:
-                return redirect("/dashboard")
+                return redirect("/pantalla_densidad_fuller_multiple/")
         except Exception:
             return render_template("login.html")
 

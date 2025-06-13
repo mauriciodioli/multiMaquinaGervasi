@@ -1,29 +1,35 @@
- document.getElementById("form-login").addEventListener("submit", function (e) {
-      e.preventDefault();
+document.getElementById("form-login").addEventListener("submit", function (e) {
+  e.preventDefault();
 
-      const correo = document.getElementById("correo").value;
-      const password = document.getElementById("password").value;
-      const errorDiv = document.getElementById("error-login");
+  const correo = document.getElementById("correo").value;
+  const password = document.getElementById("password").value;
+  const errorDiv = document.getElementById("error-login");
+  const lang = localStorage.getItem("lang") || "es";
 
-      fetch("/login_usuario/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ correo_electronico: correo, password: password })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            window.location.href = data.redireccion;
-          } else {
-            errorDiv.textContent = data.error || "Credenciales incorrectas";
-          }
-        })
-        .catch(err => {
-          errorDiv.textContent = "Error de red o servidor";
-        });
+  fetch("/login_usuario/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      correo_electronico: correo,
+      password: password,
+      lang: lang  // ✅ se envía al backend
+    })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        window.location.href = data.redireccion;
+      } else {
+        errorDiv.textContent = data.error || "Credenciales incorrectas";
+      }
+    })
+    .catch(() => {
+      errorDiv.textContent = "Error de red o servidor";
     });
+});
+
 
 
 
@@ -36,7 +42,10 @@ const mensajes = {
       pass: "Contraseña",
       entrar: "Entrar",
       olvidar: "¿Olvidaste tu contraseña?",
-      registrar: "¿No tenés cuenta? Registrate"
+      registrar: "¿No tenés cuenta? Registrate",
+      error_credenciales: "Correo o contraseña incorrectos",
+      error_inactivo: "Tu cuenta no está activa. Verificá tu correo",
+      error_servidor: "Error interno del servidor"
     },
     en: {
       titulo: "Sign In",
@@ -44,7 +53,10 @@ const mensajes = {
       pass: "Password",
       entrar: "Log In",
       olvidar: "Forgot your password?",
-      registrar: "Don't have an account? Register"
+      registrar: "Don't have an account? Register",
+      error_credenciales: "Invalid email or password",
+      error_inactivo: "Your account is not active. Check your email",
+      error_servidor: "Internal server error"
     },
     it: {
       titulo: "Accedi",
@@ -52,7 +64,10 @@ const mensajes = {
       pass: "Password",
       entrar: "Entra",
       olvidar: "Hai dimenticato la password?",
-      registrar: "Non hai un account? Registrati"
+      registrar: "Non hai un account? Registrati",
+      error_credenciales: "Invalid email or password",
+      error_inactivo: "Your account is not active. Check your email",
+      error_servidor: "Internal server error"
     }
   };
 

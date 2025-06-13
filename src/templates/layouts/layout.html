@@ -117,18 +117,20 @@ img {
                                                             <div class="head-menu-slot"  >
                                                                 <nav class="nav"><ul id="header-menu-1" class="navigation-main ignition-menu-menu-def"><li id="menu-item-389" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-389"><a href="https://www.gervasi.eu/es/">HOME</a></li>
                                        
-                                         
-                                               <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391">
-                                                        <a href="javascript:void(0);">AMMINISTRAZIONE</a> 
-                                                        <ul class="sub-menu">   
-                                                            <li id="menu-item-470" class="menu-item">
-                                                            <a href="/administracion_crud_usuario_pantalla_usuario/" href="#">UTENTI</a>
-                                                            </li>
-                                                            <li id="menu-item-471">
-                                                                <a href="/administracion_crud_entidad_pantalla_entidades/" href="#">ENTITÀ</a> 
-                                                            </li>
-                                                        </ul>
-                                              </li>    
+                                                {% if usuario and usuario.roll == 'admin' %}
+                                                <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391">
+                                                <a href="javascript:void(0);">AMMINISTRAZIONE</a> 
+                                                <ul class="sub-menu">   
+                                                    <li id="menu-item-470" class="menu-item">
+                                                    <a href="/administracion_crud_usuario_pantalla_usuario/">UTENTI</a>
+                                                    </li>
+                                                    <li id="menu-item-471">
+                                                    <a href="/administracion_crud_entidad_pantalla_entidades/">ENTITÀ</a> 
+                                                    </li>
+                                                </ul>
+                                                </li>
+                                                {% endif %}
+   
                                                 <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391">
                                                     <a href="javascript:void(0);">INFORMES</a> 
                                                     <ul class="sub-menu">                                                
@@ -163,30 +165,32 @@ img {
                                                             
                                                         </ul>
                                               </li>                         
-                                        
-                                            <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391">
-                                                <a href="javascript:void(0);">MACCHINE</a> 
-                                                <ul class="sub-menu">                                                
-                                                    <li id="menu-item-469" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-469">
-                                                    <a href="/">VEDI MACCHINE</a>
-                                                    </li>
-                                                    <li id="menu-item-478" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-478">
-                                                        <li id="menu-item-478">
-                                                            <a id="crud-link" href="#">CRUD MACCHINE</a>
-                                                          </li>
-                                                          
-                                                    </li>
-                                                    <li id="menu-item-479" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-479">
-                                                        <li id="menu-item-479" class="menu-item">
-                                                            <a id="conexionSqlServer" href="#">CONNESSIONE SQLSERVER</a>
-                                                          </li>
-                                                    </li>
-                                                </ul>
+                                         {% if usuario and usuario.roll == 'admin' %}
+                                                <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391">
+                                                        <a href="javascript:void(0);">MACCHINE</a> 
+                                                    <ul class="sub-menu">                                                
+                                                        <li id="menu-item-469" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-469">
+                                                        <a href="/">VEDI MACCHINE</a>
+                                                        </li>
+                                                        <li id="menu-item-478" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-478">
+                                                            <li id="menu-item-478">
+                                                                <a id="crud-link" href="#">CRUD MACCHINE</a>
+                                                            </li>
+                                                            
+                                                        </li>
+                                                        <li id="menu-item-479" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-479">
+                                                            <li id="menu-item-479" class="menu-item">
+                                                                <a id="conexionSqlServer" href="#">CONNESSIONE SQLSERVER</a>
+                                                            </li>
+                                                        </li>
+                                                    </ul>
                                                 </li>
-                                                                      
-                                    
-                                    
+                                            {% endif %}  
+                                                
                                             </li>
+
+
+                                           
                                     <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391"><a href="https://www.gervasi.eu/es/empresa/">EMPRESA</a></li>
                                     <li id="menu-item-406" class="menu-item menu-item-type-custom menu-item-object-custom current-menu-ancestor current-menu-parent menu-item-has-children menu-item-406"><a href="#">PRODUCTOS</a>
                                     <ul class="sub-menu">
@@ -206,6 +210,20 @@ img {
                                     </li>
                                     <li id="menu-item-392" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-392"><a href="https://www.gervasi.eu/es/contactos/">CONTACTO</a></li>
                                     <li id="menu-item-390" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-390"><a href="https://www.gervasi.eu/es/eventos-noticiosos/">NOTICIAS Y EVENTOS</a></li>
+                                     
+                                     
+                                      
+                                    {% if usuario %}
+                                             <li id="menu-item-391" class="menu-item menu-usuario menu-item-type-post_type menu-item-object-page menu-item-391">
+                                                <a href="javascript:void(0);">👤 {{ usuario.roll|capitalize }}</a>
+                                                <ul class="sub-menu">
+                                                    <li><a href="/perfil_usuario/">👤 Mi perfil</a></li>
+                                                    <li><a href="/cambiar_contrasena/">🔐 Cambiar contraseña</a></li>
+                                                    <li><a href="/logout/" style="color: red;">🚪 Cerrar sesión</a></li>
+                                                </ul>
+                                            </li>
+                                    {% endif %}
+
                                     </ul></nav>						</div>
 
                                                                                     <div class="head-content-slot head-content-slot-end">

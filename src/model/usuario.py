@@ -15,7 +15,7 @@ class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     activo = db.Column(db.Boolean, nullable=False, default=False)
     correo_electronico = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.LargeBinary(128), nullable=False)
+    password = db.Column(db.String(200), nullable=False)
     token = db.Column(db.String(1000), nullable=True)
     roll = db.Column(db.String(20), nullable=False, default='regular')
     refresh_token = db.Column(db.String(1000), nullable=True)
