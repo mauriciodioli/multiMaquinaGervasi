@@ -52,6 +52,7 @@ def registrar_usuario():
 
         correo = data.get("correo_electronico")
         password = data.get("password")
+        lang = data.get("lang", "es")  # 👈 si no viene, por defecto español
 
         if not correo or not password:
             return jsonify(success=False, error="Faltan datos")
@@ -86,15 +87,21 @@ def registrar_usuario():
             # Enviar email de confirmación
             token_conf = generar_token_confirmacion(correo)
             link_confirmacion = url_for("login.confirmar_correo", token=token_conf, _external=True)
+            
+            
+            
+            t = obtener_textos_confirmacion(lang)
 
-            mensaje = Message("Confirma tu cuenta", recipients=[correo])
+            
+
+            mensaje = Message(t["asunto"], recipients=[correo])
             mensaje.html = f"""
-                            <h3>Hola 👋</h3>
-                            <p>Gracias por registrarte en Gervasi.</p>
-                            <p>Confirmá tu cuenta haciendo clic en el siguiente enlace:</p>
+                            <h3>{t['saludo']}</h3>
+                            <p>{t['registro']}</p>
+                            <p>{t['confirma']}</p>
                             <p><a href="{link_confirmacion}">{link_confirmacion}</a></p>
-                            <p>Una vez confirmada, podés iniciar sesión en <a href="{url_for('index', _external=True)}">Gervasi</a>.</p>
-                            """
+                            <p>{t['accion']} <a href="{url_for('index', _external=True)}">Gervasi</a>.</p>
+                        """
 
             mail.send(mensaje)
 
@@ -240,6 +247,31 @@ def verifica_email():
 
 
 
+def obtener_textos_confirmacion(lang):
+    textos = {
+        "es": {
+            "asunto": "Confirma tu cuenta",
+            "saludo": "Hola 👋",
+            "registro": "Gracias por registrarte en Gervasi.",
+            "confirma": "Confirmá tu cuenta haciendo clic en el siguiente enlace:",
+            "accion": "Una vez confirmada, podés iniciar sesión en"
+        },
+        "en": {
+            "asunto": "Confirm your account",
+            "saludo": "Hi 👋",
+            "registro": "Thanks for signing up with Gervasi.",
+            "confirma": "Please confirm your account by clicking the link below:",
+            "accion": "Once confirmed, you can log in at"
+        },
+        "it": {
+            "asunto": "Conferma il tuo account",
+            "saludo": "Ciao 👋",
+            "registro": "Grazie per esserti registrato su Gervasi.",
+            "confirma": "Conferma il tuo account cliccando sul seguente link:",
+            "accion": "Una volta confermato, puoi accedere da"
+        }
+    }
+    return textos.get(lang, textos["es"])
 
 
 

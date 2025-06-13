@@ -189,7 +189,7 @@ document.getElementById("form-registro").addEventListener("submit", function (e)
   fetch("/api/registrar_usuario", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ correo_electronico: correo, password })
+    body: JSON.stringify({ correo_electronico: correo, password , lang : lang})
   })
     .then(res => res.json())
     .then(data => {
