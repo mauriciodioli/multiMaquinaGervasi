@@ -1,0 +1,166 @@
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f1f3f6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+    box-sizing: border-box;
+  }
+
+  .login-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #333;
+  }
+
+  input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: #f8f9fb;
+    box-sizing: border-box;
+  }
+
+  button {
+    width: 100%;
+    padding: 10px;
+    background-color: #c20000;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: #a30000;
+  }
+
+  #error-login {
+    color: red;
+    font-size: 14px;
+    text-align: center;
+    margin-top: 10px;
+  }
+
+
+
+.login-links {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 14px;
+}
+
+.login-links a {
+  color: #333;
+  text-decoration: none;
+}
+
+.login-links a:hover {
+  text-decoration: underline;
+}
+
+.lang-selector {
+  text-align: right;
+  margin-bottom: 0.5rem;
+}
+
+.lang-selector select {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 13px;
+  background-color: #f8f9fb;
+  cursor: pointer;
+}
+
+
+
+
+.login-actions {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 14px;
+}
+
+.login-actions .recuperar {
+  color: #777;
+  text-decoration: none;
+  font-size: 13px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.login-actions .registrarse {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #f1f3f6;
+  border-radius: 4px;
+  text-decoration: none;
+  color: #333;
+  font-weight: bold;
+  border: 1px solid #ccc;
+}
+
+.login-actions .registrarse:hover {
+  background-color: #e0e0e0;
+}
+
+.divider {
+  height: 1px;
+  background-color: #eee;
+  margin: 10px auto;
+  width: 60%;
+}
+
+
+
+  .logo-login {
+  display: block;
+  margin: 0 auto 1.5rem auto;
+  max-width: 160px;
+  height: auto;
+}
+
+
+
+
+
+.link-button {
+  background: none;
+  border: none;
+  color: #c00;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+.mensaje-info {
+  font-size: 0.85rem;
+  color: green;
+  margin-top: 0.5rem;
+}

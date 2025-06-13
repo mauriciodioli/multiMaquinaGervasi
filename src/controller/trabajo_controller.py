@@ -24,7 +24,7 @@ def listar_trabajos():
 
      
             
-@trabajos_bp.route('/')
+@trabajos_bp.route('/listar_maquinas/')
 def listar_maquinas():
     try:
         #conn = pyodbc.connect(  r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};' r'DBQ=C:\Users\Tecnico03\Documents\ProyectoMultiMaquina\si-cam.mdb;')

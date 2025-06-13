@@ -5,6 +5,7 @@ import os
 import logging
 from sqlalchemy import text  # Importar text de SQLAlchemy
 
+
 # Configuración de log
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

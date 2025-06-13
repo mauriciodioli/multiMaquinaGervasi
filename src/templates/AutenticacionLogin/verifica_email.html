@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title id="titulo-pagina">Verifica tu correo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/autenticacion/login.css') }}">
+  <style>
+    .login-container {
+      max-width: 420px;
+      margin: 4rem auto;
+      padding: 2rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    #link-login {
+      font-weight: bold;
+      color: #c20000;
+      text-decoration: none;
+    }
+
+    #link-login:hover {
+      text-decoration: underline;
+    }
+
+    #reenviar-texto {
+      margin-top: 1.5rem;
+      text-align: center;
+    }
+
+    #btn-reenviar {
+      color: #c20000;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #mensaje-reenvio {
+      color: green;
+      font-size: 0.9rem;
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+    #link-login {
+  font-weight: bold;
+  color: #c20000;
+  text-decoration: none;
+}
+
+#link-login:hover {
+  text-decoration: underline;
+}
+
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2 id="verifica-titulo">📬 ¡Revisá tu correo!</h2>
+    <p id="verifica-texto">Te enviamos un enlace de confirmación a tu casilla de correo.</p>
+    <p id="verifica-link">
+        📩 Hacé clic en el enlace de confirmación que te enviamos, y luego <a href="/" id="link-login">iniciá sesión</a>.
+    </p>
+
+    <p id="reenviar-texto">
+      ¿No lo recibiste? <button id="btn-reenviar">Reenviar correo</button>
+    </p>
+    <div id="mensaje-reenvio"></div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/autenticacion/verifica_email.js') }}"></script>
+</body>
+</html>

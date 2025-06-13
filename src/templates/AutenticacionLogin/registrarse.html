@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Registrarse | Gervasi</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/autenticacion/login.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/autenticacion/registrarse.css') }}">
+</head>
+<body>
+
+  <div class="login-container">
+ <h2 id="registro-title">Crear una cuenta nueva</h2>
+
+
+    <form id="form-registro">
+        <input type="email" id="correo" placeholder="Correo electrónico" required />
+
+      <div class="password-wrapper">
+            <input type="password" id="password" placeholder="Contraseña" required />
+            <span class="toggle-pass" onclick="togglePassword('password')">👁️</span>
+            </div>
+
+            <div class="password-wrapper">
+            <input type="password" id="repetir" placeholder="Repetir contraseña" required />
+            <span class="toggle-pass" onclick="togglePassword('repetir')">👁️</span>
+            </div>
+            <ul id="requisitos-pass" style="display: none;" class="form-text text-muted ps-3">
+              <li id="req-length">🔴 Mínimo 8 caracteres</li>
+              <li id="req-mayus">🔴 Al menos una letra mayúscula</li>
+              <li id="req-num">🔴 Al menos un número</li>
+              <li id="req-especial">🔴 Al menos un carácter especial (!@#$...)</li>
+            </ul>
+
+
+
+           <div class="captcha-wrapper">
+            <input type="checkbox" id="captcha-check" />
+            <label for="captcha-check" class="captcha-label" id="captcha-text">No soy un robot</label>
+        </div>
+
+
+
+
+
+
+
+        <button type="submit" id="btn-registrarse" disabled>Registrarse</button>
+        <div id="error-registro"></div>
+       </form>
+
+
+    <div style="text-align: center; margin-top: 1rem;">
+      <a href="/"id="volver-login">Volver al login</a>
+    </div>
+  </div>
+ 
+  <script src="{{ url_for('static', filename='js/autenticacion/registrarse.js') }}"></script>
+
+</body>
+</html>

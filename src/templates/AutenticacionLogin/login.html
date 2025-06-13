@@ -1,0 +1,42 @@
+<!-- templates/login.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Iniciar Sesión | Gervasi</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/autenticacion/login.css') }}">
+</head>
+<body>
+
+  <div class="login-container">
+
+    <div class="lang-selector">
+      <select id="lang-select">
+        <option value="es">🇪🇸 Español</option>
+        <option value="en">🇺🇸 English</option>
+        <option value="it">🇮🇹 Italiano</option>
+      </select>
+    </div>
+
+    <img src="{{ url_for('static', filename='img/logo_gervasi.png') }}" alt="Gervasi Logo" class="logo-login" />
+
+    <h2 id="login-title"></h2>
+
+    <form id="form-login">
+      <input type="email" id="correo" required />
+      <input type="password" id="password" required />
+      <button type="submit" id="btn-submit"></button>
+      <div id="error-login"></div>
+    </form>
+
+    <div class="login-actions">
+      <a href="/recuperar-password" class="recuperar" id="link-olvidar"></a>
+      <div class="divider"></div>
+      <a href="/registrarse/" class="registrarse" id="link-registrarse"></a>
+    </div>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='js/autenticacion/login.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+.password-wrapper {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.password-wrapper input {
+  width: 100%;
+  padding-right: 40px; /* espacio para el icono */
+}
+
+.toggle-pass {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 16px;
+  color: #999;
+  user-select: none;
+}
+
+
+.captcha-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f8f9fb;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin: 1rem 0;
+  max-width: fit-content;
+}
+
+.captcha-wrapper input[type="checkbox"] {
+  transform: scale(1.2);
+  margin: 0;
+  accent-color: #c20000;
+  cursor: pointer;
+  display: inline-block;
+  width: auto;
+}
+
+.captcha-label {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+  display: inline-block;
+}
+.is-invalid {
+  border: 1px solid red !important;
+  background-color: #ffe6e6;
+}
+
+
+#requisitos-pass {
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+  margin-bottom: 0;
+  padding-left: 1rem;
+  list-style: none;
+}
+
+#requisitos-pass li {
+  line-height: 1.2;
+  margin-bottom: 0.1rem;
+}

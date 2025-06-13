@@ -5,6 +5,9 @@ import urllib.parse
 load_dotenv()  # Cargar variables del .env
 
 class Config:
+    
+    SECRET_KEY = os.getenv("SECRET_KEY", "2462128990")  # <<🔐 necesario
+    
     SQLSERVER_DRIVER = os.getenv("SQLSERVER_DRIVER")
     SQLSERVER_HOST = os.getenv("SQLSERVER_HOST")
     SQLSERVER_PORT = os.getenv("SQLSERVER_PORT")
@@ -26,6 +29,7 @@ class Config:
 
     SQLALCHEMY_DATABASE_URI = f"mssql+pyodbc:///?odbc_connect={params}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
 
 
 
