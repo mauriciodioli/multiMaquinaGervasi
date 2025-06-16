@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import io
 import base64
-from flask import Blueprint, request, render_template, send_file, jsonify
+from flask import Blueprint, request, render_template, send_file, jsonify, redirect
 from collections import defaultdict
 import numpy as np
 from flask import jsonify, request
@@ -12,6 +12,10 @@ from controller.autoDensidad.calcularMezclaOptima import mostrar_datos_crudos_en
 from controller.autoDensidad.calcularMezclaOptima import encontrar_n_optimo
 from controller.autoDensidad.calcularMezclaOptima import calcular_curva_fuller
 from controller.autoDensidad.optimizar_fuller import generar_informe_ajuste
+from src.utils.auth import current_user
+
+from src.utils.get_textos_menu  import get_textos_menu
+
 
 
 
@@ -42,10 +46,20 @@ PERFILES_TAMICES = {
 def pantalla_densidad_fuller():
     return render_template('autoDensidad/densidadFuller.html')
     
-@densidadFuller.route('/pantalla_densidad_fuller_multiple/')
+@densidadFuller.route("/pantalla_densidad_fuller_multiple/")
 def pantalla_densidad_fuller_multiple():
-    return render_template('autoDensidad/densidadFullerMultiple.html')
+    usuario = current_user()
+    if not usuario:
+        return redirect("/login")
 
+    lang = request.cookies.get("lang", "es")
+    t_menu = get_textos_menu(lang)
+
+    return render_template(
+        "autoDensidad/densidadFullerMultiple.html",
+        usuario=usuario,
+        t_menu=t_menu
+    )
 
 
 

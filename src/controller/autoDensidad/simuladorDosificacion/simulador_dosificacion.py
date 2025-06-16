@@ -1,4 +1,4 @@
-from flask import Blueprint, request, render_template, send_file, jsonify
+from flask import Blueprint, request, render_template, send_file, jsonify,redirect
 import urllib.parse
 import json
 from controller.autoDensidad.calcularMezclaOptima import calcular_mezcla_optima
@@ -9,6 +9,9 @@ from controller.autoDensidad.calcularMezclaOptima import calcular_curva_fuller
 from controller.autoDensidad.densidadFuller import calcular_curva_resultante
 from controller.autoDensidad.densidadFuller import evaluar_mezcla_promedio
 from controller.autoDensidad.analisis_densidad import simular_mezcla_manual_simple
+from src.utils.auth import current_user
+
+from src.utils.get_textos_menu  import get_textos_menu
 
 
 
@@ -22,15 +25,28 @@ simulador_dosificacion = Blueprint('simulador_dosificacion', __name__)
 def pantalla_simulador_densidad():
     nombres_productos = []
     cookie = request.cookies.get("nombres_productos")
+    
     if cookie:
         try:
-            decoded = urllib.parse.unquote(cookie)  # ← decodifica %5B%22...%22%5D
-            nombres_productos = json.loads(decoded)  # ← convierte a lista Python
+            decoded = urllib.parse.unquote(cookie)
+            nombres_productos = json.loads(decoded)
         except Exception as e:
             print("❌ Error al leer cookie:", e)
-    return render_template('autoDensidad/simuladorDosificacion.html', productos=nombres_productos)
 
+    # Asegurate de obtener siempre el usuario
+    usuario = current_user()
+    if not usuario:
+        return redirect("/login")
 
+    lang = request.cookies.get("lang", "es")
+    t_menu = get_textos_menu(lang)
+
+    return render_template(
+        'autoDensidad/simuladorDosificacion.html',
+        productos=nombres_productos,
+        usuario=usuario,
+        t_menu=t_menu
+    )
 
 
 

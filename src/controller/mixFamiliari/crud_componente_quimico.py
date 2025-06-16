@@ -1,8 +1,11 @@
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template, redirect
 from src.model.mixFamiliari.componente_quimico import Componente_quimico, Componente_quimicoSchema
 from src.model.mixFamiliari.tipo_mezcla import Tipo_mezcla, Tipo_mezclaSchema
 from utils.db import db
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import joinedload
+from src.utils.auth import current_user
+from src.utils.get_textos_menu import get_textos_menu
 
 crud_componente_quimico = Blueprint("crud_componente_quimico", __name__)
 
@@ -16,9 +19,29 @@ tipo_mezcla_schema_many = Tipo_mezclaSchema(many=True)
 @crud_componente_quimico.route("/mixFamiliari_crud_componente_quimico_pantalla_listar/")
 def mixFamiliari_crud_componente_quimico_pantalla_listar():
     try:
+        componentes = db.session.query(Componente_quimico).options(
+                        joinedload(Componente_quimico.tipo_mezcla)
+                    ).all()
+
         
-        componentes = db.session.query(Componente_quimico).all()
-        return render_template("pantalla_componente_quimico/pantalla_componente_quimico.html", componentes=componentes)
+        usuario = current_user()
+        if not usuario:
+            return redirect("/login")
+
+        lang = request.cookies.get("lang", "es")
+        t_menu = get_textos_menu(lang)
+
+        return render_template(
+            "pantalla_componente_quimico/pantalla_componente_quimico.html",
+            componentes=componentes,
+            usuario=usuario,
+            t_menu=t_menu
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        return f"Error al cargar componentes químicos: {e}"
+
     finally:
         db.session.close()
 

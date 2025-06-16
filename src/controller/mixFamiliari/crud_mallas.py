@@ -1,7 +1,9 @@
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template,redirect
 from src.model.mixFamiliari.malla import Malla, Tipo_mallasSchema
 from utils.db import db
 from sqlalchemy.exc import SQLAlchemyError
+from src.utils.auth import current_user
+from src.utils.get_textos_menu import get_textos_menu
 
 crud_mallas = Blueprint("crud_mallas", __name__)
 
@@ -13,9 +15,28 @@ mallas_schema = Tipo_mallasSchema(many=True)
 def mixFamiliari_crud_mallas_pantalla_mallas_listar():
     try:
         mallas = db.session.query(Malla).all()
-        return render_template("pantalla_mallas/pantalla_mallas.html", mallas=mallas)
+        
+        usuario = current_user()
+        if not usuario:
+            return redirect("/login")
+
+        lang = request.cookies.get("lang", "es")
+        t_menu = get_textos_menu(lang)
+
+        return render_template(
+            "pantalla_mallas/pantalla_mallas.html",
+            mallas=mallas,
+            usuario=usuario,
+            t_menu=t_menu
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        return f"Error al cargar mallas: {e}"
+
     finally:
         db.session.close()
+
 
 # Agregar
 @crud_mallas.route("/mixFamiliari_crud_mallas_pantalla_mallas_agregar/", methods=["POST"])

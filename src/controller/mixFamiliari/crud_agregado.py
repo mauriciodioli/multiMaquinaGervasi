@@ -8,7 +8,9 @@ from src.model.mixFamiliari.malla import Malla
 from src.model.mixFamiliari.agregado_malla import AgregadoMalla
 from src.model.mixFamiliari.composicion_agregado import ComposicionAgregado
 from sqlalchemy.exc import SQLAlchemyError
+from src.utils.auth import current_user
 
+from src.utils.get_textos_menu  import get_textos_menu
 
 
 
@@ -24,14 +26,13 @@ componentes_schema = Componente_quimicoSchema(many=True)
 
 
 
-
-
 @crud_agregado.route('/mixFamiliari_crud_agregado_agregados_listar/', methods=['GET', 'POST'])
 def mixFamiliari_crud_agregado_agregados_listar():
     try:
         if request.method == 'POST':
             data = request.get_json()
             user_id = data.get('user_id')
+            entidad_id = data.get('entidad_id')  # Por si también se manda en POST
         else:
             user_id = request.args.get('user_id')
             entidad_id = request.args.get('entidad_id')
@@ -41,9 +42,9 @@ def mixFamiliari_crud_agregado_agregados_listar():
             query = query.filter_by(usuario_id=int(user_id))
         if entidad_id:
             query = query.filter_by(entidad_id=int(entidad_id))
-               
+
         mezclas = query.all()
-        # Parsear JSON en campo setting si existe
+
         for m in mezclas:
             if hasattr(m, "setting") and isinstance(m.setting, str):
                 try:
@@ -51,9 +52,18 @@ def mixFamiliari_crud_agregado_agregados_listar():
                 except Exception:
                     m.setting = {}
 
+        usuario = current_user()
+        if not usuario:
+            return redirect("/login")
+
+        lang = request.cookies.get("lang", "es")
+        t_menu = get_textos_menu(lang)
+
         return render_template(
             'pantalla_agregados/pantalla_agregados.html',
-            mezclas=mezclas
+            mezclas=mezclas,
+            usuario=usuario,
+            t_menu=t_menu
         )
 
     except Exception as e:

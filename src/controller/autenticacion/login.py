@@ -8,6 +8,10 @@ import re
 from itsdangerous import URLSafeTimedSerializer
 import os
 from src.utils.extensions import mail
+from src.utils.auth import current_user
+
+from src.utils.get_textos_menu  import get_textos_menu
+
 
 
 login = Blueprint("login", __name__)
@@ -42,6 +46,7 @@ textos_login = {
         "error": "Errore interno del server"
     }
 }
+
 
 
 
@@ -160,7 +165,7 @@ def generar_token_confirmacion(correo):
 def registrar_usuario():
         data = request.get_json()
 
-        correo = data.get("correo_electronico")
+        correo = data.get("correo_electronico", "").strip().lower()
         password = data.get("password")
         lang = data.get("lang", "es")  # 👈 si no viene, por defecto español
 
@@ -174,6 +179,14 @@ def registrar_usuario():
         or not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
             return jsonify(success=False, error="La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.")
 
+        
+        
+        # ✅ Validar formato de email
+        patron_email = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+        if not re.match(patron_email, correo):
+            return jsonify(success=False, error="El correo electrónico no tiene un formato válido.")
+        
+        
         if db.session.query(Usuario).filter_by(correo_electronico=correo).first():
             return jsonify(success=False, error="Ya existe un usuario con ese correo")
 

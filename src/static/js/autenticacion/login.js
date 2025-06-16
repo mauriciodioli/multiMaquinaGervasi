@@ -1,75 +1,161 @@
-document.getElementById("form-login").addEventListener("submit", function (e) {
+const formLogin = document.getElementById("form-login");
+const btnSubmit = document.getElementById("btn-submit");
+const errorLogin = document.getElementById("error-login");
+
+
+
+
+ const intentos = localStorage.getItem("intentos_fallidos");
+  if (intentos) {
+    document.getElementById("error-login").textContent =
+      `Intentos fallidos anteriores: ${intentos}`;
+  }
+// ⏱️ Verificar si el usuario está bloqueado
+function verificarBloqueo() {
+  const bloqueoHasta = localStorage.getItem("bloqueo_hasta");
+  const ahora = Date.now();
+
+  if (bloqueoHasta && ahora < parseInt(bloqueoHasta)) {
+    const segundosRestantes = Math.ceil((parseInt(bloqueoHasta) - ahora) / 1000);
+    const lang = localStorage.getItem("lang") || "es";
+    const t = mensajes[lang] || mensajes["es"];
+    errorLogin.textContent = `${t.bloqueo} ${segundosRestantes} ${t.segundos}`;
+
+    btnSubmit.disabled = true;
+
+    setTimeout(() => {
+      btnSubmit.disabled = false;
+      errorLogin.textContent = "";
+      localStorage.removeItem("bloqueo_hasta");
+      localStorage.setItem("intentos_fallidos", "0");
+    }, parseInt(bloqueoHasta) - ahora);
+
+    return true;
+  }
+
+  return false;
+}
+
+
+
+
+
+// 🧠 Al cargar la página, verificamos bloqueo
+if (verificarBloqueo()) {
+  // ya está manejado
+} else {
+  // Si hay intentos previos, los mostramos
+  const intentos = localStorage.getItem("intentos_fallidos");
+  if (intentos) {
+    errorLogin.textContent = `Intentos fallidos anteriores: ${intentos}`;
+  }
+}
+
+formLogin.addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  if (verificarBloqueo()) return;
 
   const correo = document.getElementById("correo").value;
   const password = document.getElementById("password").value;
-  const errorDiv = document.getElementById("error-login");
-  const lang = localStorage.getItem("lang") || "es";
+  const lang = document.getElementById("lang-select").value;
 
-  fetch("/login_usuario/", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      correo_electronico: correo,
-      password: password,
-      lang: lang  // ✅ se envía al backend
-    })
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        window.location.href = data.redireccion;
-      } else {
-        errorDiv.textContent = data.error || "Credenciales incorrectas";
-      }
-    })
-    .catch(() => {
-      errorDiv.textContent = "Error de red o servidor";
+  try {
+    const res = await fetch("/login_usuario/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ correo_electronico: correo, password, lang }),
     });
+
+    const data = await res.json();
+
+    if (data.success) {
+      localStorage.removeItem("intentos_fallidos");
+      localStorage.removeItem("bloqueo_hasta");
+      window.location.href = data.redireccion;
+    } else {
+      let intentos = parseInt(localStorage.getItem("intentos_fallidos") || "0") + 1;
+      localStorage.setItem("intentos_fallidos", intentos);
+
+      if (intentos >= 5) {
+        const bloqueoPorMs = 60000; // 1 minuto
+        const tiempoBloqueo = Date.now() + bloqueoPorMs;
+        localStorage.setItem("bloqueo_hasta", tiempoBloqueo.toString());
+        btnSubmit.disabled = true;
+        errorLogin.textContent = `Demasiados intentos. Espera 60 segundos.`;
+
+        setTimeout(() => {
+          btnSubmit.disabled = false;
+          errorLogin.textContent = "";
+          localStorage.removeItem("bloqueo_hasta");
+          localStorage.setItem("intentos_fallidos", "0");
+        }, bloqueoPorMs);
+      } else {
+        errorLogin.textContent = `${data.error} (Intentos: ${intentos})`;
+      }
+    }
+  } catch (error) {
+    errorLogin.textContent = "Error de conexión. Intenta más tarde.";
+  }
 });
 
 
 
 
-
-
 const mensajes = {
-    es: {
-      titulo: "Iniciar Sesión",
-      correo: "Correo electrónico",
-      pass: "Contraseña",
-      entrar: "Entrar",
-      olvidar: "¿Olvidaste tu contraseña?",
-      registrar: "¿No tenés cuenta? Registrate",
-      error_credenciales: "Correo o contraseña incorrectos",
-      error_inactivo: "Tu cuenta no está activa. Verificá tu correo",
-      error_servidor: "Error interno del servidor"
-    },
-    en: {
-      titulo: "Sign In",
-      correo: "Email",
-      pass: "Password",
-      entrar: "Log In",
-      olvidar: "Forgot your password?",
-      registrar: "Don't have an account? Register",
-      error_credenciales: "Invalid email or password",
-      error_inactivo: "Your account is not active. Check your email",
-      error_servidor: "Internal server error"
-    },
-    it: {
-      titulo: "Accedi",
-      correo: "Email",
-      pass: "Password",
-      entrar: "Entra",
-      olvidar: "Hai dimenticato la password?",
-      registrar: "Non hai un account? Registrati",
-      error_credenciales: "Invalid email or password",
-      error_inactivo: "Your account is not active. Check your email",
-      error_servidor: "Internal server error"
-    }
-  };
+  es: {
+    titulo: "Iniciar Sesión",
+    correo: "Correo electrónico",
+    pass: "Contraseña",
+    entrar: "Entrar",
+    olvidar: "¿Olvidaste tu contraseña?",
+    registrar: "¿No tenés cuenta? Registrate",
+    error_credenciales: "Correo o contraseña incorrectos",
+    error_inactivo: "Tu cuenta no está activa. Verificá tu correo",
+    error_servidor: "Error interno del servidor",
+    intentos_previos: "Intentos fallidos anteriores",
+    demasiados_intentos: "Demasiados intentos.",
+    espera: "Espera",
+    segundos: "segundos.",
+    error_conexion: "Error de conexión. Intenta más tarde.",
+    bloqueo: "Demasiados intentos. Espera"
+  },
+  en: {
+    titulo: "Sign In",
+    correo: "Email",
+    pass: "Password",
+    entrar: "Log In",
+    olvidar: "Forgot your password?",
+    registrar: "Don't have an account? Register",
+    error_credenciales: "Invalid email or password",
+    error_inactivo: "Your account is not active. Check your email",
+    error_servidor: "Internal server error",
+    intentos_previos: "Previous failed attempts",
+    demasiados_intentos: "Too many attempts.",
+    espera: "Wait",
+    segundos: "seconds.",
+    error_conexion: "Connection error. Try again later.",
+    bloqueo: "Too many attempts. Wait"
+  },
+  it: {
+    titulo: "Accedi",
+    correo: "Email",
+    pass: "Password",
+    entrar: "Entra",
+    olvidar: "Hai dimenticato la password?",
+    registrar: "Non hai un account? Registrati",
+    error_credenciales: "Email o password non validi",
+    error_inactivo: "Il tuo account non è attivo. Controlla la tua email",
+    error_servidor: "Errore interno del server",
+    intentos_previos: "Tentativi falliti precedenti",
+    demasiados_intentos: "Troppi tentativi.",
+    espera: "Aspetta",
+    segundos: "secondi.",
+    error_conexion: "Errore di connessione. Riprova più tardi.",
+    bloqueo: "Troppi tentativi. Aspetta"
+  }
+};
+
 
   function aplicarIdioma(lang) {
     const t = mensajes[lang] || mensajes['es'];
