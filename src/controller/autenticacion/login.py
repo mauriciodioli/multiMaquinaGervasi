@@ -10,7 +10,7 @@ import os
 from src.utils.extensions import mail
 from src.utils.auth import current_user
 
-from src.utils.get_textos_menu  import get_textos_menu
+from src.utils.get_textos_menu  import get_textos_menu,get_textos_login
 
 
 
@@ -25,6 +25,8 @@ MAIL_USE_TLS = os.getenv("MAIL_USE_TLS") == "true"
 MAIL_USERNAME = os.getenv("MAIL_USERNAME")
 MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
 MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")
+
+
 
 textos_login = {
     "es": {
@@ -46,6 +48,85 @@ textos_login = {
         "error": "Errore interno del server"
     }
 }
+
+def get_serializer():
+    return URLSafeTimedSerializer(current_app.secret_key)
+
+
+@login.route("/recuperar-password/", methods=["GET", "POST"])
+def recuperar_password():
+    lang = request.cookies.get("lang", "es")
+    t = get_textos_login(lang)
+
+    try:
+        if request.method == "POST":
+            correo = request.form.get("correo")
+            usuario = db.session.query(Usuario).filter_by(correo_electronico=correo).first()
+
+            if usuario:
+                token = get_serializer().dumps(correo, salt="recuperar-password")
+                link = url_for("login.restablecer_password", token=token, _external=True)
+                if usuario:
+                    token = get_serializer().dumps(correo, salt="recuperar-password")
+                    link = url_for("login.restablecer_password", token=token, _external=True)
+
+                    mensaje = Message(t["recuperar_asunto"], recipients=[correo])
+                    mensaje.html = f"""
+                        <h3>{t['saludo']}</h3>
+                        <p>{t['recuperacion']}</p>
+                        <p><a href="{link}">{link}</a></p>
+                        <p>{t['firma']} <a href="{url_for('index', _external=True)}">Gervasi</a>.</p>
+                    """
+
+                    mail.send(mensaje)
+
+            return render_template("AutenticacionLogin/recuperar_enviado.html", t=t)
+
+        return render_template("AutenticacionLogin/recuperar_form.html", t=t)
+
+    finally:
+        db.session.close()
+        
+        
+        
+        
+        
+@login.route("/restablecer-password/<token>", methods=["GET", "POST"])
+def restablecer_password(token):
+    lang = request.cookies.get("lang", "es")
+    t = get_textos_login(lang)  # ✅ Carga textos por idioma
+
+    serializer = get_serializer()  # ✅ Serializador activo con secret_key
+
+    try:
+        correo = serializer.loads(token, salt="recuperar-password", max_age=3600)
+    except Exception:
+        return render_template("AutenticacionLogin/token_invalido.html", t=t)
+
+    try:
+        if request.method == "POST":
+            nueva = request.form.get("nueva")
+            confirmar = request.form.get("confirmar")
+
+            if nueva != confirmar or len(nueva) < 8:
+                return render_template("AutenticacionLogin/restablecer_form.html", t=t, error=t["error_confirmacion"])
+
+            usuario = db.session.query(Usuario).filter_by(correo_electronico=correo).first()
+            if usuario:
+                usuario.password = generate_password_hash(nueva)
+                db.session.commit()
+                return render_template("AutenticacionLogin/restablecer_ok.html", t=t)
+            else:
+                return render_template("AutenticacionLogin/token_invalido.html", t=t)
+
+        # Formulario inicial de restablecimiento
+        return render_template("AutenticacionLogin/recuperar_enviado.html", t=t, token=token)
+
+    finally:
+        db.session.close()
+
+
+
 
 
 
@@ -114,6 +195,13 @@ def logout():
     response.delete_cookie("refresh_token")
     response.delete_cookie("user_id")
     return response
+
+
+
+
+
+
+
 
 
 

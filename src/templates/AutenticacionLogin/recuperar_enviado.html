@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="{{ t.lang or 'es' }}">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ t.recuperar_titulo }} | Gervasi</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/autenticacion/login.css') }}">
+</head>
+<body>
+
+  <div class="login-container">
+    <img src="{{ url_for('static', filename='img/logo_gervasi.png') }}" alt="Gervasi Logo" class="logo-login" />
+
+    <h2>{{ t.recuperar_titulo }}</h2>
+    <p>📩 {{ t.recuperar_subtitulo }}</p>
+    <p>📬 {{ t.recuperar_mensaje.replace('{link}', '[enlace en tu correo]') }}</p>
+
+    <a href="/login" class="btn-volver">{{ t.entrar or "Volver al login" }}</a>
+  </div>
+
+</body>
+</html>
