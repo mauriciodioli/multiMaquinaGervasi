@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template, redirect
 
 from src.model.entidad_contexto import EntidadContexto, EntidadContextoSchema
 from utils.db import db
@@ -26,6 +26,7 @@ def crear_entidad():
             nombre=data.get('nombre'),
             tipo=data.get('tipo'),
             descripcion=data.get('descripcion'),
+            pais=data.get('pais'),
             estado=int(data.get('estado', 1))
         )
         db.session.add(nueva)
@@ -35,6 +36,7 @@ def crear_entidad():
             "nombre": nueva.nombre,
             "tipo": nueva.tipo,
             "descripcion": nueva.descripcion,
+            "pais": nueva.pais,
             "estado": nueva.estado
         })
     except Exception as e:
@@ -53,13 +55,15 @@ def administracion_crud_entidad_modifica_entidades():
         entidad.nombre = data["nombre"]
         entidad.tipo = data["tipo"]
         entidad.descripcion = data["descripcion"]
+        entidad.pais = data["pais"]
         entidad.estado = int(data["estado"])
         db.session.commit()
         return jsonify(success=True, entidad={
             "id": entidad.id,
             "nombre": entidad.nombre,
             "tipo": entidad.tipo,
-            "descripcion": entidad.descripcion,
+            "pais": entidad.pais,
+            "descripcion": entidad.descripcion,            
             "estado": entidad.estado
         })
     except Exception as e:
@@ -96,3 +100,8 @@ def listar_entidades():
     except Exception as e:
         print("Error:", e)
         return jsonify({'success': False, 'error': str(e)})
+
+
+
+
+

@@ -19,9 +19,25 @@
             <input type="text" class="form-control" id="mod-tipo" name="tipo">
           </div>
           <div class="mb-3">
+              <label for="pais" class="form-label">Paese</label>
+              <select class="form-select" id="mod-pais" name="pais" required>
+                <option value="">-- Seleziona un paese --</option>
+                <option value="AR">🇦🇷 Argentina</option>
+                <option value="IT">🇮🇹 Italia</option>
+                <option value="ES">🇪🇸 Spagna</option>
+                <option value="FR">🇫🇷 Francia</option>
+                <option value="DE">🇩🇪 Germania</option>
+                <option value="US">🇺🇸 Stati Uniti</option>
+                <option value="BR">🇧🇷 Brasile</option>
+                <!-- Agregá más si querés -->
+              </select>
+            </div>
+
+          <div class="mb-3">
             <label for="mod-descripcion" class="form-label">Descrizione</label>
             <textarea class="form-control" id="mod-descripcion" name="descripcion"></textarea>
           </div>
+          
           <div class="mb-3">
             <label for="mod-estado" class="form-label">Stato</label>
             <select class="form-control" id="mod-estado" name="estado">

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ language }}">
 <head>
   <meta charset="UTF-8">
   <title>{{ t.titulo }}</title>
@@ -9,13 +9,23 @@
   <div class="login-container">
     <h2>✅ {{ t.titulo }}</h2>
     <p>{{ t.mensaje }}</p>
+    <p>{{ t.redireccion }} <span id="contador">5</span>...</p>
     <a href="/" class="btn btn-primary">{{ t.boton }}</a>
   </div>
 
   <script>
-    setTimeout(() => {
-      window.location.href = "/";
-    }, 5000);
+    let segundos = 5;
+    const contador = document.getElementById("contador");
+
+    const intervalo = setInterval(() => {
+      segundos--;
+      contador.textContent = segundos;
+
+      if (segundos <= 0) {
+        clearInterval(intervalo);
+        window.location.href = "/";
+      }
+    }, 1000);
   </script>
 </body>
 </html>

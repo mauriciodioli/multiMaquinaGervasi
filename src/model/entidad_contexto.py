@@ -14,6 +14,8 @@ class EntidadContexto(db.Model):
     tipo = db.Column(db.String(100), nullable=False)
     descripcion = db.Column(db.String(500))
     estado = db.Column(db.Integer, nullable=False, default=1)
+    pais = db.Column(db.String(100), nullable=True)
+
 
     agregados = relationship("Agregado", back_populates="entidad")
     usuarios = relationship("UsuarioEntidad", back_populates="entidad", cascade="all, delete")  # ⚠️ esta línea necesita que UsuarioEntidad esté ya cargada
@@ -22,6 +24,6 @@ class EntidadContexto(db.Model):
 
 class EntidadContextoSchema(ma.Schema):
     class Meta:
-        fields = ("id", "nombre", "tipo", "descripcion")
+        fields = ("id", "nombre", "tipo", "descripcion", "estado", "pais")
         
 from src.model.mixFamiliari.usuario_entidad import UsuarioEntidad

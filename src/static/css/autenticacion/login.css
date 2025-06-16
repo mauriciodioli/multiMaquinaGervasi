@@ -165,5 +165,31 @@
   margin-top: 0.5rem;
 }
 
+.password-container {
+  position: relative;
+  width: 100%;
+}
 
+.password-container input {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 2.5em; /* deja espacio para el botón */
+}
 
+#toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 35%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2em;
+  padding: 0;
+  line-height: 1;
+  width: 2em;      /* Limita el ancho */
+  height: 2em;     /* Limita el alto */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

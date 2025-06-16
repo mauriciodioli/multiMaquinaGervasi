@@ -35,6 +35,7 @@ document.getElementById("form-agregar-entidad").addEventListener("submit", async
         <td>${respuesta.entidad.id}</td>
         <td>${respuesta.entidad.nombre}</td>
         <td>${respuesta.entidad.tipo || ''}</td>
+        <td>${respuesta.entidad.pais || ''}</td>
         <td>${respuesta.entidad.descripcion || ''}</td>
         <td>${respuesta.entidad.estado}</td>
         <td>
@@ -43,6 +44,7 @@ document.getElementById("form-agregar-entidad").addEventListener("submit", async
                 data-entidad-id="${respuesta.entidad.id}"
                 data-nombre="${respuesta.entidad.nombre}"
                 data-tipo="${respuesta.entidad.tipo || ''}"
+                data-pais="${respuesta.entidad.pais || ''}"
                 data-descripcion="${respuesta.entidad.descripcion || ''}"
                 data-estado="${respuesta.entidad.estado}">
                 Modificare
@@ -122,6 +124,7 @@ document.addEventListener("click", function (e) {
     document.getElementById("mod-id").value = btn.dataset.entidadId;
     document.getElementById("mod-nombre").value = btn.dataset.nombre;
     document.getElementById("mod-tipo").value = btn.dataset.tipo;
+    document.getElementById("mod-pais").value = btn.dataset.pais;
     document.getElementById("mod-descripcion").value = btn.dataset.descripcion;
     document.getElementById("mod-estado").value = btn.dataset.estado;
 
@@ -164,6 +167,7 @@ document.getElementById("form-modificar-entidad").addEventListener("submit", asy
           <td>${respuesta.entidad.id}</td>
           <td>${respuesta.entidad.nombre}</td>
           <td>${respuesta.entidad.tipo || ''}</td>
+          <td>${respuesta.entidad.pais || ''}</td>
           <td>${respuesta.entidad.descripcion || ''}</td>
           <td>${respuesta.entidad.estado}</td>
           <td>
@@ -172,6 +176,7 @@ document.getElementById("form-modificar-entidad").addEventListener("submit", asy
                 data-entidad-id="${respuesta.entidad.id}"
                 data-nombre="${respuesta.entidad.nombre}"
                 data-tipo="${respuesta.entidad.tipo || ''}"
+                data-pais="${respuesta.entidad.pais || ''}"
                 data-descripcion="${respuesta.entidad.descripcion || ''}"
                 data-estado="${respuesta.entidad.estado}">
                 Modificare

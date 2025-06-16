@@ -22,9 +22,12 @@
 
     <h2 id="login-title"></h2>
 
-    <form id="form-login">
+      <form id="form-login">
       <input type="email" id="correo" required />
-      <input type="password" id="password" required />
+           <div class="password-container">
+        <input type="password" id="password" required />
+        <button type="button" id="toggle-password" aria-label="Mostrar/Ocultar contraseña">👁️</button>
+      </div>
       <button type="submit" id="btn-submit"></button>
       <div id="error-login"></div>
     </form>
@@ -38,5 +41,17 @@
   </div>
 
   <script src="{{ url_for('static', filename='js/autenticacion/login.js') }}"></script>
+    <script>
+    document.getElementById('toggle-password').addEventListener('click', function () {
+    const pwd = document.getElementById('password');
+    if (pwd.type === 'password') {
+      pwd.type = 'text';
+      this.textContent = '🙈';
+    } else {
+      pwd.type = 'password';
+      this.textContent = '👁️';
+    }
+  });
+  </script>
 </body>
 </html>

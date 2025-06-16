@@ -115,3 +115,17 @@ if (linkRegistro) {
 }
 
   });
+
+
+
+
+
+  fetch("https://ipapi.co/json/")
+  .then(res => res.json())
+  .then(data => {
+    const pais = data.country || "AR"; // Código de país, ej: "AR", "IT", "ES"
+    document.cookie = `pais=${encodeURIComponent(pais)}; path=/; max-age=${3600 * 24 * 7}`;
+  })
+  .catch(() => {
+    document.cookie = `pais=AR; path=/; max-age=${3600 * 24 * 7}`; // Fallback por si falla
+  });

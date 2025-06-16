@@ -90,10 +90,15 @@ def create_app():
             user = db.session.get(Usuario, int(user_id))
             if not user:
                 return render_template("AutenticacionLogin/login.html")
-
+            
+           
             if user.roll == "admin":
                 return redirect("/listar_maquinas/")
             else:
+                
+                if not user.entidades or len(user.entidades) == 0:
+                    return redirect("/administracion_crud_usuario_seleccionar_entidad/")
+
                 return redirect("/pantalla_densidad_fuller_multiple/")
         except Exception:
             return render_template("login.html")

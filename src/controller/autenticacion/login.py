@@ -70,9 +70,21 @@ def login_usuario():
         refresh_token = secrets.token_urlsafe(64)
         usuario.token = token
         usuario.refresh_token = refresh_token
-
         db.session.commit()
 
+        # 🔍 Verificar si tiene entidades asignadas
+        if not usuario.entidades or len(usuario.entidades) == 0:
+            response = make_response(jsonify(
+                success=True,
+                redireccion="/administracion_crud_usuario_seleccionar_entidad/"
+            ))
+            response.set_cookie("token", token, httponly=True, samesite="Strict", secure=False, max_age=3600)
+            response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Strict", secure=False, max_age=3600 * 24 * 7)
+            response.set_cookie("user_id", str(usuario.id), max_age=3600 * 24 * 7)
+            response.set_cookie("lang", lang, max_age=3600 * 24 * 7)
+            return response
+
+        # ✅ Si tiene entidades, redirige según el rol
         response = make_response(jsonify(
             success=True,
             roll=usuario.roll,
@@ -81,7 +93,7 @@ def login_usuario():
         response.set_cookie("token", token, httponly=True, samesite="Strict", secure=False, max_age=3600)
         response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Strict", secure=False, max_age=3600 * 24 * 7)
         response.set_cookie("user_id", str(usuario.id), max_age=3600 * 24 * 7)
-
+        response.set_cookie("lang", lang, max_age=3600 * 24 * 7)
         return response
 
     except Exception as e:
@@ -331,22 +343,25 @@ def obtener_textos_confirmacion(lang):
 
 def get_textos_confirmacion(lang):
     textos = {
-        "es": {
-            "titulo": "Cuenta confirmada con éxito",
-            "mensaje": "Ya podés iniciar sesión en el sistema.",
-            "boton": "Iniciar sesión"
-        },
-        "en": {
-            "titulo": "Account successfully confirmed",
-            "mensaje": "You can now log in to the system.",
-            "boton": "Log in"
-        },
-        "it": {
-            "titulo": "Account confermato con successo",
-            "mensaje": "Ora puoi accedere al sistema.",
-            "boton": "Accedi"
+            "es": {
+                "titulo": "Cuenta confirmada",
+                "mensaje": "Tu cuenta ha sido activada con éxito.",
+                "boton": "Ir al inicio",
+                "redireccion": "Serás redirigido en"
+            },
+            "en": {
+                "titulo": "Account confirmed",
+                "mensaje": "Your account has been successfully activated.",
+                "boton": "Go to homepage",
+                "redireccion": "You will be redirected in"
+            },
+            "it": {
+                "titulo": "Account confermato",
+                "mensaje": "Il tuo account è stato attivato con successo.",
+                "boton": "Vai alla home",
+                "redireccion": "Verrai reindirizzato tra"
+            }
         }
-    }
     return textos.get(lang, textos["es"])
 
 

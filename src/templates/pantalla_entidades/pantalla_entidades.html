@@ -21,7 +21,8 @@
             <tr>
               <th>ID</th>
               <th>Nome</th>
-              <th>Tipo</th>
+              <th>Tipo</th>              
+              <th>Paese</th>
               <th>Descripcione</th>
               <th>Stato</th>
               <th>Azioni</th>
@@ -33,7 +34,8 @@
             <tr data-fila-id="{{ entidad.id }}">
               <td>{{ entidad.id }}</td>
               <td>{{ entidad.nombre }}</td>
-              <td>{{ entidad.tipo }}</td>
+              <td>{{ entidad.tipo }}</td>             
+              <td>{{ entidad.pais }}</td>
               <td>{{ entidad.descripcion }}</td>
               <td>{{ entidad.estado }}</td>
 
@@ -45,6 +47,7 @@
                           data-nombre="{{ entidad.nombre }}"
                           data-tipo="{{ entidad.tipo }}"
                           data-descripcion="{{ entidad.descripcion }}"
+                          data-pais="{{ entidad.pais }}"
                           data-estado="{{ entidad.estado }}">
                     Modificare
                   </button>

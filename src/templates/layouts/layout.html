@@ -164,7 +164,8 @@ img {
                                                             </li>
                                                             
                                                         </ul>
-                                              </li>                         
+                                              </li>  
+              
                                          {% if usuario and usuario.roll == 'admin' %}
                                                 <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391">
                                                         <a href="javascript:void(0);">MACCHINE</a> 
@@ -190,26 +191,31 @@ img {
                                             </li>
 
 
-                                           
-                                    <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391"><a href="https://www.gervasi.eu/es/empresa/">EMPRESA</a></li>
-                                    <li id="menu-item-406" class="menu-item menu-item-type-custom menu-item-object-custom current-menu-ancestor current-menu-parent menu-item-has-children menu-item-406"><a href="#">PRODUCTOS</a>
-                                    <ul class="sub-menu">
-                                        <li id="menu-item-1549" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-1549"><a href="https://www.gervasi.eu/es/concreto/">CALCESTRUZZO</a>
-                                        <ul class="sub-menu">
-                                            <li id="menu-item-480" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-480"><a href="https://www.gervasi.eu/es/los-sistemas/">VIBROPRESA E IMPRESORAS</a></li>
-                                            <li id="menu-item-469" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-469"><a href="https://www.gervasi.eu/es/mezclador-dosaggio-trasporto-dosatori/">DOSAGGIO, MEZCLADORA, TRASPORTO, DOSATORI</a></li>
-                                            <li id="menu-item-466" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-466"><a href="https://www.gervasi.eu/es/laboratorio-calcestruzzo/">LABORATORIO CALCESTRUZZO</a></li>
-                                            <li id="menu-item-467" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-467"><a href="https://www.gervasi.eu/es/bloque-de-saliva/">BLOQUE DIVIDIDO</a></li>
-                                            <li id="menu-item-1566" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1566"><a href="https://www.gervasi.eu/es/bloques-de-canapa/">PRODUCCIÓN DE BLOQUES DE CANAPA</a></li>
-                                        </ul>
-                                    </li>
-                                        <li id="menu-item-465" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-465"><a href="https://www.gervasi.eu/es/metal%C3%BArgica/">METALÚRGICA</a></li>
-                                        <li id="menu-item-464" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-459 current_page_item menu-item-464"><a href="https://www.gervasi.eu/es/5-0-industria/" aria-current="page">4.0 / 5.0 INDUSTRIA</a></li>
-                                        <li id="menu-item-1550" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1550"><a href="https://www.gervasi.eu/es/energ%C3%ADa-ecol%C3%B3gica/">ECO-ENERGÍA®</a></li>
-                                    </ul>
-                                    </li>
-                                    <li id="menu-item-392" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-392"><a href="https://www.gervasi.eu/es/contactos/">CONTACTO</a></li>
-                                    <li id="menu-item-390" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-390"><a href="https://www.gervasi.eu/es/eventos-noticiosos/">NOTICIAS Y EVENTOS</a></li>
+                                        {% if usuario.roll != 'admin' %}  
+                                                <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391"><a href="https://www.gervasi.eu/es/empresa/">EMPRESA</a></li>
+                                                <li id="menu-item-406" class="menu-item menu-item-type-custom menu-item-object-custom current-menu-ancestor current-menu-parent menu-item-has-children menu-item-406"><a href="#">PRODUCTOS</a>
+                                                <ul class="sub-menu">
+                                                    <li id="menu-item-1549" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-1549"><a href="https://www.gervasi.eu/es/concreto/">CALCESTRUZZO</a>
+                                                    <ul class="sub-menu">
+                                                        <li id="menu-item-480" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-480"><a href="https://www.gervasi.eu/es/los-sistemas/">VIBROPRESA E IMPRESORAS</a></li>
+                                                        <li id="menu-item-469" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-469"><a href="https://www.gervasi.eu/es/mezclador-dosaggio-trasporto-dosatori/">DOSAGGIO, MEZCLADORA, TRASPORTO, DOSATORI</a></li>
+                                                        <li id="menu-item-466" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-466"><a href="https://www.gervasi.eu/es/laboratorio-calcestruzzo/">LABORATORIO CALCESTRUZZO</a></li>
+                                                        <li id="menu-item-467" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-467"><a href="https://www.gervasi.eu/es/bloque-de-saliva/">BLOQUE DIVIDIDO</a></li>
+                                                        <li id="menu-item-1566" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1566"><a href="https://www.gervasi.eu/es/bloques-de-canapa/">PRODUCCIÓN DE BLOQUES DE CANAPA</a></li>
+                                                    </ul>
+                                                </li>
+                                                    <li id="menu-item-465" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-465"><a href="https://www.gervasi.eu/es/metal%C3%BArgica/">METALÚRGICA</a></li>
+                                                    <li id="menu-item-464" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-459 current_page_item menu-item-464"><a href="https://www.gervasi.eu/es/5-0-industria/" aria-current="page">4.0 / 5.0 INDUSTRIA</a></li>
+                                                    <li id="menu-item-1550" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1550"><a href="https://www.gervasi.eu/es/energ%C3%ADa-ecol%C3%B3gica/">ECO-ENERGÍA®</a></li>
+                                                </ul>
+                                                </li>
+                                            
+                                                <li id="menu-item-392" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-392"><a href="https://www.gervasi.eu/es/contactos/">CONTACTO</a></li>
+                                    
+                                                                             
+                                               <label class="ignition-header-search-trigger ignition-icons ignition-icons-search" for="ignition-header-search-input"></label>      
+                                                <li id="menu-item-390" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-390"><a href="https://www.gervasi.eu/es/eventos-noticiosos/">NOTICIAS Y EVENTOS</a></li>
+                                    {% endif %}
                                      
                                      
                                       

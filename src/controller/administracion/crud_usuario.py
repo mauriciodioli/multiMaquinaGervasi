@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template,make_response
+from flask import Blueprint, request, jsonify, render_template,make_response, redirect
 
 from src.model.entidad_contexto import EntidadContexto, EntidadContextoSchema
 from src.model.mixFamiliari.usuario_entidad import UsuarioEntidad
@@ -159,3 +159,53 @@ def modificar_usuario(id):
         return jsonify(success=False, error=str(e))
     finally:
         db.session.close()
+
+
+
+@crud_usuario.route("/administracion_crud_usuario_seleccionar_entidad/", methods=["GET", "POST"])
+def seleccionar_entidad():
+    usuario_id = request.cookies.get("user_id")
+    if not usuario_id:
+        return redirect("/login")
+
+    try:
+        usuario = db.session.query(Usuario).filter_by(id=int(usuario_id)).first()
+    except (ValueError, TypeError):
+        return redirect("/login")
+
+    if not usuario:
+        return redirect("/login")
+
+    if request.method == "POST":
+        entidad_id = request.form.get("entidad_id")
+        entidad = db.session.query(EntidadContexto).filter_by(id=entidad_id).first()
+
+        if not entidad:
+            return "Entidad no encontrada", 404
+
+        relacion_existente = db.session.query(UsuarioEntidad).filter_by(
+            usuario_id=usuario.id,
+            entidad_id=entidad.id
+        ).first()
+
+        if not relacion_existente:
+            nueva_relacion = UsuarioEntidad(
+                usuario_id=usuario.id,
+                entidad_id=entidad.id,
+                roll='visualizador'
+            )
+            db.session.add(nueva_relacion)
+            db.session.commit()
+
+        return redirect("/pantalla_densidad_fuller_multiple/")
+
+    pais_cookie = request.cookies.get("pais")
+    entidades_disponibles = db.session.query(EntidadContexto).filter_by(pais=pais_cookie).all()
+    language = request.cookies.get("language", "es")  # 'es' por defecto
+
+    return render_template(
+            "AutenticacionLogin/seleccionar_entidad.html",
+            usuario=usuario,
+            entidades=entidades_disponibles,
+            language=language
+        )
