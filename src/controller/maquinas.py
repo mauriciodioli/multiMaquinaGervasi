@@ -44,7 +44,7 @@ def maquinas_online():
 
             resultado.append({
                 "id": m.id,
-                "user_id": m.user_id,
+                "user_id": user_id,
                 "userCuenta": m.userCuenta,
                 "estado": m.estado,
                 "potencia": m.potencia,

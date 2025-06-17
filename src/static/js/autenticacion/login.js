@@ -2,7 +2,7 @@ const formLogin = document.getElementById("form-login");
 const btnSubmit = document.getElementById("btn-submit");
 const errorLogin = document.getElementById("error-login");
 
-
+localStorage.removeItem("user_id");
 
 
  const intentos = localStorage.getItem("intentos_fallidos");

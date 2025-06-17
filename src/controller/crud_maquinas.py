@@ -14,9 +14,9 @@ def maquinas_crud():
     try:
         if request.method == 'POST':
             data = request.get_json()
-            user_id = data.get('user_id')
+            user_id = request.cookies.get("user_id")
         else:
-            user_id = request.args.get('user_id')
+            user_id = request.cookies.get("user_id")
 
         if user_id:
             maquinas = db.session.query(Maquina).filter_by(user_id=int(user_id)).all()
