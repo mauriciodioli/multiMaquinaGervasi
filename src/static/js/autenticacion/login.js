@@ -72,6 +72,7 @@ formLogin.addEventListener("submit", async (e) => {
     if (data.success) {
       localStorage.removeItem("intentos_fallidos");
       localStorage.removeItem("bloqueo_hasta");
+      localStorage.setItem("user_id", data.user_id);
       window.location.href = data.redireccion;
     } else {
       let intentos = parseInt(localStorage.getItem("intentos_fallidos") || "0") + 1;

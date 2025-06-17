@@ -90,6 +90,7 @@ def login_usuario():
         if not usuario.entidades or len(usuario.entidades) == 0:
             response = make_response(jsonify(
                 success=True,
+                user_id=usuario.id, 
                 redireccion="/administracion_crud_usuario_seleccionar_entidad/"
             ))
             
@@ -102,6 +103,7 @@ def login_usuario():
         # ✅ Si tiene entidades, redirige según el rol
         response = make_response(jsonify(
             success=True,
+            user_id=usuario.id, 
             roll=usuario.roll,
             redireccion="/listar_maquinas/" if usuario.roll == "admin" else "/pantalla_densidad_fuller_multiple/"
         ))
@@ -251,6 +253,46 @@ def restablecer_password(token):
 
     finally:
         db.session.close()
+
+
+
+
+
+
+@login.route("/cambiar_contrasena/", methods=["GET", "POST"])
+def cambiar_contrasena():
+    lang = request.cookies.get("lang", "es")
+    t_menu = get_textos_menu(lang)  # O get_textos_ui(lang) si ya unificaste
+
+    if request.method == "POST":
+        actual = request.form.get("actual")
+        nueva = request.form.get("nueva")
+        confirmar = request.form.get("confirmar")
+        user_id = request.cookies.get("user_id")
+
+        if not user_id:
+            return render_template("AutenticacionLogin/cambiar_contrasena.html", t_menu=t_menu, error="Sesión no válida")
+
+        try:
+            usuario = db.session.query(Usuario).get(int(user_id))
+
+            if not usuario or not check_password_hash(usuario.password, actual):
+                return render_template("AutenticacionLogin/cambiar_contrasena.html", t_menu=t_menu, error="Contraseña actual incorrecta")
+
+            if nueva != confirmar or len(nueva) < 8:
+                return render_template("AutenticacionLogin/cambiar_contrasena.html", t_menu=t_menu, error=t_menu["error_confirmacion"])
+
+            usuario.password = generate_password_hash(nueva)
+            db.session.commit()
+
+            return render_template("AutenticacionLogin/restablecer_ok.html", t_menu=t_menu)
+
+        finally:
+            db.session.close()
+
+    return render_template("AutenticacionLogin/cambiar_contrasena.html", t_menu=t_menu)
+
+
 
 
 

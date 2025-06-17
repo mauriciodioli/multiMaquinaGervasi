@@ -29,16 +29,30 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  btnAbrir.addEventListener('click', function () {
-    const modal = document.getElementById('crud-modal-agregar');
-    modal.classList.add('show');
-    modal.style.display = 'block';
-    modal.removeAttribute('aria-hidden');
-    modal.setAttribute('aria-modal', 'true');
-    modal.setAttribute('role', 'dialog');
+btnAbrir.addEventListener('click', function () {
+  const modal = document.getElementById('crud-modal-agregar');
+  modal.classList.add('show');
+  modal.style.display = 'block';
+  modal.removeAttribute('aria-hidden');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('role', 'dialog');
 
-    inicializarModulosSelect(); // 👈 Ejecutás tu lógica cuando abrís el modal
-  });
+  // 👇 Leé la cookie correo_electronico
+  const cookies = document.cookie.split(";").reduce((acc, cookie) => {
+    const [key, value] = cookie.trim().split("=");
+    acc[key] = decodeURIComponent(value);
+    return acc;
+  }, {});
+
+  const correo = cookies["correo_electronico"];
+   // 👇 Insertar en el input de "userCuenta"
+  const inputCuenta = document.querySelector('input[name="userCuenta"]');
+  if (inputCuenta && correo) {
+    inputCuenta.value = correo;
+  }
+  
+  inicializarModulosSelect(); // Ejecutás tu lógica cuando abrís el modal
+});
 
   // Cierre de modales
   document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {

@@ -195,17 +195,17 @@ img {
                                        
                                      
                                       
-                                             {% if usuario %}
-                                                <li class="menu-item menu-usuario">
-                                                    <a href="javascript:void(0);">👤 {{ usuario.nombre or usuario.correo_electronico }}</a>
-                                                    <ul class="sub-menu">
-                                                    <li><a href="/perfil_usuario/">👤 {{ t_menu.perfil }}</a></li>
-                                                    <li><a href="javascript:void(0);">🔐 {{ t_menu.rol }}: {{ usuario.roll|capitalize }}</a></li>
-                                                    <li><a href="/cambiar_contrasena/">🔐 {{ t_menu.cambiar_contrasena }}</a></li>
-                                                    <li><a href="/logout/" style="color: red;">🚪 {{ t_menu.cerrar_sesion }}</a></li>
-                                                    </ul>
-                                                </li>
-                                                {% endif %}
+                                                                        {% if usuario %}
+                                                                            <li class="menu-item menu-usuario">
+                                                                            <a href="javascript:void(0);">👤 {{ usuario.nombre or usuario.correo_electronico }}</a>
+                                                                            <ul class="sub-menu">
+                                                                            <li><a href="/perfil_usuario/">👤 {{ t_menu.perfil }}</a></li>
+                                                                            <li><a href="javascript:void(0);">🔐 {{ t_menu.rol }}: {{ usuario.roll|capitalize }}</a></li>
+                                                                            <li><a href="/cambiar_contrasena/">🔑 {{ t_menu.cambiar_contrasena }}</a></li>
+                                                                            <li><a href="/logout/" style="color: red;">🚪 {{ t_menu.cerrar_sesion }}</a></li>
+                                                                            </ul>
+                                                                            </li>
+                                                                    {% endif %}
 
 
                                     </ul></nav>						</div>

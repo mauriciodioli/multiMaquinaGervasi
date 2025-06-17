@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for,jsonify,abort
+from flask import Blueprint, render_template, request, redirect, url_for,jsonify,abort,make_response
 from src.model.maquina import Maquina
+from src.model.usuario import Usuario
 from utils.db import db
 from datetime import datetime
 import json
@@ -19,21 +20,34 @@ def maquinas_crud():
             user_id = request.cookies.get("user_id")
 
         if user_id:
+            usuario = db.session.query(Usuario).get(int(user_id))
             maquinas = db.session.query(Maquina).filter_by(user_id=int(user_id)).all()
         else:
+            usuario = None
             maquinas = db.session.query(Maquina).all()
+
         for m in maquinas:
             if isinstance(m.setting, str):
                 try:
                     m.setting = json.loads(m.setting)
                 except:
                     m.setting = {}
+
         lang = request.cookies.get("lang", "es")
         t_menu = get_textos_menu(lang)
-        return render_template('maquinas/CRUD_maquinas.html', maquinas=maquinas, t_menu=t_menu)
+
+        response = make_response(render_template('maquinas/CRUD_maquinas.html', maquinas=maquinas, t_menu=t_menu))
+
+        # ✅ Agregamos la cookie del correo si el usuario existe
+        if usuario:
+            response.set_cookie("correo_electronico", usuario.correo_electronico, max_age=60*60*24*30)  # 30 días
+
+        return response
+
     except Exception as e:
         db.session.rollback()
         return f"Error conectando a la base de datos: {e}"
+
     finally:
         db.session.close()
 
