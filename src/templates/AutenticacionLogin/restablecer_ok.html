@@ -1,21 +1,21 @@
+<!-- templates/AutenticacionLogin/restablecer_ok.html -->
 <!DOCTYPE html>
 <html lang="{{ t.lang or 'es' }}">
 <head>
   <meta charset="UTF-8">
-  <title>{{ t.recuperar_titulo }} | Gervasi</title>
+  <title>{{ t.restablecer_ok }} | Gervasi</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/autenticacion/login.css') }}">
 </head>
 <body>
 
   <div class="login-container">
     <img src="{{ url_for('static', filename='img/logo_gervasi.png') }}" alt="Gervasi Logo" class="logo-login" />
-
-    <h2>{{ t.recuperar_titulo }}</h2>
-    <p>📩 {{ t.recuperar_subtitulo }}</p>
-    <p>📬 {{ t.recuperar_mensaje.replace('{link}', t.recuperar_link_texto) }}</p>
-
-    <a href="/" class="btn-volver">{{ t.entrar or "Volver al login" }}</a>
+    
+    <h2>✅ {{ t.restablecer_ok }}</h2>
+    <p>🔐 {{ t.restablecer_ok }}</p>
+    <a href="/" class="btn-volver">{{ t.entrar or "Iniciar sesión" }}</a>
   </div>
 
 </body>
 </html>
+

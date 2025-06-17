@@ -26,6 +26,7 @@ def get_textos_menu(lang="es"):
 def get_textos_login(lang="es"):
     textos_login = {
         "es": {
+            "recuperar_link_texto": "[enlace en tu correo]",
             "recuperar_titulo": "Recuperar contraseña",
             "recuperar_subtitulo": "Ingresá tu correo y te enviaremos un enlace.",
             "recuperar_asunto": "Recuperación de contraseña",
@@ -39,9 +40,17 @@ def get_textos_login(lang="es"):
             "restablecer_ok": "Contraseña actualizada exitosamente.",
             "saludo": "Hola",
             "recuperacion": "Recibimos una solicitud para restablecer tu contraseña.",
-            "firma": "Si no fuiste vos, ignorá este mensaje. Si fuiste vos, continuá en"
+            "firma": "Si no fuiste vos, ignorá este mensaje. Si fuiste vos, continuá en",
+            "entrar": "Iniciar sesión",
+            "criterios": {
+                "min": "Mínimo 8 caracteres",
+                "mayus": "Una letra mayúscula",
+                "num": "Un número",
+                "esp": "Un carácter especial (!@#$...)"
+            }
         },
         "en": {
+            "recuperar_link_texto": "[link in your email]",
             "recuperar_titulo": "Recover password",
             "recuperar_subtitulo": "Enter your email and we will send you a link.",
             "recuperar_asunto": "Password recovery",
@@ -55,9 +64,17 @@ def get_textos_login(lang="es"):
             "restablecer_ok": "Password successfully updated.",
             "saludo": "Hello",
             "recuperacion": "We received a request to reset your password.",
-            "firma": "If it wasn't you, ignore this. If it was, continue on"
+            "firma": "If it wasn't you, ignore this. If it was, continue on",
+            "entrar": "Login",
+            "criterios": {
+                "min": "At least 8 characters",
+                "mayus": "An uppercase letter",
+                "num": "A number",
+                "esp": "A special character (!@#$...)"
+            }
         },
         "it": {
+            "recuperar_link_texto": "[link nella tua email]",
             "recuperar_titulo": "Recupera password",
             "recuperar_subtitulo": "Inserisci la tua email e ti invieremo un link.",
             "recuperar_asunto": "Recupero password",
@@ -71,7 +88,15 @@ def get_textos_login(lang="es"):
             "restablecer_ok": "Password aggiornata correttamente.",
             "saludo": "Ciao",
             "recuperacion": "Abbiamo ricevuto una richiesta per reimpostare la tua password.",
-            "firma": "Se non sei stato tu, ignora questo messaggio. Altrimenti continua su"
+            "firma": "Se non sei stato tu, ignora questo messaggio. Altrimenti continua su",
+            "entrar": "Accedi",
+            "criterios": {
+                "min": "Almeno 8 caratteri",
+                "mayus": "Una lettera maiuscola",
+                "num": "Un numero",
+                "esp": "Un carattere speciale (!@#$...)"
+            }
         }
     }
     return textos_login.get(lang, textos_login["es"])
+

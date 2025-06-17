@@ -120,7 +120,7 @@ def restablecer_password(token):
                 return render_template("AutenticacionLogin/token_invalido.html", t=t)
 
         # Formulario inicial de restablecimiento
-        return render_template("AutenticacionLogin/recuperar_enviado.html", t=t, token=token)
+        return render_template("AutenticacionLogin/restablecer_form.html", t=t, token=token)
 
     finally:
         db.session.close()
