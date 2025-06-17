@@ -6,19 +6,20 @@
 <div class="container">
   <div class="row justify-content-center">
     <div class="col-md-10">
-      <h1 class="mb-4">Composizione dell'aggregati</h1>
-      <button type="button" class="btn btn-success mb-3" id="btn-abrir-modal-agregar">Aggiungi </button>
-      <table class="table table-bordered">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Descrizione</th>   
-            <th>Entidad</th> 
-            <th>Stato</th>
-            <th>Azioni</th>
-          </tr>
-        </thead>
+           <h1 class="mb-4">{{ t_menu["titulo_composicion"] }}</h1>
+          <button type="button" class="btn btn-success mb-3" id="btn-abrir-modal-agregar">{{ t_menu["agregar"] }}</button>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>{{ t_menu["nombre"] }}</th>
+                <th>{{ t_menu["descripcion"] }}</th>   
+                <th>{{ t_menu["entidad"] }}</th> 
+                <th>{{ t_menu["estado"] }}</th>
+                <th>{{ t_menu["acciones"] }}</th>
+              </tr>
+            </thead>
+
           <tbody id="tabla-mix-familiari">
             {% for mezcla in mezclas %}
             <tr>

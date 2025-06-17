@@ -1,27 +1,58 @@
 # src/utils/get_textos_menu.py
-
 def get_textos_menu(lang="es"):
     textos_menu = {
         "es": {
+            "titulo_composicion": "Composición de los agregados",
+            "agregar": "Agregar",
+            "nombre": "Nombre",
+            "descripcion": "Descripción",
+            "entidad": "Entidad",
+            "estado": "Estado",
+            "acciones": "Acciones",
             "perfil": "Mi perfil",
             "rol": "Rol",
             "cambiar_contrasena": "Cambiar contraseña",
-            "cerrar_sesion": "Cerrar sesión"
-        },
-        "en": {
-            "perfil": "My profile",
-            "rol": "Role",
-            "cambiar_contrasena": "Change password",
-            "cerrar_sesion": "Log out"
+            "cerrar_sesion": "Cerrar sesión",
+            "mostrar_ocultar": "Mostrar / Ocultar",
+            "nombre_comercial": "Nombre comercial",
+            "diametro": "Diámetro (mm)"
         },
         "it": {
+            "titulo_composicion": "Composizione degli aggregati",
+            "agregar": "Aggiungi",
+            "nombre": "Nome",
+            "descripcion": "Descrizione",
+            "entidad": "Entità",
+            "estado": "Stato",
+            "acciones": "Azioni",
             "perfil": "Il mio profilo",
             "rol": "Ruolo",
             "cambiar_contrasena": "Cambia password",
-            "cerrar_sesion": "Esci"
+            "cerrar_sesion": "Esci",
+            "mostrar_ocultar": "Mostra / Nascondi",
+            "nombre_comercial": "Nome commerciale",
+            "diametro": "Diametro (mm)"
+        },
+        "en": {
+            "titulo_composicion": "Aggregate Composition",
+            "agregar": "Add",
+            "nombre": "Name",
+            "descripcion": "Description",
+            "entidad": "Entity",
+            "estado": "Status",
+            "acciones": "Actions",
+            "perfil": "My profile",
+            "rol": "Role",
+            "cambiar_contrasena": "Change password",
+            "cerrar_sesion": "Log out",
+            "mostrar_ocultar": "Show / Hide",
+            "nombre_comercial": "Trade name",
+            "diametro": "Diameter (mm)"
         }
     }
     return textos_menu.get(lang, textos_menu["es"])
+
+
 
 def get_textos_login(lang="es"):
     textos_login = {

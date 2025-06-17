@@ -26,6 +26,7 @@ class Usuario(db.Model):
     agregados = relationship("Agregado", back_populates="usuario")
     analisis = relationship("AnalisisGranulometrico", back_populates="usuario", cascade="all, delete")
     entidades = relationship("UsuarioEntidad", back_populates="usuario", cascade="all, delete")
+    sesiones = relationship("SesionUsuario", back_populates="usuario")
 
 
 

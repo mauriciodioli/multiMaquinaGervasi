@@ -10,7 +10,7 @@ maquinas = Blueprint('maquinas', __name__)
 def maquinas_online():
     try:
         data = request.get_json()
-        user_id = data.get('user_id')
+        user_id = request.cookies.get("user_id")
 
         maquinas = db.session.query(Maquina).filter_by(user_id=int(user_id)).all()
   

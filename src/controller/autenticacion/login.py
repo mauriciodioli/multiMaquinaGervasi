@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, make_response, redirect, render_t
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_mail import Message
 from src.model.usuario import Usuario
+from src.model.sesionUsuario import SesionUsuario
 from utils.db import db
 import secrets
 import re
@@ -49,6 +50,132 @@ textos_login = {
     }
 }
 
+
+
+
+
+
+
+# ========== LOGIN ==========
+@login.route('/login_usuario/', methods=['POST'])
+def login_usuario():
+    data = request.get_json()
+    correo = data.get("correo_electronico")
+    password = data.get("password")
+    lang = data.get("lang", "es")
+    t = textos_login.get(lang, textos_login["es"])
+
+    try:
+        usuario = db.session.query(Usuario).filter_by(correo_electronico=correo).first()
+
+        if not usuario:
+            return jsonify(success=False, error=t["no_encontrado"]), 404
+
+        if not usuario.activo:
+            return jsonify(success=False, error=t["inactivo"]), 403
+
+        if not check_password_hash(usuario.password, password):
+            return jsonify(success=False, error=t["incorrecta"]), 401
+
+        token = secrets.token_urlsafe(32)
+        refresh_token = secrets.token_urlsafe(64)
+        usuario.token = token
+        usuario.refresh_token = refresh_token
+        db.session.commit()
+        # ⬇️ Registramos la sesión
+        registrar_sesion(usuario, token, request)
+       
+
+        # 🔍 Verificar si tiene entidades asignadas
+        if not usuario.entidades or len(usuario.entidades) == 0:
+            response = make_response(jsonify(
+                success=True,
+                redireccion="/administracion_crud_usuario_seleccionar_entidad/"
+            ))
+            
+            response.set_cookie("token", token, httponly=True, samesite="Strict", secure=False, max_age=3600)
+            response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Strict", secure=False, max_age=3600 * 24 * 7)
+            response.set_cookie("user_id", str(usuario.id), max_age=3600 * 24 * 7)
+            response.set_cookie("lang", lang, max_age=3600 * 24 * 7)
+            return response
+
+        # ✅ Si tiene entidades, redirige según el rol
+        response = make_response(jsonify(
+            success=True,
+            roll=usuario.roll,
+            redireccion="/listar_maquinas/" if usuario.roll == "admin" else "/pantalla_densidad_fuller_multiple/"
+        ))
+        response.set_cookie("token", token, httponly=True, samesite="Strict", secure=False, max_age=3600)
+        response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Strict", secure=False, max_age=3600 * 24 * 7)
+        response.set_cookie("user_id", str(usuario.id), max_age=3600 * 24 * 7)
+        response.set_cookie("lang", lang, max_age=3600 * 24 * 7)
+        return response
+
+    except Exception as e:
+        return jsonify(success=False, error=t["error"]), 500
+    finally:
+        db.session.close()
+
+
+@login.route("/logout/")
+def logout():
+    response = redirect("/")
+    response.delete_cookie("token")
+    response.delete_cookie("refresh_token")
+    response.delete_cookie("user_id")
+    return response
+
+
+
+
+def registrar_sesion(usuario, token, request):
+    ip = request.remote_addr
+    agente = request.headers.get("User-Agent")
+    pais =  request.cookies.get("pais", "Desconocido")
+    entidad_id = usuario.entidades[0].entidad_id if usuario.entidades else None
+
+    sesion = SesionUsuario(
+        usuario_id=usuario.id,
+        token=token,
+        ip_origen=ip,
+        user_agent=agente,
+        pais=pais,
+        entidad_id=entidad_id
+    )
+    db.session.add(sesion)
+    db.session.commit()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ========== REESTABLECIEMIENTO  + CONFIRMACIÓN  DE PASSWORD==========
 def get_serializer():
     return URLSafeTimedSerializer(current_app.secret_key)
 
@@ -124,85 +251,6 @@ def restablecer_password(token):
 
     finally:
         db.session.close()
-
-
-
-
-
-
-
-# ========== LOGIN ==========
-@login.route('/login_usuario/', methods=['POST'])
-def login_usuario():
-    data = request.get_json()
-    correo = data.get("correo_electronico")
-    password = data.get("password")
-    lang = data.get("lang", "es")
-    t = textos_login.get(lang, textos_login["es"])
-
-    try:
-        usuario = db.session.query(Usuario).filter_by(correo_electronico=correo).first()
-
-        if not usuario:
-            return jsonify(success=False, error=t["no_encontrado"]), 404
-
-        if not usuario.activo:
-            return jsonify(success=False, error=t["inactivo"]), 403
-
-        if not check_password_hash(usuario.password, password):
-            return jsonify(success=False, error=t["incorrecta"]), 401
-
-        token = secrets.token_urlsafe(32)
-        refresh_token = secrets.token_urlsafe(64)
-        usuario.token = token
-        usuario.refresh_token = refresh_token
-        db.session.commit()
-
-        # 🔍 Verificar si tiene entidades asignadas
-        if not usuario.entidades or len(usuario.entidades) == 0:
-            response = make_response(jsonify(
-                success=True,
-                redireccion="/administracion_crud_usuario_seleccionar_entidad/"
-            ))
-            response.set_cookie("token", token, httponly=True, samesite="Strict", secure=False, max_age=3600)
-            response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Strict", secure=False, max_age=3600 * 24 * 7)
-            response.set_cookie("user_id", str(usuario.id), max_age=3600 * 24 * 7)
-            response.set_cookie("lang", lang, max_age=3600 * 24 * 7)
-            return response
-
-        # ✅ Si tiene entidades, redirige según el rol
-        response = make_response(jsonify(
-            success=True,
-            roll=usuario.roll,
-            redireccion="/listar_maquinas/" if usuario.roll == "admin" else "/pantalla_densidad_fuller_multiple/"
-        ))
-        response.set_cookie("token", token, httponly=True, samesite="Strict", secure=False, max_age=3600)
-        response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Strict", secure=False, max_age=3600 * 24 * 7)
-        response.set_cookie("user_id", str(usuario.id), max_age=3600 * 24 * 7)
-        response.set_cookie("lang", lang, max_age=3600 * 24 * 7)
-        return response
-
-    except Exception as e:
-        return jsonify(success=False, error=t["error"]), 500
-    finally:
-        db.session.close()
-
-
-@login.route("/logout/")
-def logout():
-    response = redirect("/")
-    response.delete_cookie("token")
-    response.delete_cookie("refresh_token")
-    response.delete_cookie("user_id")
-    return response
-
-
-
-
-
-
-
-
 
 
 
@@ -345,11 +393,25 @@ def confirmar_correo(token):
         if not usuario.activo:
             usuario.activo = True
             db.session.commit()
+            
+        # ✅ Generar nueva sesión activa
+        token = secrets.token_urlsafe(32)
+        refresh_token = secrets.token_urlsafe(64)
+        usuario.token = token
+        usuario.refresh_token = refresh_token
+        db.session.commit()
 
+        registrar_sesion(usuario, token, request)
         lang = request.cookies.get("lang", "es")
         textos = get_textos_confirmacion(lang)
 
-        return render_template("AutenticacionLogin/confirmado.html", t=textos)
+        response = make_response(render_template("AutenticacionLogin/confirmado.html", t=textos))
+        response.set_cookie("token", token, httponly=True, samesite="Strict", secure=False, max_age=3600)
+        response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Strict", secure=False, max_age=3600 * 24 * 7)
+        response.set_cookie("user_id", str(usuario.id), max_age=3600 * 24 * 7)
+        response.set_cookie("lang", lang, max_age=3600 * 24 * 7)
+
+        return response
 
     except Exception:
         return "Token inválido o expirado", 400

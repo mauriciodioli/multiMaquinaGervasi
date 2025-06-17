@@ -3,6 +3,7 @@ from src.model.maquina import Maquina
 from utils.db import db
 from datetime import datetime
 import json
+from src.utils.get_textos_menu  import get_textos_menu
 
 crud_maquinas = Blueprint('crud_maquinas', __name__)
 
@@ -27,7 +28,9 @@ def maquinas_crud():
                     m.setting = json.loads(m.setting)
                 except:
                     m.setting = {}
-        return render_template('maquinas/CRUD_maquinas.html', maquinas=maquinas)
+        lang = request.cookies.get("lang", "es")
+        t_menu = get_textos_menu(lang)
+        return render_template('maquinas/CRUD_maquinas.html', maquinas=maquinas, t_menu=t_menu)
     except Exception as e:
         db.session.rollback()
         return f"Error conectando a la base de datos: {e}"

@@ -2,20 +2,20 @@
 
 {% block content %}
 <div class="container mt-4">
-  <h2>🧱 Composición del agregado: <strong>{{ agregado.nombre }}</strong></h2>
+  <h2>🧱 {{ t_menu["titulo_composicion"] }}: <strong>{{ agregado.nombre }}</strong></h2>
   <hr>
-  <p>📦 <strong>Descripción:</strong> {{ agregado.descripcion }}</p>
-  <p>🏗️ <strong>Estado:</strong> {{ 'Activo' if agregado.estado else 'Inactivo' }}</p>
+  <p>📦 <strong>{{ t_menu["descripcion"] }}:</strong> {{ agregado.descripcion }}</p>
+  <p>🏗️ <strong>{{ t_menu["estado"] }}:</strong> {{ 'Activo' if agregado.estado else 'Inactivo' }}</p>
   <p>📍 <strong>País:</strong> {{ agregado.pais }}</p>
   <p>🌐 <strong>Idioma:</strong> {{ agregado.idioma or "—" }}</p>
-  <p>🏢 <strong>Entidad:</strong> {{ entidad.nombre }}</p>
+  <p>🏢 <strong>{{ t_menu["entidad"] }}:</strong> {{ entidad.nombre }}</p>
 
   <hr>
 <div class="mb-3">
   <h4 style="display: flex; align-items: center; gap: 10px;">
     🧱 Maglie associate
     <button class="btn btn-sm btn-outline-dark" id="toggle-mallas">
-      🔽 Mostrar / Ocultar
+      🔽 {{ t_menu["mostrar_ocultar"] if "mostrar_ocultar" in t_menu else "Mostrar / Ocultar" }}
     </button>
   </h4>
 
@@ -23,9 +23,9 @@
     <table class="table table-striped">
       <thead>
         <tr>
-          <th>Nombre comercial</th>
-          <th>Diámetro (mm)</th>
-          <th>Acciones</th>
+          <th>{{ t_menu["nombre_comercial"] if "nombre_comercial" in t_menu else "Nombre comercial" }}</th>
+          <th>{{ t_menu["diametro"] if "diametro" in t_menu else "Diámetro (mm)" }}</th>
+          <th>{{ t_menu["acciones"] }}</th>
         </tr>
       </thead>
       <tbody>
@@ -40,21 +40,19 @@
         {% endfor %}
       </tbody>
     </table>
-   
   </div>
 
-   <button class="btn btn-sm btn-warning btn-modalAgregarMalla-agregado" data-id="{{ agregado.id }}">
-      ➕
-    </button>
+  <button class="btn btn-sm btn-warning btn-modalAgregarMalla-agregado" data-id="{{ agregado.id }}">
+    ➕
+  </button>
 </div>
 
-
-  <hr>
- <div class="mb-3">
+<hr>
+<div class="mb-3">
   <h4 style="display: flex; align-items: center; gap: 10px;">
     🧪 Componenti chimici
     <button class="btn btn-sm btn-outline-dark" id="toggle-componentes">
-      🔽 Mostrar / Ocultar
+      🔽 {{ t_menu["mostrar_ocultar"] if "mostrar_ocultar" in t_menu else "Mostrar / Ocultar" }}
     </button>
   </h4>
 
@@ -62,36 +60,32 @@
     <table class="table table-striped">
       <thead>
         <tr>
-          <th>Nombre</th>
+          <th>{{ t_menu["nombre"] }}</th>
           <th>Porcentaje (%)</th>
           <th>Orden</th>
-          <th>Acciones</th>
+          <th>{{ t_menu["acciones"] }}</th>
         </tr>
       </thead>
       <tbody id="tabla-componentes">
-            {% for comp in composicion %}
-            <tr>
-              <td>{{ comp.componente.nombre }}</td>
-              <td>{{ comp.porcentaje }}</td>
-              <td>{{ comp.orden }}</td>
-              <td>
-                <button class="btn btn-sm btn-warning btn-editar-componente" data-id="{{ comp.id }}">✏️</button>
-                <button class="btn btn-sm btn-danger btn-eliminar-componente" data-id="{{ comp.id }}">🗑️</button>
-              </td>
-            </tr>
-            {% endfor %}
+        {% for comp in composicion %}
+        <tr>
+          <td>{{ comp.componente.nombre }}</td>
+          <td>{{ comp.porcentaje }}</td>
+          <td>{{ comp.orden }}</td>
+          <td>
+            <button class="btn btn-sm btn-warning btn-editar-componente" data-id="{{ comp.id }}">✏️</button>
+            <button class="btn btn-sm btn-danger btn-eliminar-componente" data-id="{{ comp.id }}">🗑️</button>
+          </td>
+        </tr>
+        {% endfor %}
       </tbody>
-
     </table>
   </div>
-  
-  
+
   <button class="btn btn-outline-primary btn-modalAgregarComponente-agregado" data-id="{{ agregado.id }}">
-      ➕ Agregar componente
-    </button>
+    ➕ {{ t_menu["agregar"] }} componente
+  </button>
 </div>
-
-
 
 {% include 'pantalla_agregados/modals/modal_agregar_malla.html' %}
 {% include 'pantalla_agregados/modals/modal_agregar_comp_quimi.html' %}

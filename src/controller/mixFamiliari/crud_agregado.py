@@ -8,6 +8,7 @@ from src.model.mixFamiliari.malla import Malla
 from src.model.mixFamiliari.agregado_malla import AgregadoMalla
 from src.model.mixFamiliari.composicion_agregado import ComposicionAgregado
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import joinedload
 from src.utils.auth import current_user
 
 from src.utils.get_textos_menu  import get_textos_menu
@@ -31,18 +32,18 @@ def mixFamiliari_crud_agregado_agregados_listar():
     try:
         if request.method == 'POST':
             data = request.get_json()
-            user_id = data.get('user_id')
-            entidad_id = data.get('entidad_id')  # Por si también se manda en POST
+            user_id = request.cookies.get("user_id")
+            entidad_id = request.cookies.get("entidad_id")  # Por si también se manda en POST
         else:
-            user_id = request.args.get('user_id')
-            entidad_id = request.args.get('entidad_id')
+            user_id = request.cookies.get("user_id")
+            entidad_id = request.cookies.get("entidad_id")
 
         query = db.session.query(Agregado)
         if user_id:
             query = query.filter_by(usuario_id=int(user_id))
         if entidad_id:
             query = query.filter_by(entidad_id=int(entidad_id))
-
+        query = query.options(joinedload(Agregado.entidad))
         mezclas = query.all()
 
         for m in mezclas:
@@ -185,23 +186,25 @@ def mixFamiliari_crud_agregado_agregados(agregado_id):
             return "Agregado no encontrado", 404
 
         agregado_mallas = (
-            db.session.query(AgregadoMalla)
-            .filter_by(agregado_id=agregado_id)
-            .join(Malla)
-            .all()
-        )
+                            db.session.query(AgregadoMalla)
+                            .options(joinedload(AgregadoMalla.malla))  # 👈 fuerza carga anticipada
+                            .filter_by(agregado_id=agregado_id)
+                            .all()
+                        )
 
         composicion = (
-            db.session.query(ComposicionAgregado)
-            .filter_by(agregado_id=agregado_id)
-            .join(Componente_quimico)
-            .order_by(ComposicionAgregado.orden.asc())
-            .all()
-        )
+                    db.session.query(ComposicionAgregado)
+                    .options(joinedload(ComposicionAgregado.componente))  # 👈 fuerza carga de componente
+                    .filter_by(agregado_id=agregado_id)
+                    .order_by(ComposicionAgregado.orden.asc())
+                    .all()
+                )
+
 
         mallas_disponibles = db.session.query(Malla).all()
         componentes_disponibles = db.session.query(Componente_quimico).all()
-
+        lang = request.cookies.get("lang", "es")
+        t_menu = get_textos_menu(lang)
         return render_template(
             'pantalla_agregados/agregado_detalle.html',
             agregado=agregado,
@@ -209,7 +212,8 @@ def mixFamiliari_crud_agregado_agregados(agregado_id):
             agregado_mallas=agregado_mallas,
             composicion=composicion,
             mallas_disponibles=mallas_disponibles,
-            componentes_disponibles=componentes_disponibles
+            componentes_disponibles=componentes_disponibles,
+            t_menu=t_menu
         )
 
     except SQLAlchemyError as e:

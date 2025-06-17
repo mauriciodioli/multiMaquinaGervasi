@@ -2,6 +2,7 @@ import pyodbc
 from flask import Blueprint, request, render_template
 from src.model.usuario import Usuario
 from utils.db import db
+from src.utils.get_textos_menu  import get_textos_menu
 trabajos_bp = Blueprint('trabajos', __name__)
 
 # Ruta para ver los trabajos
@@ -34,7 +35,10 @@ def listar_maquinas():
 
         trabajos = ''
         columnas = ''
-        return render_template('maquinas/maquinas.html', trabajos=trabajos, columnas=columnas, usuario=usuario)
+        
+        lang = request.cookies.get("lang", "es")
+        t_menu = get_textos_menu(lang)
+        return render_template('maquinas/maquinas.html', trabajos=trabajos, columnas=columnas, usuario=usuario, t_menu=t_menu)
     except Exception as e:
         return f"Error conectando a la base de datos: {e}"
     finally:

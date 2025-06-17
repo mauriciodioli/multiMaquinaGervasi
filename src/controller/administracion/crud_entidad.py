@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify, render_template, redirect
 from src.model.entidad_contexto import EntidadContexto, EntidadContextoSchema
 from utils.db import db
 from sqlalchemy.exc import SQLAlchemyError
+from src.utils.get_textos_menu  import get_textos_menu
 
 
 
@@ -15,7 +16,9 @@ entidades_schema = EntidadContextoSchema(many=True)
 @crud_entidad.route('/administracion_crud_entidad_pantalla_entidades/', methods=['GET'])
 def administracion_crud_entidad_pantalla_entidades():
     entidades = db.session.query(EntidadContexto).all()
-    return render_template("pantalla_entidades/pantalla_entidades.html", entidades=entidades)
+    lang = request.cookies.get("lang", "es")
+    t_menu = get_textos_menu(lang)
+    return render_template("pantalla_entidades/pantalla_entidades.html", entidades=entidades,t_menu=t_menu)
 
 # 👉 Crear entidad (POST desde fetch)
 @crud_entidad.route('/administracion_crud_entidad_crear_entidad/', methods=['POST'])

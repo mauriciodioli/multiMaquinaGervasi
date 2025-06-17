@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from src.model.usuario import Usuario  # ajustá si tenés otro path
 import secrets  # para token seguro
 from datetime import timedelta
+from src.utils.get_textos_menu  import get_textos_menu
 
 crud_usuario = Blueprint("crud_usuario", __name__)
 
@@ -41,8 +42,9 @@ def administracion_crud_usuario_pantalla_usuario():
                     "tipo": entidad.tipo,
                     "roll": relacion.roll if relacion else None
                 })
-
-        return render_template("pantalla_usuarios/pantalla_crud_usuarios.html", usuarios=list(usuarios_dict.values()))
+        lang = request.cookies.get("lang", "es")
+        t_menu = get_textos_menu(lang)
+        return render_template("pantalla_usuarios/pantalla_crud_usuarios.html", usuarios=list(usuarios_dict.values()), t_menu=t_menu)
     except Exception as e:
         return f"Error al cargar usuarios: {str(e)}", 500
     finally:

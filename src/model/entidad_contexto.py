@@ -19,6 +19,7 @@ class EntidadContexto(db.Model):
 
     agregados = relationship("Agregado", back_populates="entidad")
     usuarios = relationship("UsuarioEntidad", back_populates="entidad", cascade="all, delete")  # ⚠️ esta línea necesita que UsuarioEntidad esté ya cargada
+    sesiones_usuario = relationship("SesionUsuario", back_populates="entidad")
 
 
 
