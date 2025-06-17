@@ -1,0 +1,12 @@
+<!-- templates/AutenticacionLogin/token_invalido.html -->
+{% extends "layouts/layout.html" %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+  <h2>❌ {{ t["token_invalido"] }}</h2>
+  <p>{{ t["recuperacion"] }}</p>
+  <a href="{{ url_for('login.recuperar_password') }}" class="btn btn-primary">
+    {{ t["recuperar_titulo"] }}
+  </a>
+</div>
+{% endblock %}

@@ -1,10 +1,19 @@
 import pyodbc
 from flask import Blueprint, render_template,request,jsonify
 from src.model.maquina import Maquina
+from src.model.usuario import Usuario
 from utils.db import db
 import json
 
 maquinas = Blueprint('maquinas', __name__)
+
+
+
+
+
+
+
+
 
 @maquinas.route('/maquinas_online/', methods=['POST'])
 def maquinas_online():
@@ -12,8 +21,15 @@ def maquinas_online():
         data = request.get_json()
         user_id = request.cookies.get("user_id")
 
-        maquinas = db.session.query(Maquina).filter_by(user_id=int(user_id)).all()
-  
+        usuario = db.session.query(Usuario).get(int(user_id))
+        if not usuario:
+            return jsonify({"success": False, "message": "Usuario no encontrado"})
+
+        if usuario.roll == "admin":
+            maquinas = db.session.query(Maquina).all()
+        else:
+            maquinas = db.session.query(Maquina).filter_by(user_id=int(user_id)).all()
+
         resultado = []
         for m in maquinas:
             if isinstance(m.setting, str):
@@ -33,7 +49,7 @@ def maquinas_online():
                 "estado": m.estado,
                 "potencia": m.potencia,
                 "nombre": m.nombre,
-                "ruta": m.ruta, 
+                "ruta": m.ruta,
                 "nombreDb": m.nombreDb,
                 "modulos": setting.get("modulos", [])
             })
@@ -45,6 +61,7 @@ def maquinas_online():
         return jsonify({"success": False, "message": str(e)})
     finally:
         db.session.close()
+
 
 
 
