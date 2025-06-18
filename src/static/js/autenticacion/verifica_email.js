@@ -1,29 +1,5 @@
-const mensajes = {
-  es: {
-    titulo: "📬 ¡Revisá tu correo!",
-    mensaje: "Te enviamos un enlace de confirmación a tu casilla de correo.",
-    instruccion: "Hacelo clic y luego iniciá sesión.",
-    reenviar: "📨 Reenviar correo",
-    reenviado: "Correo reenviado correctamente.",
-    error: "No se pudo reenviar el correo."
-  },
-  en: {
-    titulo: "📬 Check your email!",
-    mensaje: "We sent you a confirmation link.",
-    instruccion: "Click it and then log in.",
-    reenviar: "📨 Resend email",
-    reenviado: "Email resent successfully.",
-    error: "Could not resend email."
-  },
-  it: {
-    titulo: "📬 Controlla la tua email!",
-    mensaje: "Ti abbiamo inviato un link di conferma.",
-    instruccion: "Clicca sul link e poi accedi.",
-    reenviar: "📨 Invia di nuovo",
-    reenviado: "Email inviata nuovamente.",
-    error: "Impossibile inviare di nuovo l'email."
-  }
-};
+
+
 
 document.addEventListener("DOMContentLoaded", () => {
   const lang = localStorage.getItem("lang") || "es";
@@ -50,3 +26,41 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   });
 });
+
+
+
+
+const mensajes = {
+  es: {
+    titulo: "📬 ¡Revisá tu correo!",
+    mensaje: "Te enviamos un enlace de confirmación a tu casilla de correo.",
+    instruccion: "Hacelo clic y luego iniciá sesión.",
+    reenviar: "📨 Reenviar correo",
+    reenviado: "Correo reenviado correctamente.",
+    error: "No se pudo reenviar el correo."
+  },
+  en: {
+    titulo: "📬 Check your email!",
+    mensaje: "We sent you a confirmation link.",
+    instruccion: "Click it and then log in.",
+    reenviar: "📨 Resend email",
+    reenviado: "Email resent successfully.",
+    error: "Could not resend email."
+  },
+  it: {
+    titulo: "📬 Controlla la tua email!",
+    mensaje: "Ti abbiamo inviato un link di conferma.",
+    instruccion: "Clicca sul link e poi accedi.",
+    reenviar: "📨 Invia di nuovo",
+    reenviado: "Email inviata nuovamente.",
+    error: "Impossibile inviare di nuovo l'email."
+  },
+  pt: {
+    titulo: "📬 Verifique seu e-mail!",
+    mensaje: "Enviamos um link de confirmação para o seu e-mail.",
+    instruccion: "Clique no link e depois faça login.",
+    reenviar: "📨 Reenviar e-mail",
+    reenviado: "E-mail reenviado com sucesso.",
+    error: "Não foi possível reenviar o e-mail."
+  }
+};

@@ -1,77 +1,4 @@
-const mensajes = {
-  es: {
-    titulo: "Crear una cuenta nueva",
-    correo: "Correo electrónico",
-    pass: "Contraseña",
-    repetir: "Repetir contraseña",
-    captcha: "No soy un robot",
-    registrarse: "Registrarse",
-    volver: "Volver al login",
-    errores: {
-      correo: "El correo electrónico no es válido.",
-      longitud: "La contraseña debe tener al menos 8 caracteres.",
-      mayus: "Debe contener al menos una letra mayúscula.",
-      numero: "Debe contener al menos un número.",
-      especial: "Debe tener un carácter especial.",
-      coinciden: "Las contraseñas no coinciden.",
-      captcha: "Debes verificar el captcha."
-    },
-    requisitos: {
-      longitud: "Mínimo 8 caracteres",
-      mayus: "Al menos una letra mayúscula",
-      numero: "Al menos un número",
-      especial: "Al menos un carácter especial (!@#$...)"
-    }
-  },
-  en: {
-    titulo: "Create a new account",
-    correo: "Email",
-    pass: "Password",
-    repetir: "Repeat password",
-    captcha: "I'm not a robot",
-    registrarse: "Register",
-    volver: "Back to login",
-    errores: {
-      correo: "Invalid email address.",
-      longitud: "Password must be at least 8 characters.",
-      mayus: "Must include at least one uppercase letter.",
-      numero: "Must include at least one number.",
-      especial: "Must include a special character.",
-      coinciden: "Passwords do not match.",
-      captcha: "You must check the captcha."
-    },
-    requisitos: {
-      longitud: "Minimum 8 characters",
-      mayus: "At least one uppercase letter",
-      numero: "At least one number",
-      especial: "At least one special character (!@#$...)"
-    }
-  },
-  it: {
-    titulo: "Crea un nuovo account",
-    correo: "Email",
-    pass: "Password",
-    repetir: "Ripeti password",
-    captcha: "Non sono un robot",
-    registrarse: "Registrati",
-    volver: "Torna al login",
-    errores: {
-      correo: "Email non valida.",
-      longitud: "La password deve contenere almeno 8 caratteri.",
-      mayus: "Deve contenere almeno una lettera maiuscola.",
-      numero: "Deve contenere almeno un numero.",
-      especial: "Deve contenere un carattere speciale.",
-      coinciden: "Le password non coincidono.",
-      captcha: "Devi confermare il captcha."
-    },
-    requisitos: {
-      longitud: "Minimo 8 caratteri",
-      mayus: "Almeno una lettera maiuscola",
-      numero: "Almeno un numero",
-      especial: "Almeno un carattere speciale (!@#$...)"
-    }
-  }
-};
+
 
 
 function aplicarIdioma(lang) {
@@ -208,3 +135,108 @@ document.getElementById("form-registro").addEventListener("submit", function (e)
 });
 
 });
+
+
+
+
+
+
+
+const mensajes = {
+  es: {
+    titulo: "Crear una cuenta nueva",
+    correo: "Correo electrónico",
+    pass: "Contraseña",
+    repetir: "Repetir contraseña",
+    captcha: "No soy un robot",
+    registrarse: "Registrarse",
+    volver: "Volver al login",
+    errores: {
+      correo: "El correo electrónico no es válido.",
+      longitud: "La contraseña debe tener al menos 8 caracteres.",
+      mayus: "Debe contener al menos una letra mayúscula.",
+      numero: "Debe contener al menos un número.",
+      especial: "Debe tener un carácter especial.",
+      coinciden: "Las contraseñas no coinciden.",
+      captcha: "Debes verificar el captcha."
+    },
+    requisitos: {
+      longitud: "Mínimo 8 caracteres",
+      mayus: "Al menos una letra mayúscula",
+      numero: "Al menos un número",
+      especial: "Al menos un carácter especial (!@#$...)"
+    }
+  },
+  en: {
+    titulo: "Create a new account",
+    correo: "Email",
+    pass: "Password",
+    repetir: "Repeat password",
+    captcha: "I'm not a robot",
+    registrarse: "Register",
+    volver: "Back to login",
+    errores: {
+      correo: "Invalid email address.",
+      longitud: "Password must be at least 8 characters.",
+      mayus: "Must include at least one uppercase letter.",
+      numero: "Must include at least one number.",
+      especial: "Must include a special character.",
+      coinciden: "Passwords do not match.",
+      captcha: "You must check the captcha."
+    },
+    requisitos: {
+      longitud: "Minimum 8 characters",
+      mayus: "At least one uppercase letter",
+      numero: "At least one number",
+      especial: "At least one special character (!@#$...)"
+    }
+  },
+  it: {
+    titulo: "Crea un nuovo account",
+    correo: "Email",
+    pass: "Password",
+    repetir: "Ripeti password",
+    captcha: "Non sono un robot",
+    registrarse: "Registrati",
+    volver: "Torna al login",
+    errores: {
+      correo: "Email non valida.",
+      longitud: "La password deve contenere almeno 8 caratteri.",
+      mayus: "Deve contenere almeno una lettera maiuscola.",
+      numero: "Deve contenere almeno un numero.",
+      especial: "Deve contenere un carattere speciale.",
+      coinciden: "Le password non coincidono.",
+      captcha: "Devi confermare il captcha."
+    },
+    requisitos: {
+      longitud: "Minimo 8 caratteri",
+      mayus: "Almeno una lettera maiuscola",
+      numero: "Almeno un numero",
+      especial: "Almeno un carattere speciale (!@#$...)"
+    }
+  },
+  pt: {
+    titulo: "Criar uma nova conta",
+    correo: "E-mail",
+    pass: "Senha",
+    repetir: "Repetir senha",
+    captcha: "Não sou um robô",
+    registrarse: "Registrar-se",
+    volver: "Voltar para o login",
+    errores: {
+      correo: "Endereço de e-mail inválido.",
+      longitud: "A senha deve ter pelo menos 8 caracteres.",
+      mayus: "Deve conter pelo menos uma letra maiúscula.",
+      numero: "Deve conter pelo menos um número.",
+      especial: "Deve conter um caractere especial.",
+      coinciden: "As senhas não coincidem.",
+      captcha: "Você deve verificar o captcha."
+    },
+    requisitos: {
+      longitud: "Mínimo de 8 caracteres",
+      mayus: "Pelo menos uma letra maiúscula",
+      numero: "Pelo menos um número",
+      especial: "Pelo menos um caractere especial (!@#$...)"
+    }
+  }
+};

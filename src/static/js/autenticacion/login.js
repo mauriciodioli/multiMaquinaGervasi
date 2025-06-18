@@ -103,59 +103,6 @@ formLogin.addEventListener("submit", async (e) => {
 
 
 
-const mensajes = {
-  es: {
-    titulo: "Iniciar Sesión",
-    correo: "Correo electrónico",
-    pass: "Contraseña",
-    entrar: "Entrar",
-    olvidar: "¿Olvidaste tu contraseña?",
-    registrar: "¿No tenés cuenta? Registrate",
-    error_credenciales: "Correo o contraseña incorrectos",
-    error_inactivo: "Tu cuenta no está activa. Verificá tu correo",
-    error_servidor: "Error interno del servidor",
-    intentos_previos: "Intentos fallidos anteriores",
-    demasiados_intentos: "Demasiados intentos.",
-    espera: "Espera",
-    segundos: "segundos.",
-    error_conexion: "Error de conexión. Intenta más tarde.",
-    bloqueo: "Demasiados intentos. Espera"
-  },
-  en: {
-    titulo: "Sign In",
-    correo: "Email",
-    pass: "Password",
-    entrar: "Log In",
-    olvidar: "Forgot your password?",
-    registrar: "Don't have an account? Register",
-    error_credenciales: "Invalid email or password",
-    error_inactivo: "Your account is not active. Check your email",
-    error_servidor: "Internal server error",
-    intentos_previos: "Previous failed attempts",
-    demasiados_intentos: "Too many attempts.",
-    espera: "Wait",
-    segundos: "seconds.",
-    error_conexion: "Connection error. Try again later.",
-    bloqueo: "Too many attempts. Wait"
-  },
-  it: {
-    titulo: "Accedi",
-    correo: "Email",
-    pass: "Password",
-    entrar: "Entra",
-    olvidar: "Hai dimenticato la password?",
-    registrar: "Non hai un account? Registrati",
-    error_credenciales: "Email o password non validi",
-    error_inactivo: "Il tuo account non è attivo. Controlla la tua email",
-    error_servidor: "Errore interno del server",
-    intentos_previos: "Tentativi falliti precedenti",
-    demasiados_intentos: "Troppi tentativi.",
-    espera: "Aspetta",
-    segundos: "secondi.",
-    error_conexion: "Errore di connessione. Riprova più tardi.",
-    bloqueo: "Troppi tentativi. Aspetta"
-  }
-};
 
 
   function aplicarIdioma(lang) {
@@ -216,3 +163,77 @@ if (linkRegistro) {
   .catch(() => {
     document.cookie = `pais=AR; path=/; max-age=${3600 * 24 * 7}`; // Fallback por si falla
   });
+
+
+
+  const mensajes = {
+  es: {
+    titulo: "Iniciar Sesión",
+    correo: "Correo electrónico",
+    pass: "Contraseña",
+    entrar: "Entrar",
+    olvidar: "¿Olvidaste tu contraseña?",
+    registrar: "¿No tenés cuenta? Registrate",
+    error_credenciales: "Correo o contraseña incorrectos",
+    error_inactivo: "Tu cuenta no está activa. Verificá tu correo",
+    error_servidor: "Error interno del servidor",
+    intentos_previos: "Intentos fallidos anteriores",
+    demasiados_intentos: "Demasiados intentos.",
+    espera: "Espera",
+    segundos: "segundos.",
+    error_conexion: "Error de conexión. Intenta más tarde.",
+    bloqueo: "Demasiados intentos. Espera"
+  },
+  en: {
+    titulo: "Sign In",
+    correo: "Email",
+    pass: "Password",
+    entrar: "Log In",
+    olvidar: "Forgot your password?",
+    registrar: "Don't have an account? Register",
+    error_credenciales: "Invalid email or password",
+    error_inactivo: "Your account is not active. Check your email",
+    error_servidor: "Internal server error",
+    intentos_previos: "Previous failed attempts",
+    demasiados_intentos: "Too many attempts.",
+    espera: "Wait",
+    segundos: "seconds.",
+    error_conexion: "Connection error. Try again later.",
+    bloqueo: "Too many attempts. Wait"
+  },
+  it: {
+    titulo: "Accedi",
+    correo: "Email",
+    pass: "Password",
+    entrar: "Entra",
+    olvidar: "Hai dimenticato la password?",
+    registrar: "Non hai un account? Registrati",
+    error_credenciales: "Email o password non validi",
+    error_inactivo: "Il tuo account non è attivo. Controlla la tua email",
+    error_servidor: "Errore interno del server",
+    intentos_previos: "Tentativi falliti precedenti",
+    demasiados_intentos: "Troppi tentativi.",
+    espera: "Aspetta",
+    segundos: "secondi.",
+    error_conexion: "Errore di connessione. Riprova più tardi.",
+    bloqueo: "Troppi tentativi. Aspetta"
+  },
+  pt: {
+    titulo: "Entrar",
+    correo: "E-mail",
+    pass: "Senha",
+    entrar: "Acessar",
+    olvidar: "Esqueceu sua senha?",
+    registrar: "Não tem uma conta? Cadastre-se",
+    error_credenciales: "E-mail ou senha incorretos",
+    error_inactivo: "Sua conta não está ativa. Verifique seu e-mail",
+    error_servidor: "Erro interno do servidor",
+    intentos_previos: "Tentativas anteriores falhadas",
+    demasiados_intentos: "Muitas tentativas.",
+    espera: "Aguarde",
+    segundos: "segundos.",
+    error_conexion: "Erro de conexão. Tente novamente mais tarde.",
+    bloqueo: "Muitas tentativas. Aguarde"
+  }
+};
+

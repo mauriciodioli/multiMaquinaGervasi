@@ -29,28 +29,6 @@ MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")
 
 
 
-textos_login = {
-    "es": {
-        "no_encontrado": "Usuario no encontrado",
-        "inactivo": "Usuario inactivo",
-        "incorrecta": "Contraseña incorrecta",
-        "error": "Error interno del servidor"
-    },
-    "en": {
-        "no_encontrado": "User not found",
-        "inactivo": "User is inactive",
-        "incorrecta": "Incorrect password",
-        "error": "Internal server error"
-    },
-    "it": {
-        "no_encontrado": "Utente non trovato",
-        "inactivo": "Utente inattivo",
-        "incorrecta": "Password errata",
-        "error": "Errore interno del server"
-    }
-}
-
-
 
 
 
@@ -63,8 +41,7 @@ def login_usuario():
     correo = data.get("correo_electronico")
     password = data.get("password")
     lang = data.get("lang", "es")
-    t = textos_login.get(lang, textos_login["es"])
-
+    t = get_textos_login(lang)  # ✅ esta es la forma correcta
     try:
         usuario = db.session.query(Usuario).filter_by(correo_electronico=correo).first()
 
