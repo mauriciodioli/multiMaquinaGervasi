@@ -9,15 +9,15 @@
     <form method="post" action="{{ url_for('crud_agregado.mixFamiliari_crud_agregado_agregados_mallas', agregado_id=agregado.id) }}">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalMallaLabel">Agregar Malla al Agregado</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <h5 class="modal-title" id="modalMallaLabel">➕ {{ t_menu["agregar"] }} {{ t_menu["malla"] }} {{ t_menu["al_agregado"] }}</h5>
+          <button type="button" class="btn-close" onclick="cerrarmodalAgregarMalla()" aria-label="{{ t_menu['cerrar'] }}"></button>
         </div>
 
         <div class="modal-body">
           <div class="mb-3">
-            <label for="malla_id" class="form-label">Seleccionar malla:</label>
+            <label for="malla_id" class="form-label">{{ t_menu["seleccionar_malla"] }}</label>
             <select class="form-select" id="malla_id" name="malla_id" required>
-              <option value="">Seleccioná una malla</option>
+              <option value="">{{ t_menu["elegir_malla"] }}</option>
               {% for malla in mallas_disponibles %}
                 <option value="{{ malla.id }}">{{ malla.nombre_comercial }} ({{ malla.diametro_mm }} mm)</option>
               {% endfor %}
@@ -26,8 +26,8 @@
         </div>
 
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Agregar</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">{{ t_menu["agregar"] }}</button>
+          <button type="button" class="btn btn-secondary" onclick="cerrarmodalAgregarMalla()">{{ t_menu["cerrar"] }}</button>
         </div>
       </div>
     </form>

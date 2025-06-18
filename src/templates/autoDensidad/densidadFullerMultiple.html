@@ -88,7 +88,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="modalConfiguracionLabel">⚙️ Configuración de Parámetros</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close" onclick="cerrarModalParametros()" aria-label="Cerrar"></button>
       </div>
       <div class="modal-body">
         <div class="mb-3">
@@ -113,9 +113,9 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+       <div class="modal-footer" style="margin-top: 1.5em;">
         <button type="button" class="btn btn-primary" id="guardar-configuracion">Guardar</button>
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalParametros()">Cancelar</button>
       </div>
     </div>
   </div>
@@ -128,7 +128,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="modaltablaTamicesLabel">📘 Table de Parámetros Tamises</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close" onclick="cerrarModalParametros()" aria-label="Cerrar"></button>
       </div>
       <div class="modal-body">
 

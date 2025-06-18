@@ -17,7 +17,55 @@ def get_textos_menu(lang="es"):
             "mostrar_ocultar": "Mostrar / Ocultar",
             "nombre_comercial": "Nombre comercial",
             "diametro": "Diámetro (mm)",
+            
+            
+            # Pantalla  /pantalla_mallas/pantalla_mallas.html
+            "titulo_mallas": "Mallas Registradas",
 
+            
+            
+             # Pantalla /pantalla_tipo_mezcla/pantalla_tipo_mezcla.html
+             "titulo_tipo_mezcla": "Tipos de Mezcla Registrados",
+
+            
+            
+            
+            # Pantalla /pantalla_componente_quimico/modals/modal_modificar_comp_quimico.html
+             "guardar_cambios": "Guardar Cambios",
+
+            # Pantalla /pantalla_componente_quimico/pantalla_componente_quimico.html
+            "titulo_componentes_quimicos": "Componentes Químicos Registrados",
+            "tipo_mezcla": "Tipo Mezcla",
+            "modificar": "Modificar",
+            "eliminar": "Eliminar",
+            
+            # Pantalla /pantalla_componente_quimico/modals/modal_tipo_mezla.html
+            "seleccionar_tipo_mezcla": "Selecciona Tipo de Mezcla",
+
+
+            
+            
+            # Pantalla /pantalla_agregados/agregado_detalle.html
+           "volver_lista": "Volver a la lista",
+            "pais": "País",
+            "idioma": "Idioma",
+            "mallas_asociadas": "Mallas asociadas",
+            "componentes_quimicos": "Componentes químicos",
+            "porcentaje": "Porcentaje (%)",
+            "orden": "Orden",
+            "malla": "malla",
+            "componente": "componente",
+
+            # Pantalla /pantalla_agregados/modals/modal_agregar_malla.html
+            "al_agregado": "al Agregado",
+            "seleccionar_malla": "Seleccionar malla:",
+            "elegir_malla": "Seleccioná una malla",
+            "cerrar": "Cerrar",
+             # Pantalla /pantalla_agregados/agregado_detalle.html
+            "seleccionar_componente": "Seleccionar componente:",
+            "elegir_componente": "Seleccioná un componente",
+
+            
             # Login / Recuperación
             "recuperar_link_texto": "[enlace en tu correo]",
             "recuperar_titulo": "Recuperar contraseña",
@@ -57,6 +105,57 @@ def get_textos_menu(lang="es"):
             "mostrar_ocultar": "Show / Hide",
             "nombre_comercial": "Trade name",
             "diametro": "Diameter (mm)",
+            
+            # Pantalla  /pantalla_mallas/pantalla_mallas.html
+            "titulo_mallas": "Registered Sieves",
+
+            
+            
+            
+            
+            # Pantalla /pantalla_tipo_mezcla/pantalla_tipo_mezcla.html
+            "titulo_tipo_mezcla": "Registered Mixture Types",
+
+            
+            
+            
+              
+            # Pantalla /pantalla_componente_quimico/pantalla_componente_quimico.html
+           "titulo_componentes_quimicos": "Registered Chemical Components",
+            "tipo_mezcla": "Mixture Type",
+            "modificar": "Edit",
+            "eliminar": "Delete",
+
+            # Pantalla /pantalla_componente_quimico/modals/modal_modificar_comp_quimico.html
+           "guardar_cambios": "Save Changes",
+           
+            # Pantalla /pantalla_componente_quimico/modals/modal_tipo_mezla.html
+            "seleccionar_tipo_mezcla": "Select Mixture Type",
+            
+            
+             # Pantalla /pantalla_agregados/agregado_detalle.html
+            "volver_lista": "Back to the list",
+            "pais": "Country",
+            "idioma": "Language",
+            "mallas_asociadas": "Associated sieves",
+            "componentes_quimicos": "Chemical components",
+            "porcentaje": "Percentage (%)",
+            "orden": "Order",
+            "malla": "sieve",
+            "componente": "component",
+            
+            # Pantalla /pantalla_agregados/modals/modal_agregar_malla.html
+            "al_agregado": "to the Aggregate",
+            "seleccionar_malla": "Select sieve:",
+            "elegir_malla": "Choose a sieve",
+            "cerrar": "Close",
+            
+             # Pantalla /pantalla_agregados/modals/modal_agregar_comp_quimi.html
+            "seleccionar_componente": "Select component:",
+            "elegir_componente": "Choose a component",
+
+
+
 
             "recuperar_link_texto": "[link in your email]",
             "recuperar_titulo": "Recover password",
@@ -96,7 +195,59 @@ def get_textos_menu(lang="es"):
             "mostrar_ocultar": "Mostra / Nascondi",
             "nombre_comercial": "Nome commerciale",
             "diametro": "Diametro (mm)",
+            
+            
+            # Pantalla  /pantalla_mallas/pantalla_mallas.html
+            "titulo_mallas": "Maglie Registrate",
 
+            
+            
+            
+            # Pantalla /pantalla_tipo_mezcla/pantalla_tipo_mezcla.html
+            "titulo_tipo_mezcla": "Tipi di Miscela Registrati",
+
+            
+            
+            
+            
+            
+            # Pantalla /pantalla_componente_quimico/pantalla_componente_quimico.html
+           "titulo_componentes_quimicos": "Componenti Chimici Registrati",
+            "tipo_mezcla": "Tipo Miscela",
+            "modificar": "Modificare",
+            "eliminar": "Eliminare",
+
+            # Pantalla /pantalla_componente_quimico/modals/modal_modificar_comp_quimico.html
+            "guardar_cambios": "Salvare Modifiche",
+            
+            
+            # Pantalla /pantalla_componente_quimico/modals/modal_tipo_mezla.html
+            "seleccionar_tipo_mezcla": "Seleziona Tipo Miscela",
+
+            # Pantalla /pantalla_agregados/agregado_detalle.html
+           "volver_lista": "Torna alla lista",
+            "pais": "Paese",
+            "idioma": "Lingua",
+            "mallas_asociadas": "Maglie associate",
+            "componentes_quimicos": "Componenti chimici",
+            "porcentaje": "Percentuale (%)",
+            "orden": "Ordine",
+            "malla": "maglia",
+            "componente": "componente",
+
+            # Pantalla /pantalla_agregados/modals/modal_agregar_malla.html
+            "al_agregado": "all'Aggregato",
+            "seleccionar_malla": "Seleziona maglia:",
+            "elegir_malla": "Scegli una maglia",
+            "cerrar": "Chiudi",
+
+
+            # Pantalla /pantalla_agregados/modals/modal_agregar_comp_quimi.html
+            "seleccionar_componente": "Seleziona componente:",
+            "elegir_componente": "Scegli un componente",
+
+            
+            
             "recuperar_link_texto": "[link nella tua email]",
             "recuperar_titulo": "Recupera password",
             "recuperar_subtitulo": "Inserisci la tua email e ti invieremo un link.",

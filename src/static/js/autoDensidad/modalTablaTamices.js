@@ -34,3 +34,6 @@ function copiarFilaTamiz(event, valor) {
   function cerrarModalTamices() {
     document.getElementById('modal-tablaTamices').style.display = 'none';
   }
+    function cerrarModalParametros() {
+    document.getElementById('modal-configuracion').style.display = 'none';
+  }

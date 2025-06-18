@@ -12,6 +12,13 @@ document.querySelectorAll(".btn-abrir-modal-modificar-malla").forEach(boton => {
 });
 
 
+function cerrarModalAgregarMallas() {
+  document.getElementById('modal-agregar-malla').style.display = 'none';
+}
+function cerrarModalModificarMallas() {
+  document.getElementById('modal-modificar-malla').style.display = 'none';
+}
+
 
 
 

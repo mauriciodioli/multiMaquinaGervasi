@@ -3,15 +3,17 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Selecciona Tipo de Mezcla</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        <h5 class="modal-title">{{ t_menu["seleccionar_tipo_mezcla"] }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t_menu['cerrar'] }}"></button>
       </div>
+
       <div class="modal-body">
         <select id="select-tipo-mezcla" class="form-select"></select>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" id="btn-guardar-tipo-mezcla">Guardar</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+
+      <div class="modal-footer" style="margin-top: 1.5em;">
+        <button type="button" class="btn btn-primary" id="btn-guardar-tipo-mezcla">{{ t_menu["guardar_cambios"] }}</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t_menu["cerrar"] }}</button>
       </div>
     </div>
   </div>

@@ -1,17 +1,17 @@
 {% extends "layouts/layout.html" %}
 
-{% block title %}Listado de Tipi di Miscela{% endblock %}
+{% block title %}{{ t_menu["titulo_tipo_mezcla"] }}{% endblock %}
 
 {% block content %}
 <div class="container">
   <div class="row justify-content-center">
     <div class="col-md-10">
       <div class="titulo-maquinas">
-        <h1>Tipi di Miscela Registrati</h1>
+        <h1>{{ t_menu["titulo_tipo_mezcla"] }}</h1>
       </div>
 
       <button type="button" class="btn btn-primary" id="btn-abrir-modal-tipo-mezcla">
-        <i class="fas fa-plus-circle me-2"></i> Aggiungi Tipo Miscela
+        <i class="fas fa-plus-circle me-2"></i> {{ t_menu["agregar"] }} {{ t_menu["tipo_mezcla"] }}
       </button>
 
       <div class="table-responsive mt-3">
@@ -19,9 +19,9 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Nome</th>
-              <th>Descrizione</th>
-              <th>Azioni</th>
+              <th>{{ t_menu["nombre"] }}</th>
+              <th>{{ t_menu["descripcion"] }}</th>
+              <th>{{ t_menu["acciones"] }}</th>
             </tr>
           </thead>
           <tbody id="tabla-tipo-mezcla">
@@ -37,13 +37,13 @@
                           data-id="{{ tipo.id }}"
                           data-nombre="{{ tipo.nombre }}"
                           data-descripcion="{{ tipo.descripcion }}">
-                    Modificare
+                    {{ t_menu["modificar"] }}
                   </button>
 
                   <button type="button"
                           class="btn btn-danger btn-sm btn-abrir-modal-eliminar-tipo-mezcla"
                           data-id="{{ tipo.id }}">
-                    Eliminare
+                    {{ t_menu["eliminar"] }}
                   </button>
                 </div>
               </td>

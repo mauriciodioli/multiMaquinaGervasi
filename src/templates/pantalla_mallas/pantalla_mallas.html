@@ -1,17 +1,17 @@
 {% extends "layouts/layout.html" %}
 
-{% block title %}Listado de Mallas{% endblock %}
+{% block title %}{{ t_menu["titulo_mallas"] }}{% endblock %}
 
 {% block content %}
 <div class="container">
   <div class="row justify-content-center">
     <div class="col-md-10">
       <div class="titulo-maquinas">
-        <h1>Maglie Registrate</h1>
+        <h1>{{ t_menu["titulo_mallas"] }}</h1>
       </div>
 
       <button type="button" class="btn btn-primary" id="btn-abrir-modal-malla">
-        <i class="fas fa-border-all me-2"></i> Aggiungere Malla
+        <i class="fas fa-border-all me-2"></i> {{ t_menu["agregar"] }} {{ t_menu["malla"] }}
       </button>
 
       <div class="table-responsive">
@@ -19,9 +19,9 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Nome commerciale</th>
-              <th>Diametro (mm)</th>
-              <th>Azioni</th>
+              <th>{{ t_menu["nombre_comercial"] }}</th>
+              <th>{{ t_menu["diametro"] }}</th>
+              <th>{{ t_menu["acciones"] }}</th>
             </tr>
           </thead>
           <tbody id="tabla-mallas">
@@ -37,13 +37,13 @@
                           data-id="{{ malla.id }}"
                           data-nombre_comercial="{{ malla.nombre_comercial }}"
                           data-diametro_mm="{{ malla.diametro_mm }}">
-                    Modificare
+                    {{ t_menu["modificar"] }}
                   </button>
 
                   <button type="button"
                           class="btn btn-danger btn-sm btn-abrir-modal-eliminar-malla"
                           data-id="{{ malla.id }}">
-                    Eliminare
+                    {{ t_menu["eliminar"] }}
                   </button>
                 </div>
               </td>
@@ -55,7 +55,7 @@
     </div>
   </div>
 </div>
-         
+
 {% include 'pantalla_mallas/modals/modal_agregar_malla.html' %}
 {% include 'pantalla_mallas/modals/modal_modificar_malla.html' %}
 <script src="{{ url_for('static', filename='js/autoDensidad/mallas/crud_mallas.js') }}"></script>

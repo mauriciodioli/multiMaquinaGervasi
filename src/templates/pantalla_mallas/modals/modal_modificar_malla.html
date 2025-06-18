@@ -4,24 +4,26 @@
     <form id="form-modificar-malla">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">✏️ Modificar Malla</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+          <h5 class="modal-title">✏️ {{ t_menu["modificar"] }} {{ t_menu["malla"] }}</h5>
+          <button type="button" class="btn-close" onclick="cerrarModalModificarMallas()" aria-label="Chiudi"></button>
         </div>
         <div class="modal-body">
           <input type="hidden" id="mod-id" name="id">
 
           <div class="mb-3">
-            <label for="mod-nombre_comercial" class="form-label">Nombre Comercial</label>
+            <label for="mod-nombre_comercial" class="form-label">{{ t_menu["nombre_comercial"] }}</label>
             <input type="text" class="form-control" id="mod-nombre_comercial" name="nombre_comercial" required>
           </div>
+
           <div class="mb-3">
-            <label for="mod-diametro_mm" class="form-label">Diámetro (mm)</label>
+            <label for="mod-diametro_mm" class="form-label">{{ t_menu["diametro"] }} (mm)</label>
             <input type="number" step="0.01" class="form-control" id="mod-diametro_mm" name="diametro_mm" required>
           </div>
         </div>
+
         <div class="modal-footer">
-          <button type="submit" class="btn btn-success">Guardar Cambios</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">{{ t_menu["guardar_cambios"] }}</button>
+          <button type="button" class="btn btn-secondary" onclick="cerrarModalModificarMallas()">{{ t_menu["cerrar"] }}</button>
         </div>
       </div>
     </form>

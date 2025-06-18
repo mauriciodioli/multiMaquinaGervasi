@@ -4,25 +4,27 @@
     <form id="form-modificar-tipo-mezcla">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">✏️ Modificare Tipo di Miscela</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+          <h5 class="modal-title">✏️ {{ t_menu["modificar"] }} {{ t_menu["tipo_mezcla"] }}</h5>
+          <button type="button" class="btn-close" onclick="cerrarModalModificarTipoMezcla()" aria-label="{{ t_menu['cerrar'] }}"></button>
         </div>
+
         <div class="modal-body">
           <input type="hidden" id="mod-id" name="id">
 
           <div class="mb-3">
-            <label for="mod-nombre" class="form-label">Nome</label>
+            <label for="mod-nombre" class="form-label">{{ t_menu["nombre"] }}</label>
             <input type="text" class="form-control" id="mod-nombre" name="nombre" required>
           </div>
 
           <div class="mb-3">
-            <label for="mod-descripcion" class="form-label">Descrizione</label>
+            <label for="mod-descripcion" class="form-label">{{ t_menu["descripcion"] }}</label>
             <textarea class="form-control" id="mod-descripcion" name="descripcion" rows="2"></textarea>
           </div>
         </div>
+
         <div class="modal-footer">
-          <button type="submit" class="btn btn-success">Salvare Modifiche</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+          <button type="submit" class="btn btn-success">{{ t_menu["guardar_cambios"] }}</button>
+          <button type="button" class="btn btn-secondary" onclick="cerrarModalModificarTipoMezcla()">{{ t_menu["cerrar"] }}</button>
         </div>
       </div>
     </form>

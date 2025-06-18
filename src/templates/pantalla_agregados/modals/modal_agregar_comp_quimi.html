@@ -3,38 +3,38 @@
     <form method="post" action="{{ url_for('crud_agregado.agregar_componente_agregado', agregado_id=agregado.id) }}">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalComponenteLabel">Agregar componente químico</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <h5 class="modal-title" id="modalComponenteLabel">➕ {{ t_menu["agregar"] }} {{ t_menu["componente"] }} {{ t_menu["al_agregado"] }}</h5>
+          <button type="button" class="btn-close" onclick="cerrarmodalAgregarComponente()" aria-label="{{ t_menu['cerrar'] }}"></button>
         </div>
 
         <div class="modal-body">
           <div class="mb-3">
-            <label for="componente_id" class="form-label">Seleccionar componente:</label>
-             <select class="form-select" id="componente_id" name="componente_id" required>
-                <option value="">Seleccioná un componente</option>
-                {% for comp in componentes_disponibles %}
-                    <option value="{{ comp.id }}">{{ comp.nombre }}</option>
-                {% endfor %}
+            <label for="componente_id" class="form-label">{{ t_menu["seleccionar_componente"] }}</label>
+            <select class="form-select" id="componente_id" name="componente_id" required>
+              <option value="">{{ t_menu["elegir_componente"] }}</option>
+              {% for comp in componentes_disponibles %}
+                <option value="{{ comp.id }}">{{ comp.nombre }}</option>
+              {% endfor %}
             </select>
-
           </div>
 
           <div class="mb-3">
-            <label for="porcentaje" class="form-label">Porcentaje (%):</label>
+            <label for="porcentaje" class="form-label">{{ t_menu["porcentaje"] }}</label>
             <input type="number" step="0.01" min="0" max="100" class="form-control" name="porcentaje" id="porcentaje" required>
           </div>
 
           <div class="mb-3">
-            <label for="orden" class="form-label">Orden:</label>
+            <label for="orden" class="form-label">{{ t_menu["orden"] }}</label>
             <input type="number" class="form-control" name="orden" id="orden" required>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Agregar</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">{{ t_menu["agregar"] }}</button>
+          <button type="button" class="btn btn-secondary" onclick="cerrarmodalAgregarComponente()">{{ t_menu["cerrar"] }}</button>
         </div>
       </div>
     </form>
   </div>
 </div>
+

@@ -1,17 +1,17 @@
 {% extends "layouts/layout.html" %}
 
-{% block title %}Listado de Componentes Químicos{% endblock %}
+{% block title %}{{ t_menu["titulo_componentes_quimicos"] }}{% endblock %}
 
 {% block content %}
 <div class="container">
   <div class="row justify-content-center">
     <div class="col-md-10">
       <div class="titulo-maquinas">
-        <h1>Componenti Chimici Registrati</h1>
+        <h1>{{ t_menu["titulo_componentes_quimicos"] }}</h1>
       </div>
 
       <button type="button" class="btn btn-primary" id="btn-abrir-modal-componente">
-        <i class="fas fa-plus-circle me-2"></i> Aggiungi Componente
+        <i class="fas fa-plus-circle me-2"></i> {{ t_menu["agregar"] }} {{ t_menu["componente"] }}
       </button>
 
       <div class="table-responsive mt-3">
@@ -19,11 +19,11 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Nome</th>
-              <th>Paese</th>
-              <th>Descrizione</th>
-              <th>Tipo Miscela</th>
-              <th>Azioni</th>
+              <th>{{ t_menu["nombre"] }}</th>
+              <th>{{ t_menu["pais"] }}</th>
+              <th>{{ t_menu["descripcion"] }}</th>
+              <th>{{ t_menu["tipo_mezcla"] }}</th>
+              <th>{{ t_menu["acciones"] }}</th>
             </tr>
           </thead>
           <tbody id="tabla-componentes">
@@ -35,12 +35,12 @@
               <td>{{ componente.descripcion }}</td>
               <td>{{ componente.tipo_mezcla.nombre }}</td>
               <td>
-                 <button type="button"
-                          class="btn btn-danger btn-sm btn-abrir-modal-tipoMezcla-componente"
-                           data-id="{{ componente.id }}">
-                    Agregar Tipo Mezcla
-                  </button>
-                <div class="d-flex align-items-center gap-2">
+                <button type="button"
+                        class="btn btn-danger btn-sm btn-abrir-modal-tipoMezcla-componente"
+                        data-id="{{ componente.id }}">
+                  {{ t_menu["agregar"] }} {{ t_menu["tipo_mezcla"] }}
+                </button>
+                <div class="d-flex align-items-center gap-2 mt-1">
                   <button type="button"
                           class="btn btn-warning btn-sm btn-abrir-modal-modificar-componente"
                           data-id="{{ componente.id }}"
@@ -48,16 +48,14 @@
                           data-pais="{{ componente.pais }}"
                           data-descripcion="{{ componente.descripcion }}"
                           data-tipo_mezcla_id="{{ componente.tipo_mezcla_id }}"
-                          data-tipo_mezcla_nome="{{ componente.tipo_mezcla.nombre }}"
-                          >
-                          
-                    Modificare
+                          data-tipo_mezcla_nome="{{ componente.tipo_mezcla.nombre }}">
+                    {{ t_menu["modificar"] }}
                   </button>
 
                   <button type="button"
                           class="btn btn-danger btn-sm btn-abrir-modal-eliminar-componente"
                           data-id="{{ componente.id }}">
-                    Eliminare
+                    {{ t_menu["eliminar"] }}
                   </button>
                 </div>
               </td>

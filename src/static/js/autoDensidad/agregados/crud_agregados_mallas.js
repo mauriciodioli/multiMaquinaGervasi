@@ -1,3 +1,10 @@
+function cerrarmodalAgregarMalla() {
+  document.getElementById('modalAgregarMalla').style.display = 'none';
+}
+
+
+
+
 document.addEventListener("DOMContentLoaded", () => {
   document.body.addEventListener("click", function (e) {
     if (e.target.classList.contains("btn-modalAgregarMalla-agregado")) {

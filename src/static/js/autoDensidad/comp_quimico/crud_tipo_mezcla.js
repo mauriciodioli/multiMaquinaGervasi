@@ -1,3 +1,11 @@
+function cerrarModalAgregarTipoMezcla() {
+  document.getElementById('modal-agregar-tipo-mezcla').style.display = 'none';
+}
+function cerrarModalModificarTipoMezcla() {
+  document.getElementById('modal-modificar-tipo-mezcla').style.display = 'none';
+}
+
+
 document.getElementById("btn-abrir-modal-tipo-mezcla").addEventListener("click", function () {
   document.getElementById('modal-agregar-tipo-mezcla').style.display = "block";
 });

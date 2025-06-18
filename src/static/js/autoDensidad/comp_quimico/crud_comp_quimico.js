@@ -1,3 +1,11 @@
+function cerrarmodalAgregarComponente() {
+  document.getElementById('modal-agregar-componente').style.display = 'none';
+}
+
+function cerrarmodalModificarComponente() {
+  document.getElementById('modal-modificar-componente').style.display = 'none';
+}
+
 document.getElementById("btn-abrir-modal-componente").addEventListener("click", function () {
   document.getElementById('modal-agregar-componente').style.display = "block";
 });
