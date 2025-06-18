@@ -1,4 +1,8 @@
 
+    function cerrarModalConfiguracionParametros() {
+    document.getElementById('modal-configuracion').style.display = 'none';
+  }
+  
   document.getElementById("selector-norma").addEventListener("change", () => {
     const seleccion = document.getElementById("selector-norma").value;
     const fullerDiv = document.getElementById("configuracion-fuller");

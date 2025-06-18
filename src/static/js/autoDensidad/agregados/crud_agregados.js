@@ -1,3 +1,13 @@
+
+document.addEventListener("DOMContentLoaded", () => {
+  function cerrarModalagregarMix() {
+    document.getElementById('modal-agregar-mix').style.display = 'none';
+  }
+
+  // Si querés que esté accesible desde el HTML (por ejemplo en un onclick)
+  window.cerrarModalagregarMix = cerrarModalagregarMix;
+});
+
 document.getElementById("crud-link-mix").addEventListener("click", (e) => {
     e.preventDefault();
     const userId = localStorage.getItem("user_id");
@@ -21,6 +31,7 @@ document.getElementById("crud-link-mix").addEventListener("click", (e) => {
 
 
 document.addEventListener("DOMContentLoaded", () => {
+  
   const btnAbrir = document.getElementById('btn-abrir-modal-agregar');
 
   if (!btnAbrir) {

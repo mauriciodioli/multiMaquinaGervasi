@@ -1,11 +1,11 @@
 {% extends "layouts/layout.html" %}
 
-{% block title %}Calcolo della densità - Curva di Fuller{% endblock %}
+{% block title %}{{ t_menu["titulo_simulador_fuller"] }}{% endblock %}
 
 {% block content %}
 <div class="container">
+  <h3> {{ t_menu["simulador_titulo"] }}</h3>
 
-  <h3>🔧 Simulatore di miscelazione manuale (modalità impianto)</h3>
   <form id="simulador-form">
     {% for nombre in productos %}
     <div>
@@ -17,20 +17,16 @@
              min="0" max="100" step="0.01" value="0">
     </div>
     {% endfor %}
-    <button type="submit" class="btn btn-danger mt-3"  style="margin-top: 1.5rem;">Simulare la miscelazione</button>
+    <button type="submit" class="btn btn-danger mt-3" style="margin-top: 1.5rem;">
+      {{ t_menu["simular_mezcla"] }}
+    </button>
   </form>
 
- <div id="resultadoSimulador" class="mt-4" style="margin-top: 1.5rem;"></div>
-
-
+  <div id="resultadoSimulador" class="mt-4" style="margin-top: 1.5rem;"></div>
 </div>
 
- <script src="{{ url_for('static', filename='js/simuladorDosificacion/simuladorDosificacion.js') }}"></script>
- <link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/simuladorDosificacion.css') }}">
-
-
-
-
+<script src="{{ url_for('static', filename='js/simuladorDosificacion/simuladorDosificacion.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/simuladorDosificacion.css') }}">
 {% endblock %}
 
 

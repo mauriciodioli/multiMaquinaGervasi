@@ -1,3 +1,10 @@
+function cerrarmodalAgregarComponente() {
+  document.getElementById('modal-agregar-componente').style.display = 'none';
+}
+function cerrarmodalAgregarComponenteQuimi() {
+  document.getElementById('modalAgregarComponente').style.display = 'none';
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   // Toggle de sección de componentes
   const toggleComponentes = document.getElementById("toggle-componentes");

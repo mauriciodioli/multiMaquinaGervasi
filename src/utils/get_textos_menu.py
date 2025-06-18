@@ -19,6 +19,16 @@ def get_textos_menu(lang="es"):
             "diametro": "Diámetro (mm)",
             
             
+            
+            # Pantalla /pantalla_agregados/modals/modal_agregar_agregado.html
+            "agregar_agregado": "Agregar Agregado",
+            "seleccionar_estado": "Selecciona un estado",
+            "activo": "Activo",
+            "inactivo": "Inactivo",
+            
+            
+            
+            
             # Pantalla  /pantalla_mallas/pantalla_mallas.html
             "titulo_mallas": "Mallas Registradas",
 
@@ -65,6 +75,37 @@ def get_textos_menu(lang="es"):
             "seleccionar_componente": "Seleccionar componente:",
             "elegir_componente": "Seleccioná un componente",
 
+            # Pantalla /autoDensidad/simuladorDosificacion.html
+            "simulador_titulo": "🔧 Simulador de miscelación manual (modo planta)",
+            "simular_mezcla": "Simular la mezcla",
+            "resultado_simulador": "Resultado de la simulación",
+
+            # Pantalla /autoDensidad/densidadFullerMultiple.html
+            "exportar_analisis": "Exportar análisis",
+            "descargar_csv": "Podés descargar el análisis actual como CSV.",
+            "exportar_csv": "Exportar CSV",
+            "titulo_densidad_fuller_multiple": "Cálculo de mezclas múltiples - Curva de Fuller",  # español
+            "agregar_aggregato": "Agregar agregado",
+            "equivalencias_crivelli": "Equivalencias de tamices",
+            "calcular_todas": "Calcular todas",
+            "seleccionar_curva_target": "Seleccionar curva objetivo",
+            "configurar_agregado": "Configurar agregado",
+            "titulo_curva_optima": "Curva Óptima Corregida vs. Fuller y Promedio",
+            "guardar_seleccion": "Guardar selección",
+            "configuracion_parametros": "Configuración de Parámetros",
+            "seleccionar_norma": "Seleccioná el país / norma de referencia:",
+            "norma_argentina": "Argentina (Norma IRAM - Hormigón)",
+            "norma_italiana": "Italia (UNI - Granulometría)",
+            "norma_personalizada": "Personalizado",
+            "dmax": "dmax (mm):",
+            "exponente_n": "Exponente n:",
+            "guardar": "Guardar",
+            "tabla_parametros_tamices": "Tabla de Parámetros Tamices",
+            "tamiz_comercial": "Tamiz comercial",
+
+            
+
+
             
             # Login / Recuperación
             "recuperar_link_texto": "[enlace en tu correo]",
@@ -105,6 +146,16 @@ def get_textos_menu(lang="es"):
             "mostrar_ocultar": "Show / Hide",
             "nombre_comercial": "Trade name",
             "diametro": "Diameter (mm)",
+            
+             # Pantalla /pantalla_agregados/modals/modal_agregar_agregado.html
+            "agregar_agregado": "Add Aggregate",
+            "seleccionar_estado": "Select a state",
+            "activo": "Active",
+            "inactivo": "Inactive",
+
+            
+            
+            
             
             # Pantalla  /pantalla_mallas/pantalla_mallas.html
             "titulo_mallas": "Registered Sieves",
@@ -154,9 +205,38 @@ def get_textos_menu(lang="es"):
             "seleccionar_componente": "Select component:",
             "elegir_componente": "Choose a component",
 
+            # Pantalla /autoDensidad/simuladorDosificacion.html
+            "simulador_titulo": "🔧 Manual Mixing Simulator (plant mode)",
+            "simular_mezcla": "Simulate Mixing",
+            "resultado_simulador": "Simulation Result",
+
+            # Pantalla /autoDensidad/densidadFullerMultiple.html
+            "exportar_analisis": "Export Analysis",
+            "descargar_csv": "You can download the current analysis as CSV.",
+            "exportar_csv": "Export CSV",
+            "titulo_densidad_fuller_multiple": "Calculation of multiple mixes - Fuller curve",  # inglés
+            "agregar_aggregato": "Add Aggregate",
+            "equivalencias_crivelli": "Sieve Equivalences",
+            "calcular_todas": "Calculate All",
+            "seleccionar_curva_target": "Select Target Curve",
+            "configurar_agregado": "Configure Aggregate",
+            "titulo_curva_optima": "Optimal Corrected Curve vs. Fuller and Average",
+            "guardar_seleccion": "Save selection",
+            "configuracion_parametros": "Parameter Configuration",
+            "seleccionar_norma": "Select country / reference standard:",
+            "norma_argentina": "Argentina (IRAM Standard - Concrete)",
+            "norma_italiana": "Italy (UNI - Granulometry)",
+            "norma_personalizada": "Custom",
+            "dmax": "dmax (mm):",
+            "exponente_n": "Exponent n:",
+            "guardar": "Save",
+            "tabla_parametros_tamices": "Sieve Parameter Table",
+            "tamiz_comercial": "Commercial Sieve",
 
 
 
+            
+            
             "recuperar_link_texto": "[link in your email]",
             "recuperar_titulo": "Recover password",
             "recuperar_subtitulo": "Enter your email and we will send you a link.",
@@ -195,6 +275,15 @@ def get_textos_menu(lang="es"):
             "mostrar_ocultar": "Mostra / Nascondi",
             "nombre_comercial": "Nome commerciale",
             "diametro": "Diametro (mm)",
+            
+            
+             # Pantalla /pantalla_agregados/modals/modal_agregar_agregado.html
+            "agregar_agregado": "Aggiungi Aggregato",
+            "seleccionar_estado": "Seleziona uno stato",
+            "activo": "Attivo",
+            "inactivo": "Inattivo",
+
+            
             
             
             # Pantalla  /pantalla_mallas/pantalla_mallas.html
@@ -245,6 +334,38 @@ def get_textos_menu(lang="es"):
             # Pantalla /pantalla_agregados/modals/modal_agregar_comp_quimi.html
             "seleccionar_componente": "Seleziona componente:",
             "elegir_componente": "Scegli un componente",
+
+             # Pantalla /autoDensidad/simuladorDosificacion.html
+            "simulador_titulo": "🔧 Simulatore di miscelazione manuale (modalità impianto)",
+            "simular_mezcla": "Simula Miscelazione",
+            "resultado_simulador": "Risultato della simulazione",
+            
+            
+            
+            # Pantalla /autoDensidad/densidadFullerMultiple.html
+            "exportar_analisis": "Esporta analisi",
+            "descargar_csv": "Puoi scaricare l'analisi attuale in formato CSV.",
+            "exportar_csv": "Esporta CSV",
+            "titulo_densidad_fuller_multiple": "Calcolo di miscele multiple - Curva di Fuller",  # italiano
+            "agregar_aggregato": "Aggiungi Aggregato",
+            "equivalencias_crivelli": "Equivalenze dei crivelli",
+            "calcular_todas": "Calcola tutte",
+            "seleccionar_curva_target": "Seleziona la curva target",
+            "configurar_agregado": "Configura Aggregato",
+            "titulo_curva_optima": "Curva Ottimale Corretta vs. Fuller e Media",
+            "guardar_seleccion": "Salva selezione",
+            "configuracion_parametros": "Configurazione Parametri",
+            "seleccionar_norma": "Seleziona paese / norma di riferimento:",
+            "norma_argentina": "Argentina (Norma IRAM - Calcestruzzo)",
+            "norma_italiana": "Italia (UNI - Granulometria)",
+            "norma_personalizada": "Personalizzato",
+            "dmax": "dmax (mm):",
+            "exponente_n": "Esponente n:",
+            "guardar": "Salva",
+            "tabla_parametros_tamices": "Tabella dei Parametri dei Crivelli",
+            "tamiz_comercial": "Crivello commerciale",
+
+
 
             
             
