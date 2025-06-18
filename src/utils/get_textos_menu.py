@@ -308,6 +308,117 @@ def get_textos_menu(lang="es"):
                 "esp": "A special character (!@#$...)"
             }
         },
+        "pt": {
+                    "home": "🏠 Início",
+                    "administracion": "⚙️ Administração",
+                    "usuarios": "👥 Usuários",
+                    "entidades": "🏢 Entidades",
+                    "fuller": "📊 Fuller",
+                    "test_fuller_multiple": "📐 Teste Fuller Múltiplo",
+                    "simulador_dosificacion": "🧮 Simulador de Dosagem",
+                    "agregados": "🧱 Agregados",
+                    "componentes_quimicos": "⚛️ Componentes Químicos",
+                    "tipos_mezcla": "🔀 Tipos de Mistura",
+                    "mallas": "🕸️ Peneiras",
+                    "informes": "📋 Relatórios",
+                    "descargar_tabla_excel": "⬇️ Baixar tabela Excel",
+                    "macchine": "🛠️ Máquinas",
+                    "ver_macchine": "🔍 Ver Máquinas",
+                    "crud_macchine": "📝 CRUD Máquinas",
+                    "conexion_sqlserver": "🔌 Conexão SQL Server",
+
+                    "titulo_composicion": "Composição dos agregados",
+                    "agregar": "Adicionar",
+                    "nombre": "Nome",
+                    "descripcion": "Descrição",
+                    "entidad": "Entidade",
+                    "estado": "Estado",
+                    "acciones": "Ações",
+                    "perfil": "Meu perfil",
+                    "rol": "Função",
+                    "cambiar_contrasena": "Alterar senha",
+                    "cerrar_sesion": "Encerrar sessão",
+                    "mostrar_ocultar": "Mostrar / Ocultar",
+                    "nombre_comercial": "Nome comercial",
+                    "diametro": "Diâmetro (mm)",
+
+                    "agregar_agregado": "Adicionar Agregado",
+                    "seleccionar_estado": "Selecione um estado",
+                    "activo": "Ativo",
+                    "inactivo": "Inativo",
+
+                    "titulo_mallas": "Peneiras Registradas",
+                    "titulo_tipo_mezcla": "Tipos de Mistura Registrados",
+                    "guardar_cambios": "Salvar Alterações",
+                    "titulo_componentes_quimicos": "Componentes Químicos Registrados",
+                    "tipo_mezcla": "Tipo de Mistura",
+                    "modificar": "Modificar",
+                    "eliminar": "Excluir",
+                    "seleccionar_tipo_mezcla": "Selecione o Tipo de Mistura",
+                    "volver_lista": "Voltar à lista",
+                    "pais": "País",
+                    "idioma": "Idioma",
+                    "mallas_asociadas": "Peneiras associadas",
+                    "porcentaje": "Percentual (%)",
+                    "orden": "Ordem",
+                    "malla": "peneira",
+                    "componente": "componente",
+                    "al_agregado": "ao Agregado",
+                    "seleccionar_malla": "Selecionar peneira:",
+                    "elegir_malla": "Escolha uma peneira",
+                    "cerrar": "Fechar",
+                    "seleccionar_componente": "Selecionar componente:",
+                    "elegir_componente": "Escolha um componente",
+                    "simulador_titulo": "🔧 Simulador manual de mistura (modo planta)",
+                    "simular_mezcla": "Simular mistura",
+                    "resultado_simulador": "Resultado da simulação",
+
+                    "exportar_analisis": "Exportar análise",
+                    "descargar_csv": "Você pode baixar a análise atual como CSV.",
+                    "exportar_csv": "Exportar CSV",
+                    "titulo_densidad_fuller_multiple": "Cálculo de misturas múltiplas – Curva de Fuller",
+                    "agregar_aggregato": "Adicionar agregado",
+                    "equivalencias_crivelli": "Equivalências de peneiras",
+                    "calcular_todas": "Calcular todas",
+                    "seleccionar_curva_target": "Selecionar curva alvo",
+                    "configurar_agregado": "Configurar agregado",
+                    "titulo_curva_optima": "Curva Ótima Corrigida vs. Fuller e Média",
+                    "guardar_seleccion": "Salvar seleção",
+                    "configuracion_parametros": "Configuração de Parâmetros",
+                    "seleccionar_norma": "Selecione país / norma de referência:",
+                    "norma_argentina": "Argentina (Norma IRAM – Concreto)",
+                    "norma_italiana": "Itália (UNI – Granulometria)",
+                    "norma_personalizada": "Personalizado",
+                    "dmax": "dmax (mm):",
+                    "exponente_n": "Expoente n:",
+                    "guardar": "Salvar",
+                    "tabla_parametros_tamices": "Tabela de Parâmetros de Peneiras",
+                    "tamiz_comercial": "Peneira comercial",
+
+                    "recuperar_link_texto": "[link no seu e‑mail]",
+                    "recuperar_titulo": "Recuperar senha",
+                    "recuperar_subtitulo": "Digite seu e-mail e enviaremos um link.",
+                    "recuperar_asunto": "Recuperação de senha",
+                    "recuperar_mensaje": "Clique neste link para redefinir sua senha: {link}",
+                    "enviar": "Enviar",
+                    "error_confirmacion": "As senhas não coincidem ou são inválidas.",
+                    "nueva_pass": "Nova senha",
+                    "confirmar_pass": "Confirmar senha",
+                    "restablecer": "Redefinir",
+                    "token_invalido": "O link é inválido ou expirou.",
+                    "restablecer_ok": "Senha atualizada com sucesso.",
+                    "saludo": "Olá",
+                    "recuperacion": "Recebemos uma solicitação para redefinir sua senha.",
+                    "firma": "Se não foi você, ignore. Se foi, continue em",
+                    "entrar": "Entrar",
+                    "criterios": {
+                        "min": "Mínimo 8 caracteres",
+                        "mayus": "Uma letra maiúscula",
+                        "num": "Um número",
+                        "esp": "Um caractere especial (!@#$...)"
+                    }
+                },
+
         "it": {
             # Pantalla /layouts/layout.html 
             "home": "🏠 Home",
@@ -462,6 +573,7 @@ def get_textos_menu(lang="es"):
                 "esp": "Un carattere speciale (!@#$...)"
             }
         }
+        
     }
 
     return textos.get(lang, textos["es"])
@@ -518,6 +630,7 @@ def get_textos_login(lang="es"):
                 "esp": "A special character (!@#$...)"
             }
         },
+        
         "it": {
             "recuperar_link_texto": "[link nella tua email]",
             "recuperar_titulo": "Recupera password",
@@ -541,7 +654,32 @@ def get_textos_login(lang="es"):
                 "num": "Un numero",
                 "esp": "Un carattere speciale (!@#$...)"
             }
+        },
+        "pt": {
+            "recuperar_link_texto": "[link no seu e-mail]",
+            "recuperar_titulo": "Recuperar senha",
+            "recuperar_subtitulo": "Digite seu e-mail e enviaremos um link.",
+            "recuperar_asunto": "Recuperação de senha",
+            "recuperar_mensaje": "Clique neste link para redefinir sua senha: {link}",
+            "enviar": "Enviar",
+            "error_confirmacion": "As senhas não coincidem ou não atendem aos requisitos.",
+            "nueva_pass": "Nova senha",
+            "confirmar_pass": "Confirmar senha",
+            "restablecer": "Redefinir",
+            "token_invalido": "O link é inválido ou expirou.",
+            "restablecer_ok": "Senha atualizada com sucesso.",
+            "saludo": "Olá",
+            "recuperacion": "Recebemos uma solicitação para redefinir sua senha.",
+            "firma": "Se não foi você, ignore esta mensagem. Se foi, continue em",
+            "entrar": "Entrar",
+            "criterios": {
+                "min": "Mínimo de 8 caracteres",
+                "mayus": "Uma letra maiúscula",
+                "num": "Um número",
+                "esp": "Um caractere especial (!@#$...)"
+            }
         }
+
     }
     return textos_login.get(lang, textos_login["es"])
 
