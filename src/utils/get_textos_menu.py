@@ -2,6 +2,30 @@
 def get_textos_menu(lang="es"):
     textos = {
         "es": {
+            
+             # Pantalla /layouts/layout.html 
+            "home": "🏠 Inicio",
+            "administracion": "⚙️ Administración",
+            "usuarios": "👥 Usuarios",
+            "entidades": "🏢 Entidades",
+            "fuller": "📊 Fuller",
+            "test_fuller_multiple": "🔬 Test Fuller Múltiple",
+            "simulador_dosificacion": "🧮 Simulador Dosificación",
+            "agregados": "🧱 Agregados",
+            "componentes_quimicos": "⚗️ Componentes químicos",
+            "tipos_mezcla": "🔀 Tipos de Mezcla",
+            "mallas": "🕸️ Mallas",
+            "informes": "📋 Informes",
+            "descargar_tabla_excel": "⬇️ Descargar tabla Excel",
+            "macchine": "🛠️ Máquinas",
+            "ver_macchine": "🔍 Ver Máquinas",
+            "crud_macchine": "📝 CRUD Máquinas",
+            "conexion_sqlserver": "🔌 Conexión SQL Server",
+
+            
+            
+            
+            
             # Menú
             "titulo_composicion": "Composición de los agregados",
             "agregar": "Agregar",
@@ -60,7 +84,7 @@ def get_textos_menu(lang="es"):
             "pais": "País",
             "idioma": "Idioma",
             "mallas_asociadas": "Mallas asociadas",
-            "componentes_quimicos": "Componentes químicos",
+            "componentes_quimicos": "⚗️Componentes químicos",
             "porcentaje": "Porcentaje (%)",
             "orden": "Orden",
             "malla": "malla",
@@ -132,6 +156,32 @@ def get_textos_menu(lang="es"):
             }
         },
         "en": {
+            # Pantalla /layouts/layout.html 
+            "home": "🏠 Home",
+            "administracion": "⚙️ Admin",
+            "usuarios": "👥 Users",
+            "entidades": "🏢 Entities",
+            "fuller": "📊 Fuller",
+            "test_fuller_multiple": "🧪 Fuller Multiple Test",
+            "simulador_dosificacion": "🧮 Mixing Simulator",
+            "agregados": "🧱 Aggregates",
+            "componentes_quimicos": "⚗️ Chemical Components",
+            "tipos_mezcla": "🔀 Mix Types",
+            "mallas": "🕸️ Sieves",
+            "informes": "📋 Reports",
+            "descargar_tabla_excel": "⬇️ Download Excel Table",
+            "macchine": "🛠️ Machines",
+            "ver_macchine": "🔍 View Machines",
+            "crud_macchine": "📝 CRUD Machines",
+            "conexion_sqlserver": "🔌 SQL Server Connection",
+
+            
+            
+            
+            
+            
+            
+            
             "titulo_composicion": "Aggregate Composition",
             "agregar": "Add",
             "nombre": "Name",
@@ -261,6 +311,29 @@ def get_textos_menu(lang="es"):
             }
         },
         "it": {
+            # Pantalla /layouts/layout.html 
+            "home": "🏠 Home",
+            "administracion": "⚙️ Amministrazione",
+            "usuarios": "👥 Utenti",
+            "entidades": "🏢 Entità",
+            "fuller": "📊 Fuller",
+            "test_fuller_multiple": "🧪 Test Fuller Multiplo",
+            "simulador_dosificacion": "🧮 Simulatore Dosaggio",
+            "agregados": "🧱 Aggregati",
+            "componentes_quimicos": "⚗️ Componente Chimico",
+            "tipos_mezcla": "🔀 Tipi Miscela",
+            "mallas": "🕸️ Maglie",
+            "informes": "📋 Report",
+            "descargar_tabla_excel": "⬇️ Scarica tabella Excel",
+            "macchine": "🛠️ Macchine",
+            "ver_macchine": "🔍 Vedi Macchine",
+            "crud_macchine": "📝 CRUD Macchine",
+            "conexion_sqlserver": "🔌 Connessione SQL Server",
+
+            
+            
+            
+            
             "titulo_composicion": "Composizione degli aggregati",
             "agregar": "Aggiungi",
             "nombre": "Nome",

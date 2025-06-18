@@ -91,4 +91,10 @@
   #menu-responsive.show {
     display: block;
   }
+  
+}
+
+
+.navigation-main a {
+  text-transform: uppercase;
 }
