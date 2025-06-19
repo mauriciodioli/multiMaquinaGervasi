@@ -640,6 +640,7 @@ def get_textos_login(lang="es"):
             "recuperar_asunto": "Recuperación de contraseña",
             "recuperar_mensaje": "Hacé clic en este enlace para restablecer tu contraseña: {link}",
             "enviar": "Enviar",
+            "error": "Error interno del servidor.",  # es
             "error_confirmacion": "Las contraseñas no coinciden o no cumplen requisitos.",
             "nueva_pass": "Nueva contraseña",
             "confirmar_pass": "Confirmar contraseña",
@@ -664,6 +665,7 @@ def get_textos_login(lang="es"):
             "recuperar_asunto": "Password recovery",
             "recuperar_mensaje": "Click this link to reset your password: {link}",
             "enviar": "Send",
+            "error": "Internal server error." ,      # en
             "error_confirmacion": "Passwords do not match or are invalid.",
             "nueva_pass": "New password",
             "confirmar_pass": "Confirm password",
@@ -689,6 +691,7 @@ def get_textos_login(lang="es"):
             "recuperar_asunto": "Recupero password",
             "recuperar_mensaje": "Clicca su questo link per reimpostare la tua password: {link}",
             "enviar": "Invia",
+            "error": "Errore interno del server.",   # it
             "error_confirmacion": "Le password non coincidono o non sono valide.",
             "nueva_pass": "Nuova password",
             "confirmar_pass": "Conferma password",
@@ -713,6 +716,7 @@ def get_textos_login(lang="es"):
             "recuperar_asunto": "Recuperação de senha",
             "recuperar_mensaje": "Clique neste link para redefinir sua senha: {link}",
             "enviar": "Enviar",
+            "error": "Erro interno do servidor.",    # pt
             "error_confirmacion": "As senhas não coincidem ou não atendem aos requisitos.",
             "nueva_pass": "Nova senha",
             "confirmar_pass": "Confirmar senha",
