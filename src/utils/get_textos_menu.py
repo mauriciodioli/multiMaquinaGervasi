@@ -736,8 +736,6 @@ def get_textos_login(lang="es"):
 
 
 
-
-
 def obtener_textos_confirmacion(lang):
     textos = {
         "es": {
@@ -760,32 +758,76 @@ def obtener_textos_confirmacion(lang):
             "registro": "Grazie per esserti registrato su Gervasi.",
             "confirma": "Conferma il tuo account cliccando sul seguente link:",
             "accion": "Una volta confermato, puoi accedere da"
+        },
+        "pt": {
+            "asunto": "Confirme sua conta",
+            "saludo": "Olá 👋",
+            "registro": "Obrigado por se registrar na Gervasi.",
+            "confirma": "Confirme sua conta clicando no link abaixo:",
+            "accion": "Uma vez confirmada, você pode fazer login em"
         }
     }
     return textos.get(lang, textos["es"])
 
 
-
 def get_textos_confirmacion(lang):
+    base = {
+        "titulo": "Cuenta confirmada",
+        "mensaje": "Tu cuenta ha sido activada con éxito.",
+        "boton": "Ir al inicio",
+        "redireccion": "Serás redirigido en"
+    }
     textos = {
-            "es": {
-                "titulo": "Cuenta confirmada",
-                "mensaje": "Tu cuenta ha sido activada con éxito.",
-                "boton": "Ir al inicio",
-                "redireccion": "Serás redirigido en"
-            },
-            "en": {
-                "titulo": "Account confirmed",
-                "mensaje": "Your account has been successfully activated.",
-                "boton": "Go to homepage",
-                "redireccion": "You will be redirected in"
-            },
-            "it": {
-                "titulo": "Account confermato",
-                "mensaje": "Il tuo account è stato attivato con successo.",
-                "boton": "Vai alla home",
-                "redireccion": "Verrai reindirizzato tra"
-            }
+        "es": base,
+        "en": {
+            **base,
+            "titulo": "Account confirmed",
+            "mensaje": "Your account has been successfully activated.",
+            "boton": "Go to homepage",
+            "redireccion": "You will be redirected in"
+        },
+        "it": {
+            **base,
+            "titulo": "Account confermato",
+            "mensaje": "Il tuo account è stato attivato con successo.",
+            "boton": "Vai alla home",
+            "redireccion": "Verrai reindirizzato tra"
+        },
+        "pt": {
+            **base,
+            "titulo": "Conta confirmada",
+            "mensaje": "Sua conta foi ativada com sucesso.",
+            "boton": "Ir para a página inicial",
+            "redireccion": "Você será redirecionado em"
         }
-    return textos.get(lang, textos["es"])
+    }
+    return textos.get(lang, base)
 
+def get_textos_menu_confirmacion_entidad(lang):
+    textos = {
+        "es": {
+            "titulo": "Seleccionar Entidad",
+            "selecciona": "Selecciona tu entidad",
+            "entidad": "Entidad",
+            "confirmar": "Confirmar"
+        },
+        "en": {
+            "titulo": "Select Entity",
+            "selecciona": "Select your entity",
+            "entidad": "Entity",
+            "confirmar": "Confirm"
+        },
+        "it": {
+            "titulo": "Seleziona Entità",
+            "selecciona": "Seleziona la tua entità",
+            "entidad": "Entità",
+            "confirmar": "Conferma"
+        },
+        "pt": {
+            "titulo": "Selecionar Entidade",
+            "selecciona": "Selecione sua entidade",
+            "entidad": "Entidade",
+            "confirmar": "Confirmar"
+        }
+    }
+    return textos.get(lang, textos["es"])

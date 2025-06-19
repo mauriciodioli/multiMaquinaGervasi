@@ -12,7 +12,7 @@ from src.model.usuario import Usuario  # ajustá si tenés otro path
 
 import secrets  # para token seguro
 from datetime import timedelta
-from src.utils.get_textos_menu  import get_textos_menu
+from src.utils.get_textos_menu  import get_textos_menu,get_textos_menu_confirmacion_entidad
 
 crud_usuario = Blueprint("crud_usuario", __name__)
 
@@ -212,17 +212,20 @@ def seleccionar_entidad():
         return redirect("/pantalla_densidad_fuller_multiple/")
 
     pais_cookie = request.cookies.get("pais")
-    entidades_disponibles = db.session.query(EntidadContexto).filter_by(pais=pais_cookie).all()
-    language = request.cookies.get("language", "es")  # 'es' por defecto
+    if pais_cookie:
+        entidades_disponibles = db.session.query(EntidadContexto).filter_by(pais=pais_cookie).all()
+    else:
+        entidades_disponibles = db.session.query(EntidadContexto).all()
 
+    lang = request.cookies.get("lang", "es")
+    t_menu = get_textos_menu_confirmacion_entidad(lang)
     return render_template(
-            "AutenticacionLogin/seleccionar_entidad.html",
-            usuario=usuario,
-            entidades=entidades_disponibles,
-            language=language
-        )
-
-
+        "AutenticacionLogin/seleccionar_entidad.html",
+        usuario=usuario,
+        entidades=entidades_disponibles,
+        t_menu=t_menu,
+        language=lang  # para <html lang="{{ language }}">
+    )
 
 
 

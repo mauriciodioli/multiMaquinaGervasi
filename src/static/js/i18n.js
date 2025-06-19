@@ -1,7 +1,7 @@
 // i18n.js — sistema simple de internacionalización frontend
 
 const I18N = (() => {
-  const mensajes = {
+  const mensajes_verifica_email = {
     es: {
       verificar_titulo: "📬 ¡Revisá tu correo!",
       verificar_mensaje: "Te enviamos un enlace de confirmación a tu casilla de correo.",
@@ -227,11 +227,25 @@ const mensajes_registrarse = {
 
   function t(key) {
     const lang = getLang();
-    return mensajes[lang]?.[key] || mensajes["es"]?.[key] || `[${key}]`;
+    // Soporte para claves tipo "verificar.titulo"
+    if (key.startsWith("verificar.")) {
+      const subkey = "verificar_" + key.split(".")[1];
+      return mensajes_verifica_email[lang]?.[subkey] || mensajes_verifica_email["es"]?.[subkey] || `[${key}]`;
+    }
+    if (key.startsWith("login.")) {
+      const subkey = key.split(".")[1];
+      return mensajes_login[lang]?.[subkey] || mensajes_login["es"]?.[subkey] || `[${key}]`;
+    }
+    if (key.startsWith("registrarse.")) {
+      const subkey = key.split(".")[1];
+      return mensajes_registrarse[lang]?.[subkey] || mensajes_registrarse["es"]?.[subkey] || `[${key}]`;
+    }
+    // Por defecto busca en mensajes_login
+    return mensajes_login[lang]?.[key] || mensajes_login["es"]?.[key] || `[${key}]`;
   }
-
   return {
   t,
+  mensajes_verifica_email,
   mensajes_login, // 👈 lo exponés
   mensajes_registrarse, // 👈 lo exponés
   getLang
