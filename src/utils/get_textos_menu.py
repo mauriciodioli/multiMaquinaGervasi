@@ -20,10 +20,24 @@ def get_textos_menu(lang="es"):
             "ver_macchine": "🔍 Ver Máquinas",
             "crud_macchine": "📝 CRUD Máquinas",
             "conexion_sqlserver": "🔌 Conexión SQL Server",
+            
+            
+            
+            
+            # Pantalla /pantalla_usuarios/perfil_usuario.html
+            "perfil_titulo": "Mi perfil",
+            "perfil_correo": "Correo electrónico",
+            "perfil_rol": "Rol general",
+            "perfil_pais": "País",
+            "perfil_idioma": "Idioma preferido",
+            "perfil_estado": "Cuenta activa",
+            "perfil_entidades": "Entidades asociadas",
+            "perfil_rol_entidad": "Rol en la entidad",
+            "perfil_sin_entidades": "No hay entidades asociadas.",
+            "perfil_analisis": "Últimos análisis granulométricos",
+            "perfil_sin_analisis": "No hay análisis registrados.",
 
-            
-            
-            
+           
             
             # Menú
             "titulo_composicion": "Composición de los agregados",
@@ -175,8 +189,19 @@ def get_textos_menu(lang="es"):
             "conexion_sqlserver": "🔌 SQL Server Connection",
 
             
-            
-            
+            # Pantalla /pantalla_usuarios/perfil_usuario.html
+            "perfil_titulo": "My profile",
+            "perfil_correo": "Email address",
+            "perfil_rol": "Global role",
+            "perfil_pais": "Country",
+            "perfil_idioma": "Preferred language",
+            "perfil_estado": "Account status",
+            "perfil_entidades": "Associated entities",
+            "perfil_rol_entidad": "Role in entity",
+            "perfil_sin_entidades": "No associated entities.",
+            "perfil_analisis": "Latest granulometric analyses",
+            "perfil_sin_analisis": "No analyses recorded.",
+
             
             
             
@@ -326,6 +351,20 @@ def get_textos_menu(lang="es"):
                     "ver_macchine": "🔍 Ver Máquinas",
                     "crud_macchine": "📝 CRUD Máquinas",
                     "conexion_sqlserver": "🔌 Conexão SQL Server",
+                    
+                    # Pantalla /pantalla_usuarios/perfil_usuario.html
+                    "perfil_titulo": "Meu perfil",
+                    "perfil_correo": "E-mail",
+                    "perfil_rol": "Função global",
+                    "perfil_pais": "País",
+                    "perfil_idioma": "Idioma preferido",
+                    "perfil_estado": "Estado da conta",
+                    "perfil_entidades": "Entidades associadas",
+                    "perfil_rol_entidad": "Função na entidade",
+                    "perfil_sin_entidades": "Nenhuma entidade associada.",
+                    "perfil_analisis": "Últimas análises granulométricas",
+                    "perfil_sin_analisis": "Nenhuma análise registrada.",
+
 
                     "titulo_composicion": "Composição dos agregados",
                     "agregar": "Adicionar",
@@ -439,7 +478,19 @@ def get_textos_menu(lang="es"):
             "crud_macchine": "📝 CRUD Macchine",
             "conexion_sqlserver": "🔌 Connessione SQL Server",
 
-            
+            # Pantalla /pantalla_usuarios/perfil_usuario.html
+            "perfil_titulo": "Il mio profilo",
+            "perfil_correo": "Indirizzo e-mail",
+            "perfil_rol": "Ruolo globale",
+            "perfil_pais": "Paese",
+            "perfil_idioma": "Lingua preferita",
+            "perfil_estado": "Stato dell'account",
+            "perfil_entidades": "Entità associate",
+            "perfil_rol_entidad": "Ruolo nell'entità",
+            "perfil_sin_entidades": "Nessuna entità associata.",
+            "perfil_analisis": "Ultime analisi granulometriche",
+            "perfil_sin_analisis": "Nessuna analisi registrata.",
+
             
             
             
@@ -682,4 +733,59 @@ def get_textos_login(lang="es"):
 
     }
     return textos_login.get(lang, textos_login["es"])
+
+
+
+
+
+def obtener_textos_confirmacion(lang):
+    textos = {
+        "es": {
+            "asunto": "Confirma tu cuenta",
+            "saludo": "Hola 👋",
+            "registro": "Gracias por registrarte en Gervasi.",
+            "confirma": "Confirmá tu cuenta haciendo clic en el siguiente enlace:",
+            "accion": "Una vez confirmada, podés iniciar sesión en"
+        },
+        "en": {
+            "asunto": "Confirm your account",
+            "saludo": "Hi 👋",
+            "registro": "Thanks for signing up with Gervasi.",
+            "confirma": "Please confirm your account by clicking the link below:",
+            "accion": "Once confirmed, you can log in at"
+        },
+        "it": {
+            "asunto": "Conferma il tuo account",
+            "saludo": "Ciao 👋",
+            "registro": "Grazie per esserti registrato su Gervasi.",
+            "confirma": "Conferma il tuo account cliccando sul seguente link:",
+            "accion": "Una volta confermato, puoi accedere da"
+        }
+    }
+    return textos.get(lang, textos["es"])
+
+
+
+def get_textos_confirmacion(lang):
+    textos = {
+            "es": {
+                "titulo": "Cuenta confirmada",
+                "mensaje": "Tu cuenta ha sido activada con éxito.",
+                "boton": "Ir al inicio",
+                "redireccion": "Serás redirigido en"
+            },
+            "en": {
+                "titulo": "Account confirmed",
+                "mensaje": "Your account has been successfully activated.",
+                "boton": "Go to homepage",
+                "redireccion": "You will be redirected in"
+            },
+            "it": {
+                "titulo": "Account confermato",
+                "mensaje": "Il tuo account è stato attivato con successo.",
+                "boton": "Vai alla home",
+                "redireccion": "Verrai reindirizzato tra"
+            }
+        }
+    return textos.get(lang, textos["es"])
 

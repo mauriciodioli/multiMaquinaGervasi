@@ -1,0 +1,80 @@
+{% extends "layouts/layout.html" %}
+
+{% block content %}
+{% set paises = {
+  "ES": "🇪🇸 España",
+  "IT": "🇮🇹 Italia",
+  "PT": "🇵🇹 Portugal",
+  "EN": "🇺🇸 Estados Unidos",
+  "FR": "🇫🇷 Francia",
+  "DE": "🇩🇪 Alemania",
+  "PL": "🇵🇱 Polonia",
+  "AR": "🇦🇷 Argentina"
+} %}
+<div class="container" style="max-width: 600px; margin: 40px auto;">
+
+  <h2 class="mb-4">{{ t_menu["perfil_titulo"] or "Mi perfil" }}</h2>
+
+  <div class="mb-3">
+    <label class="form-label">📧 {{ t_menu["perfil_correo"] or "Correo electrónico" }}</label>
+    <div class="form-control">{{ usuario.correo_electronico }}</div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">👤 {{ t_menu["perfil_rol"] or "Rol general" }}</label>
+    <div class="form-control">{{ usuario.roll|capitalize }}</div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">🌍 {{ t_menu["perfil_pais"] or "País" }}</label>
+     <div class="form-control">
+        {{ paises.get(pais.upper(), pais) }}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">🌐 {{ t_menu["perfil_idioma"] or "Idioma preferido" }}</label>
+    <div class="form-control">{{ lang or "es" }}</div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">🟢 {{ t_menu["perfil_estado"] or "Cuenta activa" }}</label>
+    <div class="form-control">
+      {% if usuario.activo %}✔️ Activa{% else %}❌ Inactiva{% endif %}
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <h4 class="mb-3">{{ t_menu["perfil_entidades"] or "Entidades asociadas" }}</h4>
+  {% if entidades %}
+    {% for entidad, usuario_entidad in entidades %}
+      <div class="mb-3 p-3 border rounded bg-light">
+        <strong>{{ entidad.nombre }}</strong> <small>({{ entidad.tipo }})</small><br>
+        <span class="text-muted">{{ entidad.descripcion }}</span><br>
+        <span>🔐 {{ t_menu["perfil_rol_entidad"] or "Rol en la entidad" }}: <strong>{{ usuario_entidad.rol|capitalize }}</strong></span>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="text-muted">{{ t_menu["perfil_sin_entidades"] or "No hay entidades asociadas." }}</p>
+  {% endif %}
+
+  <hr class="my-4">
+
+  <h4 class="mb-3">{{ t_menu["perfil_analisis"] or "Últimos análisis granulométricos" }}</h4>
+  {% if analisis %}
+    <ul class="list-group">
+      {% for a in analisis %}
+        <li class="list-group-item">
+          📅 {{ a.fecha.strftime('%d/%m/%Y') }} — <strong>{{ a.descripcion }}</strong>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted">{{ t_menu["perfil_sin_analisis"] or "No hay análisis registrados." }}</p>
+  {% endif %}
+
+</div>
+
+
+{% endblock %}

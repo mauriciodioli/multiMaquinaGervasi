@@ -2,9 +2,14 @@ from flask import Blueprint, request, jsonify, render_template,make_response, re
 
 from src.model.entidad_contexto import EntidadContexto, EntidadContextoSchema
 from src.model.mixFamiliari.usuario_entidad import UsuarioEntidad
+from src.model.sesionUsuario import SesionUsuario
+
+from src.model.mixFamiliari.agregado import Agregado
+from src.model.mixFamiliari.analisis_granulometrico import AnalisisGranulometrico
 from utils.db import db
 from sqlalchemy.exc import SQLAlchemyError
 from src.model.usuario import Usuario  # ajustá si tenés otro path
+
 import secrets  # para token seguro
 from datetime import timedelta
 from src.utils.get_textos_menu  import get_textos_menu
@@ -131,6 +136,10 @@ def eliminar_usuario(id):
         if not usuario:
             return jsonify(success=False, error="Usuario no encontrado"), 404
 
+        # Borrar sesiones asociadas
+        db.session.query(SesionUsuario).filter_by(usuario_id=usuario.id).delete()
+
+        # Ahora sí, eliminar usuario
         db.session.delete(usuario)
         db.session.commit()
         return jsonify(success=True)
@@ -139,6 +148,7 @@ def eliminar_usuario(id):
         return jsonify(success=False, error=str(e)), 500
     finally:
         db.session.close()
+
 
 
 @crud_usuario.route('/administracion_crud_usuario_modificar_usuario/<int:id>', methods=['PUT'])
@@ -211,3 +221,47 @@ def seleccionar_entidad():
             entidades=entidades_disponibles,
             language=language
         )
+
+
+
+
+
+@crud_usuario.route('/perfil_usuario/')
+def perfil_usuario():
+    lang = request.cookies.get("lang", "es")
+    t_menu = get_textos_menu(lang)
+    
+    user_id = request.cookies.get("user_id")
+    pais = request.cookies.get("pais", "—")  # 👈 Por defecto guion si no viene
+    
+    usuario = db.session.query(Usuario).filter_by(id=user_id).first()
+
+    entidades = (
+        db.session.query(EntidadContexto, UsuarioEntidad)
+        .join(UsuarioEntidad, EntidadContexto.id == UsuarioEntidad.entidad_id)
+        .filter(UsuarioEntidad.usuario_id == user_id)
+        .all()
+    )
+
+    agregados = Agregado.query.filter_by(usuario_id=user_id).all()
+    
+    analisis = (
+        AnalisisGranulometrico.query
+        .filter_by(usuario_id=user_id)
+        .order_by(AnalisisGranulometrico.fecha.desc())
+        .limit(10)
+        .all()
+    )
+
+    return render_template(
+        'pantalla_usuarios/perfil_usuario.html',
+        usuario=usuario,
+        entidades=entidades,
+        agregados=agregados,
+        analisis=analisis,
+        t_menu=t_menu,
+        pais=pais,  # 👈 lo pasás al HTML
+        lang=lang  # 👈 lo pasás al HTML
+    )
+
+

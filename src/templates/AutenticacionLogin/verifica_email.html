@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title id="titulo-pagina">Verifica tu correo</title>
+  <title>Verifica tu correo</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/autenticacion/login.css') }}">
   <style>
     .login-container {
@@ -44,16 +44,6 @@
       text-align: center;
       margin-top: 0.5rem;
     }
-    #link-login {
-  font-weight: bold;
-  color: #c20000;
-  text-decoration: none;
-}
-
-#link-login:hover {
-  text-decoration: underline;
-}
-
   </style>
 </head>
 <body>
@@ -61,15 +51,18 @@
     <h2 id="verifica-titulo">📬 ¡Revisá tu correo!</h2>
     <p id="verifica-texto">Te enviamos un enlace de confirmación a tu casilla de correo.</p>
     <p id="verifica-link">
-        📩 Hacé clic en el enlace de confirmación que te enviamos, y luego <a href="/" id="link-login">iniciá sesión</a>.
+      📩 Hacé clic en el enlace de confirmación que te enviamos, y luego <a href="/" id="link-login">iniciá sesión</a>.
+    </p>
+    <p id="reenviar-texto">
+      <span id="reenviar-label">¿No lo recibiste?</span> <button id="btn-reenviar">Reenviar correo</button>
     </p>
 
-    <p id="reenviar-texto">
-      ¿No lo recibiste? <button id="btn-reenviar">Reenviar correo</button>
-    </p>
     <div id="mensaje-reenvio"></div>
   </div>
 
+  <!-- ✅ Primero la librería i18n -->
+  <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+  <!-- ✅ Después tu script que la usa -->
   <script src="{{ url_for('static', filename='js/autenticacion/verifica_email.js') }}"></script>
 </body>
 </html>

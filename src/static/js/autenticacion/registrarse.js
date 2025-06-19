@@ -1,4 +1,4 @@
-
+//workspaces/multiMaquinaGervasi/src/static/js/autenticacion/registrarse.js
 
 
 function aplicarIdioma(lang) {

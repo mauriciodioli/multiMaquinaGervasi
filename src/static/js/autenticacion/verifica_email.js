@@ -1,14 +1,13 @@
-
-
-
 document.addEventListener("DOMContentLoaded", () => {
-  const lang = localStorage.getItem("lang") || "es";
-  const t = mensajes[lang] || mensajes["es"];
+  const t = I18N.t;
 
-  document.querySelector("h2").textContent = t.titulo;
-  document.querySelectorAll("p")[0].textContent = t.mensaje;
-  document.querySelectorAll("p")[1].innerHTML = `👉 ${t.instruccion}`;
-  document.getElementById("btn-reenviar").textContent = t.reenviar;
+  document.title = t("verificar.titulo");
+  document.getElementById("verifica-titulo").textContent = t("verificar.titulo");
+  document.getElementById("verifica-texto").textContent = t("verificar.mensaje");
+  document.getElementById("verifica-link").innerHTML =
+    `📩 ${t("verificar.instruccion")} <a href="/" id="link-login">${t("verificar.link")}</a>.`;
+  document.getElementById("reenviar-label").textContent = t("verificar.reenviar_label");
+  document.getElementById("btn-reenviar").textContent = t("verificar.boton");
 
   document.getElementById("btn-reenviar").addEventListener("click", () => {
     const correo = localStorage.getItem("registro_email");
@@ -22,45 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(res => res.json())
       .then(data => {
         document.getElementById("mensaje-reenvio").textContent =
-          data.success ? t.reenviado : (data.error || t.error);
+          data.success ? t("verificar.exito") : (data.error || t("verificar.error"));
       });
   });
 });
-
-
-
-
-const mensajes = {
-  es: {
-    titulo: "📬 ¡Revisá tu correo!",
-    mensaje: "Te enviamos un enlace de confirmación a tu casilla de correo.",
-    instruccion: "Hacelo clic y luego iniciá sesión.",
-    reenviar: "📨 Reenviar correo",
-    reenviado: "Correo reenviado correctamente.",
-    error: "No se pudo reenviar el correo."
-  },
-  en: {
-    titulo: "📬 Check your email!",
-    mensaje: "We sent you a confirmation link.",
-    instruccion: "Click it and then log in.",
-    reenviar: "📨 Resend email",
-    reenviado: "Email resent successfully.",
-    error: "Could not resend email."
-  },
-  it: {
-    titulo: "📬 Controlla la tua email!",
-    mensaje: "Ti abbiamo inviato un link di conferma.",
-    instruccion: "Clicca sul link e poi accedi.",
-    reenviar: "📨 Invia di nuovo",
-    reenviado: "Email inviata nuovamente.",
-    error: "Impossibile inviare di nuovo l'email."
-  },
-  pt: {
-    titulo: "📬 Verifique seu e-mail!",
-    mensaje: "Enviamos um link de confirmação para o seu e-mail.",
-    instruccion: "Clique no link e depois faça login.",
-    reenviar: "📨 Reenviar e-mail",
-    reenviado: "E-mail reenviado com sucesso.",
-    error: "Não foi possível reenviar o e-mail."
-  }
-};

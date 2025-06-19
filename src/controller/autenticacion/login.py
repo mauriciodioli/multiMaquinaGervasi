@@ -11,7 +11,7 @@ import os
 from src.utils.extensions import mail
 from src.utils.auth import current_user
 
-from src.utils.get_textos_menu  import get_textos_menu,get_textos_login
+from src.utils.get_textos_menu  import get_textos_menu,get_textos_login, obtener_textos_confirmacion, get_textos_confirmacion
 
 
 
@@ -399,35 +399,43 @@ def registrar_usuario():
             db.session.close()
 
 
+
+
 @login.route("/confirmar/<token>")
 def confirmar_correo(token):
     try:
+        # Deserializar token
         s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         correo = s.loads(token, salt='confirmacion-correo', max_age=3600)
 
+        # Buscar usuario
         usuario = db.session.query(Usuario).filter_by(correo_electronico=correo).first()
         if not usuario:
             return "Usuario no encontrado", 404
 
+        # Activar cuenta si estaba inactiva
         if not usuario.activo:
             usuario.activo = True
-            db.session.commit()
-            
-        # ✅ Generar nueva sesión activa
+
+        # Generar nuevos tokens
         token = secrets.token_urlsafe(32)
         refresh_token = secrets.token_urlsafe(64)
         usuario.token = token
         usuario.refresh_token = refresh_token
+
+        # Guardar valores ANTES del commit (para evitar DetachedInstanceError)
+        user_id = usuario.id
+        lang = request.cookies.get("lang", "es")
+
+        # Commit de todos los cambios
         db.session.commit()
 
-        registrar_sesion(usuario, token, request)
-        lang = request.cookies.get("lang", "es")
+        # Preparar textos y respuesta
         textos = get_textos_confirmacion(lang)
-
         response = make_response(render_template("AutenticacionLogin/confirmado.html", t=textos))
         response.set_cookie("token", token, httponly=True, samesite="Strict", secure=False, max_age=3600)
         response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Strict", secure=False, max_age=3600 * 24 * 7)
-        response.set_cookie("user_id", str(usuario.id), max_age=3600 * 24 * 7)
+        response.set_cookie("user_id", str(user_id), max_age=3600 * 24 * 7)
         response.set_cookie("lang", lang, max_age=3600 * 24 * 7)
 
         return response
@@ -437,6 +445,8 @@ def confirmar_correo(token):
 
     finally:
         db.session.close()
+
+
 
 
 
@@ -491,60 +501,9 @@ def verifica_email():
 
 
 
-def obtener_textos_confirmacion(lang):
-    textos = {
-        "es": {
-            "asunto": "Confirma tu cuenta",
-            "saludo": "Hola 👋",
-            "registro": "Gracias por registrarte en Gervasi.",
-            "confirma": "Confirmá tu cuenta haciendo clic en el siguiente enlace:",
-            "accion": "Una vez confirmada, podés iniciar sesión en"
-        },
-        "en": {
-            "asunto": "Confirm your account",
-            "saludo": "Hi 👋",
-            "registro": "Thanks for signing up with Gervasi.",
-            "confirma": "Please confirm your account by clicking the link below:",
-            "accion": "Once confirmed, you can log in at"
-        },
-        "it": {
-            "asunto": "Conferma il tuo account",
-            "saludo": "Ciao 👋",
-            "registro": "Grazie per esserti registrato su Gervasi.",
-            "confirma": "Conferma il tuo account cliccando sul seguente link:",
-            "accion": "Una volta confermato, puoi accedere da"
-        }
-    }
-    return textos.get(lang, textos["es"])
 
 
 
-
-
-
-
-def get_textos_confirmacion(lang):
-    textos = {
-            "es": {
-                "titulo": "Cuenta confirmada",
-                "mensaje": "Tu cuenta ha sido activada con éxito.",
-                "boton": "Ir al inicio",
-                "redireccion": "Serás redirigido en"
-            },
-            "en": {
-                "titulo": "Account confirmed",
-                "mensaje": "Your account has been successfully activated.",
-                "boton": "Go to homepage",
-                "redireccion": "You will be redirected in"
-            },
-            "it": {
-                "titulo": "Account confermato",
-                "mensaje": "Il tuo account è stato attivato con successo.",
-                "boton": "Vai alla home",
-                "redireccion": "Verrai reindirizzato tra"
-            }
-        }
-    return textos.get(lang, textos["es"])
 
 
 
