@@ -95,6 +95,7 @@ window.onclick = function(event) {
     const idMaquina = summaryElement.getAttribute('data-id');
     const userMaquina = summaryElement.getAttribute('data-user_id');
     const nombreMaquina = summaryElement.getAttribute('data-nombre');
+    const nombreTablaRaw = summaryElement.getAttribute('data-nombre_tablas');
    
     const origen = summaryElement.dataset.ruta;
     const nombre_archivo = summaryElement.dataset.nombre_db;
@@ -107,18 +108,30 @@ window.onclick = function(event) {
     const passwordSqlServer = localStorage.getItem('pasSqlServer'); // Cambia esto si es necesario
     console.log(ip);  // 👉 "192.168.1.38".
     console.log(port); // 👉 "1433".
-    const tablas = ["Lamiere_Tempi", "Lamiere_Icone"];
+   // 🧠 Parsear el JSON que viene como string
+    let tablas = [];
+    try {
+      const parsed = JSON.parse(nombreTablaRaw);
+      if (parsed && Array.isArray(parsed.tablas)) {
+        tablas = parsed.tablas;
+      }
+    } catch (e) {
+      console.error("❌ nombreTabla no es un JSON válido:", e);
+    }
+    // Ahora podés usar `tablas` normalmente
+    console.log("Tablas seleccionadas:", tablas);
+    debugger;
     //const origen = '\\\\192.168.1.38\\c\\SiConfig\\Data\\DB';
     //const origen = 'C:\\Users\\Tecnico03\\Downloads';
     const destino = 'C:\\Users\\Tecnico03\\Documents\\ProyectoMultiMaquina';
     
     const confirmacion = confirm('Sei sicuro di voler inviare i dati: ' + nombre_archivo + '?');
-  
+    
     if (confirmacion) {
       document.getElementById("spinner").style.display = "flex"; // 👈 Mostrar spinner
 
       const params = new URLSearchParams();
-      params.append('nombreMaquina', nombreMaquina);
+      params.append('nombreMaquina', 'CNC_DATA');
       params.append('nombre_archivo', nombre_archivo);
       params.append('origen', origen);
       params.append('destino', destino);
@@ -212,11 +225,12 @@ window.onclick = function(event) {
             summary.setAttribute("data-id", maquina.id);
             summary.setAttribute("data-user_id", maquina.user_id);
             summary.setAttribute('data-ruta', maquina.ruta);
+            summary.setAttribute('data-nombre_tablas', maquina.nombreTabla);
             summary.style.cursor = "pointer"; // Para que el nombre de la máquina sea clickeable
             summary.dataset.ruta = maquina.ruta;
             summary.dataset.nombre_db = maquina.nombreDb;
             summary.dataset.estado = maquina.estado;
-
+            summary.dataset.tablas = JSON.stringify(maquina.tablas); // Convertir a JSON si es necesario
             // Asignamos el contenido HTML dentro del summary
             summary.innerHTML = `${maquina.nombre} <i class="fas fa-cog icono-clic" onclick="Copiar_Origen_Destino_fuera_Data_Base(this, event)"></i>`;
 
@@ -230,6 +244,7 @@ window.onclick = function(event) {
                 const dataUserId = clickedSummary.getAttribute('data-user_id');
                 const dataRuta = clickedSummary.getAttribute('data-ruta');
                 const dataNombreDb = clickedSummary.getAttribute('data-nombre_db');
+                const dataTablas = clickedSummary.getAttribute('data-tablas');
                 const dataEstado = clickedSummary.getAttribute('data-estado');
           
                 // Log para verificar los datos obtenidos
@@ -238,6 +253,7 @@ window.onclick = function(event) {
                 console.log('data-user_id:', dataUserId);
                 console.log('data-ruta:', dataRuta);
                 console.log('data-nombre_db:', dataNombreDb);
+                console.log('data-tablas:', dataTablas);
                 console.log('data-estado:', dataEstado);
                 // Al hacer clic en el <summary> (por ejemplo, en el evento 'dblclick' o 'click')
                 localStorage.setItem("nombre_maquina", dataNombre);

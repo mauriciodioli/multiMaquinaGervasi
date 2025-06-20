@@ -23,9 +23,9 @@
                         <th>ID</th>
                         <th>Account utente</th>                        
                         <th>Nome</th>
-                        <th>Percorso di origine</th>
-                        
-                        <th>Nome del database</th>                       
+                        <th>Percorso di origine</th>                        
+                        <th>Nome del database</th>  
+                        <th>Tavoli</th>                       
                         <th>Settore</th>
                         <th>Stato</th>
                         <th>Potenza</th>
@@ -42,7 +42,8 @@
                         <td>{{ maquina.userCuenta }}</td>                      
                         <td>{{ maquina.nombre }}</td>
                         <td>{{ maquina.ruta }}</td>                     
-                        <td>{{ maquina.nombreDb }}</td>                       
+                        <td>{{ maquina.nombreDb }}</td>   
+                        <td>{{ maquina.nombreTabla }}</td>                       
                         <td>{{ maquina.sector }}</td>
                         <td>{{ maquina.estado }}</td>
                         <td>{{ maquina.potencia }}</td>
@@ -63,6 +64,7 @@
                                   data-nombre="{{ maquina.nombre }}"
                                   data-ruta="{{ maquina.ruta }}"
                                   data-nombre-db="{{ maquina.nombreDb }}"
+                                  data-nombre-tabla="{{ maquina.nombreTabla }}"
                                   data-sector="{{ maquina.sector }}"
                                   data-estado="{{ maquina.estado }}"
                                   data-potencia="{{ maquina.potencia }}"
@@ -128,6 +130,10 @@
                 <label class="form-label">Nome DB</label>
                 <input type="text" class="form-control" name="nombreDb">
               </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Tavoli</label>              
+                <textarea class="form-control mb-2" id="nombreTabla" name="nombreTabla" placeholder='{"tablas": ["tabla1", "tabla2"]}' rows="2"></textarea>
+              </div>
             <!--   <div class="col-md-6 mb-3">
                 <label class="form-label">Selector</label>
                 <input type="text" class="form-control" name="selector">
@@ -179,10 +185,7 @@
 
 
 
-
-
-
-
+<!--MODAL MODIFICAR -->
 <div class="modal fade" id="crud-modal-modificar" tabindex="-1" aria-labelledby="crud-modal-modificar-label" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -190,27 +193,47 @@
                 <h5 class="modal-title" id="crud-modal-modificar-label">Modifica macchina</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <div class="modal-body">
+                       <div class="modal-body">
                 <form id="form-modificar-maquina">
                     <input type="hidden" id="maquina-id-modificar" name="id">
-                    
-                    <input type="text" class="form-control mb-2" name="userCuenta" placeholder="Usuario Cuenta">
-                    <input type="text" class="form-control mb-2" name="nombre" placeholder="Nombre">
-                    <input type="text" class="form-control mb-2" name="ruta" placeholder="Ruta">
-                    <input type="text" class="form-control mb-2" name="nombreDb" placeholder="Nombre DB">
-                    <input type="text" class="form-control mb-2" name="sector" placeholder="Sector">
-                    <input type="text" class="form-control mb-2" name="estado" placeholder="Estado">
-                    <input type="text" class="form-control mb-2" name="potencia" placeholder="Potenza">
-                    <textarea class="form-control mb-2" name="setting" placeholder='Settings (JSON)'></textarea>
+
+                    <label for="userCuenta-mod">Usuario Cuenta</label>
+                    <input type="text" class="form-control mb-2" id="userCuenta-mod" name="userCuenta" placeholder="Usuario Cuenta">
+
+                    <label for="nombre-mod">Nombre</label>
+                    <input type="text" class="form-control mb-2" id="nombre-mod" name="nombre" placeholder="Nombre">
+
+                    <label for="ruta-mod">Ruta</label>
+                    <input type="text" class="form-control mb-2" id="ruta-mod" name="ruta" placeholder="Ruta">
+
+                    <label for="nombreDb-mod">Nombre DB</label>
+                    <input type="text" class="form-control mb-2" id="nombreDb-mod" name="nombreDb" placeholder="Nombre DB">
+
+                    <label for="nombreTabla-mod">Tabla (JSON)</label>
+                    <textarea class="form-control mb-2" id="nombreTabla-mod" name="nombreTabla" placeholder='{"tablas": ["tabla1", "tabla2"]}' rows="2"></textarea>
+
+                    <label for="sector-mod">Sector</label>
+                    <input type="text" class="form-control mb-2" id="sector-mod" name="sector" placeholder="Sector">
+
+                    <label for="estado-mod">Estado</label>
+                    <input type="text" class="form-control mb-2" id="estado-mod" name="estado" placeholder="Estado">
+
+                    <label for="potencia-mod">Potenza</label>
+                    <input type="text" class="form-control mb-2" id="potencia-mod" name="potencia" placeholder="Potenza">
+
+                    <label for="setting-mod">Settings (JSON)</label>
+                    <textarea class="form-control mb-2" id="setting-mod" name="setting" placeholder='Settings (JSON)'></textarea>
                 </form>
             </div>
             <div class="modal-footer">
+               <button type="button" class="btn btn-warning" id="confirmar-modificar">Modificare</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancellare</button>
-                <button type="button" class="btn btn-warning" id="confirmar-modificar">Modificare</button>
+               
             </div>
         </div>
     </div>
 </div>
+
 
 
 

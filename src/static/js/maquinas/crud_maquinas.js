@@ -1,3 +1,5 @@
+
+
 document.getElementById("crud-link").addEventListener("click", (e) => {
     e.preventDefault();
     const userId = localStorage.getItem("user_id");
@@ -6,7 +8,7 @@ document.getElementById("crud-link").addEventListener("click", (e) => {
         alert("Nessun utente ha effettuato l'accesso.");
         return;
     }
-
+     debugger;
     // REDIRECCIÓN NORMAL CON GET
     window.location.href = `/maquinas_crud_consulta/?user_id=${userId}`;
 });
@@ -94,6 +96,7 @@ btnAbrir.addEventListener('click', function () {
       document.querySelector('#form-modificar-maquina [name="nombre"]').value = btn.getAttribute('data-nombre');
       document.querySelector('#form-modificar-maquina [name="ruta"]').value = btn.getAttribute('data-ruta');
       document.querySelector('#form-modificar-maquina [name="nombreDb"]').value = btn.getAttribute('data-nombre-db');
+      document.querySelector('#form-modificar-maquina [name="nombreTabla"]').value = btn.getAttribute('data-nombre-tabla');
       document.querySelector('#form-modificar-maquina [name="sector"]').value = btn.getAttribute('data-sector');
       document.querySelector('#form-modificar-maquina [name="estado"]').value = btn.getAttribute('data-estado');
       document.querySelector('#form-modificar-maquina [name="potencia"]').value = btn.getAttribute('data-potencia');
@@ -251,6 +254,7 @@ document.querySelectorAll('[data-bs-target="#modal-modificar"]').forEach(button 
         form.nombre.value = button.dataset.nombre || '';
         form.ruta.value = button.dataset.ruta || '';
         form.nombreDb.value = button.dataset.nombreDb || '';
+        form.nombreTabla.value = button.dataset.nombreTabla || '';
         form.sector.value = button.dataset.sector || '';
         form.estado.value = button.dataset.estado || '';
         form.potencia.value = button.dataset.potencia || '';

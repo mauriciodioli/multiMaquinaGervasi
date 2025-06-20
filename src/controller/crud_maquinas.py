@@ -78,6 +78,7 @@ def agregar_maquina():
             nombre=data.get("nombre"),
             ruta=data.get("ruta"),
             nombreDb=data.get("nombreDb"),
+            nombreTabla=data.get("nombreTabla"),  # Nuevo campo
             selector=data.get("selector"),
             sector=data.get("sector"),
             estado=data.get("estado"),
@@ -140,6 +141,7 @@ def modificar_maquina(id):
         maquina.ruta = data.get("ruta")
        
         maquina.nombreDb = data.get("nombreDb")
+        maquina.nombreTabla = data.get("nombreTabla")  
         maquina.selector = data.get("selector")
         maquina.sector = data.get("sector")
         maquina.estado = data.get("estado")

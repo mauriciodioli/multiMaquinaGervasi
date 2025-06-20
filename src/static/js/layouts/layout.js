@@ -22,6 +22,11 @@ document.getElementById("modal-close").addEventListener("click", () => {
     modal.style.display = "none";
 });
 
+function cerrarModalConfiguraSqlServer() {
+  document.getElementById('modal-sqlserver').style.display = 'none';
+}
+
+
 // Cerrar el modal si se hace clic fuera de él
 window.addEventListener("click", (e) => {
     const modal = document.getElementById("modal-sqlserver");
