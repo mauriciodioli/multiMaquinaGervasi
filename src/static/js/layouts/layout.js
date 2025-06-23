@@ -4,7 +4,7 @@
 
 document.getElementById("conexionSqlServer").addEventListener("click", (e) => {
     e.preventDefault();
-    debugger;
+    
     // Llenar los inputs con los valores de localStorage
     document.getElementById("input-sql-ip").value = localStorage.getItem("ipSqlServer") || "";
     document.getElementById("input-sql-port").value = localStorage.getItem("portSqlServer") || "";

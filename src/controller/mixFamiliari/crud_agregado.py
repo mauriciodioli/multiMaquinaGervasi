@@ -25,6 +25,60 @@ agregados_schema = AgregadoSchema(many=True)
 componente_schema = Componente_quimicoSchema()
 componentes_schema = Componente_quimicoSchema(many=True)
 
+# Este
+@crud_agregado.route('/crud_agregados_mixFamiliari_lista_agregados_json', methods=['GET'])
+def crud_agregados_mixFamiliari_lista_agregados_json():
+    try:
+        user_id = request.cookies.get("user_id")
+        entidad_id = request.cookies.get("entidad_id")
+
+        query = db.session.query(Agregado)
+        if user_id:
+            query = query.filter_by(usuario_id=int(user_id))
+        if entidad_id:
+            query = query.filter_by(entidad_id=int(entidad_id))
+
+        agregados = query.all()
+
+        return jsonify([
+            {"id": a.id, "nombre": a.nombre or f"Agregado {a.id}"}
+            for a in agregados
+        ])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.session.close()
+
+@crud_agregado.route('/api/crud_agregados_mixFamiliari/obtener_curva_agregado/<int:agregado_id>', methods=["GET"])
+def obtener_curva_de_agregado(agregado_id):
+    try:
+        agregado = db.session.query(Agregado).get(agregado_id)
+        if not agregado:
+            return jsonify({"error": "Agregado no encontrado"}), 404
+
+        mallas = (
+            db.session.query(AgregadoMalla)
+            .filter_by(agregado_id=agregado_id)
+            .join(Malla)
+            .order_by(Malla.diametro_mm.desc())
+            .all()
+        )
+
+        resultado = [
+            {
+                "tamiz": malla.malla.diametro_mm,
+                "porcentaje":malla.malla.nombre_comercial,  # Si tenés porcentaje real guardado, podés devolverlo acá
+                "nombre_agregado": agregado.nombre
+            }
+            for malla in mallas
+        ]
+
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.session.close()
+
 
 
 @crud_agregado.route('/mixFamiliari_crud_agregado_agregados_listar/', methods=['GET', 'POST'])

@@ -235,10 +235,11 @@ function agregarMezcla() {
     mezclaDiv.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h3>Producto</h3>
-          <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il aggregato<</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il aggregato</button>
         </div>
         <input type="text" placeholder="Nombre del producto" class="nombreProducto">
         <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Aggiungi riga</button>
+        <button class="btn btn-danger" onclick="agregarAgredadosPreCardados(this)">select precargados</button>
         <table class="tabla">
             <thead>
                 <tr><th>Tamiz </th><th>% Real</th><th>Acción</th></tr>

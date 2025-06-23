@@ -166,3 +166,15 @@ td[contenteditable="true"]:focus {
 .tabla-interpretacion td:first-child {
   font-weight: bold;
 }
+
+
+
+
+#modalAgregados .modal-body {
+  padding-bottom: 30px;
+}
+
+#modalAgregados .modal-footer {
+  padding-top: 30px;
+  border-top: 1px solid #dee2e6;
+}

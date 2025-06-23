@@ -268,8 +268,13 @@ img {
                 </div>
                 <div class="mb-3">
                     <label for="input-sql-password" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="input-sql-password" placeholder="Ejemplo: Dpia1234!">
-                    <small id="passwordHelp" class="form-text text-muted">Immettere la password per l'utente di SQL Server.</small>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="input-sql-password" placeholder="Ejemplo: Dpia1234!">
+                        <button class="btn btn-outline-secondary" type="button" id="toggle-password">
+                            <i class="fa fa-eye"></i>
+                        </button>
+                    </div>
+                    
                 </div>
             </form>
         </div>
@@ -294,4 +299,18 @@ img {
 <script src="{{ url_for('static', filename='js/autoDensidad/agregados/crud_agregados.js') }}"></script>
 <script src="{{ url_for('static', filename='js/layouts/layout.js') }}"></script>
 
-    
+<script>
+document.getElementById('toggle-password').addEventListener('click', function () {
+    const input = document.getElementById('input-sql-password');
+    const icon = this.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+});
+</script>
