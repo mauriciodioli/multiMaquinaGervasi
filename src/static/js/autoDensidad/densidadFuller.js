@@ -238,7 +238,7 @@ function agregarMezcla() {
           <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il aggregato</button>
         </div>
         <input type="text" placeholder="Nombre del producto" class="nombreProducto">
-        <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Aggiungi riga</button>
+        <button class="btn btn-danger" id="agregarFilaMultiple" onclick="agregarFilaMultiple(this)">Aggiungi riga</button>
         <button class="btn btn-danger" onclick="agregarAgredadosPreCardados(this)">select precargados</button>
         <table class="tabla">
             <thead>

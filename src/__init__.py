@@ -15,6 +15,7 @@ from src.controller.autoDensidad.calcularMezclaOptima import calcularMezclaOptim
 from src.controller.autoDensidad.optimizar_fuller import optimizar_fuller
 from src.controller.autoDensidad.simuladorDosificacion.simulador_dosificacion import simulador_dosificacion
 from src.controller.autoDensidad.analisis_densidad import analisis_densidad
+from src.controller.autoDensidad.perfil_user_bp import perfil_user_bp
 from src.controller.mixFamiliari.crud_agregado import crud_agregado
 from src.controller.mixFamiliari.crud_mallas import crud_mallas
 from src.controller.mixFamiliari.crud_componente_quimico import crud_componente_quimico
@@ -59,6 +60,7 @@ def create_app():
     app.register_blueprint(maquinas)
     app.register_blueprint(automatizacion)
     app.register_blueprint(crud_maquinas)
+    app.register_blueprint(perfil_user_bp)  
     
     app.register_blueprint(densidadFuller)
     app.register_blueprint(conexion_db_crud)

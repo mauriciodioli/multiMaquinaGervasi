@@ -1,0 +1,13 @@
+<h4 class="mb-3">{{ t_menu["perfil_analisis"] or "Últimos análisis granulométricos" }}</h4>
+
+{% if analisis %}
+  <ul class="list-group">
+    {% for a in analisis %}
+      <li class="list-group-item">
+        📅 {{ a.fecha.strftime('%d/%m/%Y') }} — <strong>{{ a.descripcion }}</strong>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="text-muted">{{ t_menu["perfil_sin_analisis"] or "No hay análisis registrados." }}</p>
+{% endif %}

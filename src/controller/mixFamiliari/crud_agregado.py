@@ -26,7 +26,7 @@ componente_schema = Componente_quimicoSchema()
 componentes_schema = Componente_quimicoSchema(many=True)
 
 # Este
-@crud_agregado.route('/crud_agregados_mixFamiliari_lista_agregados_json', methods=['GET'])
+@crud_agregado.route('/crud_agregados_mixFamiliari_lista_agregados_json/', methods=['GET'])
 def crud_agregados_mixFamiliari_lista_agregados_json():
     try:
         user_id = request.cookies.get("user_id")

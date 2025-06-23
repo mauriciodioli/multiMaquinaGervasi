@@ -2,7 +2,7 @@ let mezclaSeleccionada = null;
 
 function agregarAgredadosPreCardados(boton) {
     mezclaSeleccionada = boton.closest(".mezcla");
-    fetch("/crud_agregados_mixFamiliari_lista_agregados_json")  // 🔁 Este endpoint lo creamos abajo
+    fetch("/crud_agregados_mixFamiliari_lista_agregados_json/")  // 🔁 Este endpoint lo creamos abajo
         .then(res => res.json())
         .then(agregados => {
             const select = document.getElementById("selectAgregado");
@@ -20,8 +20,6 @@ function agregarAgredadosPreCardados(boton) {
 function cerrarModalAgregados() {
     document.getElementById("modalAgregados").style.display = "none";
 }
-
-
 
 function usarAgregadoSeleccionado() {
     const id = document.getElementById("selectAgregado").value;
@@ -44,6 +42,13 @@ function usarAgregadoSeleccionado() {
 
             mezclaSeleccionada.querySelector(".nombreProducto").value = tamices[0].nombre_agregado || "Agregado";
 
+            // 👉 Oculta el botón "Aggiungi riga"
+            const btnAgregar = mezclaSeleccionada.querySelector('button[onclick*="agregarFilaMultiple"]');
+            if (btnAgregar) {
+                btnAgregar.style.display = "none";
+            }
+
             cerrarModalAgregados();
         });
 }
+
