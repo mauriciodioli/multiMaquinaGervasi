@@ -3,3 +3,7 @@ select option:checked {
   color: rgb(172, 173, 173) !important;
   font-weight: bold;
 }
+.table-responsive {
+    overflow-x: auto;
+    max-width: 100%;
+}
