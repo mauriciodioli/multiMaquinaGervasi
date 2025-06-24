@@ -21,34 +21,64 @@ function cerrarModalAgregados() {
     document.getElementById("modalAgregados").style.display = "none";
 }
 
+
+
+
+
+
+
 function usarAgregadoSeleccionado() {
-    const id = document.getElementById("selectAgregado").value;
+  const id = document.getElementById("selectAgregado").value;
 
-    fetch(`/api/crud_agregados_mixFamiliari/obtener_curva_agregado/${id}`)
-        .then(res => res.json())
-        .then(tamices => {
-            const tbody = mezclaSeleccionada.querySelector("tbody");
-            tbody.innerHTML = "";  // Limpia filas anteriores
+  fetch(`/api/crud_agregados_mixFamiliari/obtener_curva_agregado/${id}`)
+    .then(res => res.json())
+    .then(tamices => {
+      const nombre = tamices[0].nombre_agregado?.trim() || "Agregado";
 
-            tamices.forEach(t => {
-                const fila = document.createElement("tr");
-                fila.innerHTML = `
-                    <td contenteditable="true">${t.tamiz}</td>
-                    <td contenteditable="true">${t.porcentaje || ""}</td>
-                    <td><button class="btn btn-danger mb-3" onclick="this.closest('tr').remove()">Eliminar</button></td>
-                `;
-                tbody.appendChild(fila);
-            });
+      // 🔍 Seleccionar la mezcla ya existente (ej: con data-id="0")
+      const mezclaSeleccionada = document.querySelector(".mezcla[data-id='0']");
 
-            mezclaSeleccionada.querySelector(".nombreProducto").value = tamices[0].nombre_agregado || "Agregado";
+      if (!mezclaSeleccionada) {
+        console.error("❌ No se encontró la mezcla para sobrescribir.");
+        return;
+      }
 
-            // 👉 Oculta el botón "Aggiungi riga"
-            const btnAgregar = mezclaSeleccionada.querySelector('button[onclick*="agregarFilaMultiple"]');
-            if (btnAgregar) {
-                btnAgregar.style.display = "none";
-            }
+      // 📝 Actualizar el nombre del producto
+      const inputNombre = mezclaSeleccionada.querySelector(".nombreProducto");
+      if (inputNombre) {
+        inputNombre.value = nombre;
+        inputNombre.dataset.original = nombre;
+      }
 
-            cerrarModalAgregados();
-        });
+      // 🧼 Limpiar y actualizar las filas de la tabla
+      const tbody = mezclaSeleccionada.querySelector("table.tabla tbody");
+      if (!tbody) {
+        console.error("❌ No se encontró el tbody de la tabla.");
+        return;
+      }
+      tbody.innerHTML = "";
+
+      tamices.forEach(t => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td contenteditable="true">${t.tamiz}</td>
+          <td contenteditable="true">${isNaN(t.porcentaje) ? "" : t.porcentaje}</td>
+          <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
+        `;
+        tbody.appendChild(fila);
+      });
+
+      // (Opcional) Ocultar botón de agregar fila si querés, o dejalo visible
+      const btnAgregar = mezclaSeleccionada.querySelector('button[onclick*="agregarFilaMultiple"]');
+      if (btnAgregar) {
+        btnAgregar.style.display = "none"; // o "inline-block" si querés que siga visible
+      }
+
+      cerrarModalAgregados();
+    })
+    .catch(err => {
+      console.error("❌ Error al obtener curva del agregado:", err);
+    });
 }
+
 

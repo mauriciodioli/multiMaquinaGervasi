@@ -128,3 +128,15 @@ function mostrarResultadosSimulador(data) {
 
 
 
+ function volverAFullerMultiple() {
+    fetch("/pantalla_densidad_fuller_multiple/")
+      .then(res => res.text())
+      .then(html => {
+        document.body.innerHTML = html;  // ⚠️ reemplaza todo el body (si querés más control, usá un div contenedor)
+        history.pushState(null, "", "/pantalla_densidad_fuller_multiple/");
+        cargarMezclasDesdeCookies();
+      })
+      .catch(err => {
+        alert("❌ Error al volver: " + err.message);
+      });
+  }

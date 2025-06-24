@@ -5,6 +5,9 @@
 {% block content %}
 <div class="container">
   <h3> {{ t_menu["simulador_titulo"] }}</h3>
+<button type="button" class="btn btn-secondary mb-3" onclick="volverAFullerMultiple()">
+  🔙 {{ t_menu["volver"] or "Volver" }}
+</button>
 
   <form id="simulador-form">
     {% for nombre in productos %}
@@ -24,7 +27,7 @@
 
   <div id="resultadoSimulador" class="mt-4" style="margin-top: 1.5rem;"></div>
 </div>
-
+<script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js') }}"></script> 
 <script src="{{ url_for('static', filename='js/simuladorDosificacion/simuladorDosificacion.js') }}"></script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/simuladorDosificacion.css') }}">
 {% endblock %}

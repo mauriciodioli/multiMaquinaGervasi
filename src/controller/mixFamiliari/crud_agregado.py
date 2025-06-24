@@ -67,7 +67,7 @@ def obtener_curva_de_agregado(agregado_id):
         resultado = [
             {
                 "tamiz": malla.malla.diametro_mm,
-                "porcentaje":malla.malla.nombre_comercial,  # Si tenés porcentaje real guardado, podés devolverlo acá
+                "porcentaje":'NULL',  # Si tenés porcentaje real guardado, podés devolverlo acá
                 "nombre_agregado": agregado.nombre
             }
             for malla in mallas
