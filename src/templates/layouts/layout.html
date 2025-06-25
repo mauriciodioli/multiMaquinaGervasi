@@ -145,14 +145,33 @@ img {
                                                                  <a href="#" id="crud-link-mix">{{ t_menu.get('agregados', 'Agregados') }}</a>
                                                             </li>
                                                              
-                                                             <li id="menu-item-477">
-                                                                <a href="/mixFamiliari_crud_componente_quimico_pantalla_listar/" id="crud-link-mix">{{ t_menu.get('componentes_quimicos', 'Componentes Químicos') }}</a></li>
+                                                            <li id="menu-item-mix" class="has-sub">
+                                                                    <a href="#" id="crud-link-mix-parent">  {{ t_menu.get('mix_familiari', 'Mix Familiari') }} ▾</a>
+
+                                                                    <!-- Sub-menú -->
+                                                                    <ul class="sub-menu">
+                                                                        <li id="menu-item-comp-quim">
+                                                                        <a href="/mixFamiliari_crud_componente_quimico_pantalla_listar/">
+                                                                            {{ t_menu.get('componentes_quimicos', 'Componentes Químicos') }}
+                                                                        </a>
+                                                                        </li>
+
+                                                                        <li id="menu-item-tip-mez">
+                                                                        <a href="/mixFamiliari_crud_tipo_mezcla_pantalla_listar/">
+                                                                            {{ t_menu.get('tipos_mezcla', 'Tipos de Mezcla') }}
+                                                                        </a>
+                                                                        </li>
+
+                                                                        <li id="menu-item-mat-forma">
+                                                                        <a href="/mixFamiliari_crud_materia_forma_pantalla_listar/">
+                                                                            {{ t_menu.get('materia_forma', 'Materia Forma') }}
+                                                                        </a>
+                                                                        </li>
+                                                                    </ul>
                                                             </li>
-                                                            <li id="menu-item-477">
-                                                                <a href="/mixFamiliari_crud_tipo_mezcla_pantalla_listar/" id="crud-link-mix">{{ t_menu.get('tipos_mezcla', 'Tipos de Mezcla') }}</a>
-                                                            </li>
+
                                                             <li id="menu-item-476">
-                                                                <a href="/mixFamiliari_crud_mallas_pantalla_mallas_listar/" id="crud-link-mix">{{ t_menu.get('mallas', 'Mallas') }}</a>
+                                                                <a href="/mixFamiliari_crud_materia_forma_pantalla_materia_forma_listar/" id="crud-link-mix">{{ t_menu.get('mallas', 'Mallas') }}</a>
                                                             </li>
                                                             
                                                         </ul>
