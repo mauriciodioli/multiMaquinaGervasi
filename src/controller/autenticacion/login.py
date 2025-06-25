@@ -207,7 +207,7 @@ def restablecer_password(token):
     try:
         correo = serializer.loads(token, salt="recuperar-password", max_age=3600)
     except Exception:
-        return render_template("AutenticacionLogin/token_invalido.html", t=t)
+        return render_template("AutenticacionLogin/token_invalido.html", t_menu=t)
 
     try:
         if request.method == "POST":
@@ -215,15 +215,15 @@ def restablecer_password(token):
             confirmar = request.form.get("confirmar")
 
             if nueva != confirmar or len(nueva) < 8:
-                return render_template("AutenticacionLogin/restablecer_form.html", t=t, error=t["error_confirmacion"])
+                return render_template("AutenticacionLogin/restablecer_form.html", t_menu=t, error=t["error_confirmacion"])
 
             usuario = db.session.query(Usuario).filter_by(correo_electronico=correo).first()
             if usuario:
                 usuario.password = generate_password_hash(nueva)
                 db.session.commit()
-                return render_template("AutenticacionLogin/restablecer_ok.html", t=t)
+                return render_template("AutenticacionLogin/restablecer_ok.html", t_menu=t)
             else:
-                return render_template("AutenticacionLogin/token_invalido.html", t=t)
+                return render_template("AutenticacionLogin/token_invalido.html", t_menu=t)
 
         # Formulario inicial de restablecimiento
         return render_template("AutenticacionLogin/restablecer_form.html", t=t, token=token)
