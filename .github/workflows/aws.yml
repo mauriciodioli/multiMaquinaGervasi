@@ -61,6 +61,7 @@ jobs:
           port:     ${{ env.NGROK_PORT }}
           username: ${{ env.SSH_USER }}
           key:      ${{ secrets.SSH_PRIVATE_KEY }}
+          shell:    powershell    
           script: |
             docker stop ${{ env.DEPLOYMENT_VERSION }} || echo "No se pudo detener (no existe?)"
             docker rm   ${{ env.DEPLOYMENT_VERSION }} || echo "No se pudo eliminar (no existe?)"
@@ -72,6 +73,7 @@ jobs:
           port:     ${{ env.NGROK_PORT }}
           username: ${{ env.SSH_USER }}
           key:      ${{ secrets.SSH_PRIVATE_KEY }}
+          shell:    powershell    
           script: |
             IMAGE_ID=$(docker images -q ${{ secrets.DOCKER_USERNAME }}/msgervasi202505i)
             if [ -n "$IMAGE_ID" ]; then
@@ -100,6 +102,7 @@ jobs:
           port:     ${{ env.NGROK_PORT }}
           username: ${{ env.SSH_USER }}
           key:      ${{ secrets.SSH_PRIVATE_KEY }}
+          shell:    powershell    
           script: |
             echo "Esperando que el contenedor esté activo..."
             for i in {1..10}; do
