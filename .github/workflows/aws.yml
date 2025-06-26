@@ -61,10 +61,22 @@ jobs:
           port:     ${{ env.NGROK_PORT }}
           username: ${{ env.SSH_USER }}
           key:      ${{ secrets.SSH_PRIVATE_KEY }}
-          shell:    powershell    
           script: |
-            docker stop ${{ env.DEPLOYMENT_VERSION }} || echo "No se pudo detener (no existe?)"
-            docker rm   ${{ env.DEPLOYMENT_VERSION }} || echo "No se pudo eliminar (no existe?)"
+            powershell -Command "
+              try {
+                docker stop '${{ env.DEPLOYMENT_VERSION }}' | Out-Null
+                Write-Host 'Contenedor detenido'
+              } catch {
+                Write-Host 'No se pudo detener (no existe?)'
+              }
+
+              try {
+                docker rm '${{ env.DEPLOYMENT_VERSION }}' | Out-Null
+                Write-Host 'Contenedor eliminado'
+              } catch {
+                Write-Host 'No se pudo eliminar (no existe?)'
+              }
+            "
 
       - name: Remove existing Docker image
         uses: appleboy/ssh-action@master
@@ -73,14 +85,11 @@ jobs:
           port:     ${{ env.NGROK_PORT }}
           username: ${{ env.SSH_USER }}
           key:      ${{ secrets.SSH_PRIVATE_KEY }}
-          shell:    powershell    
           script: |
-            IMAGE_ID=$(docker images -q ${{ secrets.DOCKER_USERNAME }}/msgervasi202505i)
-            if [ -n "$IMAGE_ID" ]; then
-              docker rmi $IMAGE_ID
-            else
-              echo "❌ Imagen no encontrada localmente"
-            fi
+            powershell -Command "
+              \$image = docker images -q ${{ secrets.DOCKER_USERNAME }}/msgervasi202505i
+              if (\$image) { docker rmi \$image }
+            "
 
       - name: Pull & run new image
         uses: appleboy/ssh-action@master
@@ -90,10 +99,15 @@ jobs:
           username: ${{ env.SSH_USER }}
           key:      ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker pull docker.io/${{ secrets.DOCKER_USERNAME }}/msgervasi202505i:latest
-            docker run -d --name ${{ env.DEPLOYMENT_VERSION }} \
-              -p 5002:5000 --restart always \
-              docker.io/${{ secrets.DOCKER_USERNAME }}/msgervasi202505i:latest
+            powershell -Command "
+              docker pull docker.io/${{ secrets.DOCKER_USERNAME }}/msgervasi202505i:latest
+
+              docker run -d `
+                --name '${{ env.DEPLOYMENT_VERSION }}' `
+                -p 5002:5000 `
+                --restart always `
+                docker.io/${{ secrets.DOCKER_USERNAME }}/msgervasi202505i:latest
+            "
 
       - name: Wait until container is running
         uses: appleboy/ssh-action@master
@@ -102,16 +116,14 @@ jobs:
           port:     ${{ env.NGROK_PORT }}
           username: ${{ env.SSH_USER }}
           key:      ${{ secrets.SSH_PRIVATE_KEY }}
-          shell:    powershell    
           script: |
-            echo "Esperando que el contenedor esté activo..."
-            for i in {1..10}; do
-              if docker ps --filter "name=${{ env.DEPLOYMENT_VERSION }}" --format '{{.ID}}' | grep .; then
-                echo "✅ Contenedor iniciado."
-                exit 0
-              fi
-              echo "⏳ Esperando..."
-              sleep 5
-            done
-            echo "❌ Timeout esperando el contenedor"
-            exit 1
+            powershell -Command "
+              Write-Host '⏳ Esperando que el contenedor esté activo…'
+              for ($i = 1; $i -le 10; $i++) {
+                if (docker ps --filter \"name=${{ env.DEPLOYMENT_VERSION }}\" --format '{{.ID}}') {
+                  Write-Host '✅ Contenedor iniciado.'; exit 0
+                }
+                Start-Sleep -Seconds 5
+              }
+              Write-Error '❌ Timeout esperando el contenedor'; exit 1
+            "
