@@ -47,6 +47,7 @@ jobs:
         run: |
           echo "Verifying Docker Hub login..."
           docker info
+          
 
       - name: Build and Push to Docker Hub (if needed)
         id: build_and_push
