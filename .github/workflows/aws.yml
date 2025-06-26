@@ -5,7 +5,7 @@ on:
       - main
 
 env:
-  DEPLOYMENT_VERSION: "msgervasi202505i:latest"
+  DEPLOYMENT_VERSION: "msgervasi202505i"
 
 jobs:
   deploy-to-cluster:
@@ -27,7 +27,7 @@ jobs:
           echo "Verifying changes..."
           ls -l
 
-      - name: Set Dockerfile WORKDIR to /app
+      - name: Set Dockerfile WORKDIR to /app    
         run: |
           echo "Setting Dockerfile WORKDIR..."
           sed -i 's/WORKDIR \/app/WORKDIR \/app/' Dockerfile
@@ -47,7 +47,6 @@ jobs:
         run: |
           echo "Verifying Docker Hub login..."
           docker info
-          
 
       - name: Build and Push to Docker Hub (if needed)
         id: build_and_push
@@ -68,8 +67,8 @@ jobs:
       - name: Stop and remove existing container
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ env.EC2_HOST }}
-          username: ubuntu
+          host: 192.168.1.3
+          username: Administrator
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             docker stop ${{ env.DEPLOYMENT_VERSION }} || true
@@ -78,8 +77,8 @@ jobs:
       - name: Remove existing Docker image
         uses: appleboy/ssh-action@master
         with:
-           host: ${{ env.EC2_HOST }}
-           username: ubuntu
+           host: 192.168.1.3
+           username: Administrator
            key: ${{ secrets.SSH_PRIVATE_KEY }}
            script: |
                  IMAGE_ID=$(docker images -q ${{ github.repository_owner }}/msgervasi202505i)
@@ -91,8 +90,8 @@ jobs:
       - name: Copy Docker image to AWS instance
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ env.EC2_HOST }}
-          username: ubuntu
+          host: 192.168.1.3
+          username: Administrator
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             docker pull docker.io/${{ github.repository_owner }}/msgervasi202505i:${{ github.sha }}
@@ -108,8 +107,8 @@ jobs:
       - name: Install and start vim and ffmpeg inside the container
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ env.EC2_HOST }}
-          username: ubuntu
+          host: 192.168.1.3
+          username: Administrator
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |               
                    docker exec $(docker ps -q --filter name=${{ env.DEPLOYMENT_VERSION }}) bash -c "
