@@ -1,0 +1,51 @@
+<!-- Modal Modificar Materia/Forma -->
+<div class="modal fade" id="modal-modificar-materia-forma" tabindex="-1" aria-labelledby="modalMateriaFormaModificarLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="form-modificar-materia-forma">
+      <input type="hidden" id="mod-id" name="id">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalMateriaFormaModificarLabel">
+            ✏️ {{ t_menu["modificar"] }} {{ t_menu["materia_forma"] }}
+          </h5>
+          <button type="button" class="btn-close" onclick="cerrarModalModificarMateriaForma()" aria-label="{{ t_menu['cerrar'] }}"></button>
+        </div>
+        <div class="modal-body">
+
+          <div class="mb-3">
+            <label for="mod-origen" class="form-label">{{ t_menu["origen"] }}</label>
+            <input type="text" class="form-control" id="mod-origen" name="origen" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="mod-forma" class="form-label">{{ t_menu["forma"] }}</label>
+            <input type="text" class="form-control" id="mod-forma" name="forma">
+          </div>
+
+          <div class="mb-3">
+            <label for="mod-descripcion" class="form-label">{{ t_menu["descripcion"] }}</label>
+            <textarea class="form-control" id="mod-descripcion" name="descripcion" rows="2"></textarea>
+          </div>
+
+          <!-- Estado en fila tipo tabla -->
+          <div class="mb-3 row align-items-center">
+            <label class="col-sm-4 col-form-label">{{ t_menu["estado"] }}</label>
+            <div class="col-sm-8">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="mod-estado" name="estado">
+              
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">{{ t_menu["guardar_cambios"] }}</button>
+          <button type="button" class="btn btn-secondary" onclick="cerrarModalModificarMateriaForma()">
+            {{ t_menu["cerrar"] }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

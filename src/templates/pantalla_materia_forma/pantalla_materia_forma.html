@@ -1,0 +1,77 @@
+{% extends "layouts/layout.html" %}
+
+{% block title %}{{ t_menu["titulo_materia_forma"] }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <div class="titulo-maquinas">
+        <h1>{{ t_menu["titulo_materia_forma"] }}</h1>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btn-abrir-modal-materia-forma">
+        <i class="fas fa-plus-circle me-2"></i> {{ t_menu["agregar"] }} {{ t_menu["materia_forma"] }}
+      </button>
+
+      <div class="table-responsive mt-3">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>{{ t_menu["origen"] }}</th>
+              <th>{{ t_menu["forma"] }}</th>
+              <th>{{ t_menu["descripcion"] }}</th>
+              <th>{{ t_menu["estado"] }}</th>
+              <th>{{ t_menu["acciones"] }}</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-materia-forma">
+            {% for tipo in tipos %}
+            <tr data-fila-id="{{ tipo.id }}">
+              <td>{{ tipo.id }}</td>
+              <td>{{ tipo.origen }}</td>
+              <td>{{ tipo.forma or '-' }}</td>
+              <td>{{ tipo.descripcion or '-' }}</td>
+              <td>
+                {% if tipo.estado %}
+                  <span class="badge bg-success">{{ t_menu["activo"] }}</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ t_menu["inactivo"] }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-warning btn-sm btn-abrir-modal-modificar-materia-forma"
+                    data-id="{{ tipo.id }}"
+                    data-origen="{{ tipo.origen }}"
+                    data-forma="{{ tipo.forma }}"
+                    data-descripcion="{{ tipo.descripcion }}"
+                    data-estado="{{ tipo.estado }}">
+                    {{ t_menu["modificar"] }}
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn btn-danger btn-sm btn-abrir-modal-eliminar-materia-forma"
+                    data-id="{{ tipo.id }}">
+                    {{ t_menu["eliminar"] }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include 'pantalla_materia_forma/modals/modal_agregar_materia_forma.html' %}
+{% include 'pantalla_materia_forma/modals/modal_modificar_materia_forma.html' %}
+
+<script src="{{ url_for('static', filename='js/autoDensidad/comp_quimico/crud_materia_forma.js') }}"></script>
+{% endblock %}

@@ -16,13 +16,14 @@ from src.controller.autoDensidad.densidadFuller import densidadFuller
 from src.controller.autoDensidad.calcularMezclaOptima import calcularMezclaOptima
 from src.controller.autoDensidad.optimizar_fuller import optimizar_fuller
 from src.controller.autoDensidad.simuladorDosificacion.simulador_dosificacion \
-    import simulador_dosificacion
+import simulador_dosificacion
 from src.controller.autoDensidad.analisis_densidad import analisis_densidad
 from src.controller.autoDensidad.perfil_user_bp import perfil_user_bp
 from src.controller.mixFamiliari.crud_agregado import crud_agregado
 from src.controller.mixFamiliari.crud_mallas import crud_mallas
 from src.controller.mixFamiliari.crud_componente_quimico import crud_componente_quimico
 from src.controller.mixFamiliari.crud_tipo_mezcla import crud_tipo_mezcla
+from src.controller.mixFamiliari.crud_materia_forma import crud_materia_forma
 from src.controller.administracion.crud_usuario import crud_usuario
 from src.controller.administracion.crud_entidad import crud_entidad
 from src.controller.autenticacion.login import login
@@ -77,6 +78,7 @@ def create_app() -> Flask:
         crud_mallas, 
         crud_componente_quimico, 
         crud_tipo_mezcla,
+        crud_materia_forma,
     ):
         app.register_blueprint(bp)
 
