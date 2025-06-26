@@ -1,29 +1,30 @@
-name: deploy
+name: deploy-windows
+
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/msgervasi202505i
+  IMAGE_NAME: mauriciodioli/msgervasi202505i
   IMAGE_TAG: latest
   CONTAINER_NAME: msgervasi202505i
-  HOST_PORT: "5002"
-  EC2_HOST: ec2-44-223-20-210.compute-1.amazonaws.com
+  HOST_PORT: "8080"       # 8080 → 5000 dentro del contenedor
+  SSH_PORT: "22"
 
 jobs:
-  build-push:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Login Docker Hub
+      - name: Docker Hub login
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & push image
+      - name: Build & push
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -31,30 +32,29 @@ jobs:
           tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
   deploy:
-    needs: build-push
+    needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy on EC2
+      - name: Deploy on Windows Server 2022
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ env.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22                 # cambia si usás otro
+          host: ${{ secrets.SSH_HOST }}          # 192.168.1.3
+          port: ${{ env.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}      # Administrator
+          key: ${{ secrets.SSH_KEY }}            # tu id_github
           script: |
-            set -e
-            echo ">> ❶ Traigo la imagen nueva"
+            REM ========== ❶ Traer la imagen ==========
             docker pull ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
-            echo ">> ❷ Quito contenedor viejo (si existe)"
-            docker stop ${{ env.CONTAINER_NAME }} || true
-            docker rm   ${{ env.CONTAINER_NAME }} || true
+            REM ========== ❷ Parar / borrar contenedor viejo ==========
+            docker stop  ${{ env.CONTAINER_NAME }}  || echo no container
+            docker rm    ${{ env.CONTAINER_NAME }}  || echo no container
 
-            echo ">> ❸ Lanzo contenedor nuevo"
-            docker run -d --name ${{ env.CONTAINER_NAME }} \
-              -p ${{ env.HOST_PORT }}:5000 \
-              --restart unless-stopped \
+            REM ========== ❸ Ejecutar contenedor nuevo ==========
+            docker run -d --name ${{ env.CONTAINER_NAME }} ^
+              -p ${{ env.HOST_PORT }}:5000 ^
+              --restart unless-stopped ^
               ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
-            echo ">> ❹ Verifico estado"
-            docker ps --filter name=${{ env.CONTAINER_NAME }} --format '{{.Names}} → {{.Status}}'
+            REM ========== ❹ Mostrar estado ==========
+            docker ps --filter name=${{ env.CONTAINER_NAME }} --format "{{.Names}} — {{.Status}}"
