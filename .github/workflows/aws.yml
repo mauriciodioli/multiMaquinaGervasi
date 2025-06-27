@@ -53,6 +53,24 @@ jobs:
           else
             echo "✅ La imagen ya existe en Docker Hub."
           fi
+      - name: Test raw SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # Añade tu host-ngrok a known_hosts para que no falle la autenticación de clave
+          ssh-keyscan -p ${{ secrets.NGROK_PORT }} ${{ secrets.NGROK_HOST }} >> ~/.ssh/known_hosts
+
+          # Intento de login “a pelo”
+          ssh -vvv -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa \
+              -p ${{ secrets.NGROK_PORT }} \
+              ${{ secrets.SSH_USER }}@${{ secrets.NGROK_HOST }} \
+              echo "OK desde runner"
+
+
+
+
 
       - name: Stop & remove existing container
         uses: appleboy/ssh-action@master
