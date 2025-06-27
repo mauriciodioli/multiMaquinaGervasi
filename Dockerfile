@@ -19,19 +19,20 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia requirements y los instala
-COPY requirements.txt /src/
+COPY requirements.txt .
 
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia TODO el contexto a /src, de modo que quede /src/src/…
-COPY . /src/
+# Copia el código fuente
+COPY src/ .
 
 # Copia el script de copiado y da permisos de ejecución
-RUN chmod +x /src/scripts/copiar_archivo.sh
+COPY scripts/copiar_archivo.sh /scripts/copiar_archivo.sh
+RUN chmod +x /scripts/copiar_archivo.sh
 
-# Variables de entorno para Flask (apunta al módulo src.app)
-ENV FLASK_APP=src.app
+# Variables de entorno para Flask
+ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_ENV=development
 ENV FLASK_DEBUG=1
@@ -39,5 +40,5 @@ ENV FLASK_DEBUG=1
 # Puerto expuesto
 EXPOSE 5000
 
-# Comando para iniciar la app como módulo de paquete
-CMD ["python", "-m", "src.app"]
+# Comando para iniciar la app
+CMD ["python", "./app.py"]

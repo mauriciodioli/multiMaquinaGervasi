@@ -63,7 +63,7 @@ document.getElementById("form-modificar-componente").addEventListener("submit", 
             <button type="button"
                           class="btn btn-danger btn-sm btn-abrir-modal-materia-forma"
                            data-id="${ data.id }">
-                    Agregar Materia Formas
+                    Agregar Materia ssFormas
             </button>      
             <div class="d-flex align-items-center gap-2">
               <button type="button" class="btn btn-warning btn-sm btn-abrir-modal-modificar-componente"
