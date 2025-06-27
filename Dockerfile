@@ -2,7 +2,7 @@
 FROM python:3.12
 
 # Establece el directorio de trabajo
-WORKDIR /app
+WORKDIR /src
 
 # Instala dependencias del sistema para pyodbc + SQL Server
 RUN apt-get update && apt-get install -y \
@@ -19,18 +19,18 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia requirements y los instala
-COPY requirements.txt /app/
+COPY requirements.txt /src/
 
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia todo el código fuente, incluida la carpeta src/
-COPY . /app/
+# Copia TODO el contexto a /src, de modo que quede /src/src/…
+COPY . /src/
 
 # Copia el script de copiado y da permisos de ejecución
-RUN chmod +x /app/scripts/copiar_archivo.sh
+RUN chmod +x /src/scripts/copiar_archivo.sh
 
-# Variables de entorno para Flask
+# Variables de entorno para Flask (apunta al módulo src.app)
 ENV FLASK_APP=src.app
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_ENV=development
@@ -39,5 +39,5 @@ ENV FLASK_DEBUG=1
 # Puerto expuesto
 EXPOSE 5000
 
-# Comando para iniciar la app como módulo
+# Comando para iniciar la app como módulo de paquete
 CMD ["python", "-m", "src.app"]
