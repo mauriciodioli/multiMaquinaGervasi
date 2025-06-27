@@ -6,10 +6,10 @@ on:
       - main
 
 env:
-  DEPLOYMENT_VERSION: "msgervasi202505i"
-  NGROK_HOST: 0.tcp.eu.ngrok.io
-  NGROK_PORT: "11639"
-  SSH_USER: Administrator
+  DEPLOYMENT_VERSION: "msgervasi202505i"     # nombre del contenedor
+  NGROK_HOST: 5.tcp.eu.ngrok.io              # ← el host que te dio ngrok
+  NGROK_PORT: "18256"                        # ← el puerto TCP
+  SSH_USER: multimaquina                     # ← tu usuario en Ubuntu-WSL (NO Administrator)
 
 jobs:
   deploy-to-cluster:
