@@ -60,19 +60,19 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
+          # Verifica que las variables estén pobladas
+          echo "Host: $NGROK_HOST  Port: $NGROK_PORT  User: $SSH_USER"
+
           # Añade la clave del host ngrok a known_hosts
-          ssh-keyscan -p ${{ secrets.NGROK_PORT }} ${{ secrets.NGROK_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -p $NGROK_PORT $NGROK_HOST >> ~/.ssh/known_hosts
 
           # Comprueba el acceso por SSH “a pelo”
           ssh -vvv \
             -o StrictHostKeyChecking=yes \
             -i ~/.ssh/id_rsa \
-            -p ${{ secrets.NGROK_PORT }} \
-            ${{ secrets.SSH_USER }}@${{ secrets.NGROK_HOST }} \
+            -p $NGROK_PORT \
+            $SSH_USER@$NGROK_HOST \
             echo "OK desde runner"
-
-
-
 
 
 
@@ -86,14 +86,14 @@ jobs:
           script: |
             powershell -Command "
               try {
-                docker stop '${{ env.DEPLOYMENT_VERSION }}' | Out-Null
+                docker stop `"$DEPLOYMENT_VERSION`" | Out-Null
                 Write-Host 'Contenedor detenido'
               } catch {
                 Write-Host 'No se pudo detener (no existe?)'
               }
 
               try {
-                docker rm '${{ env.DEPLOYMENT_VERSION }}' | Out-Null
+                docker rm `"$DEPLOYMENT_VERSION`" | Out-Null
                 Write-Host 'Contenedor eliminado'
               } catch {
                 Write-Host 'No se pudo eliminar (no existe?)'
@@ -125,7 +125,7 @@ jobs:
               docker pull docker.io/${{ secrets.DOCKER_USERNAME }}/msgervasi202505i:latest
 
               docker run -d `
-                --name '${{ env.DEPLOYMENT_VERSION }}' `
+                --name `"$DEPLOYMENT_VERSION`" `
                 -p 5002:5000 `
                 --restart always `
                 docker.io/${{ secrets.DOCKER_USERNAME }}/msgervasi202505i:latest
@@ -141,11 +141,12 @@ jobs:
           script: |
             powershell -Command "
               Write-Host '⏳ Esperando que el contenedor esté activo…'
-              for ($i = 1; $i -le 10; $i++) {
-                if (docker ps --filter \"name=${{ env.DEPLOYMENT_VERSION }}\" --format '{{.ID}}') {
+              for (\$i = 1; \$i -le 10; \$i++) {
+                if (docker ps --filter \"name=$DEPLOYMENT_VERSION\" --format '{{.ID}}') {
                   Write-Host '✅ Contenedor iniciado.'; exit 0
                 }
                 Start-Sleep -Seconds 5
               }
               Write-Error '❌ Timeout esperando el contenedor'; exit 1
             "
+
