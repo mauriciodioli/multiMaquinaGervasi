@@ -44,27 +44,12 @@ jobs:
       - name: Verify Docker Hub Login
         run: docker info
 
-     # Define el nombre base y el tag del commit
-      - name: Set image name
-        id: meta
+      - name: Build and Push to Docker Hub 
+        id: build_and_push
         run: |
-          echo "IMAGE=${{ secrets.DOCKER_USERNAME }}/msgervasi202505i" >> $GITHUB_ENV
-          echo "SHA_TAG=${{ github.sha }}"                         >> $GITHUB_ENV
-
-      # Build con ambos tags a la vez
-      - name: Build image
-        run: |
-          docker build \
-            -t $IMAGE:latest \
-            -t $IMAGE:$SHA_TAG \
-            .
-
-      # Push ambos tags
-      - name: Push images
-        run: |
-          docker push $IMAGE:latest
-          docker push $IMAGE:$SHA_TAG
-
+              docker build -t ${{ secrets.DOCKER_USERNAME }}/msgervasi202505i:latest .
+              docker push ${{ secrets.DOCKER_USERNAME }}/msgervasi202505i:latest
+        
 
       - name: Test raw SSH
         run: |
