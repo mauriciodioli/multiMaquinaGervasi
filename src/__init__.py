@@ -1,6 +1,3 @@
-from dotenv import load_dotenv
-import os
-
 from flask import Flask, request, render_template, redirect, flash
 from flask_mail import Mail
 from flask_cors import CORS
@@ -33,7 +30,7 @@ from src.controller.autenticacion.login import login
 from src.utils.conexion_db_crud import conexion_db_crud
 
 mail = Mail()
-load_dotenv('/app/config/.env')
+
 # ───────────────────────────────────────────────────────────
 def create_app() -> Flask:
     app = Flask(__name__, template_folder="templates")

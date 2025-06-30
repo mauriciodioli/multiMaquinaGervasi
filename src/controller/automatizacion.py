@@ -17,8 +17,8 @@ automatizacion = Blueprint('automatizacion', __name__)
 
 
 # Cargar rutas desde .env
-origen_raw = os.getenv('ORIGEN_PATH')
-destino_raw = os.getenv('DESTINO_PATH')
+origen_raw = '/app/src'
+destino_raw = '/app/src'
 
 # Normalizar las rutas
 origen = os.path.normpath(origen_raw)
