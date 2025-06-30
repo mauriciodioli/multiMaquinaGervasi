@@ -12,9 +12,3 @@ __pycache__/
 .vscode/
 
 
-# Ignorar archivos de configuración de PyCharm
-.idea/
-# Ignorar archivos de configuración de JetBrains
-*.iml
-# Ignorar archivos de configuración de Jupyter
-.ipynb_checkpoints
