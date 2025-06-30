@@ -1,8 +1,6 @@
-# Usa imagen oficial de Python 3.12
 FROM python:3.12
 
-# Establece el directorio de trabajo
-WORKDIR /src
+WORKDIR /app
 
 # Instala dependencias del sistema para pyodbc + SQL Server
 RUN apt-get update && apt-get install -y \
@@ -18,27 +16,22 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia requirements y los instala
+# ───────── 2. Dependencias Python ─────────
 COPY requirements.txt .
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copia el código fuente
-COPY src/ .
+# ───────── 3. Código ─────────
+COPY src    /app/src
+COPY config /app/config
 
 # Copia el script de copiado y da permisos de ejecución
 COPY scripts/copiar_archivo.sh /scripts/copiar_archivo.sh
 RUN chmod +x /scripts/copiar_archivo.sh
 
-# Variables de entorno para Flask
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
-ENV FLASK_ENV=development
-ENV FLASK_DEBUG=1
+# ───────── 4. PYTHONPATH ─────────
+ENV PYTHONPATH=/app:/app/src
 
 # Puerto expuesto
-EXPOSE 5000
+EXPOSE 5000 
 
-# Comando para iniciar la app
-CMD ["python", "./app.py"]
+CMD ["python", "-m", "src.app"]
