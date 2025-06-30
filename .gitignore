@@ -7,9 +7,14 @@ __pycache__/
 *.pyc
 *.pyo
 
-
-
 # Ignorar archivos de espacio de trabajo de VSCode
 *.code-workspace
 .vscode/
 
+
+# Ignorar archivos de configuración de PyCharm
+.idea/
+# Ignorar archivos de configuración de JetBrains
+*.iml
+# Ignorar archivos de configuración de Jupyter
+.ipynb_checkpoints
