@@ -53,26 +53,7 @@ jobs:
           else
             echo "✅ La imagen ya existe en Docker Hub."
           fi
-      - name: Test raw SSH
-        run: |
-          # Prepara el directorio .ssh
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
-          # Verifica que las variables estén pobladas
-          echo "Host: $NGROK_HOST  Port: $NGROK_PORT  User: $SSH_USER"
-
-          # Añade la clave del host ngrok a known_hosts
-          ssh-keyscan -p $NGROK_PORT $NGROK_HOST >> ~/.ssh/known_hosts
-
-          # Comprueba el acceso por SSH “a pelo”
-          ssh -vvv \
-            -o StrictHostKeyChecking=yes \
-            -i ~/.ssh/id_rsa \
-            -p $NGROK_PORT \
-            $SSH_USER@$NGROK_HOST \
-            echo "OK desde runner"
+      
 
 
 
