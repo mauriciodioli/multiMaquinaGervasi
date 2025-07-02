@@ -23,7 +23,7 @@ RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 # ───────── 3. Código ─────────
 COPY src    /app/src
 COPY config /app/config
-COPY config/.env /app/.env
+
 
 # Copia el script de copiado y da permisos de ejecución
 COPY scripts/copiar_archivo.sh /scripts/copiar_archivo.sh
