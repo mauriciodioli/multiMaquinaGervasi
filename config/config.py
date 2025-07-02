@@ -1,8 +1,9 @@
 import os
-from dotenv import load_dotenv
 import urllib.parse
+from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv(Path('/app/.env'))
 
-load_dotenv()  # Cargar variables del .env
 
 class Config:
     
