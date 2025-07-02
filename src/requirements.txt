@@ -25,6 +25,7 @@ pyparsing==3.2.3
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 pytz==2025.2
+pymysql
 scipy==1.15.3
 six==1.17.0
 SQLAlchemy==2.0.29
