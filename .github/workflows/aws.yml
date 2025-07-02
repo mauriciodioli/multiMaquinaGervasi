@@ -100,15 +100,7 @@ jobs:
             sleep 5
           done
 
-      - name: Copy tokenAwsGervasi.pem to container
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ env.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            docker cp /home/ubuntu/tokenAwsGervasi.pem ${{ env.DEPLOYMENT_VERSION }}:/src
-
+      
       - name: Install vim & ffmpeg inside the container
         uses: appleboy/ssh-action@master
         with:
