@@ -17,7 +17,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      # 1) Smoke test: comprueba SSH y Docker
+      # 1 Smoke test: comprueba SSH y Docker
       - name: Test SSH & Docker on EC2
         uses: appleboy/ssh-action@master
         with:
@@ -29,7 +29,7 @@ jobs:
             docker --version
             docker ps
 
-      # 2) (Opcional) Instala Docker en EC2 si aún no está
+      # 2 (Opcional) Instala Docker en EC2 si aún no está
       - name: Ensure Docker installed on EC2
         uses: appleboy/ssh-action@master
         with:
