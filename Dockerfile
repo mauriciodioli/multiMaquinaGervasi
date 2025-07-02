@@ -1,33 +1,33 @@
 FROM python:3.12
 
+# 1. Define el directorio de trabajo
 WORKDIR /app
 
-# Instala dependencias del sistema para pyodbc + SQL Server
+# 2. Instala dependencias de sistema (pyodbc + SQL Server)
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
     apt-transport-https \
     unixodbc \
     unixodbc-dev \
-    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
-    && apt-get update \
-    && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+  && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+  && curl https://packages.microsoft.com/config/debian/10/prod.list \
+     > /etc/apt/sources.list.d/mssql-release.list \
+  && apt-get update \
+  && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-
-# Capa 3: Copiar solo el archivo de requisitos para aprovechar la caché
+# 3. Copia sólo requirements para cachear la instalación de pip
 COPY src/requirements.txt .
 
-# Capa 4: Instalar dependencias desde el archivo de requisitos
+# 4. Instala las librerías Python
 RUN pip install --no-cache-dir -r requirements.txt
 
+# 5. Instala git (si lo necesitas)
 RUN apt update && apt install -y git
 
-# Capa 6: Copiar todo el código fuente
-COPY src/ .
+# 6. Copia el paquete src completo dentro de /app/src
+COPY src ./src
 
-# Capa 7: Comando por defecto para ejecutar la aplicación
-CMD ["python", "./app.py"]
-
+# 7. Arranca la app usando su módulo
+CMD ["python", "-m", "src.app"]
