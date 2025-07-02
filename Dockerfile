@@ -16,23 +16,18 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# ───────── 2. Dependencias Python ─────────
-COPY requirements.txt .
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-# ───────── 3. Código ─────────
-COPY src    /app/src
-COPY config /app/config
-COPY config/.env /app/.env
+# Capa 3: Copiar solo el archivo de requisitos para aprovechar la caché
+COPY src/requirements.txt .
 
-# Copia el script de copiado y da permisos de ejecución
-COPY scripts/copiar_archivo.sh /scripts/copiar_archivo.sh
-RUN chmod +x /scripts/copiar_archivo.sh
+# Capa 4: Instalar dependencias desde el archivo de requisitos
+RUN pip install --no-cache-dir -r requirements.txt
 
-# ───────── 4. PYTHONPATH ─────────
-ENV PYTHONPATH=/app:/app/src
+RUN apt update && apt install -y git
 
-# Puerto expuesto
-EXPOSE 5000 
+# Capa 6: Copiar todo el código fuente
+COPY src/ .
 
-CMD ["python", "-m", "src.app"]
+# Capa 7: Comando por defecto para ejecutar la aplicación
+CMD ["python", "./app.py"]
+
