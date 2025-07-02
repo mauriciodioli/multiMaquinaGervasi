@@ -1,8 +1,9 @@
 FROM python:3.12
 
-WORKDIR /app
+# 1. Directorio de trabajo real
+WORKDIR /src
 
-# Instala dependencias de sistema
+# 2. Dependencias de sistema…
 RUN apt-get update && apt-get install -y \
     curl gnupg apt-transport-https unixodbc unixodbc-dev \
   && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
@@ -13,15 +14,16 @@ RUN apt-get update && apt-get install -y \
   && apt-get clean && rm -rf /var/lib/apt/lists/* \
   && apt-get install -y git
 
-# Copia requirements e instala
+# 3. Instala requirements.txt
 COPY src/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia TODO el contenido de tu proyecto (incluye src/, config/, app.py…)
-COPY . .
+# 4. Copia TODO el código en /src
+COPY src/ .
 
-# Asegura que /app está en PYTHONPATH
-ENV PYTHONPATH=/app
+# 5. Asegura que Python busque en /src
+ENV PYTHONPATH=/src
 
-# Arranca el módulo tal cual lo escribiste
+# 6. Arranca tu app como módulo
 CMD ["python", "-m", "src.app"]
+
