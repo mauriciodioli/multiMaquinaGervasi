@@ -5,88 +5,117 @@ on:
 
 name: deploy
 env:
-  DEPLOYMENT_VERSION: "ms-multimaquina" # Variable global para representar 202404    
+  DEPLOYMENT_VERSION: "ms-multimaquina"
 
 jobs:
   deploy-to-cluster:
     runs-on: ubuntu-latest
     env:
-      EC2_HOST: ec2-54-234-169-22.compute-1.amazonaws.com # IMAGEN PRODUCCION
+      EC2_HOST: ec2-54-234-169-22.compute-1.amazonaws.com
+
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-        
-    - name: Set Dockerfile WORKDIR to /src
-      run: |
-        sed -i 's/WORKDIR \/app/WORKDIR \/src/' Dockerfile
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-    - name: Build and Push to Docker Hub
-      uses: docker/build-push-action@v1
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        repository: ${{ github.repository_owner }}/msgervasi202505i
-        tag_with_ref: true
-        tags: ${{ github.sha }}
+      # 1) Smoke test: comprueba SSH y Docker
+      - name: Test SSH & Docker on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "== SSH & Docker OK =="
+            docker --version
+            docker ps
 
-    - name: Stop and remove existing container
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ env.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          docker stop ${{ env.DEPLOYMENT_VERSION }} || echo "Container already stopped"
-          docker rm ${{ env.DEPLOYMENT_VERSION }} || echo "Container already removed"
+      # 2) (Opcional) Instala Docker en EC2 si aún no está
+      - name: Ensure Docker installed on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo apt update
+            sudo apt install -y docker.io
+            sudo groupadd docker || true
+            sudo usermod -aG docker ubuntu
+            sudo systemctl enable docker
+            sudo systemctl start docker
 
-    - name: Remove existing Docker image
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ env.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          IMAGE_ID=$(docker images -q ${{ github.repository_owner }}/msgervasi202505i)
-          echo "IMAGE_ID is $IMAGE_ID"
-          if [ ! -z "$IMAGE_ID" ]; then
-            docker rmi $IMAGE_ID
-          fi
+      - name: Set Dockerfile WORKDIR to /src
+        run: |
+          sed -i 's/WORKDIR \/app/WORKDIR \/src/' Dockerfile
 
-    - name: Copy Docker image to AWS instance
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ env.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          docker pull docker.io/${{ github.repository_owner }}/msgervasi202505i:${{ github.sha }}
-          docker run -d --name ${{ env.DEPLOYMENT_VERSION }} -p 5000:5000 --restart always docker.io/${{ github.repository_owner }}/msgervasi202505i:${{ github.sha }}
+      - name: Build and Push to Docker Hub
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: ${{ github.repository_owner }}/msgervasi202505i
+          tag_with_ref: true
+          tags: ${{ github.sha }}
 
-    - name: Wait until container is running
-      run: |
-        until docker ps -q --filter name=${{ env.DEPLOYMENT_VERSION }}; do
-          echo "Waiting for container to start..."
-          sleep 5
-        done
+      - name: Stop and remove existing container
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker stop ${{ env.DEPLOYMENT_VERSION }} || echo "Container already stopped"
+            docker rm   ${{ env.DEPLOYMENT_VERSION }} || echo "Container already removed"
 
-    - name: Copy tokenAwsGervasi.pem to Docker container
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ env.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-            set -e  # Detener el script si hay un error en cualquier comando
-            docker cp /home/ubuntu/tokenAwsGervasi.pem ms-multimaquina:/src
-          
-    - name: Install and start vim and ffmpeg inside the container
-      uses: appleboy/ssh-action@master
-      with:
-         host: ${{ env.EC2_HOST }}
-         username: ubuntu
-         key: ${{ secrets.SSH_PRIVATE_KEY }}
-         script: |               
-                   docker exec $(docker ps -q --filter name=${{ env.DEPLOYMENT_VERSION }}) bash -c "
-                   apt update &&  apt-get install -y vim 
-                   "
-          
+      - name: Remove existing Docker image
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            IMAGE_ID=$(docker images -q ${{ github.repository_owner }}/msgervasi202505i)
+            if [ -n "$IMAGE_ID" ]; then
+              docker rmi $IMAGE_ID
+            fi
+
+      - name: Deploy new container
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker pull docker.io/${{ github.repository_owner }}/msgervasi202505i:${{ github.sha }}
+            docker run -d \
+              --name ${{ env.DEPLOYMENT_VERSION }} \
+              -p 5000:5000 \
+              --restart always \
+              docker.io/${{ github.repository_owner }}/msgervasi202505i:${{ github.sha }}
+
+      - name: Wait until container is running
+        run: |
+          until docker ps -q --filter name=${{ env.DEPLOYMENT_VERSION }}; do
+            echo "Waiting for container to start..."
+            sleep 5
+          done
+
+      - name: Copy tokenAwsGervasi.pem to container
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker cp /home/ubuntu/tokenAwsGervasi.pem ${{ env.DEPLOYMENT_VERSION }}:/src
+
+      - name: Install vim & ffmpeg inside the container
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker exec ${{ env.DEPLOYMENT_VERSION }} bash -c "
+              apt update && apt-get install -y vim ffmpeg
+            "
