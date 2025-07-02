@@ -1,36 +1,38 @@
 FROM python:3.12
+
 WORKDIR /app
 
-# 1) Dependencias del sistema
+# Instala dependencias del sistema para pyodbc + SQL Server
 RUN apt-get update && apt-get install -y \
-    curl gnupg apt-transport-https unixodbc unixodbc-dev git \
-  && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-  && curl https://packages.microsoft.com/config/debian/10/prod.list \
-     > /etc/apt/sources.list.d/mssql-release.list \
-  && apt-get update \
-  && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
+    curl \
+    gnupg \
+    apt-transport-https \
+    unixodbc \
+    unixodbc-dev \
+    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# 2) Python libs
+# ───────── 2. Dependencias Python ─────────
 COPY src/requirements.txt .
-RUN pip install --upgrade pip \
- && pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-# 3) Tu código
+# ───────── 3. Código ─────────
 COPY src    /app/src
 COPY config /app/config
 COPY config/.env /app/.env
 
-# 4) Scripts de utilidad
-COPY scripts /app/scripts
-RUN chmod +x /app/scripts/*.sh
+# Copia el script de copiado y da permisos de ejecución
+COPY scripts/copiar_archivo.sh /scripts/copiar_archivo.sh
+RUN chmod +x /scripts/copiar_archivo.sh
 
-# 5) Python path
+# ───────── 4. PYTHONPATH ─────────
 ENV PYTHONPATH=/app:/app/src
 
-# 6) Red
-EXPOSE 5000
+# Puerto expuesto
+EXPOSE 5000 
 
-# 7) Inicio
 CMD ["python", "-m", "src.app"]
-
