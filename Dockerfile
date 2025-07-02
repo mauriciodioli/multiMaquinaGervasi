@@ -25,9 +25,6 @@ COPY src    /app/src
 COPY config /app/config
 COPY config/.env /app/.env
 
-RUN set -o allexport \
-    && source /app/.env \
-    && set +o allexport
 # Copia el script de copiado y da permisos de ejecución
 COPY scripts/copiar_archivo.sh /scripts/copiar_archivo.sh
 RUN chmod +x /scripts/copiar_archivo.sh
