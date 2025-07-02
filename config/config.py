@@ -27,8 +27,20 @@ class Config:
         f"Encrypt={SQLSERVER_ENCRYPT};"
         f"TrustServerCertificate={SQLSERVER_TRUST_CERTIFICATE};"
     )
-
-    SQLALCHEMY_DATABASE_URI = f"mssql+pyodbc:///?odbc_connect={params}"
+  
+    # SQLALCHEMY_DATABASE_URI = f"mssql+pyodbc:///?odbc_connect={params}"
+    
+    
+    
+    user = os.environ["MYSQL_USER"]
+    password = os.environ["MYSQL_PASSWORD"]
+    host = os.environ["MYSQL_HOST"]
+    database = os.environ["MYSQL_DATABASE"]
+    port = os.environ["MYSQL_PORT"]  # Asegúrate de tener la variable de entorno MYSQL_PORT configurada
+    SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{user}:{password}@{host}:{port}/{database}'
+    
+    
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
