@@ -1,150 +1,92 @@
-name: deploy
-
 on:
   push:
     branches:
-      - main
+      - master
 
+name: deploy
 env:
-  DEPLOYMENT_VERSION: "msgervasi202505i"     # nombre del contenedor
-  NGROK_HOST: 6.tcp.eu.ngrok.io              # ← el host que te dio ngrok
-  NGROK_PORT: "18253"                        # ← el puerto TCP
-  SSH_USER: multimaquina                     # ← tu usuario en Ubuntu-WSL (NO Administrator)
+  DEPLOYMENT_VERSION: "ms-multimaquina" # Variable global para representar 202404    
 
 jobs:
   deploy-to-cluster:
-    if: github.actor != 'dependabot[bot]' && github.actor != 'dependabot-preview[bot]'
     runs-on: ubuntu-latest
-    concurrency:
-      group: deploy
-      cancel-in-progress: true
-
+    env:
+      EC2_HOST: ec2-54-234-169-22.compute-1.amazonaws.com # IMAGEN PRODUCCION
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-
-      - name: Verify Changes are Checked Out
-        run: |
-          echo "Verifying changes..."
-          ls -l
-
-      - name: Set Dockerfile WORKDIR to /app
-        run: |
-          sed -i 's|WORKDIR .*|WORKDIR /app|' Dockerfile
-
-      - name: Verify Dockerfile WORKDIR
-        run: grep WORKDIR Dockerfile
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Verify Docker Hub Login
-        run: docker info
-
-      - name: Build and Push to Docker Hub 
-        id: build_and_push
-        run: |
-              docker build -t ${{ secrets.DOCKER_USERNAME }}/msgervasi202505i:latest .
-              docker push ${{ secrets.DOCKER_USERNAME }}/msgervasi202505i:latest
+    - name: Checkout Repository
+      uses: actions/checkout@v2
         
+    - name: Set Dockerfile WORKDIR to /src
+      run: |
+        sed -i 's/WORKDIR \/app/WORKDIR \/src/' Dockerfile
 
-      - name: Test raw SSH
-        run: |
-          # Prepara el directorio .ssh
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+    - name: Build and Push to Docker Hub
+      uses: docker/build-push-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: ${{ github.repository_owner }}/msgervasi202505i
+        tag_with_ref: true
+        tags: ${{ github.sha }}
 
-          # Verifica que las variables estén pobladas
-          echo "Host: $NGROK_HOST  Port: $NGROK_PORT  User: $SSH_USER"
+    - name: Stop and remove existing container
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ env.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          docker stop ${{ env.DEPLOYMENT_VERSION }} || echo "Container already stopped"
+          docker rm ${{ env.DEPLOYMENT_VERSION }} || echo "Container already removed"
 
-          # Añade la clave del host ngrok a known_hosts
-          ssh-keyscan -p $NGROK_PORT $NGROK_HOST >> ~/.ssh/known_hosts
+    - name: Remove existing Docker image
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ env.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          IMAGE_ID=$(docker images -q ${{ github.repository_owner }}/msgervasi202505i)
+          echo "IMAGE_ID is $IMAGE_ID"
+          if [ ! -z "$IMAGE_ID" ]; then
+            docker rmi $IMAGE_ID
+          fi
 
-          # Comprueba el acceso por SSH “a pelo”
-          ssh -vvv \
-            -o StrictHostKeyChecking=yes \
-            -i ~/.ssh/id_rsa \
-            -p $NGROK_PORT \
-            $SSH_USER@$NGROK_HOST \
-            echo "OK desde runner"
+    - name: Copy Docker image to AWS instance
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ env.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          docker pull docker.io/${{ github.repository_owner }}/msgervasi202505i:${{ github.sha }}
+          docker run -d --name ${{ env.DEPLOYMENT_VERSION }} -p 5000:5000 --restart always docker.io/${{ github.repository_owner }}/msgervasi202505i:${{ github.sha }}
 
+    - name: Wait until container is running
+      run: |
+        until docker ps -q --filter name=${{ env.DEPLOYMENT_VERSION }}; do
+          echo "Waiting for container to start..."
+          sleep 5
+        done
 
-
-      - name: Stop & remove existing container
-        uses: appleboy/ssh-action@master
-        with:
-          host:     ${{ env.NGROK_HOST }}
-          port:     ${{ env.NGROK_PORT }}
-          username: ${{ env.SSH_USER }}
-          key:      ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            powershell -Command "
-              try {
-                docker stop `"$DEPLOYMENT_VERSION`" | Out-Null
-                Write-Host 'Contenedor detenido'
-              } catch {
-                Write-Host 'No se pudo detener (no existe?)'
-              }
-
-              try {
-                docker rm `"$DEPLOYMENT_VERSION`" | Out-Null
-                Write-Host 'Contenedor eliminado'
-              } catch {
-                Write-Host 'No se pudo eliminar (no existe?)'
-              }
-            "
-
-      - name: Remove existing Docker image
-        uses: appleboy/ssh-action@master
-        with:
-          host:     ${{ env.NGROK_HOST }}
-          port:     ${{ env.NGROK_PORT }}
-          username: ${{ env.SSH_USER }}
-          key:      ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            powershell -Command "
-              \$image = docker images -q ${{ secrets.DOCKER_USERNAME }}/msgervasi202505i
-              if (\$image) { docker rmi \$image }
-            "
-
-      - name: Pull & run new image
-        uses: appleboy/ssh-action@master
-        with:
-          host:     ${{ env.NGROK_HOST }}
-          port:     ${{ env.NGROK_PORT }}
-          username: ${{ env.SSH_USER }}
-          key:      ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            powershell -Command "
-              docker pull docker.io/${{ secrets.DOCKER_USERNAME }}/msgervasi202505i:latest
-
-              docker run -d `
-                --name `"$DEPLOYMENT_VERSION`" `
-                -p 5002:5000 `
-                --restart always `
-                docker.io/${{ secrets.DOCKER_USERNAME }}/msgervasi202505i:latest
-            "
-
-      - name: Wait until container is running
-        uses: appleboy/ssh-action@master
-        with:
-          host:     ${{ env.NGROK_HOST }}
-          port:     ${{ env.NGROK_PORT }}
-          username: ${{ env.SSH_USER }}
-          key:      ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            powershell -Command "
-              Write-Host '⏳ Esperando que el contenedor esté activo…'
-              for (\$i = 1; \$i -le 10; \$i++) {
-                if (docker ps --filter \"name=$DEPLOYMENT_VERSION\" --format '{{.ID}}') {
-                  Write-Host '✅ Contenedor iniciado.'; exit 0
-                }
-                Start-Sleep -Seconds 5
-              }
-              Write-Error '❌ Timeout esperando el contenedor'; exit 1
-            "
-
+    - name: Copy tokenAwsGervasi.pem to Docker container
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ env.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+            set -e  # Detener el script si hay un error en cualquier comando
+            docker cp /home/ubuntu/tokenAwsGervasi.pem ms-multimaquina:/src
+          
+    - name: Install and start vim and ffmpeg inside the container
+      uses: appleboy/ssh-action@master
+      with:
+         host: ${{ env.EC2_HOST }}
+         username: ubuntu
+         key: ${{ secrets.SSH_PRIVATE_KEY }}
+         script: |               
+                   docker exec $(docker ps -q --filter name=${{ env.DEPLOYMENT_VERSION }}) bash -c "
+                   apt update &&  apt-get install -y vim 
+                   "
+          
