@@ -98,3 +98,91 @@
 .navigation-main a {
   text-transform: uppercase;
 }
+
+
+
+
+
+/* 1) Modal fullscreen en móvil, sin scroll */
+#modal-menu {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+#modal-menu .modal-content {
+  background-color: #000;
+  color: #fff;
+  text-align: left;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 1rem;
+  overflow: hidden;       /* evita scroll */
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* 2) Close en esquina */
+#modal-menu-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #fff;
+}
+
+/* 3) Título */
+.modal-title {
+  margin: 2rem 0 1rem;
+  font-size: 1.4rem;
+}
+
+/* 4) Lista principal sin scroll en modal, scrolleable internamente si hay overflow */
+.modal-menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;       /* solo la lista hará scroll */
+}
+
+/* 5) Ítems */
+.modal-menu-list li {
+  padding: 0.5rem 0;
+}
+
+/* 6) Enlaces */
+.modal-menu-list a {
+  color: #fff;
+  text-decoration: none;
+  display: block;
+  padding: 0.3rem 0;
+}
+
+/* 7) Hover */
+.modal-menu-list a:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* 8) Detectar padres de sub-menú */
+.modal-menu-list li.has-sub > a::after {
+  content: "▸";
+  float: right;
+  transition: transform .2s;
+}
+
+/* 9) Sub-lista oculta por defecto */
+.modal-menu-list li ul {
+  display: none;
+  list-style: none;
+  padding-left: 1rem;
+}
+
+/* 10) Al abrir */
+.modal-menu-list li.open > a::after {
+  transform: rotate(90deg);
+}
+.modal-menu-list li.open > ul {
+  display: block;
+}

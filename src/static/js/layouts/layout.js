@@ -168,10 +168,151 @@ document.getElementById("confirmar-sql").addEventListener("click", () => {
 
 
 
+    
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+  const btnMenu    = document.getElementById('btn-menu-toggle');
+  const navMain    = document.querySelector('.navigation-main');
+  const modal      = document.getElementById('modal-menu');
+  const modalList  = document.getElementById('modal-menu-list');
+  const modalClose = document.getElementById('modal-menu-close');
+  if (!btnMenu || !navMain || !modal || !modalList || !modalClose) return;
+
+  function buildItem(liElem) {
+    const a = liElem.querySelector(':scope > a');
+    if (!a) return null;
+    const title = a.textContent.trim();
+    const href  = a.getAttribute('href') || '#';
+    const item = document.createElement('li');
+    const link = document.createElement('a');
+    link.href = href;
+    link.textContent = title;
+    item.appendChild(link);
+
+    const sub = liElem.querySelector(':scope > ul.sub-menu');
+    if (sub) {
+      item.classList.add('has-sub');
+      const subList = document.createElement('ul');
+      Array.from(sub.children).forEach(subLi => {
+        const subA = subLi.querySelector('a');
+        if (!subA) return;
+        const subItem = document.createElement('li');
+        const subLink = document.createElement('a');
+        subLink.href = subA.getAttribute('href') || '#';
+        subLink.textContent = subA.textContent.trim();
+        subItem.appendChild(subLink);
+        subList.appendChild(subItem);
+      });
+      item.appendChild(subList);
+    }
+    return item;
+  }
+
+  btnMenu.addEventListener('click', e => {
+    e.preventDefault();
+    modalList.innerHTML = '';
+    navMain.querySelectorAll(':scope > li').forEach(li => {
+      const item = buildItem(li);
+      if (item) modalList.appendChild(item);
+    });
+    modal.style.display = 'block';
+  });
+
+  modalClose.addEventListener('click', () => modal.style.display = 'none');
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.style.display = 'none';
+  });
+
+  modalList.addEventListener('click', e => {
+    const link = e.target.closest('a');
+    if (!link) return;
+    const li = e.target.closest('li.has-sub');
+    // si es padre y hay submenu, toggle
+    if (li && link.nextElementSibling) {
+      e.preventDefault();
+      li.classList.toggle('open');
+      return;
+    }
+    // si es enlace normal, cierra modal y deja que navegue
+    modal.style.display = 'none';
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  const btnMenu = document.getElementById('btn-menu-toggle');
+  const navMain = document.querySelector('.navigation-main');
+
+  // 1) Toggle menú principal
+  btnMenu.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    navMain.classList.toggle('open');
+  });
+
+  // 2) Busca dinámicamente todos los <li> que tengan un <ul class="sub-menu">
+  const submenuParents = Array.from(
+    navMain.querySelectorAll('ul.sub-menu')
+  ).map(ul => ul.parentElement);
+
+  console.log('🔧 Padres de sub-menú detectados:', submenuParents);
+
+  // 3) Para cada uno, enganchamos el click en su <a> principal
+  submenuParents.forEach(li => {
+    const trigger = li.querySelector('a');
+    console.log('  📌 Añadiendo listener a:', trigger.textContent.trim());
+    trigger.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      li.classList.toggle('open');
+      console.log(
+        `   ➤ ${trigger.textContent.trim()} ahora`,
+        li.classList.contains('open') ? 'abierto' : 'cerrado'
+      );
+    });
+  });
+});
 
 
 
