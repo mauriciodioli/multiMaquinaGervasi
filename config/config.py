@@ -2,6 +2,7 @@ import os
 import urllib.parse
 from pathlib import Path
 from dotenv import load_dotenv
+#load_dotenv()
 load_dotenv(Path('/app/.env'))
 
 
@@ -28,7 +29,7 @@ class Config:
         f"TrustServerCertificate={SQLSERVER_TRUST_CERTIFICATE};"
     )
   
-    # SQLALCHEMY_DATABASE_URI = f"mssql+pyodbc:///?odbc_connect={params}"
+    SQLALCHEMY_DATABASE_URI = f"mssql+pyodbc:///?odbc_connect={params}"
     
     
     
@@ -37,7 +38,7 @@ class Config:
     host = os.environ["MYSQL_HOST"]
     database = os.environ["MYSQL_DATABASE"]
     port = os.environ["MYSQL_PORT"]  # Asegúrate de tener la variable de entorno MYSQL_PORT configurada
-    SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{user}:{password}@{host}:{port}/{database}'
+     # SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{user}:{password}@{host}:{port}/{database}'
     
     
     
