@@ -1,23 +1,32 @@
 
 
 
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById("conexionSqlServer");
+  const modal = document.getElementById("modal-sqlserver");
 
-document.getElementById("conexionSqlServer").addEventListener("click", (e) => {
+  console.log("Btn conexión SQL:", btn, "Modal SQL:", modal);
+  if (!btn || !modal) return;  // si no existe, abortamos
+
+  btn.addEventListener("click", e => {
     e.preventDefault();
-    
-    // Llenar los inputs con los valores de localStorage
-    document.getElementById("input-sql-ip").value = localStorage.getItem("ipSqlServer") || "";
-    document.getElementById("input-sql-port").value = localStorage.getItem("portSqlServer") || "";
-    document.getElementById("input-sql-user").value = localStorage.getItem("userSqlServer") || "";
-    document.getElementById("input-sql-password").value = localStorage.getItem("pasSqlServer") || "";
+    debugger;  // aquí debería parar si todo está bien enlazado
 
-    // Mostrar el modal
-    const modal = document.getElementById("modal-sqlserver");
+    // Rellenar campos
+    document.getElementById("input-sql-ip").value       = localStorage.getItem("ipSqlServer") || "";
+    document.getElementById("input-sql-port").value     = localStorage.getItem("portSqlServer") || "";
+    document.getElementById("input-sql-user").value     = localStorage.getItem("userSqlServer") || "";
+    document.getElementById("input-sql-password").value = localStorage.getItem("pasSqlServer")    || "";
+
+    // Mostrar modal
     modal.style.display = "block";
+  });
+
+  // Ojo: recuerda enganchar también el cierre del modal aquí si aún no lo has hecho.
 });
 
 // Función para cerrar el modal
-document.getElementById("modal-close").addEventListener("click", () => {
+document.getElementById("modal-sql-close").addEventListener("click", () => {
     const modal = document.getElementById("modal-sqlserver");
     modal.style.display = "none";
 });
@@ -184,77 +193,99 @@ document.getElementById("confirmar-sql").addEventListener("click", () => {
 
 
 
-
-
-
-
-
-
-    document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
+  // — Elementos del DOM —
   const btnMenu    = document.getElementById('btn-menu-toggle');
   const navMain    = document.querySelector('.navigation-main');
-  const modal      = document.getElementById('modal-menu');
+  const modalMenu  = document.getElementById('modal-menu');
   const modalList  = document.getElementById('modal-menu-list');
   const modalClose = document.getElementById('modal-menu-close');
-  if (!btnMenu || !navMain || !modal || !modalList || !modalClose) return;
+  if (!btnMenu || !navMain || !modalMenu || !modalList || !modalClose) return;
 
-  function buildItem(liElem) {
-    const a = liElem.querySelector(':scope > a');
-    if (!a) return null;
-    const title = a.textContent.trim();
-    const href  = a.getAttribute('href') || '#';
-    const item = document.createElement('li');
-    const link = document.createElement('a');
-    link.href = href;
-    link.textContent = title;
-    item.appendChild(link);
+  // — Map de handlers: para cada id de <a>, su función —
+  const handlers = {
+    // Ejemplo: conexión SQL Server
+    conexionSqlServer(link) {
+      // Rellenas campos…
+      document.getElementById("input-sql-ip").value       = localStorage.getItem("ipSqlServer")   || "";
+      document.getElementById("input-sql-port").value     = localStorage.getItem("portSqlServer") || "";
+      document.getElementById("input-sql-user").value     = localStorage.getItem("userSqlServer") || "";
+      document.getElementById("input-sql-password").value = localStorage.getItem("pasSqlServer")  || "";
+      // Y abres tu modal específico
+      document.getElementById('modal-sqlserver').style.display = 'block';
+    },
 
-    const sub = liElem.querySelector(':scope > ul.sub-menu');
-    if (sub) {
-      item.classList.add('has-sub');
-      const subList = document.createElement('ul');
-      Array.from(sub.children).forEach(subLi => {
-        const subA = subLi.querySelector('a');
-        if (!subA) return;
-        const subItem = document.createElement('li');
-        const subLink = document.createElement('a');
-        subLink.href = subA.getAttribute('href') || '#';
-        subLink.textContent = subA.textContent.trim();
-        subItem.appendChild(subLink);
-        subList.appendChild(subItem);
-      });
-      item.appendChild(subList);
-    }
-    return item;
+    // Otro ejemplo: descargar Excel
+    descargar_tabla_excel(link) {
+      // Llama a tu función de exportar o dispara el click real
+      exportarTablaAExcel();
+    },
+
+    // Puedes añadir aquí más handlers:
+    // miOtroId(link) { … }
+  };
+
+  // — Funciones puras de clonación/recursividad —
+  function cloneLink(aElem) {
+    return aElem.cloneNode(true);
+  }
+  function buildMenu(ulElem) {
+    const newUl = document.createElement('ul');
+    Array.from(ulElem.children).forEach(liOrig => {
+      if (liOrig.tagName !== 'LI') return;
+      const aOrig = liOrig.querySelector(':scope > a');
+      if (!aOrig) return;
+      const liNew = document.createElement('li');
+      liNew.appendChild(cloneLink(aOrig));
+      const subUl = liOrig.querySelector(':scope > ul.sub-menu');
+      if (subUl) {
+        liNew.classList.add('has-sub');
+        liNew.appendChild(buildMenu(subUl));
+      }
+      newUl.appendChild(liNew);
+    });
+    return newUl;
   }
 
+  // — Abrir/Cerrar menú principal —
   btnMenu.addEventListener('click', e => {
     e.preventDefault();
     modalList.innerHTML = '';
-    navMain.querySelectorAll(':scope > li').forEach(li => {
-      const item = buildItem(li);
-      if (item) modalList.appendChild(item);
-    });
-    modal.style.display = 'block';
+    const rootUl = navMain.tagName === 'UL' ? navMain : navMain.querySelector('ul');
+    if (!rootUl) return;
+    modalList.appendChild(buildMenu(rootUl));
+    modalMenu.style.display = 'block';
+  });
+  modalClose.addEventListener('click', () => modalMenu.style.display = 'none');
+  modalMenu.addEventListener('click', e => {
+    if (e.target === modalMenu) modalMenu.style.display = 'none';
   });
 
-  modalClose.addEventListener('click', () => modal.style.display = 'none');
-  modal.addEventListener('click', e => {
-    if (e.target === modal) modal.style.display = 'none';
-  });
-
+  // — Delegación: un sólo listener para TODO el menú clonado —
   modalList.addEventListener('click', e => {
     const link = e.target.closest('a');
     if (!link) return;
-    const li = e.target.closest('li.has-sub');
-    // si es padre y hay submenu, toggle
-    if (li && link.nextElementSibling) {
+
+    // 1) Toggle submenus
+    if (link.nextElementSibling && link.parentElement.classList.contains('has-sub')) {
       e.preventDefault();
-      li.classList.toggle('open');
+      link.parentElement.classList.toggle('open');
       return;
     }
-    // si es enlace normal, cierra modal y deja que navegue
-    modal.style.display = 'none';
+
+    // 2) Handler específico si existe en el map
+    if (handlers[link.id]) {
+      e.preventDefault();
+      handlers[link.id](link);
+      return;
+    }
+
+    // 3) Default: cierra menú y navega
+    modalMenu.style.display = 'none';
+    // si es # o javascript:void(0) no hace nada
+    if (!/^#|javascript:/.test(link.getAttribute('href'))) {
+      window.location.href = link.href;
+    }
   });
 });
 
@@ -313,9 +344,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
-
-
-
 
 
 
