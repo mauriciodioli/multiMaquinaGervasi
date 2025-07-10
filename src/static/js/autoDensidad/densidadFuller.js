@@ -341,9 +341,16 @@ function eliminarMezcla(boton) {
 
 
 function agregarFilaMultiple(btn) {
-    const tbody = btn.nextElementSibling.querySelector("tbody");
-    const fila = document.createElement("tr");
+    // Cambiá '.tabla' por la clase/ID de tu tabla si es otra
+    const tbody = btn.closest(".card, body")   // sube al contenedor lógico
+                    .querySelector("table.tabla > tbody");
 
+    if (!tbody) {
+        console.error("No encontré tbody desde el botón", btn);
+        return;
+    }
+
+    const fila = document.createElement("tr");
     fila.innerHTML = `
         <td contenteditable="true">0</td>
         <td contenteditable="true">0</td>
@@ -351,6 +358,7 @@ function agregarFilaMultiple(btn) {
     `;
     tbody.appendChild(fila);
 }
+
 
 
 
