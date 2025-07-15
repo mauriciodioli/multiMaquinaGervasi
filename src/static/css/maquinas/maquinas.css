@@ -300,3 +300,16 @@ td, th {
 .modulo.activo {
     background-color: #dee0e0; /* Color deseado al hacer clic */
 }
+
+
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+  .menu-lateral {
+    order: 2; /* se va abajo o se esconde */
+  }
+  .contenido-principal {
+    order: 1;
+  }
+}
