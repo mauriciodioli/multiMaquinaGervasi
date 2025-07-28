@@ -3,6 +3,7 @@ from flask import Blueprint, request, render_template
 from src.model.usuario import Usuario
 from utils.db import db
 from src.utils.get_textos_menu  import get_textos_menu
+from src.utils.db_session import get_db_session
 trabajos_bp = Blueprint('trabajos', __name__)
 
 # Ruta para ver los trabajos
@@ -31,18 +32,18 @@ def listar_trabajos():
 def listar_maquinas():
     try:
         user_id = request.cookies.get("user_id")
-        usuario = db.session.get(Usuario, int(user_id)) if user_id else None
+        with get_db_session() as session:
+            usuario = session.get(Usuario, int(user_id)) if user_id else None
 
-        trabajos = ''
-        columnas = ''
-        
-        lang = request.cookies.get("lang", "es")
-        t_menu = get_textos_menu(lang)
-        return render_template('maquinas/maquinas.html', trabajos=trabajos, columnas=columnas, usuario=usuario, t_menu=t_menu)
+            trabajos = ''
+            columnas = ''
+            
+            lang = request.cookies.get("lang", "es")
+            t_menu = get_textos_menu(lang)
+            return render_template('maquinas/maquinas.html', trabajos=trabajos, columnas=columnas, usuario=usuario, t_menu=t_menu)
     except Exception as e:
         return f"Error conectando a la base de datos: {e}"
-    finally:
-        db.session.close()
+   
     
 @trabajos_bp.route('/trabajos/<int:id>')
 def ver_trabajo(id):

@@ -8,6 +8,7 @@ from utils.db import db
 from datetime import datetime
 import json
 import subprocess
+from src.utils.db_session import get_db_session
 
 
 # Cargar variables de entorno
@@ -37,24 +38,24 @@ def automatizacion_index():
     try:
         nombre_maquina = request.form.get('nombre_maquina')
         id_maquina = request.form.get('id')
+        with get_db_session() as session:
+            maquina = session.query(Maquina).filter_by(id=int(id_maquina)).first()
 
-        maquina = db.session.query(Maquina).filter_by(id=int(id_maquina)).first()
+            if not maquina:
+                mensaje = "❌ Error: Máquina no encontrada"
+                return render_template('automatizacion/automatizacion.html', mensaje=mensaje)
 
-        if not maquina:
-            mensaje = "❌ Error: Máquina no encontrada"
-            return render_template('automatizacion/automatizacion.html', mensaje=mensaje)
+            origen = os.path.join("/mnt/origen", maquina.nombreDb + '.mbd')
+            destino = '/mnt/destino'
 
-        origen = os.path.join("/mnt/origen", maquina.nombreDb + '.mbd')
-        destino = '/mnt/destino'
-
-        print(f"Copiando desde: {origen}")
-        print(f"Destino: {destino}")
-
-      
+            print(f"Copiando desde: {origen}")
+            print(f"Destino: {destino}")
 
         
 
-        return render_template('automatizacion/automatizacion.html', mensaje=mensaje)
+            
+
+            return render_template('automatizacion/automatizacion.html', mensaje=mensaje)
 
     except Exception as e:
         mensaje = f"❌ Error conectando o copiando: {e}"

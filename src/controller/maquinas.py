@@ -3,6 +3,7 @@ from flask import Blueprint, render_template,request,jsonify
 from src.model.maquina import Maquina
 from src.model.usuario import Usuario
 from utils.db import db
+from src.utils.db_session import get_db_session
 import json
 
 maquinas = Blueprint('maquinas', __name__)
@@ -20,48 +21,46 @@ def maquinas_online():
     try:
         data = request.get_json()
         user_id = request.cookies.get("user_id")
+        with get_db_session() as session:
+            usuario = session.query(Usuario).get(int(user_id))
+            if not usuario:
+                return jsonify({"success": False, "message": "Usuario no encontrado"})
 
-        usuario = db.session.query(Usuario).get(int(user_id))
-        if not usuario:
-            return jsonify({"success": False, "message": "Usuario no encontrado"})
-
-        if usuario.roll == "admin":
-            maquinas = db.session.query(Maquina).all()
-        else:
-            maquinas = db.session.query(Maquina).filter_by(user_id=int(user_id)).all()
-
-        resultado = []
-        for m in maquinas:
-            if isinstance(m.setting, str):
-                try:
-                    setting = json.loads(m.setting)
-                except:
-                    setting = {}
-            elif isinstance(m.setting, dict):
-                setting = m.setting
+            if usuario.roll == "admin":
+                maquinas = session.query(Maquina).all()
             else:
-                setting = {}
+                maquinas = session.query(Maquina).filter_by(user_id=int(user_id)).all()
 
-            resultado.append({
-                "id": m.id,
-                "user_id": user_id,
-                "userCuenta": m.userCuenta,
-                "estado": m.estado,
-                "potencia": m.potencia,
-                "nombre": m.nombre,
-                "ruta": m.ruta,
-                "nombreDb": m.nombreDb,
-                "nombreTabla": m.nombreTabla,
-                "modulos": setting.get("modulos", [])
-            })
+            resultado = []
+            for m in maquinas:
+                if isinstance(m.setting, str):
+                    try:
+                        setting = json.loads(m.setting)
+                    except:
+                        setting = {}
+                elif isinstance(m.setting, dict):
+                    setting = m.setting
+                else:
+                    setting = {}
 
-        return jsonify({"success": True, "maquinas": resultado})
+                resultado.append({
+                    "id": m.id,
+                    "user_id": user_id,
+                    "userCuenta": m.userCuenta,
+                    "estado": m.estado,
+                    "potencia": m.potencia,
+                    "nombre": m.nombre,
+                    "ruta": m.ruta,
+                    "nombreDb": m.nombreDb,
+                    "nombreTabla": m.nombreTabla,
+                    "modulos": setting.get("modulos", [])
+                })
 
-    except Exception as e:
-        db.session.rollback()
+            return jsonify({"success": True, "maquinas": resultado})
+
+    except Exception as e:        
         return jsonify({"success": False, "message": str(e)})
-    finally:
-        db.session.close()
+    
 
 
 
@@ -97,48 +96,49 @@ def listar_maquina_sql_filtrado_history():
          # print(f"Puerto: {port}")
          # print(f"Usuario: {user}")
          # print(f"Contraseña: {password}")  # Ojo con la contraseña, para evitar logueo no deseado
-        maquinas = db.session.query(Maquina).filter_by(nombre=nombre).all()
-        conn = pyodbc.connect(
-            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-            f"SERVER={ip},{port};"
-            f"DATABASE=CNC_DATA;"
-            f"UID={user};"
-            f"PWD={password};"
-            "Encrypt=no;"
-            "TrustServerCertificate=yes;"
-        )
-        cursor = conn.cursor()
+        with get_db_session() as session:
+            maquinas = session.query(Maquina).filter_by(nombre=nombre).all()
+            conn = pyodbc.connect(
+                f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+                f"SERVER={ip},{port};"
+                f"DATABASE=CNC_DATA;"
+                f"UID={user};"
+                f"PWD={password};"
+                "Encrypt=no;"
+                "TrustServerCertificate=yes;"
+            )
+            cursor = conn.cursor()
 
-        campos = "*"
+            campos = "*"
+            
+            try:
+                nombre_tabla_dict = json.loads(maquinas[0].nombreTabla)
+                tablas = nombre_tabla_dict.get("tablas", [])
+                if not tablas:
+                    return jsonify(success=False, error="No hay tablas configuradas en nombreTabla.")
+            
         
-        try:
-            nombre_tabla_dict = json.loads(maquinas[0].nombreTabla)
-            tablas = nombre_tabla_dict.get("tablas", [])
-            if not tablas:
-                return jsonify(success=False, error="No hay tablas configuradas en nombreTabla.")
-           
-       
-            if filtro_clfile != "":
-                cursor.execute(f"SELECT TOP 50 {campos} FROM {tablas[0]} WHERE CLFileName LIKE ? ORDER BY DataOraReg DESC", f"%{filtro_clfile}%")
-            else:
-                cursor.execute(f"SELECT TOP 50 {campos} FROM {tablas[0]} ORDER BY DataOraReg DESC")
-            
-            
-        except Exception as e:
-            return jsonify(success=False, error=f"Error al procesar nombreTabla: {str(e)}")
-    
-            
-        columnas = [col[0] for col in cursor.description]
-        filas = cursor.fetchall()
+                if filtro_clfile != "":
+                    cursor.execute(f"SELECT TOP 50 {campos} FROM {tablas[0]} WHERE CLFileName LIKE ? ORDER BY DataOraReg DESC", f"%{filtro_clfile}%")
+                else:
+                    cursor.execute(f"SELECT TOP 50 {campos} FROM {tablas[0]} ORDER BY DataOraReg DESC")
+                
+                
+            except Exception as e:
+                return jsonify(success=False, error=f"Error al procesar nombreTabla: {str(e)}")
+        
+                
+            columnas = [col[0] for col in cursor.description]
+            filas = cursor.fetchall()
 
-        trabajos = [dict(zip(columnas, fila)) for fila in filas]
+            trabajos = [dict(zip(columnas, fila)) for fila in filas]
 
-        conn.close()
-        return jsonify({
-            "success": True,
-            "columnas": columnas,
-            "trabajos": trabajos
-        })
+            conn.close()
+            return jsonify({
+                "success": True,
+                "columnas": columnas,
+                "trabajos": trabajos
+            })
 
     except Exception as e:
         print(f"❌ Error conectando a la base de datos: {e}")
@@ -166,62 +166,62 @@ def resumen_trabajos():
         port = data.get("port", "")
         user = data.get("user", "")
         password = data.get("password", "")
+        with get_db_session() as session:
+            # ✅ Obtener tabla desde modelo
+            maquinas = session.query(Maquina).filter_by(nombre=database).all()
+            if not maquinas:
+                return jsonify(success=False, error="Máquina no encontrada")
 
-        # ✅ Obtener tabla desde modelo
-        maquinas = db.session.query(Maquina).filter_by(nombre=database).all()
-        if not maquinas:
-            return jsonify(success=False, error="Máquina no encontrada")
+            try:
+                nombre_tabla_dict = json.loads(maquinas[0].nombreTabla)
+                tablas = nombre_tabla_dict.get("tablas", [])
+                if not tablas:
+                    return jsonify(success=False, error="No hay tablas configuradas.")
+                tabla_tempi = tablas[0]
+            except Exception as e:
+                return jsonify(success=False, error=f"Error al procesar nombreTabla: {str(e)}")
 
-        try:
-            nombre_tabla_dict = json.loads(maquinas[0].nombreTabla)
-            tablas = nombre_tabla_dict.get("tablas", [])
-            if not tablas:
-                return jsonify(success=False, error="No hay tablas configuradas.")
-            tabla_tempi = tablas[0]
-        except Exception as e:
-            return jsonify(success=False, error=f"Error al procesar nombreTabla: {str(e)}")
+            conn = pyodbc.connect(
+                f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+                f"SERVER={ip},{port};"
+                f"DATABASE=CNC_DATA;"
+                f"UID={user};"
+                f"PWD={password};"
+                "Encrypt=no;"
+                "TrustServerCertificate=yes;"
+            )
+            cursor = conn.cursor()
 
-        conn = pyodbc.connect(
-            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-            f"SERVER={ip},{port};"
-            f"DATABASE=CNC_DATA;"
-            f"UID={user};"
-            f"PWD={password};"
-            "Encrypt=no;"
-            "TrustServerCertificate=yes;"
-        )
-        cursor = conn.cursor()
-
-        # ✅ Query con nombre de tabla dinámico
-        query = f"""
-            SELECT 
-                T.ID_CLF,
-                T.CLFileName,
-                T.STZFileName,
-                T.CodMacchina,
-                T.DataOraReg,
-                TRY_CAST(T.TempTotale AS FLOAT) AS TempTotale
-            FROM 
-                (
-                    SELECT DISTINCT STZFileName 
+            # ✅ Query con nombre de tabla dinámico
+            query = f"""
+                SELECT 
+                    T.ID_CLF,
+                    T.CLFileName,
+                    T.STZFileName,
+                    T.CodMacchina,
+                    T.DataOraReg,
+                    TRY_CAST(T.TempTotale AS FLOAT) AS TempTotale
+                FROM 
+                    (
+                        SELECT DISTINCT STZFileName 
+                        FROM {tabla_tempi}
+                    ) AS STZ
+                OUTER APPLY (
+                    SELECT TOP 1 *
                     FROM {tabla_tempi}
-                ) AS STZ
-            OUTER APPLY (
-                SELECT TOP 1 *
-                FROM {tabla_tempi}
-                WHERE {tabla_tempi}.STZFileName = STZ.STZFileName
-                ORDER BY DataOraReg DESC
-            ) AS T
-            ORDER BY T.DataOraReg DESC;
-        """
+                    WHERE {tabla_tempi}.STZFileName = STZ.STZFileName
+                    ORDER BY DataOraReg DESC
+                ) AS T
+                ORDER BY T.DataOraReg DESC;
+            """
 
-        cursor.execute(query)
-        columnas = [col[0] for col in cursor.description]
-        filas = cursor.fetchall()
-        resumen = [dict(zip(columnas, fila)) for fila in filas]
+            cursor.execute(query)
+            columnas = [col[0] for col in cursor.description]
+            filas = cursor.fetchall()
+            resumen = [dict(zip(columnas, fila)) for fila in filas]
 
-        conn.close()
-        return jsonify({"success": True, "resumen": resumen})
+            conn.close()
+            return jsonify({"success": True, "resumen": resumen})
 
     except Exception as e:
         print(f"❌ Error conectando a la base de datos: {e}")
@@ -249,64 +249,64 @@ def resumen_lamiere():
         password = data.get("password", "")
         precio_kwh = data.get("precioKwh")
         potencia_kw = data.get("potencia")
+        with get_db_session() as session:
+            # ✅ Obtener nombreTabla desde la base
+            maquinas = session.query(Maquina).filter_by(nombre=database).all()
+            if not maquinas:
+                return jsonify(success=False, error="Máquina no encontrada")
 
-        # ✅ Obtener nombreTabla desde la base
-        maquinas = db.session.query(Maquina).filter_by(nombre=database).all()
-        if not maquinas:
-            return jsonify(success=False, error="Máquina no encontrada")
+            try:
+                nombre_tabla_dict = json.loads(maquinas[0].nombreTabla)
+                tablas = nombre_tabla_dict.get("tablas", [])
+                if len(tablas) < 2:
+                    return jsonify(success=False, error="Faltan tablas en nombreTabla")
+                tabla_tempi = tablas[0]
+                tabla_icone = tablas[1]
+            except Exception as e:
+                return jsonify(success=False, error=f"Error al procesar nombreTabla: {str(e)}")
 
-        try:
-            nombre_tabla_dict = json.loads(maquinas[0].nombreTabla)
-            tablas = nombre_tabla_dict.get("tablas", [])
-            if len(tablas) < 2:
-                return jsonify(success=False, error="Faltan tablas en nombreTabla")
-            tabla_tempi = tablas[0]
-            tabla_icone = tablas[1]
-        except Exception as e:
-            return jsonify(success=False, error=f"Error al procesar nombreTabla: {str(e)}")
+            # ✅ Conexión
+            conn = pyodbc.connect(
+                f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+                f"SERVER={ip},{port};"
+                f"DATABASE=CNC_DATA;"
+                f"UID={user};"
+                f"PWD={password};"
+                "Encrypt=no;"
+                "TrustServerCertificate=yes;"
+            )
+            cursor = conn.cursor()
 
-        # ✅ Conexión
-        conn = pyodbc.connect(
-            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-            f"SERVER={ip},{port};"
-            f"DATABASE=CNC_DATA;"
-            f"UID={user};"
-            f"PWD={password};"
-            "Encrypt=no;"
-            "TrustServerCertificate=yes;"
-        )
-        cursor = conn.cursor()
+            # ✅ Consulta usando tablas dinámicas
+            query = f"""
+                SELECT TOP 50
+                    t.ID_CLF,                    
+                    t.STZFileName,
+                    t.TempTotale,
+                    i.FileIcona,
+                    i.NumIconCLF,
+                    i.TIconTaglio,
+                    t.DataOraReg
+                FROM 
+                    {tabla_tempi} t
+                LEFT JOIN 
+                    {tabla_icone} i ON t.ID_CLF = i.ID_CLF
+                ORDER BY 
+                    t.DataOraReg DESC;
+            """
 
-        # ✅ Consulta usando tablas dinámicas
-        query = f"""
-            SELECT TOP 50
-                t.ID_CLF,                    
-                t.STZFileName,
-                t.TempTotale,
-                i.FileIcona,
-                i.NumIconCLF,
-                i.TIconTaglio,
-                t.DataOraReg
-            FROM 
-                {tabla_tempi} t
-            LEFT JOIN 
-                {tabla_icone} i ON t.ID_CLF = i.ID_CLF
-            ORDER BY 
-                t.DataOraReg DESC;
-        """
+            cursor.execute(query)
+            columnas = [col[0] for col in cursor.description]
+            filas = cursor.fetchall()
 
-        cursor.execute(query)
-        columnas = [col[0] for col in cursor.description]
-        filas = cursor.fetchall()
+            resumen = []
+            for fila in filas:
+                fila_dict = dict(zip(columnas, fila))
+                fila_dict = agregar_costos(fila_dict, potencia_kw, precio_kwh)
+                resumen.append(fila_dict)
 
-        resumen = []
-        for fila in filas:
-            fila_dict = dict(zip(columnas, fila))
-            fila_dict = agregar_costos(fila_dict, potencia_kw, precio_kwh)
-            resumen.append(fila_dict)
-
-        conn.close()
-        return jsonify({"success": True, "resumen": resumen})
+            conn.close()
+            return jsonify({"success": True, "resumen": resumen})
 
     except Exception as e:
         print(f"❌ Error conectando a la base de datos: {e}")
@@ -363,59 +363,59 @@ def listar_maquina_sql_filtrado_cost():
         port = data.get("port", "")
         user = data.get("user", "")
         password = data.get("password", "")
+        with get_db_session() as session:
+            # ✅ Buscar máquina y obtener tabla desde nombreTabla
+            maquinas = session.query(Maquina).filter_by(nombre=database).all()
+            if not maquinas:
+                return jsonify(success=False, error="Máquina no encontrada")
 
-        # ✅ Buscar máquina y obtener tabla desde nombreTabla
-        maquinas = db.session.query(Maquina).filter_by(nombre=database).all()
-        if not maquinas:
-            return jsonify(success=False, error="Máquina no encontrada")
+            try:
+                nombre_tabla_dict = json.loads(maquinas[0].nombreTabla)
+                tablas = nombre_tabla_dict.get("tablas", [])
+                if not tablas:
+                    return jsonify(success=False, error="No hay tablas configuradas.")
+                tabla_tempi = tablas[0]
+            except Exception as e:
+                return jsonify(success=False, error=f"Error al procesar nombreTabla: {str(e)}")
 
-        try:
-            nombre_tabla_dict = json.loads(maquinas[0].nombreTabla)
-            tablas = nombre_tabla_dict.get("tablas", [])
-            if not tablas:
-                return jsonify(success=False, error="No hay tablas configuradas.")
-            tabla_tempi = tablas[0]
-        except Exception as e:
-            return jsonify(success=False, error=f"Error al procesar nombreTabla: {str(e)}")
-
-        conn = pyodbc.connect(
-            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-            f"SERVER={ip},{port};"
-            f"DATABASE=CNC_DATA;"
-            f"UID={user};"
-            f"PWD={password};"
-            "Encrypt=no;"
-            "TrustServerCertificate=yes;"
-        )
-        cursor = conn.cursor()
-
-        campos = "ID_CLF, CLFileName, CodMacchina, DataOraReg, TempTotale"
-
-        # ✅ Ejecutar consulta sobre tabla dinámica
-        if filtro_clfile != "":
-            cursor.execute(
-                f"SELECT TOP 500 {campos} FROM {tabla_tempi} WHERE CLFileName LIKE ? ORDER BY DataOraReg DESC",
-                f"%{filtro_clfile}%"
+            conn = pyodbc.connect(
+                f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+                f"SERVER={ip},{port};"
+                f"DATABASE=CNC_DATA;"
+                f"UID={user};"
+                f"PWD={password};"
+                "Encrypt=no;"
+                "TrustServerCertificate=yes;"
             )
-        else:
-            cursor.execute(
-                f"SELECT TOP 500 {campos} FROM {tabla_tempi} ORDER BY DataOraReg DESC"
-            )
+            cursor = conn.cursor()
 
-        columnas = [col[0] for col in cursor.description]
-        filas = cursor.fetchall()
+            campos = "ID_CLF, CLFileName, CodMacchina, DataOraReg, TempTotale"
 
-        columnas_finales = ["ID_CLF", "CLFileName", "CodMacchina", "DataOraReg", "TempTotale", "Consumo_kWh", "Costo_Euro"]
-        trabajos = []
+            # ✅ Ejecutar consulta sobre tabla dinámica
+            if filtro_clfile != "":
+                cursor.execute(
+                    f"SELECT TOP 500 {campos} FROM {tabla_tempi} WHERE CLFileName LIKE ? ORDER BY DataOraReg DESC",
+                    f"%{filtro_clfile}%"
+                )
+            else:
+                cursor.execute(
+                    f"SELECT TOP 500 {campos} FROM {tabla_tempi} ORDER BY DataOraReg DESC"
+                )
 
-        for fila in filas:
-            fila_dict = dict(zip(columnas, fila))
-            fila_dict = calculo_consumo_por_trabajo(fila_dict, precioKwh, potencia)
-            resultado = {k: fila_dict.get(k) for k in columnas_finales}
-            trabajos.append(resultado)
+            columnas = [col[0] for col in cursor.description]
+            filas = cursor.fetchall()
 
-        conn.close()
-        return jsonify({"success": True, "columnas": columnas_finales, "trabajos": trabajos})
+            columnas_finales = ["ID_CLF", "CLFileName", "CodMacchina", "DataOraReg", "TempTotale", "Consumo_kWh", "Costo_Euro"]
+            trabajos = []
+
+            for fila in filas:
+                fila_dict = dict(zip(columnas, fila))
+                fila_dict = calculo_consumo_por_trabajo(fila_dict, precioKwh, potencia)
+                resultado = {k: fila_dict.get(k) for k in columnas_finales}
+                trabajos.append(resultado)
+
+            conn.close()
+            return jsonify({"success": True, "columnas": columnas_finales, "trabajos": trabajos})
 
     except Exception as e:
         print(f"❌ Error conectando a la base de datos: {e}")

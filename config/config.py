@@ -2,8 +2,8 @@ import os
 import urllib.parse
 from pathlib import Path
 from dotenv import load_dotenv
-#load_dotenv()
-load_dotenv(Path('/app/.env'))
+load_dotenv()
+#load_dotenv(Path('/app/.env'))
 
 
 class Config:

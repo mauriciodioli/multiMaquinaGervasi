@@ -10,6 +10,7 @@ from src.model.mixFamiliari.composicion_agregado import ComposicionAgregado
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 from src.utils.auth import current_user
+from src.utils.db_session import get_db_session
 
 from src.utils.get_textos_menu  import get_textos_menu
 
@@ -31,55 +32,52 @@ def crud_agregados_mixFamiliari_lista_agregados_json():
     try:
         user_id = request.cookies.get("user_id")
         entidad_id = request.cookies.get("entidad_id")
+        with get_db_session() as session:
+            query = session.query(Agregado)
+            if user_id:
+                query = query.filter_by(usuario_id=int(user_id))
+            if entidad_id:
+                query = query.filter_by(entidad_id=int(entidad_id))
 
-        query = db.session.query(Agregado)
-        if user_id:
-            query = query.filter_by(usuario_id=int(user_id))
-        if entidad_id:
-            query = query.filter_by(entidad_id=int(entidad_id))
+            agregados = query.all()
 
-        agregados = query.all()
-
-        return jsonify([
-            {"id": a.id, "nombre": a.nombre or f"Agregado {a.id}"}
-            for a in agregados
-        ])
+            return jsonify([
+                {"id": a.id, "nombre": a.nombre or f"Agregado {a.id}"}
+                for a in agregados
+            ])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    finally:
-        db.session.close()
+  
 
 @crud_agregado.route('/api/crud_agregados_mixFamiliari/obtener_curva_agregado/<int:agregado_id>', methods=["GET"])
 def obtener_curva_de_agregado(agregado_id):
     try:
-        agregado = db.session.query(Agregado).get(agregado_id)
-        if not agregado:
-            return jsonify({"error": "Agregado no encontrado"}), 404
+        with get_db_session() as session:
+            agregado = session.query(Agregado).get(agregado_id)
+            if not agregado:
+                return jsonify({"error": "Agregado no encontrado"}), 404
 
-        mallas = (
-            db.session.query(AgregadoMalla)
-            .filter_by(agregado_id=agregado_id)
-            .join(Malla)
-            .order_by(Malla.diametro_mm.desc())
-            .all()
-        )
+            mallas = (
+                 session.query(AgregadoMalla)
+                .filter_by(agregado_id=agregado_id)
+                .join(Malla)
+                .order_by(Malla.diametro_mm.desc())
+                .all()
+            )
 
-        resultado = [
-            {
-                "tamiz": malla.malla.diametro_mm,
-                "porcentaje":'NULL',  # Si tenés porcentaje real guardado, podés devolverlo acá
-                "nombre_agregado": agregado.nombre
-            }
-            for malla in mallas
-        ]
+            resultado = [
+                {
+                    "tamiz": malla.malla.diametro_mm,
+                    "porcentaje":'NULL',  # Si tenés porcentaje real guardado, podés devolverlo acá
+                    "nombre_agregado": agregado.nombre
+                }
+                for malla in mallas
+            ]
 
-        return jsonify(resultado)
+            return jsonify(resultado)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    finally:
-        db.session.close()
-
-
+   
 
 @crud_agregado.route('/mixFamiliari_crud_agregado_agregados_listar/', methods=['GET', 'POST'])
 def mixFamiliari_crud_agregado_agregados_listar():
@@ -91,42 +89,41 @@ def mixFamiliari_crud_agregado_agregados_listar():
         else:
             user_id = request.cookies.get("user_id")
             entidad_id = request.cookies.get("entidad_id")
+        with get_db_session() as session:
+            query = session.query(Agregado)
+            if user_id:
+                query = query.filter_by(usuario_id=int(user_id))
+            if entidad_id:
+                query = query.filter_by(entidad_id=int(entidad_id))
+            query = query.options(joinedload(Agregado.entidad))
+            mezclas = query.all()
 
-        query = db.session.query(Agregado)
-        if user_id:
-            query = query.filter_by(usuario_id=int(user_id))
-        if entidad_id:
-            query = query.filter_by(entidad_id=int(entidad_id))
-        query = query.options(joinedload(Agregado.entidad))
-        mezclas = query.all()
+            for m in mezclas:
+                if hasattr(m, "setting") and isinstance(m.setting, str):
+                    try:
+                        m.setting = json.loads(m.setting)
+                    except Exception:
+                        m.setting = {}
 
-        for m in mezclas:
-            if hasattr(m, "setting") and isinstance(m.setting, str):
-                try:
-                    m.setting = json.loads(m.setting)
-                except Exception:
-                    m.setting = {}
+            usuario = current_user()
+            if not usuario:
+                return redirect("/login")
 
-        usuario = current_user()
-        if not usuario:
-            return redirect("/login")
+            lang = request.cookies.get("lang", "es")
+            t_menu = get_textos_menu(lang)
 
-        lang = request.cookies.get("lang", "es")
-        t_menu = get_textos_menu(lang)
-
-        return render_template(
-            'pantalla_agregados/pantalla_agregados.html',
-            mezclas=mezclas,
-            usuario=usuario,
-            t_menu=t_menu
-        )
+            return render_template(
+                'pantalla_agregados/pantalla_agregados.html',
+                mezclas=mezclas,
+                usuario=usuario,
+                t_menu=t_menu
+            )
 
     except Exception as e:
-        db.session.rollback()
+      
         return f"Error conectando a la base de datos: {e}"
 
-    finally:
-        db.session.close()
+  
   
 
 
@@ -139,36 +136,34 @@ def crear_agregado():
         data = request.get_json()
         estado_raw = data.get('estado')
         estado = True if estado_raw == "Attivo" else False
+        with get_db_session() as session:
+            nuevo = Agregado(
+                nombre=data.get('nombre'),
+                descripcion=data.get('descripcion'),                  
+                estado=estado,
+                usuario_id=int(data.get('usuario_id')),
+                entidad_id=int(data.get('entidad_id')),                  
+                pais=data.get('pais')
+            )
 
-        nuevo = Agregado(
-            nombre=data.get('nombre'),
-            descripcion=data.get('descripcion'),                  
-            estado=estado,
-            usuario_id=int(data.get('usuario_id')),
-            entidad_id=int(data.get('entidad_id')),                  
-            pais=data.get('pais')
-        )
+            session.add(nuevo)
+            session.commit()
 
-        db.session.add(nuevo)
-        db.session.commit()
+            # Obtener el nombre de la entidad relacionada
+            entidad_nombre = nuevo.entidad.nombre if nuevo.entidad else None
 
-        # Obtener el nombre de la entidad relacionada
-        entidad_nombre = nuevo.entidad.nombre if nuevo.entidad else None
-
-        return jsonify({
-            'id': nuevo.id,
-            'nombre': nuevo.nombre,
-            'descripcion': nuevo.descripcion,
-            'estado': "Attivo" if nuevo.estado else "Inattivo",
-            'idioma': nuevo.idioma or "—",
-            'entidad_id': nuevo.entidad_id,
-            'entidad_nombre': entidad_nombre
-        })
-    except SQLAlchemyError as e:
-        db.session.rollback()
+            return jsonify({
+                'id': nuevo.id,
+                'nombre': nuevo.nombre,
+                'descripcion': nuevo.descripcion,
+                'estado': "Attivo" if nuevo.estado else "Inattivo",
+                'idioma': nuevo.idioma or "—",
+                'entidad_id': nuevo.entidad_id,
+                'entidad_nombre': entidad_nombre
+            })
+    except SQLAlchemyError as e:       
         return jsonify({'error': str(e)}), 400
-    finally:
-        db.session.close()
+    
 
 
 
@@ -177,17 +172,16 @@ def crear_agregado():
 @crud_agregado.route('/mixFamiliari_eliminar_agregado/<int:id>', methods=['DELETE'])
 def mixFamiliari_eliminar_agregado(id):
     try:
-        agregado = Agregado.query.get(id)
-        if not agregado:
-            return jsonify({'error': 'No encontrado'}), 404
-        db.session.delete(agregado)
-        db.session.commit()
-        return jsonify({'success': True})
-    except Exception as e:
-        db.session.rollback()
+        with get_db_session() as session:
+            agregado = session.query(Agregado).filter_by(id=id).first()
+            if not agregado:
+                return jsonify({'error': 'No encontrado'}), 404
+            session.delete(agregado)
+            session.commit()
+            return jsonify({'success': True})
+    except Exception as e:      
         return jsonify({'error': str(e)}), 400
-    finally:
-        db.session.close()
+ 
 
 
 
@@ -202,31 +196,30 @@ def mixFamiliari_eliminar_agregado(id):
 def mixFamiliari_modificar_agregado(id):
     try:
         data = request.get_json()
-        agregado = Agregado.query.get(id)
-        if not agregado:
-            return jsonify({'error': 'No encontrado'}), 404
+        with get_db_session() as session:
+            agregado = session.query(Agregado).filter_by(id=id).first()
+            if not agregado:
+                return jsonify({'error': 'No encontrado'}), 404
 
-        agregado.nombre = data.get('nombre')
-        agregado.descripcion = data.get('descripcion')
-        estado_raw = data.get('estado')
-        agregado.estado = True if estado_raw == "Attivo" else False
+            agregado.nombre = data.get('nombre')
+            agregado.descripcion = data.get('descripcion')
+            estado_raw = data.get('estado')
+            agregado.estado = True if estado_raw == "Attivo" else False
 
-        db.session.commit()
+            session.commit()
 
-        entidad_nombre = agregado.entidad.nombre if agregado.entidad else None
+            entidad_nombre = agregado.entidad.nombre if agregado.entidad else None
 
-        return jsonify({
-            'id': agregado.id,
-            'nombre': agregado.nombre,
-            'descripcion': agregado.descripcion,
-            'entidad_nombre': entidad_nombre,
-            'estado': "True" if agregado.estado else "False"
-        })
-    except Exception as e:
-        db.session.rollback()
+            return jsonify({
+                'id': agregado.id,
+                'nombre': agregado.nombre,
+                'descripcion': agregado.descripcion,
+                'entidad_nombre': entidad_nombre,
+                'estado': "True" if agregado.estado else "False"
+            })
+    except Exception as e:       
         return jsonify({'error': str(e)}), 400
-    finally:
-        db.session.close()
+  
 
 
 
@@ -235,47 +228,46 @@ def mixFamiliari_modificar_agregado(id):
 @crud_agregado.route('/mixFamiliari_crud_agregado_agregados/<int:agregado_id>/detalle')
 def mixFamiliari_crud_agregado_agregados(agregado_id):
     try:
-        agregado = db.session.query(Agregado).get(agregado_id)
-        if not agregado:
-            return "Agregado no encontrado", 404
+        with get_db_session() as session:
+            agregado = session.query(Agregado).get(agregado_id)
+            if not agregado:
+                return "Agregado no encontrado", 404
 
-        agregado_mallas = (
-                            db.session.query(AgregadoMalla)
-                            .options(joinedload(AgregadoMalla.malla))  # 👈 fuerza carga anticipada
-                            .filter_by(agregado_id=agregado_id)
-                            .all()
-                        )
+            agregado_mallas = (
+                                session.query(AgregadoMalla)
+                                .options(joinedload(AgregadoMalla.malla))  # 👈 fuerza carga anticipada
+                                .filter_by(agregado_id=agregado_id)
+                                .all()
+                            )
 
-        composicion = (
-                    db.session.query(ComposicionAgregado)
-                    .options(joinedload(ComposicionAgregado.componente))  # 👈 fuerza carga de componente
-                    .filter_by(agregado_id=agregado_id)
-                    .order_by(ComposicionAgregado.orden.asc())
-                    .all()
-                )
+            composicion = (
+                        session.query(ComposicionAgregado)
+                        .options(joinedload(ComposicionAgregado.componente))  # 👈 fuerza carga de componente
+                        .filter_by(agregado_id=agregado_id)
+                        .order_by(ComposicionAgregado.orden.asc())
+                        .all()
+                    )
 
 
-        mallas_disponibles = db.session.query(Malla).all()
-        componentes_disponibles = db.session.query(Componente_quimico).all()
-        lang = request.cookies.get("lang", "es")
-        t_menu = get_textos_menu(lang)
-        return render_template(
-            'pantalla_agregados/agregado_detalle.html',
-            agregado=agregado,
-            entidad=agregado.entidad,
-            agregado_mallas=agregado_mallas,
-            composicion=composicion,
-            mallas_disponibles=mallas_disponibles,
-            componentes_disponibles=componentes_disponibles,
-            t_menu=t_menu
-        )
+            mallas_disponibles = session.query(Malla).all()
+            componentes_disponibles = session.query(Componente_quimico).all()
+            lang = request.cookies.get("lang", "es")
+            t_menu = get_textos_menu(lang)
+            return render_template(
+                'pantalla_agregados/agregado_detalle.html',
+                agregado=agregado,
+                entidad=agregado.entidad,
+                agregado_mallas=agregado_mallas,
+                composicion=composicion,
+                mallas_disponibles=mallas_disponibles,
+                componentes_disponibles=componentes_disponibles,
+                t_menu=t_menu
+            )
 
-    except SQLAlchemyError as e:
-        db.session.rollback()
+    except SQLAlchemyError as e:       
         return f"Error al cargar el detalle del agregado: {str(e)}", 500
 
-    finally:
-        db.session.close()
+    
 
 
 
@@ -286,34 +278,32 @@ def mixFamiliari_crud_agregado_agregados_mallas(agregado_id):
 
         if not malla_id:
             return jsonify({"error": "Falta seleccionar la malla"}), 400
+        with get_db_session() as session:
+            # Uso correcto de session para obtener la malla
+            malla = session.query(Malla).get(int(malla_id))
+            if not malla:
+                return jsonify({"error": "Malla no encontrada"}), 404
 
-        # Uso correcto de db.session para obtener la malla
-        malla = db.session.query(Malla).get(int(malla_id))
-        if not malla:
-            return jsonify({"error": "Malla no encontrada"}), 404
+            nueva = AgregadoMalla(
+                agregado_id=agregado_id,
+                malla_id=malla.id,
+                porcentaje=0
+            )
 
-        nueva = AgregadoMalla(
-            agregado_id=agregado_id,
-            malla_id=malla.id,
-            porcentaje=0
-        )
+            session.add(nueva)
+            session.commit()
 
-        db.session.add(nueva)
-        db.session.commit()
+            return jsonify({
+                "success": True,
+                "id": nueva.id,
+                "nombre_comercial": malla.nombre_comercial,
+                "diametro_mm": malla.diametro_mm
+            })
 
-        return jsonify({
-            "success": True,
-            "id": nueva.id,
-            "nombre_comercial": malla.nombre_comercial,
-            "diametro_mm": malla.diametro_mm
-        })
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
+    except SQLAlchemyError as e:   
         return jsonify({"error": str(e)}), 500
 
-    finally:
-        db.session.close()
+  
 
 
 
@@ -323,20 +313,19 @@ def mixFamiliari_crud_agregado_agregados_mallas(agregado_id):
 @crud_agregado.route('/mixFamiliari_crud_agregado_agregados_mallas/<int:malla_agregada_id>/eliminar', methods=['DELETE'])
 def eliminar_malla_de_agregado(malla_agregada_id):
     try:
-        relacion = db.session.query(AgregadoMalla).get(malla_agregada_id)
-        if not relacion:
-            return jsonify({"error": "Relación malla-agregado no encontrada"}), 404
+        with get_db_session() as session:
+            relacion = session.query(AgregadoMalla).get(malla_agregada_id)
+            if not relacion:
+                return jsonify({"error": "Relación malla-agregado no encontrada"}), 404
 
-        db.session.delete(relacion)
-        db.session.commit()
-        return jsonify({"success": True})
+            session.delete(relacion)
+            session.commit()
+            return jsonify({"success": True})
     
-    except SQLAlchemyError as e:
-        db.session.rollback()
+    except SQLAlchemyError as e:    
         return jsonify({"error": str(e)}), 500
     
-    finally:
-        db.session.close()
+    
 
 
 
@@ -365,34 +354,31 @@ def agregar_componente_agregado(agregado_id):
 
         if not all([componente_id, porcentaje, orden]):
             return jsonify({"error": "Faltan campos obligatorios"}), 400
+        with get_db_session() as session:
+            nuevo = ComposicionAgregado(
+                agregado_id=agregado_id,
+                componente_id=int(componente_id),
+                porcentaje=float(porcentaje),
+                orden=int(orden)
+            )
 
-        nuevo = ComposicionAgregado(
-            agregado_id=agregado_id,
-            componente_id=int(componente_id),
-            porcentaje=float(porcentaje),
-            orden=int(orden)
-        )
+            session.add(nuevo)
+            session.commit()
 
-        db.session.add(nuevo)
-        db.session.commit()
+            componente = session.query(Componente_quimico).get(int(componente_id))
 
-        componente = db.session.query(Componente_quimico).get(int(componente_id))
+            return jsonify({
+                "success": True,
+                "id": nuevo.id,
+                "nombre": componente.nombre,
+                "porcentaje": nuevo.porcentaje,
+                "orden": nuevo.orden
+            })
 
-        return jsonify({
-            "success": True,
-            "id": nuevo.id,
-            "nombre": componente.nombre,
-            "porcentaje": nuevo.porcentaje,
-            "orden": nuevo.orden
-        })
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
+    except SQLAlchemyError as e:      
         return jsonify({"error": str(e)}), 500
 
-    finally:
-        db.session.close()
-
+   
 
 
 
@@ -401,30 +387,28 @@ def agregar_componente_agregado(agregado_id):
 def modificar_componente_de_agregado(componente_agregada_id):
     try:
         data = request.get_json()  # Solo get_json, ya no request.form
-        relacion = db.session.query(ComposicionAgregado).get(componente_agregada_id)
-        if not relacion:
-            return jsonify({"error": "Componente no encontrado"}), 404
+        with get_db_session() as session:
+            relacion = session.query(ComposicionAgregado).get(componente_agregada_id)
+            if not relacion:
+                return jsonify({"error": "Componente no encontrado"}), 404
 
-        relacion.porcentaje = data.get('porcentaje')
-        relacion.orden = data.get('orden')
-        # Si permites cambiar el componente:
-        # relacion.componente_id = data.get('componente_id')
+            relacion.porcentaje = data.get('porcentaje')
+            relacion.orden = data.get('orden')
+            # Si permites cambiar el componente:
+            # relacion.componente_id = data.get('componente_id')
 
-        db.session.commit()
+            session.commit()
 
-        return jsonify({
-            "success": True,
-            "id": relacion.id,
-            "nombre": relacion.componente.nombre,
-            "porcentaje": relacion.porcentaje,
-            "orden": relacion.orden
-        })
-    except Exception as e:
-        db.session.rollback()
+            return jsonify({
+                "success": True,
+                "id": relacion.id,
+                "nombre": relacion.componente.nombre,
+                "porcentaje": relacion.porcentaje,
+                "orden": relacion.orden
+            })
+    except Exception as e:       
         return jsonify({"error": str(e)}), 500
-    finally:
-        db.session.close()
-
+   
 
 
 
@@ -436,17 +420,16 @@ def modificar_componente_de_agregado(componente_agregada_id):
 @crud_agregado.route('/mixFamiliari_crud_agregado_agregados_componente/<int:componente_agregada_id>/eliminar', methods=['DELETE'])
 def eliminar_componente_de_agregado(componente_agregada_id):
     try:
-        relacion = db.session.query(ComposicionAgregado).get(componente_agregada_id)
-        if not relacion:
-            return jsonify({"error": "Relación componente-agregado no encontrada"}), 404
+        with get_db_session() as session:
+            relacion = session.query(ComposicionAgregado).get(componente_agregada_id)
+            if not relacion:
+                return jsonify({"error": "Relación componente-agregado no encontrada"}), 404
 
-        db.session.delete(relacion)
-        db.session.commit()
-        return jsonify({"success": True})
+            session.delete(relacion)
+            session.commit()
+            return jsonify({"success": True})
     
-    except SQLAlchemyError as e:
-        db.session.rollback()
+    except SQLAlchemyError as e:     
         return jsonify({"error": str(e)}), 500
     
-    finally:
-        db.session.close()
+  

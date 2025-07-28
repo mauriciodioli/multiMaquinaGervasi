@@ -11,6 +11,7 @@ from src.model.mixFamiliari.analisis_granulometrico import AnalisisGranulometric
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 from src.utils.auth import current_user
+from src.utils.db_session import get_db_session
 
 from src.utils.get_textos_menu  import get_textos_menu
 
@@ -34,30 +35,28 @@ def analisis_granulometrico():
         usuario = current_user()
         if not usuario:
             return jsonify({"error": "Usuario no autenticado"}), 401
+        with get_db_session() as session:
+            analisis = (
+                session.query(AnalisisGranulometrico)
+                .filter_by(usuario_id=usuario.id)
+                .order_by(AnalisisGranulometrico.fecha.desc())
+                .limit(5)
+                .all()
+            )
 
-        analisis = (
-            db.session.query(AnalisisGranulometrico)
-            .filter_by(usuario_id=usuario.id)
-            .order_by(AnalisisGranulometrico.fecha.desc())
-            .limit(5)
-            .all()
-        )
+            resultado = []
+            for a in analisis:
+                resultado.append({
+                    "id": a.id,
+                    "nombre": a.nombre,
+                    "fecha": a.fecha.isoformat(),
+                    "resultado": a.resultado,  # Asegurate que sea JSON serializable
+                    "diagnostico": a.diagnostico  # idem
+                })
 
-        resultado = []
-        for a in analisis:
-            resultado.append({
-                "id": a.id,
-                "nombre": a.nombre,
-                "fecha": a.fecha.isoformat(),
-                "resultado": a.resultado,  # Asegurate que sea JSON serializable
-                "diagnostico": a.diagnostico  # idem
-            })
+            return jsonify(resultado)
 
-        return jsonify(resultado)
-
-    except Exception as e:
-        db.session.rollback()
+    except Exception as e:       
         return jsonify({"error": str(e)}), 500
 
-    finally:
-        db.session.close()
+    
