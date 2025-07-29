@@ -129,7 +129,7 @@ def asignar_entidad_usuario():
 def eliminar_usuario(id):
     try:
         with get_db_session() as session:
-            usuario = db.session.get(Usuario, id)
+            usuario = session.get(Usuario, id)
             if not usuario:
                 return jsonify(success=False, error="Usuario no encontrado"), 404
 

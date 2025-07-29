@@ -36,7 +36,7 @@ def pantalla_simulador_densidad():
     # Asegurate de obtener siempre el usuario
     usuario = current_user()
     if not usuario:
-        return redirect("/login")
+        return redirect("/index.html")
 
     lang = request.cookies.get("lang", "es")
     t_menu = get_textos_menu(lang)

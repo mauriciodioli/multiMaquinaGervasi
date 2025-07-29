@@ -28,25 +28,25 @@ def administracion_crud_entidad_pantalla_entidades():
 def crear_entidad():
     data = request.get_json()
     try:
-        nueva = EntidadContexto(
-            nombre=data.get('nombre'),
-            tipo=data.get('tipo'),
-            descripcion=data.get('descripcion'),
-            pais=data.get('pais'),
-            estado=int(data.get('estado', 1))
-        )
-        db.session.add(nueva)
-        db.session.commit()
-        return jsonify(success=True, entidad={
-            "id": nueva.id,
-            "nombre": nueva.nombre,
-            "tipo": nueva.tipo,
-            "descripcion": nueva.descripcion,
-            "pais": nueva.pais,
-            "estado": nueva.estado
-        })
-    except Exception as e:
-        db.session.rollback()
+        with get_db_session() as session:
+            nueva = EntidadContexto(
+                nombre=data.get('nombre'),
+                tipo=data.get('tipo'),
+                descripcion=data.get('descripcion'),
+                pais=data.get('pais'),
+                estado=int(data.get('estado', 1))
+            )
+            session.add(nueva)
+            session.commit()
+            return jsonify(success=True, entidad={
+                "id": nueva.id,
+                "nombre": nueva.nombre,
+                "tipo": nueva.tipo,
+                "descripcion": nueva.descripcion,
+                "pais": nueva.pais,
+                "estado": nueva.estado
+            })
+    except Exception as e:      
         return jsonify(success=False, message=str(e)), 400
 
     
@@ -57,23 +57,23 @@ def crear_entidad():
 def administracion_crud_entidad_modifica_entidades():
     data = request.get_json()
     try:
-        entidad = db.session.get(EntidadContexto, int(data["id"]))
-        entidad.nombre = data["nombre"]
-        entidad.tipo = data["tipo"]
-        entidad.descripcion = data["descripcion"]
-        entidad.pais = data["pais"]
-        entidad.estado = int(data["estado"])
-        db.session.commit()
-        return jsonify(success=True, entidad={
-            "id": entidad.id,
-            "nombre": entidad.nombre,
-            "tipo": entidad.tipo,
-            "pais": entidad.pais,
-            "descripcion": entidad.descripcion,            
-            "estado": entidad.estado
-        })
-    except Exception as e:
-        db.session.rollback()
+        with get_db_session() as session:
+            entidad = session.get(EntidadContexto, int(data["id"]))
+            entidad.nombre = data["nombre"]
+            entidad.tipo = data["tipo"]
+            entidad.descripcion = data["descripcion"]
+            entidad.pais = data["pais"]
+            entidad.estado = int(data["estado"])
+            session.commit()
+            return jsonify(success=True, entidad={
+                "id": entidad.id,
+                "nombre": entidad.nombre,
+                "tipo": entidad.tipo,
+                "pais": entidad.pais,
+                "descripcion": entidad.descripcion,            
+                "estado": entidad.estado
+            })
+    except Exception as e:        
         return jsonify(success=False, message=str(e)), 400
 
     
@@ -83,15 +83,15 @@ def administracion_crud_entidad_modifica_entidades():
 @crud_entidad.route('/administracion_crud_entidad_eliminar_entidad/<int:id>', methods=['DELETE'])
 def administracion_crud_entidad_eliminar_entidad(id):
     try:
-        entidad = db.session.get(EntidadContexto, id)
-        if not entidad:
-            return jsonify({"status": "error", "message": "Entidad no encontrada"}), 404
+        with get_db_session() as session:
+            entidad = session.get(EntidadContexto, id)
+            if not entidad:
+                return jsonify({"status": "error", "message": "Entidad no encontrada"}), 404
 
-        db.session.delete(entidad)
-        db.session.commit()
-        return jsonify({"status": "ok"})
-    except SQLAlchemyError as e:
-        db.session.rollback()
+            session.delete(entidad)
+            session.commit()
+            return jsonify({"status": "ok"})
+    except SQLAlchemyError as e:     
         return jsonify({"status": "error", "message": str(e)}), 400
 
 
@@ -99,7 +99,8 @@ def administracion_crud_entidad_eliminar_entidad(id):
 @crud_entidad.route('/administracion_crud_entidad_contexto_listar/', methods=['GET'])
 def listar_entidades():
     try:
-            entidades = db.session.query(EntidadContexto).all()
+        with get_db_session() as session:
+            entidades = session.query(EntidadContexto).all()
             resultado = entidad_schema.dump(entidades)
             return jsonify({"success": True, "entidades": resultado})
          

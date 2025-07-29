@@ -47,7 +47,7 @@ def login_usuario():
             usuario.refresh_token = refresh_token
             session.commit()
             # ⬇️ Registramos la sesión
-            registrar_sesion(usuario, token, request)
+            registrar_sesion(session,usuario, token, request)
         
 
             # 🔍 Verificar si tiene entidades asignadas
@@ -93,22 +93,22 @@ def logout():
 
 
 
-def registrar_sesion(usuario, token, request):
+def registrar_sesion(session,usuario, token, request):
     ip = request.remote_addr
     agente = request.headers.get("User-Agent")
     pais =  request.cookies.get("pais", "Desconocido")
     entidad_id = usuario.entidades[0].entidad_id if usuario.entidades else None
-    with get_db_session() as session:
-        sesion = SesionUsuario(
-            usuario_id=usuario.id,
-            token=token,
-            ip_origen=ip,
-            user_agent=agente,
-            pais=pais,
-            entidad_id=entidad_id
-        )
-        session.add(sesion)
-        session.commit()
+   
+    sesion = SesionUsuario(
+        usuario_id=usuario.id,
+        token=token,
+        ip_origen=ip,
+        user_agent=agente,
+        pais=pais,
+        entidad_id=entidad_id
+    )
+    session.add(sesion)
+    session.commit()
 
 
 

@@ -4,6 +4,7 @@ from utils.db import db
 import os
 import logging
 from sqlalchemy import text  # Importar text de SQLAlchemy
+from utils.db_utils import crear_tablas  # Importa la función
 
 
 # Configuración de log
@@ -30,15 +31,12 @@ def verificar_conexion_db():
 
 
 
-
 if __name__ == "__main__":
     # Verificar la conexión a la base de datos
     verificar_conexion_db()
     print("✅ app creada")
     if os.environ.get("WERKZEUG_RUN_MAIN"):
-        print("🧠 Contexto activo, creando tablas...")
-        with app.app_context():
-            db.create_all()
+        #crear_tablas(app, db)
         print("✅ Tablas listas")
 
     print("🚀 Ejecutando app...")
