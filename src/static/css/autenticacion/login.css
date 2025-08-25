@@ -193,3 +193,25 @@
   align-items: center;
   justify-content: center;
 }
+
+
+/* 📱 Ajustes responsive para pantallas pequeñas */
+@media (max-width: 576px) {
+  body {
+    padding: 0.5rem; /* menos padding en móviles */
+  }
+
+  .login-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0; /* opcional, queda full width */
+    height: 100vh; /* opcional, ocupa alto completo */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .logo-login {
+    max-width: 120px; /* ajusta logo para que no se vea gigante */
+  }
+}
