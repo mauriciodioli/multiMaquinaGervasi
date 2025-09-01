@@ -1098,7 +1098,7 @@ function cargarDatosPorDefecto() {
 
 
 
-//window.addEventListener("DOMContentLoaded", cargarDatosPorDefecto);
+window.addEventListener("DOMContentLoaded", cargarDatosPorDefecto);
 
 
 

@@ -23,6 +23,7 @@
               <th>{{ t_menu["pais"] }}</th>
               <th>{{ t_menu["descripcion"] }}</th>
               <th>{{ t_menu["tipo_mezcla"] }}</th>
+              <th>{{ t_menu["materia_forma"] }}</th>
               <th>{{ t_menu["acciones"] }}</th>
             </tr>
           </thead>
@@ -34,6 +35,7 @@
               <td>{{ componente.pais }}</td>
               <td>{{ componente.descripcion }}</td>
               <td>{{ componente.tipo_mezcla.nombre }}</td>
+              <td>{{ componente.materia_forma_forma }}</td>
               <td>
                 <button type="button"
                         class="btn btn-danger btn-sm btn-abrir-modal-tipoMezcla-componente"
@@ -53,6 +55,7 @@
                           data-pais="{{ componente.pais }}"
                           data-descripcion="{{ componente.descripcion }}"
                           data-tipo_mezcla_id="{{ componente.tipo_mezcla_id }}"
+                          data-tipo_materia_forma_id="{{ componente.materia_forma_id }}"
                           data-tipo_mezcla_nome="{{ componente.tipo_mezcla.nombre }}">
                     {{ t_menu["modificar"] }}
                   </button>
@@ -76,6 +79,9 @@
 {% include 'pantalla_componente_quimico/modals/modal_agregar_comp_quimico.html' %}
 {% include 'pantalla_componente_quimico/modals/modal_modificar_comp_quimico.html' %}
 {% include 'pantalla_componente_quimico/modals/modal_tipo_mezla.html' %}
+{% include 'pantalla_componente_quimico/modals/modal_materia_forma.html' %}
 
 <script src="{{ url_for('static', filename='js/autoDensidad/comp_quimico/crud_comp_quimico.js') }}"></script>
+<script src="{{ url_for('static', filename='js/autoDensidad/comp_quimico/abre_modal_materia_forma.js') }}"></script>
+
 {% endblock %}

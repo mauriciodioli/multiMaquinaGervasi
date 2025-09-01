@@ -193,7 +193,7 @@ document.addEventListener("click", async function (e) {
     // Setea el id del componente químico en el botón guardar
     const componenteId = e.target.dataset.id;
     document.getElementById('btn-guardar-tipo-mezcla').dataset.componenteId = componenteId;
-
+debugger;
     try {
       const res = await fetch("/mixFamiliari_crud_tipo_mezcla_pantalla_listar_json/");
       const data = await res.json();
@@ -270,3 +270,7 @@ document.getElementById('btn-guardar-tipo-mezcla').addEventListener('click', asy
     alert("💥 Error en la solicitud: " + err.message);
   }
 });
+
+
+
+

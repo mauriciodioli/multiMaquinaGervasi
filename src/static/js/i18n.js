@@ -41,7 +41,17 @@ const I18N = (() => {
       verificar_boton: "📨 Reenviar e-mail",
       verificar_exito: "E-mail reenviado com sucesso.",
       verificar_error: "Não foi possível reenviar o e-mail."
-    }
+    },
+    pl: {
+    verificar_titulo: "📬 Sprawdź swój e-mail!",
+    verificar_mensaje: "Wysłaliśmy link potwierdzający na Twój adres e-mail.",
+    verificar_instruccion: "Kliknij go, a następnie zaloguj się.",
+    verificar_link: "Zaloguj się",
+    verificar_reenviar_label: "Nie otrzymałeś?",
+    verificar_boton: "📨 Wyślij e-mail ponownie",
+    verificar_exito: "E-mail został ponownie wysłany.",
+    verificar_error: "Nie udało się wysłać e-maila ponownie."
+  }
   };
 
 
@@ -113,7 +123,24 @@ const I18N = (() => {
       segundos: "segundos.",
       error_conexion: "Erro de conexão. Tente novamente mais tarde.",
       bloqueo: "Muitas tentativas. Aguarde"
-    }
+    },
+    pl: {
+    titulo: "Zaloguj się",
+    correo: "E-mail",
+    pass: "Hasło",
+    entrar: "Zaloguj się",
+    olvidar: "Zapomniałeś hasła?",
+    registrar: "Nie masz konta? Zarejestruj się",
+    error_credenciales: "Nieprawidłowy e-mail lub hasło",
+    error_inactivo: "Twoje konto nie jest aktywne. Sprawdź swój e-mail",
+    error_servidor: "Wewnętrzny błąd serwera",
+    intentos_previos: "Poprzednie nieudane próby",
+    demasiados_intentos: "Za dużo prób.",
+    espera: "Poczekaj",
+    segundos: "sekund.",
+    error_conexion: "Błąd połączenia. Spróbuj ponownie później.",
+    bloqueo: "Za dużo prób. Poczekaj"
+  }
   };
 
 
@@ -217,7 +244,31 @@ const mensajes_registrarse = {
         numero: "Pelo menos um número",
         especial: "Pelo menos um caractere especial (!@#$...)"
       }
+    },
+    pl: {
+    titulo: "Utwórz nowe konto",
+    correo: "E-mail",
+    pass: "Hasło",
+    repetir: "Powtórz hasło",
+    captcha: "Nie jestem robotem",
+    registrarse: "Zarejestruj się",
+    volver: "Powrót do logowania",
+    errores: {
+      correo: "Nieprawidłowy adres e-mail.",
+      longitud: "Hasło musi mieć co najmniej 8 znaków.",
+      mayus: "Musi zawierać co najmniej jedną wielką literę.",
+      numero: "Musi zawierać co najmniej jedną cyfrę.",
+      especial: "Musi zawierać znak specjalny.",
+      coinciden: "Hasła nie są zgodne.",
+      captcha: "Musisz zaznaczyć captcha."
+    },
+    requisitos: {
+      longitud: "Minimum 8 znaków",
+      mayus: "Co najmniej jedna wielka litera",
+      numero: "Co najmniej jedna cyfra",
+      especial: "Co najmniej jeden znak specjalny (!@#$...)"
     }
+  }
 };
 
   function getLang() {

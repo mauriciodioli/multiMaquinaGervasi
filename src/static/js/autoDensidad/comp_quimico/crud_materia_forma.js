@@ -8,9 +8,11 @@ function cerrarModalModificarMateriaForma() {
 
 // Abrir modal Agregar
 document.getElementById("btn-abrir-modal-materia-forma").addEventListener("click", () => {
- 
+  
   document.getElementById('modal-agregar-materia-forma').style.display = "block";
 });
+
+
 
 // Abrir modal Modificar
 document.addEventListener("click", e => {

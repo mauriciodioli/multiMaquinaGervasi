@@ -32,6 +32,17 @@ def listar_json():
             tipos=schema_many.dump(tipos)
         )
 
+
+@crud_materia_forma.route("/mixFamiliari_crud_materia_forma_listar_forma_json/")
+def mixFamiliari_crud_materia_forma_listar_forma_json():
+    with get_db_session() as session:
+        tipos = session.query(MateriaForma).all()
+        payload = [{"id": t.id, "forma": t.forma} for t in tipos]
+        print("DEBUG MateriaForma ->", payload, flush=True)
+        return jsonify(success=True, tipos=payload)
+
+
+
 @crud_materia_forma.route("/mixFamiliari_crud_materia_forma_pantalla_agregar/", methods=["POST"])
 def mixFamiliari_crud_materia_forma_pantalla_agregar():
     data = request.get_json()
