@@ -71,7 +71,8 @@ const I18N = (() => {
       espera: "Espera",
       segundos: "segundos.",
       error_conexion: "Error de conexión. Intenta más tarde.",
-      bloqueo: "Demasiados intentos. Espera"
+      bloqueo: "Demasiados intentos. Espera",
+      guardar_analisis_granulometrico: "Guardar análisis granulométrico"
     },
     en: {
       titulo: "Sign In",
@@ -88,7 +89,8 @@ const I18N = (() => {
       espera: "Wait",
       segundos: "seconds.",
       error_conexion: "Connection error. Try again later.",
-      bloqueo: "Too many attempts. Wait"
+      bloqueo: "Too many attempts. Wait",
+      guardar_analisis_granulometrico: "Save granulometric analysis"
     },
     it: {
       titulo: "Accedi",
@@ -105,7 +107,8 @@ const I18N = (() => {
       espera: "Aspetta",
       segundos: "secondi.",
       error_conexion: "Errore di connessione. Riprova più tardi.",
-      bloqueo: "Troppi tentativi. Aspetta"
+      bloqueo: "Troppi tentativi. Aspetta",
+      guardar_analisis_granulometrico: "Salva analisi granulometrica"
     },
     pt: {
       titulo: "Entrar",
@@ -122,7 +125,8 @@ const I18N = (() => {
       espera: "Aguarde",
       segundos: "segundos.",
       error_conexion: "Erro de conexão. Tente novamente mais tarde.",
-      bloqueo: "Muitas tentativas. Aguarde"
+      bloqueo: "Muitas tentativas. Aguarde",
+      guardar_analisis_granulometrico: "Salvar análise granulométrica"
     },
     pl: {
     titulo: "Zaloguj się",
@@ -139,7 +143,8 @@ const I18N = (() => {
     espera: "Poczekaj",
     segundos: "sekund.",
     error_conexion: "Błąd połączenia. Spróbuj ponownie później.",
-    bloqueo: "Za dużo prób. Poczekaj"
+    bloqueo: "Za dużo prób. Poczekaj",
+    guardar_analisis_granulometrico: "Zapisz analizę granulometryczną"
   }
   };
 
@@ -278,6 +283,7 @@ const mensajes_registrarse = {
 
   function t(key) {
     const lang = getLang();
+    debugger;
     // Soporte para claves tipo "verificar.titulo"
     if (key.startsWith("verificar.")) {
       const subkey = "verificar_" + key.split(".")[1];

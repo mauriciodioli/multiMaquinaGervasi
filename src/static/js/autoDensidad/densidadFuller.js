@@ -446,7 +446,7 @@ function calcularTodas() {
              nombreProductos = data.resultados.map(r => r.nombre);
              tamices = data.tamices_res;
              console.log(data);
-            
+
             const resumenProporciones = generarResumenProporciones(data.mezcla_optima.pesos, data.resultados);
             const resultadosDiv = document.getElementById("resultados");
             let finalHTML = "<h2>Risultati</h2>";
@@ -489,6 +489,25 @@ function calcularTodas() {
                                           resultados: data.resultados
                                         };
 
+            // obtenés las proporciones normalizadas
+              const pesosPct = calcularProporcionesMezcla(data, nombreProductos);
+
+              // ahora podés generar el bloque HTML
+              const mejorCombinacionHTML = `
+                <div style="margin-bottom: 1rem;">
+                  <h3>📌 Mejor combinación encontrada</h3>
+                  <ul>
+                    ${nombreProductos.map((n, i) => `
+                      <li><strong>${n}:</strong> ${pesosPct[i].toFixed(2)}%</li>
+                    `).join("")}
+                  </ul>
+                  <p><strong>🧪 Error medio respecto a la curva ideal:</strong> 
+                    <span style="color: green;">${r.error_promedio.toFixed(2)}%</span>
+                  </p>
+                </div>
+              `;
+            
+
 
             let diagnosticoHTML = `
                             <div style="padding: 16px; background-color: #e6f4ea; border-left: 6px solid #2e7d32; margin-top: 1rem;">
@@ -508,15 +527,8 @@ function calcularTodas() {
                                                 </ul>
 
                                                 <!-- 📌 Mejor combinación encontrada -->
-                                                <div style="margin-bottom: 1rem;">
-                                                  <h3>📌 Mejor combinación encontrada</h3>
-                                                  <ul>
-                                                    <li><strong>Telares 2:</strong> 25.00%</li>
-                                                    <li><strong>Piedra Negra:</strong> 20.00%</li>
-                                                    <li><strong>Telares 1:</strong> 55.00%</li>
-                                                  </ul>
-                                                  <p><strong>🧪 Error medio respecto a la curva ideal:</strong> <span style="color: green;">2.79%</span></p>
-                                                </div>
+                                                ${mejorCombinacionHTML}
+                                                <!-- 📊 Interpretación de proporciones óptimas -->
 
                                                 
                                                 ${resumenProporciones}
@@ -652,6 +664,29 @@ function calcularTodas() {
             resultadosDiv.innerHTML = finalHTML;
         });
 
+}
+
+
+
+function calcularProporcionesMezcla(data, nombreProductos) {
+  // Tomamos solo los primeros N pesos (ej: N = número de mezclas)
+  let pesos = (data.mezcla_optima?.pesos_optimos_mezcla || []).slice(0, nombreProductos.length);
+
+  // Normalizar a porcentajes (0..1 → %, y que sumen 100)
+  let suma = pesos.reduce((a, b) => a + b, 0);
+  const pesosPct = pesos.map(v => {
+    const num = Number(v);
+    if (!Number.isFinite(num)) return 0;
+    return num <= 1 ? (num * 100) : num;
+  }).map(v => (suma > 0 ? (v / suma) * 100 : 0));
+
+  // Loguear
+  console.log("📊 Proporciones por mezcla:");
+  nombreProductos.forEach((n, i) => {
+    console.log(`${n}: ${pesosPct[i].toFixed(2)}%`);
+  });
+
+  return pesosPct; // lo devolvés para usarlo en tu HTML
 }
 
 

@@ -90,6 +90,8 @@ def generar_informe_ajuste(curvas, nombres, objetivo, paso=0.05, umbral_sugerenc
     """
 
     curva_objetivo = CURVAS_OBJETIVO.get(objetivo)
+    if curva_objetivo is None:
+        curva_objetivo = CURVAS_OBJETIVO.get("hormigon")
     rango = np.arange(0, 1 + paso, paso)
     mejor_error = float('inf')
     mejor_comb = None

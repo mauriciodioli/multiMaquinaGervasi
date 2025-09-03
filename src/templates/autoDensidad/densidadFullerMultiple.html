@@ -3,6 +3,7 @@
 {% block title %}Calcolo della densità - Curva di Fuller{% endblock %}
 
 {% block content %}
+
 <div class="container">
   <h2>{{ t_menu.get('titulo_densidad_fuller_multiple', 'Cálculo de mezclas múltiples - Curva de Fuller') }}</h2>
 
@@ -46,8 +47,7 @@
               <h3>📋 {{ t_menu.exportar_analisis }}</h3>
             <p>{{ t_menu.descargar_csv }}</p>
             <button class="btn btn-secondary" onclick="exportarCSV()">📊 {{ t_menu.exportar_csv }}</button>
-
-
+           <button id="btn-guardar-analisis" class="btn btn-secondary" type="button" onclick="guardarAnGranulometricoDb()">📊 guardarAnGranulometricoDb</button>
               <!-- Diagnóstico dinámico -->
               <div id="diagnosticoModal" style="margin-top: 2rem;"></div>
 
@@ -246,7 +246,21 @@
     <script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js') }}"></script>     
    
     <script src="{{ url_for('static', filename='js/autoDensidad/modalTablaTamices.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/autoDensidad/guardarAnalisisGranulometrico.js') }}"></script>   
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/modalTablaTamices.css') }}">
+<script>
+ document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('btn-guardar-analisis');
+  debugger;
+  
+    // Podés usar cualquiera de las dos líneas; ambas funcionan con tu t():
+    // btn.innerHTML = `📊 ${I18N.t('login.guardar_analisis_granulometrico')}`;
+    btn.innerHTML = `📊 ${I18N.t('guardar_analisis_granulometrico')}`;
+  });
+  
+</script>
+
 {% endblock %}
 
 {% block extra_js %}
