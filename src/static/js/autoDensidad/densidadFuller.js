@@ -551,8 +551,10 @@ function calcularTodas() {
                 const nombres = mezcla.nombres_mezclas || [];
 
              
+                 const r = window.ultimaCurvaPromedio || {};
 
-
+                const tamices = (data.tamices_res || data.mezcla_optima?.tamices || r?.tamices || []);
+                const curvaSugerida = (data.mezcla_optima?.curva_resultante || r?.curva_resultante || []);
 
 
                 diagnosticoHTML += `
@@ -573,14 +575,8 @@ function calcularTodas() {
                                 </tr>
                               </thead>
                               <tbody>
-                                <tr><td>9.5</td><td>99.92</td><td>100.00</td><td>-0.08 ✅</td></tr>
-                                <tr><td>4.75</td><td>95.74</td><td>96.00</td><td>-0.26 ✅</td></tr>
-                                <tr><td>2.36</td><td>64.46</td><td>59.00</td><td>+5.46 ⚠️</td></tr>
-                                <tr><td>1.18</td><td>39.67</td><td>45.00</td><td>-5.33 ⚠️</td></tr>
-                                <tr><td>0.6</td><td>23.26</td><td>24.60</td><td>-1.34 ✅</td></tr>
-                                <tr><td>0.3</td><td>13.46</td><td>14.80</td><td>-1.34 ✅</td></tr>
-                                <tr><td>0.15</td><td>5.62</td><td>6.35</td><td>-0.73 ✅</td></tr>
-                                <tr><td>0.074</td><td>1.22</td><td>1.26</td><td>-0.04 ✅</td></tr>
+                               ${renderTablaComparativa(r)}
+                              
                               </tbody>
                             </table>
                           </div>
@@ -592,8 +588,8 @@ function calcularTodas() {
                     <div style="margin-top: 1rem; padding: 12px; background-color: #fff3cd; border-left: 6px solid #ff9800;">
                       <h4>📉 Recomendaciones para mejorar la mezcla</h4>
                       <ul>
-                        <li>🔻 Tamiz 2.36 mm: reducir este rango (exceso de <strong>+5.46%</strong>)</li>
-                        <li>🔺 Tamiz 1.18 mm: aumentar este rango (déficit de <strong>-5.33%</strong>)</li>
+                        <ul>${renderRecomendacionesByDiffs(r.tamices, r.diferencias)}</ul>
+                       
                       </ul>
                     </div>
 
@@ -601,14 +597,7 @@ function calcularTodas() {
                     <div style="margin-top: 1rem; background:#e8f5e9; padding:16px; border-left:6px solid #388e3c;">
                       <h4>🧪 Curva sugerida de mezcla</h4>
                       <ul>
-                        <li>Tamiz 9.5 mm: 100.00%</li>
-                        <li>Tamiz 4.75 mm: 96.26%</li>
-                        <li>Tamiz 2.36 mm: 53.54%</li>
-                        <li>Tamiz 1.18 mm: 50.33%</li>
-                        <li>Tamiz 0.6 mm: 25.94%</li>
-                        <li>Tamiz 0.3 mm: 16.14%</li>
-                        <li>Tamiz 0.15 mm: 7.08%</li>
-                        <li>Tamiz 0.074 mm: 1.30%</li>
+                        ${renderListaCurva(tamices, curvaSugerida)}
                       </ul>
                     </div>
 
@@ -688,6 +677,65 @@ function calcularProporcionesMezcla(data, nombreProductos) {
 
   return pesosPct; // lo devolvés para usarlo en tu HTML
 }
+
+
+
+
+
+
+function renderTablaComparativa(r, tolerancia = 2) {
+  const tamices = r.tamices || [];
+  const resultante = r.promedios || r.curva_resultante || []; // soporte por si viene con otro nombre
+  const ideal = r.curva_ideal || [];
+  const diffs = r.diferencias || resultante.map((v, i) => (v - (ideal[i] ?? 0)));
+
+  const filas = tamices.map((t, i) => {
+    const res = Number(resultante[i] ?? 0);
+    const ide = Number(ideal[i] ?? 0);
+    const d   = Number(diffs[i] ?? (res - ide));
+    const flag = Math.abs(d) <= tolerancia ? "✅" : "⚠️";
+    const signo = d >= 0 ? "+" : "";
+    return `
+      <tr>
+        <td>${t}</td>
+        <td>${res.toFixed(2)}</td>
+        <td>${ide.toFixed(2)}</td>
+        <td>${signo}${d.toFixed(2)} ${flag}</td>
+      </tr>`;
+  }).join("");
+
+  return filas;
+}
+
+// Uso (ejemplo):
+// const r = data.curva_resultante;  // como en tu código
+// document.querySelector('#tabla-comparativa tbody').innerHTML = renderTablaComparativa(r);
+
+
+function renderListaCurva(tamices = [], valores = []) {
+  return tamices.map((t, i) => `
+    <li>Tamiz ${t} mm: ${(Number(valores[i] ?? 0)).toFixed(2)}%</li>
+  `).join("");
+}
+
+
+
+function renderRecomendacionesByDiffs(tamices = [], diffs = [], tolerancia = 2) {
+  return tamices.map((t, i) => {
+    const d = Number(diffs[i] ?? 0);
+    if (!Number.isFinite(d) || Math.abs(d) <= tolerancia) return ""; // en rango aceptable
+
+    const exceso   = d > 0;
+    const icon     = exceso ? "🔻" : "🔺";
+    const accion   = exceso ? "reducir" : "aumentar";
+    const etiqueta = exceso ? "exceso de" : "déficit de";
+    const pct      = d >= 0 ? `+${d.toFixed(2)}` : d.toFixed(2); // +5.46 / -5.33
+
+    return `<li>${icon} Tamiz ${t} mm: ${accion} este rango (${etiqueta} <strong>${pct}%</strong>)</li>`;
+  }).filter(Boolean).join("");
+}
+
+
 
 
 
