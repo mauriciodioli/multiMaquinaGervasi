@@ -1,4 +1,92 @@
-window.guardarAnGranulometricoDb = window.guardarAnGranulometricoDb || function () {
-    // tu lógica real
-    console.log('Guardando análisis granulométrico…');
-  };
+// CSRF helper
+function getCookie(name){ const m=document.cookie.match(new RegExp('(^| )'+name+'=([^;]+)')); return m?decodeURIComponent(m[2]):null; }
+// primer número del string (soporta coma)
+function num(txt){ const s=(txt||'').toString().replace(',', '.'); const m=s.match(/-?\d+(\.\d+)?/); return m?Number(m[0]):NaN; }
+
+window.guardarAnGranulometricoDb = async function () {
+  try {
+    const r = window.ultimaCurvaPromedio || {};        // {tamices, curva_resultante, curva_ideal, diferencias, evaluacion, error_promedio, d_max, n}
+    const mezcla = window.ultimaMezclaOptima || {};    // {nombres_mezclas, proporciones|pesos_optimos_mezcla}
+
+    // ⚠️ Ajustá estos 2: deben existir
+    const usuario_id  = Number(localStorage.getItem('user_id') || 0);
+    const agregado_id = 26;
+
+    // Lee TODAS las columnas de la tabla que mostraste (7 columnas)
+    const filasTabla = [...document.querySelectorAll('#tabla-comparativa tbody tr')].map(tr => {
+      const c = tr.cells;
+      return {
+        tamiz: num(c[0]?.textContent),            // Tamiz (mm)
+        resultante: num(c[1]?.textContent),       // Prom reales (%)
+        ideal: num(c[2]?.textContent),            // Prom Fuller (%)
+        diferencia: num(c[3]?.textContent),       // ΔProm (%)
+        zona: (c[4]?.textContent || '').trim(),   // Zona (gruesos/medios/finos)
+        d_max: num(c[5]?.textContent),            // d_max (fila muestra el mismo)
+        n: num(c[6]?.textContent)                 // n
+      };
+    });
+
+    const recomendacionesDOM = [...document.querySelectorAll('#recomendaciones ul li')]
+      .map(li => li.textContent.trim()).filter(Boolean);
+
+    const nombresMezclas = mezcla.nombres_mezclas || (window.nombreProductos || []);
+    const proporciones   = (mezcla.proporciones || mezcla.pesos_optimos_mezcla || []).map(Number);
+    const raw = proporciones.map(v => (v <= 1 ? v * 100 : v));
+    const suma = raw.reduce((a,b)=>a+(isFinite(b)?b:0),0) || 0;
+    const proporcionesPct = raw.map(v => (suma>0 ? (v/suma)*100 : 0));
+    
+    const recLis = [...document.querySelectorAll('#recomendaciones li')];
+    const recomendacionesText = recLis.map(li => li.innerText.trim());   // texto
+    const recomendacionesHTML = recLis.map(li => li.innerHTML.trim());   // HTML
+
+    const d_max = Number(localStorage.getItem('d_max') || NaN);
+    const n     = Number(localStorage.getItem('n') || NaN);
+
+    const payload = {
+      usuario_id,
+      agregado_id,
+      descripcion: r.descripcion || 'Análisis granulométrico',
+      d_max: Number.isFinite(d_max) ? d_max : null,
+      n:   Number.isFinite(n) ? n : null,
+
+      curva: {
+        tamices: r.tamices || [],
+        resultante: r.promedios || r.curva_resultante || [],
+        ideal: r.curva_ideal || [],
+        diferencias: r.diferencias || []
+      },
+      resumen: {
+        evaluacion: r.evaluacion ?? null,
+        error_promedio: r.error_promedio ?? null,
+        ajustes: r.ajustes || []
+      },
+      mezcla: { nombres: nombresMezclas, proporciones_pct: proporcionesPct },
+
+      tabla_dom: filasTabla,                         // incluye zona, d_max, n
+      recomendaciones_dom: recomendacionesText,      // texto 1:1
+      recomendaciones_dom_html: recomendacionesHTML, // HTML 1:1
+      html: { diagnostico: document.getElementById('diagnosticoModal')?.innerHTML || null }
+    };
+
+
+
+    if (!usuario_id || !agregado_id) {
+      alert('Faltan usuario_id o agregado_id'); return;
+    }
+
+    const res = await fetch('/autoDensidad_analisisGranulometrico_guardar_analisis_granulometrico_db/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrf_token') || '' },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    console.log('✅ Guardado OK:', data);
+    alert('✅ Análisis guardado (ID: ' + (data.id ?? '—') + ')');
+  } catch (e) {
+    console.error('❌ Error al guardar:', e);
+    alert('❌ Error al guardar el análisis');
+  }
+};

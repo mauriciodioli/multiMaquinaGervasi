@@ -14,6 +14,7 @@ from src.controller.automatizacion import automatizacion
 from src.controller.crud_maquinas import crud_maquinas
 from src.controller.autoDensidad.densidadFuller import densidadFuller
 from src.controller.autoDensidad.calcularMezclaOptima import calcularMezclaOptima
+from src.controller.autoDensidad.analisisGranulometrico.analisisGranulometrico import analisisGranulometrico
 from src.controller.autoDensidad.optimizar_fuller import optimizar_fuller
 from src.controller.autoDensidad.simuladorDosificacion.simulador_dosificacion \
 import simulador_dosificacion
@@ -74,6 +75,7 @@ def create_app() -> Flask:
         optimizar_fuller,
         simulador_dosificacion, 
         analisis_densidad,
+        analisisGranulometrico,
         crud_agregado, 
         crud_mallas, 
         crud_componente_quimico, 

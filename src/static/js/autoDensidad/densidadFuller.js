@@ -838,7 +838,21 @@ function generarGraficoProporciones(pesos, nombres) {
 
 function generarMezclaCorregida() {
 
-   let input = prompt("Ingresar un número entre 0 y 1 (dejar vacío para usar 1):", "1");
+   let input = prompt(
+                      "Ingresar un número entre 0 y 1 (dejar vacío para usar 1):\n\n" +
+                      "📌 factor controla la intensidad del ajuste hacia la curva objetivo.\n" +
+                      "• factor = 0 → no aplicás corrección (curva = promedio)\n" +
+                      "• factor = 1 → corrección completa (curva = Fuller)\n" +
+                      "• 0 < factor < 1 → corrección parcial\n" +
+                      "• factor > 1 → sobreajuste (te pasás de Fuller)\n" +
+                      "• factor < 0 → te alejás de Fuller",
+                      "1"
+                    );
+
+
+
+
+
    let tipo_objetivo = localStorage.getItem('tipo_objetivo')
     // Si el usuario aprieta "Cancelar" o deja vacío, se usa 1
     if (input === null || input.trim() === "") {
