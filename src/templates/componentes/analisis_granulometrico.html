@@ -1,8 +1,9 @@
+{# =================== ÚLTIMOS ANÁLISIS + DETALLE COLAPSABLE =================== #}
 <h4 class="mb-3">{{ t_menu["perfil_analisis"] or "Últimos análisis granulométricos" }}</h4>
 
 {% if analisis %}
-  <!-- Tabla principal -->
-  <div class="table-responsive">
+  <!-- ===== Tabla principal (desktop igual; mobile con scroll en wrapper) ===== -->
+  <div class="tbl-responsive">
     <table class="table table-sm table-hover align-middle" id="tablaAnalisis">
       <thead class="table-light">
         <tr>
@@ -45,7 +46,7 @@
     </table>
   </div>
 
-  <!-- Encabezados colapsables (UNO visible a la vez; ocultos por defecto) -->
+  <!-- ===== Encabezados colapsables (UNO visible a la vez; ocultos por defecto) ===== -->
   <div id="zonaComposiciones" class="mt-3">
     {% for a in analisis %}
       {% set panel_id = 'comp-' ~ a.id %}
@@ -79,9 +80,13 @@
               <table class="table table-sm table-striped align-middle">
                 <thead class="table-light">
                   <tr>
-                    <th>#</th><th>Componente</th><th>País</th>
-                    <th>Forma (materia)</th><th>Descripción</th>
-                    <th class="text-end">% en mezcla</th><th class="text-center">Orden</th>
+                    <th>#</th>
+                    <th>Componente</th>
+                    <th>País</th>
+                    <th>Forma (materia)</th>
+                    <th>Descripción</th>
+                    <th class="text-end">% en mezcla</th>
+                    <th class="text-center">Orden</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -125,58 +130,130 @@
 {% endif %}
 
 <style>
-  /* Card del encabezado */
-  .comp-block{ border:1px solid rgba(0,0,0,.12); border-radius:12px; padding:12px 14px; margin-bottom:14px; max-width:100%; box-sizing:border-box; overflow:hidden; }
+  /* ===== Tabla superior: wrapper con scroll en mobile; desktop sin cambios ===== */
+  .tbl-responsive{
+    display:block;
+    width:100%;
+    max-width:100%;
+    overflow-x:auto;                 /* scroll propio solo si hace falta */
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+  }
+  .tbl-responsive > table{
+    width:100%;
+    min-width: 680px;                /* asegura estructura; ajustable */
+    margin:0;
+    border-collapse: separate;
+  }
+  /* Por defecto, compactamos; pero dejamos que algunas columnas corten línea */
+  .tbl-responsive th, .tbl-responsive td{ white-space: nowrap; }
+  .tbl-responsive td:nth-child(3),   /* Descripción */
+  .tbl-responsive td:nth-child(5){   /* Usuario */
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* ===== Card del encabezado colapsable ===== */
+  .comp-block{
+    border:1px solid rgba(0,0,0,.12);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-bottom:14px;
+    max-width:100%;
+    box-sizing:border-box;
+    overflow:hidden;                 /* respeta bordes redondeados */
+  }
   .comp-head{ display:flex; gap:12px; align-items:center; justify-content:space-between; }
   .comp-title{ margin:0; font-weight:700; }
   .comp-content[hidden]{ display:none !important; }
 
   /* Botón Mostrar/Ocultar */
-  .comp-toggle{ display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(0,0,0,.2); border-radius:10px; padding:6px 10px; background:#fff; cursor:pointer; font-weight:600; }
+  .comp-toggle{
+    display:inline-flex; align-items:center; gap:6px;
+    border:1px solid rgba(0,0,0,.2); border-radius:10px; padding:6px 10px;
+    background:#fff; cursor:pointer; font-weight:600;
+  }
   .comp-toggle:focus{ outline:2px solid #6b7280; outline-offset:2px; }
   .toggle-caret{ transition: transform .18s ease; }
   .comp-toggle[aria-expanded="true"] .toggle-caret{ transform: rotate(90deg); }
 
-  /* Responsive para la tabla interna */
-  .comp-responsive{ display:block; width:100%; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .comp-responsive > table{ width:100%; min-width:720px; margin:0; border-collapse:separate; }
-  .comp-responsive th,.comp-responsive td{ white-space:nowrap; }
-  .comp-responsive td:nth-child(5){ white-space:normal; word-break:break-word; }
+  /* ===== Tabla de detalle: wrapper con scroll en mobile ===== */
+  .comp-responsive{
+    display:block;
+    width:100%;
+    max-width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+  }
+  .comp-responsive > table{
+    width:100%;
+    min-width: 720px;                /* bajá a 640 si querés menos scroll */
+    margin:0;
+    border-collapse: separate;
+  }
+  .comp-responsive th, .comp-responsive td{ white-space: nowrap; }
+  .comp-responsive td:nth-child(5){  /* Descripción en detalle: permite cortar */
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
 
-  /* Resalte fila activa en la tabla principal */
-  #tablaAnalisis .analisis-row.active{ outline:2px solid #a5b4fc; outline-offset:-2px; background:rgba(149,153,237,.08); }
+  /* Resalte fila activa */
+  #tablaAnalisis .analisis-row.active{
+    outline:2px solid #a5b4fc; outline-offset:-2px;
+    background:rgba(149,153,237,.08);
+  }
+
+  /* Ajustes visuales en pantallas chicas */
+  @media (max-width: 576px){
+    .comp-title{ font-size: 15px; line-height: 1.25; }
+    .comp-toggle{ padding: 4px 8px; }
+  }
 </style>
 
 <script>
-  // 1) Mostrar SOLO el encabezado del análisis clicado
-  document.getElementById('tablaAnalisis').addEventListener('click', function(e){
-    const row = e.target.closest('.analisis-row');
-    if(!row) return;
+  // ===== 1) Al click en una fila, mostrar SOLO el encabezado de ese análisis =====
+  (function(){
+    const tabla = document.getElementById('tablaAnalisis');
+    if (!tabla) return;
 
-    const id = row.getAttribute('data-analisis-id');
+    tabla.addEventListener('click', function(e){
+      const row = e.target.closest('.analisis-row');
+      if(!row) return;
 
-    // ocultar todos los encabezados y colapsar sus contenidos
-    document.querySelectorAll('.comp-block').forEach(b=>{
-      b.hidden = true;
-      const inner = b.querySelector('.comp-content');
-      const btn = b.querySelector('.comp-toggle');
-      if(inner && !inner.hasAttribute('hidden')) inner.setAttribute('hidden','');
-      if(btn){ btn.setAttribute('aria-expanded','false'); const lbl=btn.querySelector('.toggle-label'); if(lbl) lbl.textContent = lbl.getAttribute('data-label-show') || 'Mostrar'; }
+      const id = row.getAttribute('data-analisis-id');
+
+      // Ocultar todos los encabezados y colapsar sus contenidos
+      document.querySelectorAll('.comp-block').forEach(b=>{
+        b.hidden = true;
+        const inner = b.querySelector('.comp-content');
+        const btn = b.querySelector('.comp-toggle');
+        if(inner && !inner.hasAttribute('hidden')) inner.setAttribute('hidden','');
+        if(btn){
+          btn.setAttribute('aria-expanded','false');
+          const lbl = btn.querySelector('.toggle-label');
+          if(lbl) lbl.textContent = lbl.getAttribute('data-label-show') || 'Mostrar';
+        }
+      });
+
+      // Quitar activo de filas
+      document.querySelectorAll('#tablaAnalisis .analisis-row').forEach(r=>r.classList.remove('active'));
+
+      // Mostrar encabezado del análisis seleccionado y marcar fila
+      const block = document.querySelector(`.comp-block[data-analisis-id="${id}"]`);
+      if(block){ block.hidden = false; }
+      row.classList.add('active');
+
+      // Scroll suave al encabezado (opcional)
+      block?.scrollIntoView({behavior:'smooth', block:'nearest'});
     });
+  })();
 
-    // quitar activo de filas
-    document.querySelectorAll('#tablaAnalisis .analisis-row').forEach(r=>r.classList.remove('active'));
-
-    // mostrar encabezado del análisis seleccionado y marcar fila
-    const block = document.querySelector(`.comp-block[data-analisis-id="${id}"]`);
-    if(block){ block.hidden = false; }
-    row.classList.add('active');
-
-    // scroll suave al encabezado (opcional)
-    block?.scrollIntoView({behavior:'smooth', block:'nearest'});
-  });
-
-  // 2) Botón Mostrar/Ocultar dentro del encabezado
+  // ===== 2) Botón Mostrar/Ocultar dentro del encabezado =====
   document.addEventListener('click', function(e){
     const btn = e.target.closest('.comp-toggle');
     if(!btn) return;
