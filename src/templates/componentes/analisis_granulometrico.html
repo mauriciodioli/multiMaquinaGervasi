@@ -1,14 +1,53 @@
 <h4 class="mb-3">{{ t_menu["perfil_analisis"] or "Últimos análisis granulométricos" }}</h4>
 
 {% if analisis %}
-  <ul class="list-group">
-    {% for a in analisis %}
-      <li class="list-group-item">
-        📅 {{ a.fecha.strftime('%d/%m/%Y') }} — <strong>{{ a.descripcion }}</strong>
-      </li>
-    {% endfor %}
-  </ul>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>ID</th>
+          <th>Fecha</th>
+          <th>Descripción</th>
+          <th>Agregado</th>
+          <th>Usuario</th>
+          <th>Dmax</th>
+          <th>n</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in analisis %}
+        <tr>
+          <td>{{ a.id }}</td>
+          <td>{{ a.fecha.strftime('%d/%m/%Y') if a.fecha else '-' }}</td>
+          <td>{{ a.descripcion or '-' }}</td>
+
+          {# Si tenés relación cargada: a.agregado.nombre; si no, muestra el ID #}
+          <td>
+            {% if a.agregado and a.agregado.nombre %}
+              {{ a.agregado.nombre }}
+            {% else %}
+              {{ a.agregado_id or '-' }}
+            {% endif %}
+          </td>
+
+          {# Idem para usuario (ajustá a tu modelo/relación) #}
+          <td>
+            {% if a.usuario and a.usuario.correo_electronico %}
+              {{ a.usuario.correo_electronico }}
+            {% elif a.usuario and a.usuario.nombre %}
+              {{ a.usuario.nombre }}
+            {% else %}
+              {{ a.usuario_id or '-' }}
+            {% endif %}
+          </td>
+
+          <td>{{ a.d_max if a.d_max is not none else '-' }}</td>
+          <td>{{ a.n if a.n is not none else '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 {% else %}
   <p class="text-muted">{{ t_menu["perfil_sin_analisis"] or "No hay análisis registrados." }}</p>
 {% endif %}
-

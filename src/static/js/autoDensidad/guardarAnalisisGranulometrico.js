@@ -26,8 +26,7 @@ window.guardarAnGranulometricoDb = async function () {
       };
     });
 
-    const recomendacionesDOM = [...document.querySelectorAll('#recomendaciones ul li')]
-      .map(li => li.textContent.trim()).filter(Boolean);
+   
 
     const nombresMezclas = mezcla.nombres_mezclas || (window.nombreProductos || []);
     const proporciones   = (mezcla.proporciones || mezcla.pesos_optimos_mezcla || []).map(Number);
@@ -35,9 +34,29 @@ window.guardarAnGranulometricoDb = async function () {
     const suma = raw.reduce((a,b)=>a+(isFinite(b)?b:0),0) || 0;
     const proporcionesPct = raw.map(v => (suma>0 ? (v/suma)*100 : 0));
     
-    const recLis = [...document.querySelectorAll('#recomendaciones li')];
-    const recomendacionesText = recLis.map(li => li.innerText.trim());   // texto
-    const recomendacionesHTML = recLis.map(li => li.innerHTML.trim());   // HTML
+    // 1) Tomar el <ul> y sus <li>
+    const ul = document.getElementById('recomendaciones-list'); // el <ul id="recomendaciones-list">
+    const lis = ul ? [...ul.querySelectorAll('li')] : [];
+
+    // 2) Lo que normalmente vas a enviar
+    const recomendaciones_ul_html  = ul ? ul.outerHTML.trim() : null;     // el <ul> completo
+    const recomendacionesText      = lis.map(li => li.innerText.trim());  // sólo texto
+    const recomendacionesHTML      = lis.map(li => li.outerHTML.trim());  // cada <li> con su HTML
+
+    // 3) (Opcional) Parsear tamiz y delta desde el texto
+    const reTamiz = /Tamiz\s+([0-9.]+)\s*mm/i;
+    const rePct   = /([+-]?\d+(?:\.\d+)?)\s*%/;
+
+    const parsed = lis.map(li => {
+      const t = li.innerText;
+      const mT = t.match(reTamiz);
+      const mP = t.match(rePct);
+      return {
+        tamiz: mT ? parseFloat(mT[1]) : null,
+        delta: mP ? parseFloat(mP[1]) : null
+      };
+    });
+
 
     const d_max = Number(localStorage.getItem('d_max') || NaN);
     const n     = Number(localStorage.getItem('n') || NaN);
@@ -61,11 +80,12 @@ window.guardarAnGranulometricoDb = async function () {
         ajustes: r.ajustes || []
       },
       mezcla: { nombres: nombresMezclas, proporciones_pct: proporcionesPct },
-
-      tabla_dom: filasTabla,                         // incluye zona, d_max, n
-      recomendaciones_dom: recomendacionesText,      // texto 1:1
-      recomendaciones_dom_html: recomendacionesHTML, // HTML 1:1
-      html: { diagnostico: document.getElementById('diagnosticoModal')?.innerHTML || null }
+      tabla_dom: filasTabla,
+      // recomendaciones
+      recomendaciones_ul_html: recomendaciones_ul_html,
+      recomendaciones_dom: recomendacionesText,
+      recomendaciones_dom_html: recomendacionesHTML,
+      
     };
 
 

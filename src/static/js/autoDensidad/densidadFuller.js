@@ -585,10 +585,10 @@ function calcularTodas() {
                    
 
                     <!-- 📉 Recomendaciones -->
-                    <div style="margin-top: 1rem; padding: 12px; background-color: #fff3cd; border-left: 6px solid #ff9800;">
+                    <div style="margin-top: 1rem; padding: 12px; background-color: #fff3cd; border-left: 6px solid #ff9800;" >
                       <h4>📉 Recomendaciones para mejorar la mezcla</h4>
                       <ul>
-                        <ul>${renderRecomendacionesByDiffs(r.tamices, r.diferencias)}</ul>
+                        <ul id="recomendaciones-list">${renderRecomendacionesByDiffs(r.tamices, r.diferencias)}</ul>
                        
                       </ul>
                     </div>

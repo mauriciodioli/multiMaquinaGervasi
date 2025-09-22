@@ -234,8 +234,7 @@ def autoDensidad_analisis_granulometrico_guardar():
         tabla   = p.get("tabla_dom", [])
         recs    = p.get("recomendaciones_dom", [])
         zonas   = p.get("pesos_zona", [])   # opcional
-        html    = p.get("html", {})
-
+      
         # Si no vino d_max/n, intenta inferir de la primera fila de la tabla
         if d_max is None and tabla:
             d_max = _to_float(tabla[0].get("d_max"))
@@ -270,7 +269,7 @@ def autoDensidad_analisis_granulometrico_guardar():
                 analisis_id,
                 evaluacion=resumen.get("evaluacion"),
                 error_promedio=resumen.get("error_promedio"),
-                mensaje_html=html.get("diagnostico")
+                mensaje_html='html.get("diagnostico")'
             )
 
             # 5) Recomendaciones
@@ -286,7 +285,7 @@ def autoDensidad_analisis_granulometrico_guardar():
                 analisis_id,
                 recomendaciones_texto=recs_text,
                 dif_por_tamiz=dif_por_tamiz,
-                recomendaciones_html=recs_html
+                recomendaciones_html=recs
             )
 
 
