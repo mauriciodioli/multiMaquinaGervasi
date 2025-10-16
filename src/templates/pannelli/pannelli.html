@@ -1,0 +1,127 @@
+{% extends "layouts/layout.html" %}
+
+{% block title %}Listado de Paneles{% endblock %}
+
+{% block content %}
+
+<div class="titulo-maquinas" style="position: relative; text-align: center; margin-bottom: 20px;">
+  <h1>Pannelli</h1>
+
+</div>
+
+<div class="contenedor-flex">
+  {% if mensaje %}
+    <div class="alert alert-info">{{ mensaje }}</div>
+  {% endif %}
+
+  <!-- Sidebar de paneles -->
+  <div id="sidebar" class="maquinas-lista">
+    <div class="cabecera-maquinas">
+      <h2>Panello Online <small>({{ paneles|length }})</small></h2>
+    </div>
+
+    <div class="maquinas-header">
+      <button class="btn-agregar">➕ Aggiungere</button>
+      <button class="btn-eliminar">➖ Rimuovere</button>
+    </div>
+
+    <div id="contenedor-online">
+      {% if paneles %}
+        <ul>
+          {% for p in paneles %}
+            <li>
+              {{ p.marca|default('—') }} – {{ p.modelo|default('s/modelo') }} – SN: {{ p.serial_number|default('—') }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>Nessun panello associato.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Resizer -->
+  <div id="resizer" class="resizer"></div>
+
+  <!-- Spinner -->
+  <div class="spinner-overlay" id="spinner" style="display:none;">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Tabla de trabajos / métricas -->
+  <div class="tabla-container">
+    <table>
+      <thead>
+        <tr>
+          {% if columnas and columnas|length > 0 %}
+            {% for columna in columnas %}
+              <th>{{ columna }}</th>
+            {% endfor %}
+          {% else %}
+            <th>Sin columnas</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% if trabajos and trabajos|length > 0 %}
+          {% if trabajos[0] is mapping %}
+            {# trabajos = [ {"Fecha": "...", "Potencia (W)": 1800, ...}, ... ] #}
+            {% for fila in trabajos %}
+              <tr>
+                {% for columna in columnas %}
+                  <td>{{ fila.get(columna, '') }}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          {% else %}
+            {# trabajos = [ ["2025-10-16 09:05", 1850, 1.42, 310, 5.97], ... ] #}
+            {% for fila in trabajos %}
+              <tr>
+                {% for valor in fila %}
+                  <td>{{ valor }}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          {% endif %}
+        {% else %}
+          <tr><td colspan="{{ columnas|length if columnas else 1 }}">No hay registros para mostrar.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modales -->
+  <div id="modal-agregar" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="cerrarModal('modal-agregar')">&times;</span>
+      <h2>Aggiungere Panello</h2>
+      <button id="confirmar-agregar">Aggiungere</button>
+    </div>
+  </div>
+
+  <div id="modal-eliminar" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close close-eliminar" onclick="cerrarModal('modal-eliminar')">&times;</span>
+      <h2>Rimuovere la Panello</h2>
+      <h2 id="modal-nombre-maquina"></h2>
+      <button id="confirmar-eliminar">Rimuovere</button>
+    </div>
+  </div>
+
+  <div id="modal-costo" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="cerrarModalCosto()">&times;</span>
+      <h3>💶 Inserisci il prezzo kWh</h3>
+      <input type="number" step="0.01" id="input-kwh" placeholder="Ej: 0.20" />
+      <button onclick="confirmarCosto()" style="margin-top:10px;">Accettare</button>
+    </div>
+  </div>
+</div>
+
+{# CSS / JS (ajustá rutas a tu estructura real) #}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/maquinas/maquinas.css') }}">
+<script src="{{ url_for('static', filename='js/maquinas/maquinas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/maquinas/crud_front_end_maquinas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/maquinas/conexion_db.js') }}"></script>
+
+{% endblock %}

@@ -19,9 +19,15 @@ def get_textos_menu(lang="es"):
             "informes": "📋 Informes",
             "descargar_tabla_excel": "⬇️ Descargar tabla Excel",
             "macchine": "🛠️ Máquinas",
-            "ver_macchine": "🔍 Ver Máquinas",
+            "ver_macchine": "🔍 Ver Máquinas",            
             "crud_macchine": "📝 CRUD Máquinas",
             "conexion_sqlserver": "🔌 Conexión SQL Server",
+            
+            "Pannelli":"⚡ Paneles Solares",
+            "Pannelli_Solari": "🔍 Ver Paneles",
+            "crud_panelli": "📝 CRUD Paneles",
+            "conexion_panelli": "🔌 Conexión IP dirección",
+            
             
             
             
@@ -189,11 +195,15 @@ def get_textos_menu(lang="es"):
             "mallas": "🕸️ Sieves",
             "informes": "📋 Reports",
             "descargar_tabla_excel": "⬇️ Download Excel Table",
-            "macchine": "🛠️ Machines",
-            "ver_macchine": "🔍 View Machines",
+            "macchine": "🛠️ Machines",           
+            "ver_macchine": "🔍 View Machines",           
             "crud_macchine": "📝 CRUD Machines",
             "conexion_sqlserver": "🔌 SQL Server Connection",
 
+            "Pannelli": "⚡ Solar Panels",
+            "Pannelli_Solari": "🔍 View Panels",
+            "crud_panelli": "📝 CRUD Panels",
+            "conexion_panelli": "🔌 IP Address Connection",
             
             # Pantalla /pantalla_usuarios/perfil_usuario.html
             "perfil_titulo": "My profile",
@@ -358,10 +368,13 @@ def get_textos_menu(lang="es"):
                     "informes": "📋 Relatórios",
                     "descargar_tabla_excel": "⬇️ Baixar tabela Excel",
                     "macchine": "🛠️ Máquinas",
-                    "ver_macchine": "🔍 Ver Máquinas",
+                    "ver_macchine": "🔍 Ver Máquinas",                    
                     "crud_macchine": "📝 CRUD Máquinas",
                     "conexion_sqlserver": "🔌 Conexão SQL Server",
                     
+                    "Pannelli": "⚡ Painéis Solares",
+                    "Pannelli_Solari": "🔍 Ver Painéis",
+                    "crud_panelli": "📝 CRUD Painéis",
                     # Pantalla /pantalla_usuarios/perfil_usuario.html
                     "perfil_titulo": "Meu perfil",
                     "perfil_correo": "E-mail",
@@ -487,10 +500,15 @@ def get_textos_menu(lang="es"):
             "mallas": "🕸️ Maglie",
             "informes": "📋 Report",
             "descargar_tabla_excel": "⬇️ Scarica tabella Excel",
-            "macchine": "🛠️ Macchine",
-            "ver_macchine": "🔍 Vedi Macchine",
+            "macchine": "🛠️ Macchine",           
+            "ver_macchine": "🔍 Vedi Macchine",            
             "crud_macchine": "📝 CRUD Macchine",
             "conexion_sqlserver": "🔌 Connessione SQL Server",
+            
+            "Pannelli": "⚡ Pannelli Solari",
+            "Pannelli_Solari": "🔍 Vedi Pannelli",
+            "crud_panelli": "📝 CRUD Pannelli",
+            "conexion_panelli": "🔌 Connessione Indirizzo IP",
 
             # Pantalla /pantalla_usuarios/perfil_usuario.html
             "perfil_titulo": "Il mio profilo",

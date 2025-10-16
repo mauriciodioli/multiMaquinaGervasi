@@ -207,7 +207,30 @@ img {
                                                         </li>
                                                     </ul>
                                                 </li>
-                                            {% endif %}  
+                                        {% endif %}  
+
+                                        {% if usuario and usuario.roll == 'admin' %}
+                                                <li id="menu-item-391" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-391">
+                                                        <a href="javascript:void(0);">{{ t_menu.get('Pannelli', 'Paneles') }}</a> 
+                                                    <ul class="sub-menu">                                                
+                                                        <li id="menu-item-469" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-469">
+                                                        <a href="/pannelli_crud_consulta/">{{ t_menu.get('Pannelli_Solari', 'Ver Máquinas') }}</a>
+                                                        </li>
+                                                        <li id="menu-item-478" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-478">
+                                                            <li id="menu-item-478">
+                                                                 <a href="#" id="crud-link">{{ t_menu.get('crud_panelli', 'CRUD Paneles') }}</a>
+                                                            </li>
+                                                            
+                                                        </li>
+                                                        <li id="menu-item-479" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-479">
+                                                            <li id="menu-item-479" class="menu-item">
+                                                                <a href="#" id="conexionSqlServer">{{ t_menu.get('conexion_panelli', 'Conexión IP direccion') }}</a>
+                                                            </li>
+                                                        </li>
+                                                    </ul>
+                                                </li>
+
+                                        {% endif %}  
                                                 
                                             </li>
 

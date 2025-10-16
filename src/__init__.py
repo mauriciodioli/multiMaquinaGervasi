@@ -12,6 +12,9 @@ from src.controller.trabajo_controller import trabajos_bp
 from src.controller.maquinas import maquinas
 from src.controller.automatizacion import automatizacion
 from src.controller.crud_maquinas import crud_maquinas
+
+from src.controller.panenlli.pannelli_solar import pannelli_solar
+
 from src.controller.autoDensidad.densidadFuller import densidadFuller
 from src.controller.autoDensidad.calcularMezclaOptima import calcularMezclaOptima
 from src.controller.autoDensidad.analisisGranulometrico.analisisGranulometrico import analisisGranulometrico
@@ -81,6 +84,7 @@ def create_app() -> Flask:
         crud_componente_quimico, 
         crud_tipo_mezcla,
         crud_materia_forma,
+        pannelli_solar,
     ):
         app.register_blueprint(bp)
 
