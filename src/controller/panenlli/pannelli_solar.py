@@ -84,28 +84,31 @@ def pannelli_crud_consulta():
                     })
                 mensaje = ""
             else:
-                # --- MOCK de lecturas: 3 filas para el primer panel ---
+                # --- MOCK de lecturas: 3 filas para CADA panel ---
                 base = datetime.utcnow().replace(second=0, microsecond=0)
-                p0 = paneles[0]
-                etiqueta = f"{p0.marca} {p0.modelo or ''} (SN {p0.serial_number})"
-                mock = [
-                    (base,                    1850, 1.42, 310, 5.97, 50.0, "OK",     "-"),
-                    (base + timedelta(minutes=5), 1920, 1.55, 311, 6.17, 50.0, "OK",     "-"),
-                    (base + timedelta(minutes=10),2010, 1.69, 312, 6.44, 50.0, "NORMAL", "-"),
-                ]
-                for ts, pot, ene, v, a, hz, est, alarm in mock:
-                    trabajos.append({
-                        "Fecha": ts.strftime('%Y-%m-%d %H:%M'),
-                        "Potencia (W)": pot,
-                        "Energía (kWh)": ene,
-                        "Tensión (V)": v,
-                        "Corriente (A)": a,
-                        "Frecuencia (Hz)": hz,
-                        "Estado": est,
-                        "Alarma": alarm,
-                        "Panel": etiqueta,
-                        "_panel_id": p0.id
-                    })
+
+                for idx, p in enumerate(paneles, start=0):
+                    etiqueta = f"{p.marca} {p.modelo or ''} (SN {p.serial_number})"
+                    # desplazamos los minutos por panel para que no queden iguales
+                    filas = [
+                        (base + timedelta(minutes=idx*3 + 0), 1850 + idx*30, 1.42 + idx*0.05, 310 + idx, 5.97 + idx*0.1, 50.0, "OK",     "-"),
+                        (base + timedelta(minutes=idx*3 + 5), 1920 + idx*30, 1.55 + idx*0.05, 311 + idx, 6.17 + idx*0.1, 50.0, "OK",     "-"),
+                        (base + timedelta(minutes=idx*3 +10), 2010 + idx*30, 1.69 + idx*0.05, 312 + idx, 6.44 + idx*0.1, 50.0, "NORMAL", "-"),
+                    ]
+                    for ts, pot, ene, v, a, hz, est, alarm in filas:
+                        trabajos.append({
+                            "Fecha": ts.strftime('%Y-%m-%d %H:%M'),
+                            "Potencia (W)": pot,
+                            "Energía (kWh)": ene,
+                            "Tensión (V)": v,
+                            "Corriente (A)": a,
+                            "Frecuencia (Hz)": hz,
+                            "Estado": est,
+                            "Alarma": alarm,
+                            "Panel": etiqueta,
+                            "_panel_id": p.id  # <-- importantísimo para que el filtro funcione
+                        })
+
                 mensaje = "Mostrando datos de prueba (mock)."
 
             lang = request.cookies.get("lang", "es")
