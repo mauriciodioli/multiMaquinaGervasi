@@ -1,8 +1,10 @@
 # src/models/historial_inverter.py
-
+from flask_marshmallow import Marshmallow
+from sqlalchemy import inspect
 from utils.db import db
 from datetime import datetime
 
+ma = Marshmallow()
 class HistorialInverter(db.Model):
     __tablename__ = 'historial_inverter'
 
@@ -30,3 +32,17 @@ class HistorialInverter(db.Model):
 
     def __repr__(self):
         return f'<HistorialInverter panel_id={self.inverter_id} @ {self.timestamp}>'
+    @classmethod
+    def crear_tabla(cls):
+        insp = inspect(db.engine)
+        if not insp.has_table(cls.__tablename__):
+            db.create_all()
+
+class HistorialInverterSchema(ma.Schema):
+    class Meta:
+        fields = (
+            "id", "inverter_id", "timestamp", "voltaje", "corriente",
+            "potencia", "energia", "frecuencia", "estado", "codigo_alarma",
+            "datos_raw"
+          
+        )

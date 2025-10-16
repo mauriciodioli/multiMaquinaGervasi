@@ -1,8 +1,11 @@
 # src/models/historial_inverter.py
 
 # src/models/inverter_panel.py
-
+from flask_marshmallow import Marshmallow
 from utils.db import db
+from sqlalchemy import inspect
+
+ma = Marshmallow()
 
 class InverterPanel(db.Model):
     __tablename__ = 'inverter_panel'
@@ -19,3 +22,15 @@ class InverterPanel(db.Model):
 
     def __repr__(self):
         return f'<InverterPanel {self.marca} - {self.serial_number}>'
+    @classmethod
+    def crear_tabla(cls):
+        insp = inspect(db.engine)
+        if not insp.has_table(cls.__tablename__):
+            db.create_all()
+
+class InverterPanelSchema(ma.Schema):
+    class Meta:
+        fields = (
+            "id", "nombre", "marca", "modelo", "ubicacion",
+            "serial_number"
+        )

@@ -6,7 +6,6 @@
 
 <div class="titulo-maquinas" style="position: relative; text-align: center; margin-bottom: 20px;">
   <h1>Pannelli</h1>
-
 </div>
 
 <div class="contenedor-flex">
@@ -20,17 +19,25 @@
       <h2>Panello Online <small>({{ paneles|length }})</small></h2>
     </div>
 
-    <div class="maquinas-header">
+    <div class="maquinas-header" style="display:flex; gap:.5rem; margin-bottom:.5rem;">
       <button class="btn-agregar">➕ Aggiungere</button>
       <button class="btn-eliminar">➖ Rimuovere</button>
     </div>
 
     <div id="contenedor-online">
       {% if paneles %}
-        <ul>
+        <ul id="panel-list" style="list-style:none; padding-left:0; display:flex; flex-direction:column; gap:.25rem;">
+          <li>
+            <button class="btn btn-light btn-sm panel-filter active" data-panel-id="all">Tutti</button>
+          </li>
           {% for p in paneles %}
             <li>
-              {{ p.marca|default('—') }} – {{ p.modelo|default('s/modelo') }} – SN: {{ p.serial_number|default('—') }}
+              <button
+                class="btn btn-outline-secondary btn-sm panel-filter"
+                data-panel-id="{{ p.id if p.id is not none else 'mock-' ~ loop.index }}"
+                title="{{ p.marca }} {{ p.modelo or '' }} - SN: {{ p.serial_number }}">
+                {{ p.marca|default('—') }} – {{ p.modelo|default('s/modelo') }} – SN: {{ p.serial_number|default('—') }}
+              </button>
             </li>
           {% endfor %}
         </ul>
@@ -49,8 +56,8 @@
   </div>
 
   <!-- Tabla de trabajos / métricas -->
-  <div class="tabla-container">
-    <table>
+  <div class="tabla-container" style="overflow:auto;">
+    <table class="table">
       <thead>
         <tr>
           {% if columnas and columnas|length > 0 %}
@@ -62,19 +69,19 @@
           {% endif %}
         </tr>
       </thead>
-      <tbody>
+      <tbody id="tablaPedidosEntrega">
         {% if trabajos and trabajos|length > 0 %}
           {% if trabajos[0] is mapping %}
-            {# trabajos = [ {"Fecha": "...", "Potencia (W)": 1800, ...}, ... ] #}
+            {# trabajos = [{..., "_panel_id": <id o "mock-1">}, ...] #}
             {% for fila in trabajos %}
-              <tr>
+              <tr data-panel-id="{{ fila.get('_panel_id','all') }}">
                 {% for columna in columnas %}
                   <td>{{ fila.get(columna, '') }}</td>
                 {% endfor %}
               </tr>
             {% endfor %}
           {% else %}
-            {# trabajos = [ ["2025-10-16 09:05", 1850, 1.42, 310, 5.97], ... ] #}
+            {# trabajos = [ [...], ... ] (sin filtro por panel) #}
             {% for fila in trabajos %}
               <tr>
                 {% for valor in fila %}
@@ -118,9 +125,44 @@
   </div>
 </div>
 
-{# CSS / JS (ajustá rutas a tu estructura real) #}
+<style>
+  .panel-filter.active { box-shadow: 0 0 0 2px #198754 inset; font-weight: 600; }
+  @media (max-width: 576px){
+    #panel-list button { width: 100%; text-align: left; }
+    .tabla-container { width: 100%; }
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const buttons = document.querySelectorAll('.panel-filter');
+  const rows = document.querySelectorAll('#tablaPedidosEntrega tr');
+
+  function setActive(btn){
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function filterByPanel(panelId){
+    rows.forEach(tr => {
+      const rid = tr.getAttribute('data-panel-id');
+      // si la fila no tiene data-panel-id (modo lista de listas), no ocultamos
+      const show = (panelId === 'all' || !rid || rid === panelId);
+      tr.style.display = show ? '' : 'none';
+    });
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-panel-id');
+      setActive(btn);
+      filterByPanel(id);
+    });
+  });
+});
+</script>
+
 <link rel="stylesheet" href="{{ url_for('static', filename='css/maquinas/maquinas.css') }}">
-<script src="{{ url_for('static', filename='js/maquinas/maquinas.js') }}"></script>
 <script src="{{ url_for('static', filename='js/maquinas/crud_front_end_maquinas.js') }}"></script>
 <script src="{{ url_for('static', filename='js/maquinas/conexion_db.js') }}"></script>
 

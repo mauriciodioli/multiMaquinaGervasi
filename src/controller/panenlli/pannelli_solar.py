@@ -6,11 +6,9 @@ from src.model.pannelli.inverter_panel import InverterPanel
 from src.model.pannelli.historial_inverter import HistorialInverter
 
 from src.utils.db_session import get_db_session
-from datetime import datetime
+from datetime import datetime,timedelta
 
 pannelli_solar = Blueprint('pannelli_solar', __name__)
-
-
 
 @pannelli_solar.route("/pannelli_crud_consulta/", methods=["GET"])
 def pannelli_crud_consulta():
@@ -25,36 +23,94 @@ def pannelli_crud_consulta():
             return jsonify({"error": "user_id inválido"}), 400
 
         with get_db_session() as session:
-            # SQLAlchemy 2.x: Session.get(Model, pk)
+            # Mantengo tu estilo
             usuario = session.query(Usuario).get(int(user_id))
-            
             if not usuario:
                 return jsonify({"error": "Usuario no encontrado"}), 404
 
-           # Datos de prueba (mock) para el template
-            columnas = ["Fecha", "Potencia (W)", "Energía (kWh)", "Tensión (V)", "Corriente (A)"]
-            trabajos = [
-                ["2025-10-16 09:05", 1850, 1.42, 310, 5.97],
-                ["2025-10-16 09:10", 1920, 1.55, 311, 6.17],
-                ["2025-10-16 09:15", 2010, 1.69, 312, 6.44],
-            ]
-            mensaje = ""
-
-            # Si el usuario todavía no tiene paneles, inventamos 2 para mostrar algo
+            # === Paneles del usuario ===
             paneles = list(usuario.pannelli) if getattr(usuario, "pannelli", None) else []
+
+            # --- MOCK de paneles si no hay (3 paneles) ---
             if not paneles:
                 class _MockPanel:
-                    def __init__(self, marca, modelo, sn):
+                    def __init__(self, _id, marca, modelo, sn):
+                        self.id = _id
                         self.marca = marca
                         self.modelo = modelo
                         self.serial_number = sn
                 paneles = [
-                    _MockPanel("Danfoss", "VLT-2800", "SN-TEST-001"),
-                    _MockPanel("IME", "Solar-Plus 5k", "SN-TEST-002"),
+                    _MockPanel(-1, "Danfoss", "VLT-2800", "SN-TEST-001"),
+                    _MockPanel(-2, "IME",     "Solar-Plus 5k", "SN-TEST-002"),
+                    _MockPanel(-3, "Fronius", "Symo 10.0",     "SN-TEST-003"),
                 ]
+
+            panel_ids = [p.id for p in paneles if getattr(p, "id", None)]
+
+            # === Tabla ===
+            columnas = [
+                "Fecha","Potencia (W)","Energía (kWh)","Tensión (V)",
+                "Corriente (A)","Frecuencia (Hz)","Estado","Alarma","Panel"
+            ]
+            trabajos = []
+
+            lecturas = []
+            # Solo consulta real si los IDs son reales (>0)
+            if panel_ids and all(i > 0 for i in panel_ids):
+                lecturas = (
+                    session.query(HistorialInverter)
+                    .filter(HistorialInverter.inverter_id.in_(panel_ids))
+                    .order_by(HistorialInverter.timestamp.desc())
+                    .limit(100).all()
+                )
+
+            panel_map = {p.id: p for p in paneles if getattr(p, "id", None)}
+
+            if lecturas:
+                for h in lecturas:
+                    p = panel_map.get(h.inverter_id)
+                    etiqueta_panel = f"{p.marca} {p.modelo or ''} (SN {p.serial_number})" if p else f"ID {h.inverter_id}"
+                    trabajos.append({
+                        "Fecha":          h.timestamp.strftime('%Y-%m-%d %H:%M') if h.timestamp else '',
+                        "Potencia (W)":   h.potencia or 0,
+                        "Energía (kWh)":  h.energia or 0,
+                        "Tensión (V)":    h.voltaje or 0,
+                        "Corriente (A)":  h.corriente or 0,
+                        "Frecuencia (Hz)":h.frecuencia or 0,
+                        "Estado":         h.estado or '-',
+                        "Alarma":         h.codigo_alarma or '-',
+                        "Panel":          etiqueta_panel,
+                        "_panel_id":      h.inverter_id
+                    })
+                mensaje = ""
+            else:
+                # --- MOCK de lecturas: 3 filas para el primer panel ---
+                base = datetime.utcnow().replace(second=0, microsecond=0)
+                p0 = paneles[0]
+                etiqueta = f"{p0.marca} {p0.modelo or ''} (SN {p0.serial_number})"
+                mock = [
+                    (base,                    1850, 1.42, 310, 5.97, 50.0, "OK",     "-"),
+                    (base + timedelta(minutes=5), 1920, 1.55, 311, 6.17, 50.0, "OK",     "-"),
+                    (base + timedelta(minutes=10),2010, 1.69, 312, 6.44, 50.0, "NORMAL", "-"),
+                ]
+                for ts, pot, ene, v, a, hz, est, alarm in mock:
+                    trabajos.append({
+                        "Fecha": ts.strftime('%Y-%m-%d %H:%M'),
+                        "Potencia (W)": pot,
+                        "Energía (kWh)": ene,
+                        "Tensión (V)": v,
+                        "Corriente (A)": a,
+                        "Frecuencia (Hz)": hz,
+                        "Estado": est,
+                        "Alarma": alarm,
+                        "Panel": etiqueta,
+                        "_panel_id": p0.id
+                    })
+                mensaje = "Mostrando datos de prueba (mock)."
 
             lang = request.cookies.get("lang", "es")
             t_menu = get_textos_menu(lang)
+
             return render_template(
                 "pannelli/pannelli.html",
                 user=usuario,
@@ -62,13 +118,12 @@ def pannelli_crud_consulta():
                 columnas=columnas,
                 trabajos=trabajos,
                 mensaje=mensaje,
-                t_menu=t_menu,  
+                t_menu=t_menu,
             )
 
-
     except Exception as e:
-        # Log real recomendado
         return jsonify({"error": str(e)}), 500
+
 
 # ✅ Crear nuevo panel
 @pannelli_solar.route('/pannelli_crud_crear_panel', methods=['POST'])
