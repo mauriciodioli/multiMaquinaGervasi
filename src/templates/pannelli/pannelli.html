@@ -1,6 +1,11 @@
 {% extends "layouts/layout.html" %}
 
 {% block title %}Listado de Paneles{% endblock %}
+{% if mensaje %}
+  <div class="alert alert-secondary small text-center mt-2 mb-3">
+    {{ mensaje }}
+  </div>
+{% endif %}
 
 {% block content %}
 
@@ -57,6 +62,37 @@
 
   <!-- Tabla de trabajos / métricas -->
   <div class="tabla-container" style="overflow:auto;">
+
+
+
+<div class="grid grid-2" id="pv-root">
+  <div class="card">
+   <div id="pv-status-container">
+  <span class="status-label">Device status</span>
+  <span id="pv-status" class="badge">Ok</span>
+</div>
+
+  </div>
+  <div class="card">
+    <div class="muted">Current power</div>
+    <div id="pv-power" class="big mono">— W</div>
+  </div>
+  <div class="card" style="grid-column:1 / -1">
+    <div class="muted" style="margin-bottom:.5rem">Inverters</div>
+    <table id="pv-table">
+      <thead>
+        <tr>
+          <th>IP</th><th>Estado</th><th>Potencia</th><th>Voltaje</th><th>Frecuencia</th><th class="muted">Modelo</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+
+
+
     <table class="table">
       <thead>
         <tr>
@@ -163,7 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/maquinas/maquinas.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pannelli/pannelli.css') }}">
 <script src="{{ url_for('static', filename='js/maquinas/crud_front_end_maquinas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pannelli/pannelli_solar.js') }}"></script>
 <script src="{{ url_for('static', filename='js/maquinas/conexion_db.js') }}"></script>
 
 {% endblock %}

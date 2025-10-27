@@ -8,7 +8,75 @@ from src.model.pannelli.historial_inverter import HistorialInverter
 from src.utils.db_session import get_db_session
 from datetime import datetime,timedelta
 
+from src.controller.panenlli.modbus_sma import read_all, IPS
+
+import time
+from flask import jsonify, request
+
 pannelli_solar = Blueprint('pannelli_solar', __name__)
+
+
+
+
+
+
+
+
+
+
+
+def _simplify(inv: dict):
+    """Compacta el dict para frontend."""
+    txt = (inv.get("status_text") or "").lower()
+    if "falla" in txt:
+        device_status = "Error"
+    elif "standby" in txt or "espera" in txt:
+        device_status = "Standby"
+    elif "ok" in txt or "operando" in txt or "marcha" in txt:
+        device_status = "Ok"
+    else:
+        device_status = "Unknown"
+
+    return {
+        "ip": inv.get("ip"),
+        "manufacturer": inv.get("manufacturer"),
+        "model": inv.get("model"),
+        "serial": inv.get("serial"),
+        "device_status": device_status,              # <- para el “Device status” de la UI
+        "status_text": inv.get("status_text"),
+        "power_W": inv.get("P_AC_W"),
+        "power_kW": inv.get("P_AC_kW"),
+        "voltage_V": inv.get("V_AC"),
+        "frequency_Hz": inv.get("freq_Hz"),
+    }
+
+@pannelli_solar.get("/api/pannelli/status")
+def pannelli_status():
+    """
+    Devuelve estado de todos los inversores para AJAX.
+    Opcional: ?ips=192.168.1.101,192.168.1.102
+    """
+    ips_param = request.args.get("ips")
+    ips = [s.strip() for s in ips_param.split(",")] if ips_param else IPS
+
+    data = read_all(ips)                # reutiliza tu lógica sin tocar nada
+    items = [_simplify(d) for d in data]
+
+    total_power_w = sum(
+        i["power_W"] for i in items if isinstance(i.get("power_W"), (int, float))
+    )
+
+    return jsonify({
+        "ts": int(time.time()),
+        "total_power_W": round(total_power_w, 1),
+        "inverters": items
+    })
+
+
+
+
+
+
 
 @pannelli_solar.route("/pannelli_crud_consulta/", methods=["GET"])
 def pannelli_crud_consulta():
@@ -109,7 +177,7 @@ def pannelli_crud_consulta():
                             "_panel_id": p.id  # <-- importantísimo para que el filtro funcione
                         })
 
-                mensaje = "Mostrando datos de prueba (mock)."
+                mensaje = ""
 
             lang = request.cookies.get("lang", "es")
             t_menu = get_textos_menu(lang)

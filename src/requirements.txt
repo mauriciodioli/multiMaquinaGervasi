@@ -32,6 +32,8 @@ oauthlib==2.1.0
 PyDrive==1.3.1
 pymysql
 webdriver_manager
+pymodbus==3.6.8
+
 
 # Archivos y permisos
 PyDrive==1.3.1
