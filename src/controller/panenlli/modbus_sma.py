@@ -2,18 +2,22 @@
 import time
 from pymodbus.client import ModbusTcpClient
 from math import sqrt
+import socket
+from pymodbus.exceptions import ModbusIOException, ConnectionException
 # ===== CONFIG =====
 IPS = [
     "192.168.1.101",
     "192.168.1.102",
-   # "192.168.1.103",
-   # "192.168.1.104",
-   # "192.168.1.105",
-   # "192.168.1.106",
-   # "192.168.1.107",
-   # "192.168.1.108",
-   # "192.168.1.109",
-   # "192.168.1.110",
+    "192.168.1.103",
+   # "192.168.1.104", # IP con V ausente inaxesible
+   # "192.168.1.105", # IP con V ausente inaxesible
+   # "192.168.1.106", # IP con V ausente inaxesible
+   # "192.168.1.107", # IP con V ausente inaxesible
+   # "192.168.1.108", # IP con V ausente inaxesible
+    "192.168.1.109",
+    "192.168.1.110",
+    "192.168.1.111",
+    "192.168.1.112",
     # añadir más IPs si hace falta
 ]
 PORT = 502
@@ -30,6 +34,14 @@ OFF_W = 12
 OFF_WSF = 13
 # ==================================================
 
+def is_na_signed16(v):  return v == -32768         # SunSpec NA (int16)
+def is_na_unsigned16(v): return v == 0xFFFF        # SunSpec NA (uint16)
+def is_na_signed32(v):  return v == -2147483648
+def is_na_unsigned32(v): return v == 0xFFFFFFFF
+
+def safe_scale(raw, sf):
+    if raw is None or sf is None: return None
+    return raw * (10 ** sf)
 
 def find_voltage_in_regs_heur_v2(regs, window=16):
     """
@@ -258,20 +270,36 @@ def decode_status_guess(models):
 
     return "sin datos", None, None, None
 
+def sunssf(raw, sf):
+    """Escala SunSpec con manejo correcto de NA y SF defectuosos."""
+    if raw is None or sf is None:
+        return None
 
-def sunssf(val, sf):
-    """Aplica factor de escala SunSpec; seguro y conservador."""
-    if val in (0x8000, 0x7FFF):  # sentinel SunSpec
+    # 1) NA como uint16 (algunos equipos lo ponen así)
+    if raw == 0xFFFF or sf == 0xFFFF:
         return None
-    if sf is None or sf == -32768:
+
+    # 2) Convertir a int16
+    def to_s16(u):
+        return u - 0x10000 if isinstance(u, int) and u >= 0x8000 else u
+
+    raw_s16 = to_s16(raw)
+    sf_s16  = to_s16(sf)
+
+    # 3) NA como int16 estándar SunSpec
+    if raw_s16 == -32768 or sf_s16 == -32768:
         return None
-    # filtrar sf absurdos
-    if sf < -10 or sf > 10:
+
+    # 4) Sanity check: SF fuera de rango razonable => descartar
+    # (en SunSpec típico está entre -3 y +3; seamos generosos)
+    if sf_s16 < -10 or sf_s16 > 10:
         return None
+
     try:
-        return val * (10 ** sf)
+        return raw_s16 * (10 ** sf_s16)
     except Exception:
         return None
+
 
 def read_u16s(client, unit, addr0, count):
     r = client.read_holding_registers(addr0, count, slave=unit)
@@ -362,32 +390,47 @@ def decode_ac_from_101(regs):
 def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
     """
     Lee un inversor vía Modbus TCP probando múltiples unit IDs.
-    Devuelve 'ok' si decodifica AC del modelo 101, 'raw' si hay datos crudos,
-    y 'fail' sólo si no conectó o no pudo leer nada útil.
+    Devuelve:
+      - 'ok'  : si decodifica AC del modelo 101
+      - 'raw' : si hay datos crudos pero no AC
+      - 'fail': si conectó pero no pudo leer nada útil
+      - 'no conect': si NO logró establecer conexión TCP
     """
-    result = {"ip": ip, "status": "fail"}
+    # POR DEFECTO: asumir que no conecta
+    result = {
+        "ip": ip,
+        "status": "no conect",
+        "status_text": "sin conexión",
+        "status_code": None,
+        "status_src": None,
+        "V_AC": "—",
+        "freq_Hz": "—",
+        "P_AC_W": "—",
+        "P_AC_kW": "—",
+        "unit_used": None,
+    }
     try:
-        with ModbusTcpClient(ip, port) as client:
+        with ModbusTcpClient(ip, port, timeout=1.5, retries=1) as client:
             if not client.connect():
                 print(f"❌ No conecta {ip}")
-                return result
+                return result  # <- queda "no conect"
+
+            # Conectó: si después no obtenemos nada, será "fail"
+            result["status"] = "fail"
+            result["status_text"] = "sin datos"
 
             info = read_common(client) or {}
             result.update(info)
 
-            # Intentar por cada unit id posible
             last_error = None
             for unit in unit_candidates:
                 try:
-                    # Buscar header del modelo 101 usando este unit
                     hdr_addr0, mlen = find_model_header(client, 101, unit=unit)
                 except TypeError:
-                    # compat: si tu find_model_header original no acepta unit
                     hdr_addr0, mlen = find_model_header(client, 101)
                 if hdr_addr0 is None:
-                    continue  # probar siguiente unit
+                    continue
 
-                # Si hay header, leer payload del 101 con el MISMO unit
                 try:
                     regs = read_u16s(client, unit, hdr_addr0 + 2, mlen)
                 except Exception as e:
@@ -399,32 +442,17 @@ def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
                     print(f"⚠️ Sin regs del 101 en {ip} unit {unit}")
                     continue
 
-                # Guardar crudos y unit usado
                 result["raw_regs"] = regs
                 result["unit_used"] = unit
 
-                # Decodificar AC
                 ac = decode_ac_from_101(regs)
                 if ac:
                     result.update(ac)
                     result["status"] = "ok"
-                    
-                    
-                    # Completar nominal si falta V en vivo
                     fill_voltage_generic_if_missing(result, client, unit)
-
-                    # 🔎 Diagnóstico opcional (solo para la IP problemática)
-                    #if result.get("V_AC") == "—" and ip == "192.168.1.101":
-                        #try:
-                           # print(f"[{ip}] 🔎 scan_all_models_for_voltage (unit={unit})")
-                           # scan_all_models_for_voltage(client, unit, window=12)
-                        #except Exception as e:
-                         #   print(f"[{ip}] scan_all_models_for_voltage error: {e}")
-
                 else:
                     result["status"] = "raw"
-               # if result.get("raw_regs"):
-                #    print(f"[{ip}] V_raw@101={result['raw_regs'][OFF_V]} "    f"V_sf@101={result['raw_regs'][OFF_VSF]} "    f"V_AC={result.get('V_AC')}")
+
                 # Estado heurístico
                 models = {101: regs}
                 st_text, st_code, st_mid, st_idx = decode_status_guess(models)
@@ -436,12 +464,10 @@ def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
                     result["status_text"] = derive_ok_from_metrics(
                         result, result.get("status_code"), result.get("status_text")
                     )
-                    
-                #print(f"[{ip}] status_guess code={st_code} src_model={st_mid} idx={st_idx} "f"val={ (models.get(st_mid)[st_idx] if st_mid in models and st_idx is not None else None) } " f"hint={'V_SF' if (st_mid==101 and st_idx in (OFF_VSF, OFF_HZSF, OFF_WSF)) else ''}")
-    
-                return result  # éxito con este unit
 
-            # Si no se encontró modelo 101 con ningún unit, al menos intenta “primer modelo”
+                return result  # éxito con este unit (ok/raw)
+
+            # Si no apareció 101, intentá “primer modelo” para al menos dejar "raw"
             try:
                 mid, regs = read_first_model_payload(client)
             except Exception as e:
@@ -450,22 +476,37 @@ def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
 
             if mid is None or regs is None:
                 print(f"⚠️ {ip} no devolvió modelos legibles. Último error: {last_error}")
-                return result  # se queda 'fail'
-         
+                # OJO: aquí conectó pero no hay datos → 'fail'
+                result["status"] = "fail"
+                result["status_text"] = "sin datos"
+                return result
+
             result["raw_model_id"] = mid
             result["raw_regs"] = regs
             result["status"] = "raw"
-            models = {mid: regs}
-            st_text, st_code, st_mid, st_idx = decode_status_guess(models)
+            st_text, st_code, st_mid, st_idx = decode_status_guess({mid: regs})
             result["status_text"] = st_text
             result["status_code"] = st_code
             result["status_src"] = {"model": st_mid, "index": st_idx}
             return result
 
     except Exception as e:
+        # Error duro de conexión: mantener "no conect"
         print(f"⚠️ Error en {ip}: {e}")
+        result["status"] = "no conect"
+        result["status_text"] = "sin conexión"
+        result["error"] = f"{type(e).__name__}: {e}"
         return result
 
+
+
+def _err_label(e):
+    msg = str(e) or ""
+    if isinstance(e, ConnectionRefusedError):               return "sin conexión (refused)"
+    if isinstance(e, TimeoutError) or "timed out" in msg:   return "sin conexión (timeout)"
+    if isinstance(e, (ConnectionException, ModbusIOException)): return "sin conexión (modbus)"
+    if isinstance(e, socket.gaierror):                      return "sin conexión (DNS)"
+    return "sin conexión"
 
 # ===== Loop principal =====
 if __name__ == "__main__":
@@ -499,6 +540,10 @@ def read_all(ips=None):
     """
     targets = ips or IPS
     return [read_ip(ip) for ip in targets]
+
+
+
+
 
 
 

@@ -4,14 +4,37 @@
 
 /* ==== util: badge de estado global ==== */
 function setBadge(el, txt){
-  const t = (txt||'').toLowerCase();
-  let cls='unknown', label=txt||'Unknown';
-  if (t.includes('ok')) cls='ok', label='Ok';
-  else if (t.includes('standby')) cls='standby', label='Standby';
-  else if (t.includes('falla') || t.includes('error')) cls='error', label='Falla';
+  const t = (txt ?? '').toLowerCase().trim();
+  let cls = 'unknown', label = txt || 'Unknown';
+
+  // ↓ Primero: casos de desconexión (tu "no conect")
+  if (
+    t.includes('no conect') ||
+    t.includes('sin conexión') || t.includes('sin conexion') ||
+    /refused|timeout|timed out|dns|modbus/.test(t)
+  ) {
+    cls = 'error'; label = 'Sin conexión';
+
+  } else if (t.includes('ok') || /operando|running|online/.test(t)) {
+    cls = 'ok'; label = 'OK';
+
+  } else if (t.includes('standby') || /idle/.test(t)) {
+    cls = 'standby'; label = 'Standby';
+
+  } else if (/falla|fail|failure|fault|alarm|error|offline/.test(t)) {
+    cls = 'error'; label = 'Fail';
+
+  } else if (t.includes('raw')) {
+    cls = 'unknown'; label = 'Datos crudos';
+
+  } else if (t.includes('sin datos')) {
+    cls = 'unknown'; label = 'Sin datos';
+  }
+
   el.className = `badge ${cls}`;
   el.textContent = label;
 }
+
 
 /* ==== estado previo para comparar difs ===== */
 let prevSnapshot = {
@@ -76,9 +99,13 @@ async function loadStatus(){
   const states = (data.inverters||[]).map(i=> (i.status_text||'').toLowerCase());
   if (statusEl){
     let global = 'Unknown';
-    if (states.some(s=>s.includes('falla'))) global='Falla';
-    else if (states.length && states.every(s=>s.includes('standby'))) global='Standby';
-    else if (states.some(s=>s.includes('ok')) || states.some(s=>s.includes('operando'))) global='Ok';
+    if (states.some(s=> /falla|fail|failure|fault|alarm|error|offline/.test(s))) {
+      global='Fail';
+    } else if (states.length && states.every(s=> s.includes('standby') || /idle/.test(s))) {
+      global='Standby';
+    } else if (states.some(s=> s.includes('ok') || /operando|running|online/.test(s))) {
+      global='Ok';
+    }
     setBadge(statusEl, global);
   }
 
@@ -130,7 +157,7 @@ async function pollOnce(){
   } catch(e){
     console.warn('poll error:', e);
     const statusEl= document.getElementById('pv-status');
-    if (statusEl) setBadge(statusEl, 'Falla');
+    if (statusEl) setBadge(statusEl, 'Fail'); // antes decía "Falla"
   } finally {
     inFlight = false;
     pollTimer = setTimeout(pollOnce, 3000); // 3s exactos entre ciclos
