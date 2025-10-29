@@ -216,7 +216,7 @@ def derive_ok_from_metrics(ac_dict, code, status_text):
 
     # si el código cae en 200..299, asumimos fallo
     if isinstance(code, int) and 200 <= code < 300:
-        return f"falla (code {code})"
+        return f"fail (code {code})"
 
     # si potencia > 0 y V/Hz razonables → Ok
     if W_ok and W > 0 and (V_ok or V == "—") and Hz_ok:
@@ -255,7 +255,7 @@ def decode_status_guess(models):
                     101: "iniciando",
                     102: "apagado",
                     104: "esperando",
-                    201: "falla",
+                    201: "fail",
                     202: "fallo de red",
                 }
                 if code in mapping:
@@ -267,7 +267,7 @@ def decode_status_guess(models):
                 if 400 <= code < 500:
                     return f"standby/operación (code {code})", code, mid, idx
                 if 500 <= code < 600:
-                    return f"falla (code {code})", code, mid, idx
+                    return f"fail (code {code})", code, mid, idx
                 return f"unknown status ({code})", code, mid, idx
 
     return "no data", None, None, None
