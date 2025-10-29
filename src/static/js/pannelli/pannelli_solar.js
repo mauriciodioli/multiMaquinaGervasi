@@ -10,7 +10,7 @@ function setBadge(el, txt){
   // ↓ Primero: casos de desconexión (tu "no conect")
   if (
     t.includes('no conect') ||
-    t.includes('sin conexión') || t.includes('sin conexion') ||
+    t.includes('offline') || t.includes('offline') ||
     /refused|timeout|timed out|dns|modbus/.test(t)
   ) {
     cls = 'error'; label = 'Sin conexión';
@@ -28,7 +28,7 @@ function setBadge(el, txt){
     cls = 'unknown'; label = 'Datos crudos';
 
   } else if (t.includes('sin datos')) {
-    cls = 'unknown'; label = 'Sin datos';
+    cls = 'unknown'; label = 'no data';
   }
 
   el.className = `badge ${cls}`;
@@ -112,36 +112,42 @@ async function loadStatus(){
   /* ===== TABLA ===== */
   if (bodyEl){
     bodyEl.innerHTML = '';
-    (data.inverters||[]).forEach(i=>{
-      const ip   = i.ip || '—';
-      const old  = prevSnapshot.inv[ip] || {};
+      (data.inverters||[]).forEach(i=>{
+        const ip   = i.ip || '—';
+        const old  = prevSnapshot.inv[ip] || {};
 
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${ip}</td>
-        <td><span class="badge">${i.status_text||'—'}</span></td>
-        <td class="mono power-cell">${fmt(i.power_W,' W')}</td>
-        <td class="mono volt-cell">${fmt(i.voltage_V,' V')}</td>
-        <td class="mono freq-cell">${fmt(i.frequency_Hz,' Hz')}</td>
-        <td class="muted">${(i.manufacturer||'')+' '+(i.model||'')}</td>`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${ip}</td>
+          <td><span class="badge">${i.status_text || '—'}</span></td>
+          <td class="mono power-cell">${fmt(i.power_W,' W')}</td>
+          <td class="mono volt-cell">${fmt(i.voltage_V,' V')}</td>
+          <td class="mono freq-cell">${fmt(i.frequency_Hz,' Hz')}</td>
+          <td class="muted">${(i.manufacturer||'')+' '+(i.model||'')}</td>`;
 
-      // flashes por celda (incluye neutral azul si no cambió)
-      const pc = tr.querySelector('.power-cell');
-      const vc = tr.querySelector('.volt-cell');
-      const fc = tr.querySelector('.freq-cell');
-      if (pc) flashDelta(pc, old.power_W,      i.power_W,      true);
-      if (vc) flashDelta(vc, old.voltage_V,    i.voltage_V,    true);
-      if (fc) flashDelta(fc, old.frequency_Hz, i.frequency_Hz, true);
+        // ⬅️ colorear el badge por código/grupo
+        const statusBadge = tr.querySelector('td .badge');
+        setStatusBadgeByCode(statusBadge, i.status_code, i.status_text, i.status_group, i.status);
 
-      // snapshot por IP
-      prevSnapshot.inv[ip] = {
-        power_W: i.power_W,
-        voltage_V: i.voltage_V,
-        frequency_Hz: i.frequency_Hz
-      };
+        statusBadge.textContent = formatStatusLabel(i);
+        // flashes por celda (incluye neutral azul si no cambió)
+        const pc = tr.querySelector('.power-cell');
+        const vc = tr.querySelector('.volt-cell');
+        const fc = tr.querySelector('.freq-cell');
+        if (pc) flashDelta(pc, old.power_W,      i.power_W,      true);
+        if (vc) flashDelta(vc, old.voltage_V,    i.voltage_V,    true);
+        if (fc) flashDelta(fc, old.frequency_Hz, i.frequency_Hz, true);
 
-      bodyEl.appendChild(tr);
-    });
+        // snapshot por IP
+        prevSnapshot.inv[ip] = {
+          power_W: i.power_W,
+          voltage_V: i.voltage_V,
+          frequency_Hz: i.frequency_Hz
+        };
+
+        bodyEl.appendChild(tr);
+      });
+
   }
 }
 
@@ -172,3 +178,68 @@ document.addEventListener('visibilitychange', ()=>{
 
 /* ==== arranque ==== */
 pollOnce();
+
+
+function setStatusBadgeByCode(el, code, text, group, status){
+  // Clase por código
+  let cls = 'unknown';
+  if (typeof code === 'number') {
+    if (code >= 300 && code < 400) cls = 'ok';
+    else if (code >= 400 && code < 500) cls = 'standby';
+    else if ((code >= 200 && code < 300) || (code >= 500 && code < 600)) cls = 'error';
+    else if (code >= 100 && code < 200) cls = 'init';
+  } else if (group) {
+    const g = String(group).toLowerCase();
+    cls = ({ ok:'ok', standby:'standby', error:'error', init:'init', unknown:'unknown' }[g]) || 'unknown';
+  } else {
+    // sin código ni grupo → deja que setBadge por texto se encargue
+    setBadge(el, text);
+    return;
+  }
+
+  // Texto por defecto
+  let label = text || (typeof code === 'number' ? `Código ${code}` : '—');
+
+  // Si el estado corto es "fail", forzamos “Fail (código N)” si hay N
+  if (String(status || '').toLowerCase() === 'fail') {
+    label = (typeof code === 'number') ? `Fail (código ${code})` : 'Fail';
+    cls = 'error';
+  }
+
+  el.className = `badge ${cls}`;
+  el.textContent = label;
+}
+
+
+
+
+// === helpers de status ===
+function _extractStatusCode(i){
+  if (typeof i?.status_code === 'number') return i.status_code;
+
+  const pool = [i?.status_text, i?.error].filter(Boolean).join(' ');
+  const m = pool.match(/\b(?:código|code|Errno)[:\s]*(-?\d+)\b/i);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * Devuelve el label a mostrar en el badge de estado.
+ * - Si status === "fail": "Fail (código N)" cuando haya N; si no, "Fail".
+ * - En otros casos: usa status_text si existe; si no hay, y hay código, "Código N"; si no, "—".
+ */
+function formatStatusLabel(i){
+  const status = String(i?.status || '').toLowerCase();
+  const text   = (i?.status_text || '').trim();
+
+  if (status === 'fail'){
+    const code = _extractStatusCode(i);
+    return (code != null) ? `Fail (código ${code})` : 'Fail';
+  }
+
+  if (text) return text;
+
+  const code = _extractStatusCode(i);
+  if (code != null) return `Código ${code}`;
+
+  return '—';
+}

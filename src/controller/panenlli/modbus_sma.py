@@ -200,7 +200,7 @@ def s16(x):
 def derive_ok_from_metrics(ac_dict, code, status_text):
     """
     Si no tenemos mapeo de estado pero las métricas están sanas,
-    devolvemos 'Ok (heurístico)'. Mantiene el texto original si ya es conocido.
+    devolvemos 'Ok ()'. Mantiene el texto original si ya es conocido.
     """
     if status_text and ("operando" in status_text or "marcha" in status_text or "standby" in status_text or "falla" in status_text):
         return status_text  # ya tenemos algo útil
@@ -216,15 +216,15 @@ def derive_ok_from_metrics(ac_dict, code, status_text):
 
     # si el código cae en 200..299, asumimos fallo
     if isinstance(code, int) and 200 <= code < 300:
-        return f"falla (código {code})"
+        return f"falla (code {code})"
 
     # si potencia > 0 y V/Hz razonables → Ok
     if W_ok and W > 0 and (V_ok or V == "—") and Hz_ok:
-        return "Ok (heurístico)"
+        return "Ok (heurstic)"
 
     # si potencia 0 pero V/Hz ok → standby
     if W_ok and W == 0 and (V_ok or V == "—") and Hz_ok:
-        return "standby (heurístico)"
+        return "standby (heurstic)"
 
     # si no hay nada mejor, dejamos lo que había
     return status_text or "sin datos"
@@ -259,16 +259,18 @@ def decode_status_guess(models):
                     202: "fallo de red",
                 }
                 if code in mapping:
-                    return f"{mapping[code]} (código {code})", code, mid, idx
+                    return f"{mapping[code]} (code {code})", code, mid, idx
                 if 200 <= code < 300:
-                    return f"fallo menor (código {code})", code, mid, idx
+                    return f"fallo menor (code {code})", code, mid, idx
                 if 300 <= code < 400:
-                    return f"operando (código {code})", code, mid, idx
+                    return f"operando (code {code})", code, mid, idx
                 if 400 <= code < 500:
-                    return f"standby/operación (código {code})", code, mid, idx
-                return f"estado desconocido ({code})", code, mid, idx
+                    return f"standby/operación (code {code})", code, mid, idx
+                if 500 <= code < 600:
+                    return f"falla (code {code})", code, mid, idx
+                return f"unknown status ({code})", code, mid, idx
 
-    return "sin datos", None, None, None
+    return "no data", None, None, None
 
 def sunssf(raw, sf):
     """Escala SunSpec con manejo correcto de NA y SF defectuosos."""
@@ -400,7 +402,7 @@ def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
     result = {
         "ip": ip,
         "status": "no conect",
-        "status_text": "sin conexión",
+        "status_text": "offline",
         "status_code": None,
         "status_src": None,
         "V_AC": "—",
@@ -417,7 +419,7 @@ def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
 
             # Conectó: si después no obtenemos nada, será "fail"
             result["status"] = "fail"
-            result["status_text"] = "sin datos"
+            result["status_text"] = "no data"
 
             info = read_common(client) or {}
             result.update(info)
@@ -453,12 +455,13 @@ def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
                 else:
                     result["status"] = "raw"
 
-                # Estado heurístico
+                # Estado heurstic
                 models = {101: regs}
                 st_text, st_code, st_mid, st_idx = decode_status_guess(models)
                 result["status_text"] = st_text
                 result["status_code"] = st_code
                 result["status_src"] = {"model": st_mid, "index": st_idx}
+                result["status_group"]= status_group_from_code(st_code) 
 
                 if result["status"] == "ok":
                     result["status_text"] = derive_ok_from_metrics(
@@ -478,7 +481,7 @@ def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
                 print(f"⚠️ {ip} no devolvió modelos legibles. Último error: {last_error}")
                 # OJO: aquí conectó pero no hay datos → 'fail'
                 result["status"] = "fail"
-                result["status_text"] = "sin datos"
+                result["status_text"] = "no data"
                 return result
 
             result["raw_model_id"] = mid
@@ -488,25 +491,28 @@ def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
             result["status_text"] = st_text
             result["status_code"] = st_code
             result["status_src"] = {"model": st_mid, "index": st_idx}
+            result["status_group"]= status_group_from_code(st_code) 
             return result
 
     except Exception as e:
         # Error duro de conexión: mantener "no conect"
         print(f"⚠️ Error en {ip}: {e}")
         result["status"] = "no conect"
-        result["status_text"] = "sin conexión"
+        result["status_text"] = "offline"
         result["error"] = f"{type(e).__name__}: {e}"
         return result
 
 
 
-def _err_label(e):
-    msg = str(e) or ""
-    if isinstance(e, ConnectionRefusedError):               return "sin conexión (refused)"
-    if isinstance(e, TimeoutError) or "timed out" in msg:   return "sin conexión (timeout)"
-    if isinstance(e, (ConnectionException, ModbusIOException)): return "sin conexión (modbus)"
-    if isinstance(e, socket.gaierror):                      return "sin conexión (DNS)"
-    return "sin conexión"
+def status_group_from_code(code: int) -> str:
+    if code is None: return "unknown"
+    if 100 <= code < 200: return "init"
+    if 200 <= code < 300: return "error"
+    if 300 <= code < 400: return "ok"
+    if 400 <= code < 500: return "standby"
+    if 500 <= code < 600: return "error"
+    return "unknown"
+
 
 # ===== Loop principal =====
 if __name__ == "__main__":
