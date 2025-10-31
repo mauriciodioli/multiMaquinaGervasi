@@ -221,7 +221,9 @@ function agregarMezcla() {
 
     const mezclaDiv = document.createElement("div");
     mezclaDiv.className = "mezcla";
-    mezclaDiv.dataset.id = mezclaId; // ← acá le colocás el data-id correctamente
+
+    // 🔴 ESTE es el ID que después vamos a usar para guardar y restaurar
+    mezclaDiv.setAttribute("data-mezcla-id", `mezcla-${mezclaId}`);
 
     const tamices = [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15];
 
@@ -239,10 +241,11 @@ function agregarMezcla() {
                 <h3>Aggregato</h3>
                 <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il aggregato</button>
             </div>
-            <h3>Nuevo Producto</h3>     
+            <h3>Nuevo Producto</h3>
             <input type="text" value="Nuevo Producto" class="nombreProducto" data-original="Nuevo Producto">
             <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Aggiungi Riga</button>
             <button class="btn btn-danger" onclick="agregarAgredadosPreCardados(this)">select precargados</button>
+            <button class="btn btn-danger" onclick="agregarTablaAlocalStorage(this)">save</button>
             <table class="tabla">
                 <thead>
                     <tr><th>Tamiz</th><th>% Real</th><th>Acción</th></tr>
@@ -256,8 +259,84 @@ function agregarMezcla() {
     `;
 
     container.appendChild(mezclaDiv);
-    mezclaId++; // ¡IMPORTANTE! lo incrementás después
+
+    // 👇 lo incrementás al final para la próxima mezcla
+    mezclaId++;
 }
+function agregarTablaAlocalStorage(btn) {
+    const mezclaEl = btn.closest(".mezcla");
+    if (!mezclaEl) {
+        console.error("❌ No encontré la mezcla del botón save");
+        return;
+    }
+
+    // 1) id de la mezcla
+    let mezclaId = mezclaEl.getAttribute("data-mezcla-id") || mezclaEl.id;
+    if (!mezclaId) {
+        const todas = Array.from(document.querySelectorAll(".mezcla"));
+        const idx = todas.indexOf(mezclaEl);
+        mezclaId = `mezcla-${idx}`;
+        mezclaEl.setAttribute("data-mezcla-id", mezclaId);
+    }
+
+    // 2) nombre
+    const inputNombre = mezclaEl.querySelector(".nombreProducto");
+    const nombre = inputNombre ? (inputNombre.value || "").trim() : "";
+
+    // 3) filas
+    const filas = [];
+    const tbody = mezclaEl.querySelector("table.tabla tbody");
+    if (tbody) {
+        tbody.querySelectorAll("tr").forEach(tr => {
+            const celdas = tr.querySelectorAll("td");
+            const tamiz = (celdas[0]?.textContent || "").trim();
+            const porcentaje = (celdas[1]?.textContent || "").trim();
+            filas.push({ tamiz, porcentaje });
+        });
+    }
+
+    // 4) leer lo que había
+    let tablas = [];
+    const raw = localStorage.getItem("tablasCargadas");
+    if (raw) {
+        try {
+            tablas = JSON.parse(raw);
+        } catch (e) {
+            console.warn("⚠️ tablasCargadas estaba corrupto, lo reinicio");
+            tablas = [];
+        }
+    }
+
+    // 5) objeto actual
+    const tablaActual = {
+        mezclaId,
+        nombre,
+        filas
+    };
+
+    // 6) upsert
+    const idx = tablas.findIndex(t => t.mezclaId === mezclaId);
+    if (idx >= 0) {
+        tablas[idx] = tablaActual;
+    } else {
+        tablas.push(tablaActual);
+    }
+
+    // 7) guardar
+    localStorage.setItem("tablasCargadas", JSON.stringify(tablas));
+
+    // 8) ✅ feedback visual en el botón
+    const originalText = btn.textContent;
+    btn.textContent = "✅ guardado";
+    btn.disabled = true;
+    setTimeout(() => {
+        btn.textContent = originalText || "save";
+        btn.disabled = false;
+    }, 1500);
+
+    console.log(`✅ Mezcla ${mezclaId} guardada en localStorage`);
+}
+
 
 function eliminarMezcla(boton) {
     const mezclaDiv = boton.closest('.mezcla');
