@@ -10,8 +10,7 @@ IPS = [
     "192.168.1.102",
     "192.168.1.103",
    # "192.168.1.104", # IP con V ausente inaxesible
-   # "192.168.1.105", # IP con V ausente inaxesible
-   # "192.168.1.106", # IP con V ausente inaxesible
+   # "192.168.1.105", # IP con V ausente inaxesible  
    # "192.168.1.107", # IP con V ausente inaxesible
    # "192.168.1.108", # IP con V ausente inaxesible
     "192.168.1.109",
@@ -252,16 +251,19 @@ def decode_status_guess(models):
                     307: "marcha normal",
                     455: "standby",
                     400: "operando",
-                    101: "iniciando",
-                    102: "apagado",
+                    101: "starting",
+                    102: "off",
                     104: "esperando",
                     201: "fail",
                     202: "fallo de red",
+                    203: "communication failure",
+                    205: "communication failure",
+                    
                 }
                 if code in mapping:
                     return f"{mapping[code]} (code {code})", code, mid, idx
                 if 200 <= code < 300:
-                    return f"fallo menor (code {code})", code, mid, idx
+                    return f"communication failure (code {code})", code, mid, idx
                 if 300 <= code < 400:
                     return f"operando (code {code})", code, mid, idx
                 if 400 <= code < 500:

@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
         row.innerHTML = `
           <td>${data.nombre_comercial}</td>
           <td>${data.diametro_mm}</td>
+          <td>${data.porcentaje}</td>
          <td>
             <button class="btn btn-sm btn-danger btn-eliminar-malla" data-id="${data.id }">🗑️</button>
             </td>

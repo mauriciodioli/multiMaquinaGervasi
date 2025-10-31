@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import time
 from pymodbus.client import ModbusTcpClient
-from scrapingDanfos import read_danfoss_http
+
 # ========= CONFIG =========
 IPS = [
     "192.168.1.101",

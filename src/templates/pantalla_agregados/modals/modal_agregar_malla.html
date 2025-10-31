@@ -14,6 +14,7 @@
         </div>
 
         <div class="modal-body">
+          <!-- seleccionar malla -->
           <div class="mb-3">
             <label for="malla_id" class="form-label">{{ t_menu["seleccionar_malla"] }}</label>
             <select class="form-select" id="malla_id" name="malla_id" required>
@@ -22,6 +23,27 @@
                 <option value="{{ malla.id }}">{{ malla.nombre_comercial }} ({{ malla.diametro_mm }} mm)</option>
               {% endfor %}
             </select>
+          </div>
+
+          <!-- porcentaje -->
+          <div class="mb-3">
+            <label for="porcentaje" class="form-label">
+              {{ t_menu.get("porcentaje", "Porcentaje (%)") }}
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              class="form-control"
+              id="porcentaje"
+              name="porcentaje"
+              placeholder="Ej: 18.5"
+              required
+            >
+            <div class="form-text">
+              Ingresá el porcentaje de esta malla dentro del agregado (0–100).
+            </div>
           </div>
         </div>
 

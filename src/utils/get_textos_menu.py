@@ -64,6 +64,7 @@ def get_textos_menu(lang="es"):
             "mostrar_ocultar": "Mostrar / Ocultar",
             "nombre_comercial": "Nombre comercial",
             "diametro": "Diámetro (mm)",
+            "porcentaje": "Porcentaje (%)",
             
             
             
@@ -238,6 +239,7 @@ def get_textos_menu(lang="es"):
             "mostrar_ocultar": "Show / Hide",
             "nombre_comercial": "Trade name",
             "diametro": "Diameter (mm)",
+            "porcentaje": "Percentage (%)",
             
              # Pantalla /pantalla_agregados/modals/modal_agregar_agregado.html
             "agregar_agregado": "Add Aggregate",
@@ -405,6 +407,9 @@ def get_textos_menu(lang="es"):
                     "mostrar_ocultar": "Mostrar / Ocultar",
                     "nombre_comercial": "Nome comercial",
                     "diametro": "Diâmetro (mm)",
+                    "porcentaje": "Percentual (%)",
+                    
+                     # Pantalla /pantalla_agregados/modals/modal_agregar_agregado.html
 
                     "agregar_agregado": "Adicionar Agregado",
                     "seleccionar_estado": "Selecione um estado",
@@ -542,6 +547,7 @@ def get_textos_menu(lang="es"):
             "mostrar_ocultar": "Mostra / Nascondi",
             "nombre_comercial": "Nome commerciale",
             "diametro": "Diametro (mm)",
+            "porcentaje": "Percentuale (%)",
             
             
              # Pantalla /pantalla_agregados/modals/modal_agregar_agregado.html

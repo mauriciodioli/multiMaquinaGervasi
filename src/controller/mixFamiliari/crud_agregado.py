@@ -68,7 +68,7 @@ def obtener_curva_de_agregado(agregado_id):
             resultado = [
                 {
                     "tamiz": malla.malla.diametro_mm,
-                    "porcentaje":'NULL',  # Si tenés porcentaje real guardado, podés devolverlo acá
+                    "porcentaje": malla.porcentaje,  # Si tenés porcentaje real guardado, podés devolverlo acá
                     "nombre_agregado": agregado.nombre
                 }
                 for malla in mallas
@@ -275,11 +275,25 @@ def mixFamiliari_crud_agregado_agregados(agregado_id):
 def mixFamiliari_crud_agregado_agregados_mallas(agregado_id):
     try:
         malla_id = request.form.get("malla_id")
+        porcentaje_raw = request.form.get("porcentaje", "0")
 
         if not malla_id:
             return jsonify({"error": "Falta seleccionar la malla"}), 400
+
+        # normalizar porcentaje
+        try:
+            porcentaje = float(porcentaje_raw)
+        except ValueError:
+            porcentaje = 0.0
+
+        # opcional: clamp 0..100
+        if porcentaje < 0:
+            porcentaje = 0.0
+        if porcentaje > 100:
+            porcentaje = 100.0
+
         with get_db_session() as session:
-            # Uso correcto de session para obtener la malla
+            # obtener la malla
             malla = session.query(Malla).get(int(malla_id))
             if not malla:
                 return jsonify({"error": "Malla no encontrada"}), 404
@@ -287,7 +301,7 @@ def mixFamiliari_crud_agregado_agregados_mallas(agregado_id):
             nueva = AgregadoMalla(
                 agregado_id=agregado_id,
                 malla_id=malla.id,
-                porcentaje=0
+                porcentaje=porcentaje
             )
 
             session.add(nueva)
@@ -297,11 +311,13 @@ def mixFamiliari_crud_agregado_agregados_mallas(agregado_id):
                 "success": True,
                 "id": nueva.id,
                 "nombre_comercial": malla.nombre_comercial,
-                "diametro_mm": malla.diametro_mm
+                "diametro_mm": malla.diametro_mm,
+                "porcentaje": nueva.porcentaje
             })
 
-    except SQLAlchemyError as e:   
+    except SQLAlchemyError as e:
         return jsonify({"error": str(e)}), 500
+
 
   
 

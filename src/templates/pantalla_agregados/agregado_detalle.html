@@ -30,6 +30,7 @@
           <tr>
             <th>{{ t_menu["nombre_comercial"] }}</th>
             <th>{{ t_menu["diametro"] }}</th>
+            <th>{{ t_menu["porcentaje"] }}</th>
             <th>{{ t_menu["acciones"] }}</th>
           </tr>
         </thead>
@@ -38,6 +39,7 @@
           <tr>
             <td>{{ am.malla.nombre_comercial }}</td>
             <td>{{ am.malla.diametro_mm }}</td>
+            <td>{{ am.porcentaje }}</td>
             <td>
               <button class="btn btn-sm btn-danger btn-eliminar-malla" data-id="{{ am.id }}">🗑️</button>
             </td>

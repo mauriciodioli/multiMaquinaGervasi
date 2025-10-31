@@ -12,6 +12,7 @@ class Malla(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre_comercial = db.Column(db.String(50))
     diametro_mm = db.Column(db.Float)
+
   
     agregados_asociados = relationship("AgregadoMalla", back_populates="malla", cascade="all, delete")
 
@@ -19,5 +20,5 @@ class Malla(db.Model):
 
 class Tipo_mallasSchema(ma.Schema):
     class Meta:
-         fields = ("id", "nombre_comercial", "diametro_mm")
+         fields = ("id", "nombre_comercial", "diametro_mm", "porcentaje_pasa")
          

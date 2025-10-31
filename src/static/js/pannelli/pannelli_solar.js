@@ -99,7 +99,7 @@ async function loadStatus(){
   const states = (data.inverters||[]).map(i=> (i.status_text||'').toLowerCase());
   if (statusEl){
     let global = 'Unknown';
-   
+   debugger;
     if (states.some(s=> /falla|fail|failure|fault|alarm|error/.test(s))) {
       global='Fail';
     } else if (states.length && states.every(s=> s.includes('standby') || /idle/.test(s))) {

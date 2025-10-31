@@ -341,15 +341,25 @@ function eliminarMezcla(boton) {
 
 
 function agregarFilaMultiple(btn) {
-    // Cambiá '.tabla' por la clase/ID de tu tabla si es otra
-    const tbody = btn.closest(".card, body")   // sube al contenedor lógico
-                    .querySelector("table.tabla > tbody");
+    
 
-    if (!tbody) {
-        console.error("No encontré tbody desde el botón", btn);
+    // 1. encontrar el contenedor de ESTA mezcla
+    const mezcla = btn.closest(".mezcla");
+    if (!mezcla) {
+        console.error("❌ No encontré .mezcla desde este botón");
         return;
     }
+    console.log("✅ Mezcla encontrada:", mezcla);
 
+    // 2. dentro de esa mezcla, buscar su tabla
+    const tbody = mezcla.querySelector("table.tabla > tbody");
+    if (!tbody) {
+        console.error("❌ No encontré <tbody> dentro de esta mezcla");
+        return;
+    }
+    console.log("✅ tbody encontrado:", tbody);
+
+    // 3. crear la fila
     const fila = document.createElement("tr");
     fila.innerHTML = `
         <td contenteditable="true">0</td>
@@ -357,7 +367,9 @@ function agregarFilaMultiple(btn) {
         <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
     `;
     tbody.appendChild(fila);
+    console.log("✅ Fila agregada a ESTA tabla");
 }
+
 
 
 
@@ -1195,7 +1207,7 @@ function cargarDatosPorDefecto() {
 
 
 
-window.addEventListener("DOMContentLoaded", cargarDatosPorDefecto);
+//window.addEventListener("DOMContentLoaded", cargarDatosPorDefecto);
 
 
 
