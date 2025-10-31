@@ -77,84 +77,128 @@ def auto_optimizar_curva():
     })
 
 
+# 🔧 helper: mismo largo, sin inventar
+def alinear_longitudes(a, b):
+    """
+    Recorta ambos arrays/listas al mismo largo (el mínimo).
+    No rellena, no interpola, no inventa tamices.
+    """
+    la = len(a)
+    lb = len(b)
+    lmin = min(la, lb)
+    return np.array(a[:lmin], dtype=float), np.array(b[:lmin], dtype=float)
 
 
 
 def generar_informe_ajuste(curvas, nombres, objetivo, paso=0.05, umbral_sugerencia=3.0):
     """
-    curvas: lista de arrays numpy con las curvas de cada mezcla (8 valores)
+    curvas: lista de arrays/listas con las curvas de cada mezcla (pueden ser de largo variable)
     nombres: lista de nombres de esas mezclas (en mismo orden)
     objetivo: clave de curva objetivo dentro del diccionario CURVAS_OBJETIVO
     paso: resolución de búsqueda (entre 0.01 y 0.1 idealmente)
     umbral_sugerencia: desviación (%) a partir de la cual se recomienda una mezcla nueva
     """
 
+    # 1) tomar curva objetivo
     curva_objetivo = CURVAS_OBJETIVO.get(objetivo)
     if curva_objetivo is None:
         curva_objetivo = CURVAS_OBJETIVO.get("hormigon")
+
     rango = np.arange(0, 1 + paso, paso)
-    mejor_error = float('inf')
+    mejor_error = float("inf")
     mejor_comb = None
     mejor_curva = None
 
+    # 2) barrido de combinaciones
     for pesos in product(rango, repeat=len(curvas)):
+        # evitar combinaciones que no suman 1 (dentro del paso)
         if abs(sum(pesos) - 1.0) > paso:
             continue
-        curva_mixta = sum(p * c for p, c in zip(pesos, curvas))
-        error = np.sqrt(np.mean((curva_mixta - curva_objetivo)**2))
+
+        # curva construida con las reales
+        curva_mixta = sum(p * np.array(c, dtype=float) for p, c in zip(pesos, curvas))
+
+        # 🔴 acá alineamos con la ideal
+        curva_mixta_al, curva_objetivo_al = alinear_longitudes(curva_mixta, curva_objetivo)
+
+        # error sobre la parte realmente comparable
+        error = np.sqrt(np.mean((curva_mixta_al - curva_objetivo_al) ** 2))
         if error < mejor_error:
             mejor_error = error
-            mejor_comb = dict(zip(nombres, [round(p*100, 2) for p in pesos]))
-            mejor_curva = curva_mixta
+            mejor_comb = dict(zip(nombres, [round(p * 100, 2) for p in pesos]))
+            mejor_curva = curva_mixta_al  # ojo: ya alineada
+            curva_objetivo_final = curva_objetivo_al  # misma longitud
 
-    diffs = mejor_curva - curva_objetivo
-    tamices = ["9.5 mm", "4.75 mm", "2.36 mm", "1.18 mm", "0.6 mm", "0.3 mm", "0.15 mm", "0.074 mm"]
+    # 3) armar salida
+    # tamices base (los tuyos), pero solo hasta el largo real que se pudo comparar
+    tamices_base = [
+        "9.5 mm",
+        "6.35 mm",
+        "4.75 mm",
+        "2.36 mm",
+        "1.18 mm",
+        "0.6 mm",
+        "0.3 mm",
+        "0.15 mm",
+        "0.074 mm",
+        "<fino>",
+    ]
+    tamices = tamices_base[: len(mejor_curva)]
+
+    # diferencias reales
+    diffs = mejor_curva - curva_objetivo_final
 
     informe = "=== Informe de Ajuste de Mezclas ===\n\n"
     informe += "Mejor combinación encontrada:\n"
     for k, v in mejor_comb.items():
         informe += f"- {k}: {v:.2f}%\n"
+
     informe += f"\nError medio respecto a la curva objetivo: {round(mejor_error, 2)}%\n\n"
-    informe += f"Curva resultante:\n{[round(x, 2) for x in mejor_curva]}\n"
-    informe += f"Curva objetivo (ideal):\n{[round(x, 2) for x in curva_objetivo]}\n\n"
+    informe += f"Curva resultante (real, alineada):\n{[round(x, 2) for x in mejor_curva]}\n"
+    informe += f"Curva objetivo (alineada):\n{[round(x, 2) for x in curva_objetivo_final]}\n\n"
 
     informe += "Diferencias por tamiz (Resultado - Objetivo):\n"
-        # LOOP DE DIFERENCIAS
+
     sugerencia_necesaria = False
     ajustes_recomendados = []
+
     for i, d in enumerate(diffs):
         estado = "✅"
         if abs(d) > umbral_sugerencia:
             estado = "⚠️"
             sugerencia_necesaria = True
             if d > 0:
-                ajustes_recomendados.append(f"- Tamiz {tamices[i]}: reducir este rango (exceso de {d:+.2f}%)")
+                ajustes_recomendados.append(
+                    f"- Tamiz {tamices[i]}: reducir este rango (exceso de {d:+.2f}%)"
+                )
             else:
-                ajustes_recomendados.append(f"- Tamiz {tamices[i]}: aumentar este rango (déficit de {d:+.2f}%)")
+                ajustes_recomendados.append(
+                    f"- Tamiz {tamices[i]}: aumentar este rango (déficit de {d:+.2f}%)"
+                )
         informe += f"- Tamiz {tamices[i]}: {d:+.2f}% {estado}\n"
 
-    # SOLO UNA VEZ si hay desviaciones importantes
+    # 4) sugerencia de mezcla complementaria SOLO sobre lo que existe
     if sugerencia_necesaria:
-        mezcla_complementaria = generar_mezcla_complementaria(curva_objetivo, mejor_curva)
+        mezcla_complementaria = generar_mezcla_complementaria(
+            curva_objetivo_final, mejor_curva
+        )
         informe += "\n🧪 Mezcla sugerida para complementar:\n"
         for i in range(len(tamices)):
             informe += f"- Tamiz {tamices[i]}: {mezcla_complementaria[i]:.2f}%\n"
 
         informe += "\n📉 Conclusión:\n"
-        informe += "La combinación actual no se ajusta completamente a la curva ideal.\n"
+        informe += "La combinación actual no se ajusta completamente a la curva ideal (en el rango disponible).\n"
         informe += "👉 Para mejorarla, se recomienda una nueva mezcla que compense las siguientes diferencias:\n\n"
         for ajuste in ajustes_recomendados:
             informe += ajuste + "\n"
-        informe += "\n🧭 Como referencia, la curva ideal sigue siendo:\n"
+        informe += "\n🧭 Como referencia, la curva ideal (recortada al mismo rango) es:\n"
         for i in range(len(tamices)):
-            informe += f"- Tamiz {tamices[i]}: ~{curva_objetivo[i]:.2f}%\n"
+            informe += f"- Tamiz {tamices[i]}: ~{curva_objetivo_final[i]:.2f}%\n"
     else:
-        informe += "\n✅ Conclusión:\nLa combinación actual es adecuada. No se requiere mezcla adicional."
-
+        informe += "\n✅ Conclusión:\nLa combinación actual es adecuada en el rango realmente medido. No se requiere mezcla adicional.\n"
 
     print(informe)
     return informe
-
 
 def generar_mezcla_complementaria(curva_objetivo, mejor_curva):
     """

@@ -246,18 +246,16 @@ def ajustar_pesos_por_factor(pesos_por_zona, factor):
     
     
     
-    
-    
 @densidadFuller.route('/calcularCurvaCorregida/', methods=['POST'])
 def calcular_curva_corregida():  
-
     data = request.get_json()
     curvas = data.get("curvas")
     pesos = data.get("pesos")
     tamices = data.get("tamices")    
-    factor = data.get("factor",1)  # Factor de ajuste, por defecto 0.5  
+    factor = data.get("factor", 1)  # Factor de ajuste, por defecto 1  
     nombres_materiales = data.get("nombreProductos", [])
     tipo_objetivo = data.get("tipo_objetivo", "bloques")
+
     print("\n=== DEBUG: Datos recibidos ===")
     print("Curvas:", curvas)
     print("Pesos:", pesos)
@@ -265,6 +263,25 @@ def calcular_curva_corregida():
     print("Nombres de materiales:", nombres_materiales)
     print("Tipo de curvas:", type(curvas))
     print("Tipo de pesos:", type(pesos))
+
+    # ----------------- QUIRÚRGICO: alinear longitudes -----------------
+    # pueden venir curvas de 10 y otras de 7, y tamices de 7 → recortamos al mínimo
+    if not curvas or not tamices:
+        return jsonify({"error": "Faltan datos de curvas o tamices"}), 400
+
+    # quedarnos solo con listas/tuplas
+    curvas = [c for c in curvas if isinstance(c, (list, tuple))]
+    if not curvas:
+        return jsonify({"error": "Las curvas no tienen un formato válido"}), 400
+
+    min_len_curvas = min(len(c) for c in curvas)
+    min_len_tamices = len(tamices)
+    min_len = min(min_len_curvas, min_len_tamices)
+
+    # recortar todo al mismo largo real
+    tamices = tamices[:min_len]
+    curvas = [list(c[:min_len]) for c in curvas]
+    # -------------------------------------------------------------------
 
     pesos_por_zona_dicts = pesos  # Guardamos el original antes de transformarlo
 
@@ -274,31 +291,33 @@ def calcular_curva_corregida():
     # Ahora sí transformar pesos para otras cosas si hace falta
     if isinstance(pesos, dict):
         pesos = list(pesos.values())
-    elif isinstance(pesos, list) and isinstance(pesos[0], dict):
+    elif isinstance(pesos, list) and pesos and isinstance(pesos[0], dict):
+        # ojo: tu forma original tomaba el primer value de cada dict
         pesos = [list(p.values())[0] for p in pesos]
-    if not curvas or not pesos or not tamices:
-        return jsonify({"error": "Faltan datos de curvas, pesos o tamices"}), 400
 
-    
+    if not pesos or not tamices:
+        return jsonify({"error": "Faltan datos de curvas, pesos o tamices"}), 400
 
     total_pesos = sum(pesos)
     if total_pesos == 0:
         return jsonify({"error": "Los pesos no pueden ser todos cero"}), 400
 
     pesos_normalizados = [p / total_pesos for p in pesos]
-   
-
-  
-
 
     d_max = max(tamices)
+
+    # ⬇️ ahora encontrar_n_optimo ya soporta lista de curvas, pero le pasamos las alineadas
     n_optimo, curva_fuller_resultante, error_promedio = encontrar_n_optimo(tamices, curvas, d_max)
+
+    # tu línea original recalculaba la curva con el n óptimo → la dejamos
     curva_fuller_resultante = [(d / d_max) ** n_optimo * 100 for d in tamices]
 
+    # ⬇️ acá antes te rompía porque usabas len(curvas[0]) sin alinear
     curva_promedio = [
         sum(curva[i] for curva in curvas) / len(curvas)
-        for i in range(len(curvas[0]))
+        for i in range(len(tamices))   # ahora es seguro
     ]
+
     curva_corregida = calcular_curva_corregida_con_ajuste(curva_promedio, curva_fuller_resultante, factor)
     diferencias = [real - ideal for real, ideal in zip(curva_promedio, curva_fuller_resultante)]
 
@@ -313,11 +332,11 @@ def calcular_curva_corregida():
     ax.plot(posiciones_eje_x, curva_corregida, marker='s', linestyle='--', label='Corretto Ottimale', color='green')
 
     acciones_textuales = []
+    # curvas ponderadas por material → también con largo min_len
     curvas_individuales_por_material = [
         [peso * curva[i] for i in range(len(tamices))]
         for peso, curva in zip(pesos_normalizados, curvas)
     ]
-    
     
     # Colores predefinidos para cada tipo de curva
     colores_fijos = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']  # Se repiten si hay más
@@ -327,17 +346,15 @@ def calcular_curva_corregida():
     # Agregar curvas individuales originales (sin peso)
     for idx, curva in enumerate(curvas):
         color = colores_fijos[idx % len(colores_fijos)]
-        ax.plot(posiciones_eje_x, curva, linestyle=estilos_sin_peso[idx], color=color, alpha=0.4, label=f"{nombres_materiales[idx]} (sin peso)")
+        nombre = nombres_materiales[idx] if idx < len(nombres_materiales) else f"Material {idx+1}"
+        ax.plot(posiciones_eje_x, curva, linestyle=estilos_sin_peso[idx], color=color, alpha=0.4, label=f"{nombre} (sin peso)")
 
     # Agregar curvas ponderadas
     for idx, curva in enumerate(curvas_individuales_por_material):
         color = colores_fijos[idx % len(colores_fijos)]
-        ax.plot(posiciones_eje_x, curva, linestyle=estilos_ponderado[idx], color=color, alpha=0.6, label=f"{nombres_materiales[idx]} (ponderada)")
+        nombre = nombres_materiales[idx] if idx < len(nombres_materiales) else f"Material {idx+1}"
+        ax.plot(posiciones_eje_x, curva, linestyle=estilos_ponderado[idx], color=color, alpha=0.6, label=f"{nombre} (ponderada)")
 
-    
-    
-    
-    
     material_por_indice = {i: nombre for i, nombre in enumerate(nombres_materiales)}
     zonas_materiales = {nombre: {"gruesos": 0, "medios": 0, "finos": 0} for nombre in nombres_materiales}
     zonas_totales = {"gruesos": 0, "medios": 0, "finos": 0}
@@ -364,12 +381,15 @@ def calcular_curva_corregida():
             continue
 
         for idx, contrib in enumerate(contribuciones_en_punto):
+            if idx >= len(nombres_materiales):
+                continue
             nombre = nombres_materiales[idx]
             zonas_materiales[nombre][zona] += contrib
             zonas_totales[zona] += contrib
 
+        # material que más aporta en este tamiz
         indice_material_max = contribuciones_en_punto.index(max(contribuciones_en_punto))
-        nombre_material = nombres_materiales[indice_material_max]
+        nombre_material = nombres_materiales[indice_material_max] if indice_material_max < len(nombres_materiales) else f"Material {indice_material_max+1}"
         mezcla_origen = material_por_indice.get(indice_material_max, "sconosciuto")
 
         if diferencia_ajustada > 0:
@@ -390,20 +410,21 @@ def calcular_curva_corregida():
 
     ax.set_xticks(posiciones_eje_x)
     ax.set_xticklabels(etiquetas_x)
-  
     ax.set_title("Average, Corrected and Fuller Curve")
     ax.set_xlabel("Tamiz (mm)")
     ax.set_ylabel("% que pasa")
     ax.grid(True)
     ax.legend(loc='best', fontsize='small')
 
-
+    # --- debug dataframe ---
     df_debug = pd.DataFrame({'Tamiz (mm)': tamices})
     for idx, curva in enumerate(curvas):
-        df_debug[f"{nombres_materiales[idx]} (sin peso)"] = curva
+        nombre = nombres_materiales[idx] if idx < len(nombres_materiales) else f"Material {idx+1}"
+        df_debug[f"{nombre} (sin peso)"] = curva
     for idx, curva in enumerate(curvas):
         ponderada = [p * pesos_normalizados[idx] for p in curva]
-        df_debug[f"{nombres_materiales[idx]} (ponderada)"] = ponderada
+        nombre = nombres_materiales[idx] if idx < len(nombres_materiales) else f"Material {idx+1}"
+        df_debug[f"{nombre} (ponderada)"] = ponderada
     df_debug['Promedio'] = curva_promedio
     df_debug['Corregida'] = curva_corregida
     df_debug['Fuller Ideal'] = curva_fuller_resultante
@@ -420,7 +441,6 @@ def calcular_curva_corregida():
     img_base64 = base64.b64encode(buf.getvalue()).decode()
     plt.close()
 
-
     interpretaciones = []
     for nombre, peso in zip(nombres_materiales, pesos):
         peso_redondeado = round(peso, 2)
@@ -434,7 +454,7 @@ def calcular_curva_corregida():
     # Calcular pesos redistribuidos por zona
     pesos_por_zona = {}
     for nombre in nombres_materiales:
-        contribs = zonas_materiales[nombre]
+        contribs = zonas_materiales.get(nombre, {"gruesos": 0, "medios": 0, "finos": 0})
         redistrib = {
             zona: round((contribs[zona] / zonas_totales[zona]) * 100, 2) if zonas_totales[zona] > 0 else 0.0
             for zona in ["gruesos", "medios", "finos"]
@@ -444,20 +464,16 @@ def calcular_curva_corregida():
     print("\n=== Pesos redistribuidos por mezcla y zona ===")
     for nombre, zonas in pesos_por_zona.items():
         print(f"{nombre}: {zonas}")
-    # Aplica ajuste con un factor de 0.5 (50%)
+
+    # Aplica ajuste con un factor
     pesos_ajustados = ajustar_pesos_por_factor(pesos_por_zona, factor)
-    
-    
-    
-    
-    
 
-
+    # Informe final con curvas ya alineadas
     informe = generar_informe_ajuste(
-                                        curvas=[np.array(c) for c in curvas],
-                                        nombres=nombres_materiales,
-                                        objetivo=tipo_objetivo
-                                    )
+        curvas=[np.array(c) for c in curvas],
+        nombres=nombres_materiales,
+        objetivo=tipo_objetivo
+    )
 
     return jsonify({
         "curva_corregida": curva_corregida,
@@ -467,8 +483,8 @@ def calcular_curva_corregida():
         "acciones_recomendadas": acciones_textuales,
         "pesos_por_zona": pesos_ajustados,
         "reporte_ajuste": informe
-
     })
+
     
     
     
@@ -560,60 +576,62 @@ def calcular_pesos_finales_normalizados(pesos_por_zona):
 
 
 
+
 def calcular_curva_resultante(resultados, d_max, n_optimo):
- 
     if not resultados:
         return None
 
     # 1. Extraer curvas reales y curvas ideales de todas las mezclas
     todas_reales = [r["reales"] for r in resultados]
     todas_fuller = [r["curva_ideal"] for r in resultados]
-    tamices = resultados[0]["tamices"]  # Asumimos que son iguales en todas
+    todas_tamices = [r["tamices"] for r in resultados]
 
-    # 2. Convertir a arrays para cálculo vectorizado
-    reales_array = np.array(todas_reales)
-    fuller_array = np.array(todas_fuller)
+    # ⚠️ Pueden venir con longitudes distintas.
+    # Queremos respetar lo real → usamos el mínimo largo común.
+    min_len_reales = min(len(r) for r in todas_reales)
+    min_len_fuller = min(len(f) for f in todas_fuller)
+    min_len_tamices = min(len(t) for t in todas_tamices)
 
-    # 3. Calcular promedios
+    # Tomamos el mínimo de los 3 (por seguridad)
+    min_len = min(min_len_reales, min_len_fuller, min_len_tamices)
+
+    # 2. Recortar todo al mismo largo real
+    todas_reales_al = [r[:min_len] for r in todas_reales]
+    todas_fuller_al = [f[:min_len] for f in todas_fuller]
+    tamices = todas_tamices[0][:min_len]  # ahora sí podemos asumir
+
+    # 3. Convertir a arrays para cálculo vectorizado
+    reales_array = np.array(todas_reales_al, dtype=float)   # shape = (n_mezclas, min_len)
+    fuller_array = np.array(todas_fuller_al, dtype=float)   # shape = (n_mezclas, min_len)
+
+    # 4. Calcular promedios
     promedio_reales = list(np.mean(reales_array, axis=0))
     promedio_fuller = list(np.mean(fuller_array, axis=0))
 
-    # 4. Diferencias entre curva promedio real y curva promedio ideal
+    # 5. Diferencias entre curva promedio real y curva promedio ideal
     diferencias = [r - f for r, f in zip(promedio_reales, promedio_fuller)]
 
-    # 5. Evaluar y sugerir ajustes
+    # 6. Evaluar y sugerir ajustes (esto es tuyo)
     evaluacion, error_promedio = evaluar_mezcla(diferencias)
-    
     print("Diferencias que se pasan a sugerir_ajustes:")
     print(diferencias)
     ajustes = sugerir_ajustes(tamices, diferencias)
-    # Valores de Y constantes en 0
-    y_constante = [0] * len(tamices)
-    # 6. Graficar
-    
-    
-    
-    # Convertir los tamices a etiquetas string
+
+    # 7. Graficar
     etiquetas_x = [str(t) for t in tamices]
-    x = list(range(len(tamices)))  # Posiciones para eje X lineal
+    x = list(range(len(tamices)))
     fig, ax = plt.subplots()
-   # Curvas
+
     ax.plot(x, promedio_reales, marker='o', label='Media effettiva')
     ax.plot(x, promedio_fuller, marker='x', label='Media di Fuller')
-    
 
-
-  # Anotar valores individuales
     for xi, y in zip(x, promedio_reales):
         ax.text(xi, y + 2, f"{y:.1f}%", ha='center', fontsize=8, color='blue')
 
     for xi, y in zip(x, promedio_fuller):
         ax.text(xi, y - 4, f"{y:.1f}%", ha='center', fontsize=8, color='orange')
-        
-    # Mostrar diferencia en % entre curvas, coloreado por zona
+
     zonas = []
-    diferencias_grafico  = []
-  # Diferencias + zona como texto
     for xi, tamiz, real, ideal in zip(x, tamices, promedio_reales, promedio_fuller):
         diferencia = real - ideal
         etiqueta = f"{diferencia:+.1f}%"
@@ -629,10 +647,8 @@ def calcular_curva_resultante(resultados, d_max, n_optimo):
             color = "green"
 
         zonas.append(zona)
-          # Diferencia entre curvas
         ax.text(xi, (real + ideal) / 2, etiqueta, fontsize=8, color=color, ha='left')
-   
-  
+
     ax.set_xticks(x)
     ax.set_xticklabels(etiquetas_x)
     ax.set_title("Curva Promedio de Todas las Mezclas")
@@ -642,13 +658,13 @@ def calcular_curva_resultante(resultados, d_max, n_optimo):
     ax.legend()
 
     df = pd.DataFrame({
-    'Tamiz (mm)': tamices,
-    'Prom reales (%)': promedio_reales,
-    'Prom Fuller (%)': promedio_fuller,
-    'ΔProm (%)': diferencias,
-    'Zona': zonas,
-    'd_max': d_max,
-    'n': n_optimo
+        'Tamiz (mm)': tamices,
+        'Prom reales (%)': promedio_reales,
+        'Prom Fuller (%)': promedio_fuller,
+        'ΔProm (%)': diferencias,
+        'Zona': zonas,
+        'd_max': d_max,
+        'n': n_optimo
     })
     print(df.to_string())
 
@@ -677,7 +693,6 @@ def calcular_curva_resultante(resultados, d_max, n_optimo):
         "ajustes": ajustes,
         "grafico": f"data:image/png;base64,{curva_global_base64}"
     }
-
     
     
 # Clasificaciones por tamiz******************************************************

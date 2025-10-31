@@ -130,7 +130,7 @@ function guardarTablaEnLocalStorage(mezclaEl, nombreAgregado, tamices) {
 
 
 document.addEventListener("DOMContentLoaded", function() {
-    debugger;
+    
     restaurarTablasDesdeLocalStorage();
 });
 

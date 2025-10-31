@@ -516,7 +516,7 @@ function calcularTodas() {
     if (perfil_norma === "personalizado") {
         parametros_personalizados = JSON.parse(localStorage.getItem("parametros_personalizados")) || {};
     }
-
+debugger;
     // 🔽 Enviar al backend
     fetch("/densidadFullerMultiple/", {
         method: "POST",
