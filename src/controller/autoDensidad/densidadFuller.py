@@ -285,8 +285,13 @@ def ajustar_pesos_por_factor(pesos_por_zona, factor):
     
     
     
-    
-    
+def clasificar_zona_por_tamiz(t):
+    """Gruesos: t>4; Medios: 1<t<=4; Finos: t<=1 (tu criterio actual)."""
+    if t > 4:
+        return "gruesos"
+    elif t > 1:
+        return "medios"
+    return "finos"
     
 @densidadFuller.route('/calcularCurvaCorregida/', methods=['POST'])
 def calcular_curva_corregida():  
@@ -319,17 +324,11 @@ def calcular_curva_corregida():
     if not curvas or not pesos or not tamices:
         return jsonify({"error": "Faltan datos de curvas, pesos o tamices"}), 400
 
-    
-
     total_pesos = sum(pesos)
     if total_pesos == 0:
         return jsonify({"error": "Los pesos no pueden ser todos cero"}), 400
 
     pesos_normalizados = [p / total_pesos for p in pesos]
-   
-
-  
-
 
     d_max = max(tamices)
     n_optimo, curva_fuller_resultante, error_promedio = encontrar_n_optimo(tamices, curvas, d_max)
@@ -358,7 +357,6 @@ def calcular_curva_corregida():
         for peso, curva in zip(pesos_normalizados, curvas)
     ]
     
-    
     # Colores predefinidos para cada tipo de curva
     colores_fijos = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']  # Se repiten si hay más
     estilos_sin_peso = [':'] * len(curvas)
@@ -374,10 +372,6 @@ def calcular_curva_corregida():
         color = colores_fijos[idx % len(colores_fijos)]
         ax.plot(posiciones_eje_x, curva, linestyle=estilos_ponderado[idx], color=color, alpha=0.6, label=f"{nombres_materiales[idx]} (ponderada)")
 
-    
-    
-    
-    
     material_por_indice = {i: nombre for i, nombre in enumerate(nombres_materiales)}
     zonas_materiales = {nombre: {"gruesos": 0, "medios": 0, "finos": 0} for nombre in nombres_materiales}
     zonas_totales = {"gruesos": 0, "medios": 0, "finos": 0}
@@ -437,7 +431,6 @@ def calcular_curva_corregida():
     ax.grid(True)
     ax.legend(loc='best', fontsize='small')
 
-
     df_debug = pd.DataFrame({'Tamiz (mm)': tamices})
     for idx, curva in enumerate(curvas):
         df_debug[f"{nombres_materiales[idx]} (sin peso)"] = curva
@@ -459,7 +452,6 @@ def calcular_curva_corregida():
     buf.seek(0)
     img_base64 = base64.b64encode(buf.getvalue()).decode()
     plt.close()
-
 
     interpretaciones = []
     for nombre, peso in zip(nombres_materiales, pesos):
@@ -484,20 +476,15 @@ def calcular_curva_corregida():
     print("\n=== Pesos redistribuidos por mezcla y zona ===")
     for nombre, zonas in pesos_por_zona.items():
         print(f"{nombre}: {zonas}")
-    # Aplica ajuste con un factor de 0.5 (50%)
-    pesos_ajustados = ajustar_pesos_por_factor(pesos_por_zona, factor)
-    
-    
-    
-    
-    
 
+    # Aplica ajuste con el factor (hacia 1/3-1/3-1/3 manteniendo total)
+    pesos_ajustados = ajustar_pesos_por_factor(pesos_por_zona, factor)
 
     informe = generar_informe_ajuste(
-                                        curvas=[np.array(c) for c in curvas],
-                                        nombres=nombres_materiales,
-                                        objetivo=tipo_objetivo
-                                    )
+        curvas=[np.array(c) for c in curvas],
+        nombres=nombres_materiales,
+        objetivo=tipo_objetivo
+    )
 
     return jsonify({
         "curva_corregida": curva_corregida,
@@ -507,9 +494,8 @@ def calcular_curva_corregida():
         "acciones_recomendadas": acciones_textuales,
         "pesos_por_zona": pesos_ajustados,
         "reporte_ajuste": informe
-
     })
-    
+
     
     
     
@@ -532,17 +518,72 @@ def calcular_curva_corregida_con_ajuste(curva_promedio, curva_fuller, factor=1.0
         for i in range(len(curva_promedio))
     ]
 
-def calcular_pesos_finales_normalizados(pesos_por_zona):
-    pesos_finales = []
-    for zonas in pesos_por_zona:
-        total = zonas.get("gruesos", 0) + zonas.get("medios", 0) + zonas.get("finos", 0)
-        pesos_finales.append(total)
+def calcular_pesos_finales_normalizados(pesos_por_zona_dicts):
+    """
+    Acepta:
+      - dict: {"arena": {"gruesos":..,"medios":..,"finos":..}, "qwe": 12.3, ...}
+      - list de dicts: [{"arena": {...}}, {"qwe": {...}}, ...]  (se respeta el orden)
+      - dict con listas/tuplas: {"arena": [g,m,f], ...}
+      - dict con número: {"arena": 12.0, ...}  (se toma como total directo)
+    Devuelve lista de pesos normalizados (suman 1.0) en el mismo orden de entrada.
+    """
+    def _total(v):
+        if v is None:
+            return 0.0
+        # dict con zonas
+        if isinstance(v, dict):
+            g = float(v.get("gruesos", 0) or 0)
+            m = float(v.get("medios", 0)  or 0)
+            f = float(v.get("finos", 0)   or 0)
+            return g + m + f
+        # lista/tupla/ndarray → suma
+        if isinstance(v, (list, tuple)):
+            try:
+                return float(sum((x or 0) for x in v))
+            except Exception:
+                return 0.0
+        # número suelto → usar tal cual
+        try:
+            return float(v)
+        except Exception:
+            return 0.0
 
-    suma = sum(pesos_finales)
-    if suma == 0:
-        return [1 / len(pesos_finales)] * len(pesos_finales)
+    materiales = []
+    totales = []
 
-    return [p / suma for p in pesos_finales]
+    if isinstance(pesos_por_zona_dicts, list):
+        # lista de dicts: [{"arena": {...}}, {"qwe": {...}}]
+        for d in pesos_por_zona_dicts:
+            if isinstance(d, dict):
+                for k, v in d.items():  # respeta el orden en la lista
+                    materiales.append(k)
+                    totales.append(_total(v))
+            else:
+                # item inesperado; ignoro sin romper
+                continue
+    elif isinstance(pesos_por_zona_dicts, dict):
+        # dict plano: respeta el orden de inserción
+        for k, v in pesos_por_zona_dicts.items():
+            materiales.append(k)
+            totales.append(_total(v))
+    else:
+        # caso extremo: si te pasaron una lista de números alineada a curvas
+        try:
+            nums = [float(x) for x in (pesos_por_zona_dicts or [])]
+            s = sum(nums)
+            if s <= 0:
+                n = max(1, len(nums))
+                return [1.0 / n] * n
+            return [x / s for x in nums]
+        except Exception:
+            return [1.0]  # fallback mínimo
+
+    total = sum(totales)
+    if total <= 0:
+        n = max(1, len(totales))
+        return [1.0 / n] * n
+    return [t / total for t in totales]
+
 
 
 

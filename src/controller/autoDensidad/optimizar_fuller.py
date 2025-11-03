@@ -8,14 +8,19 @@ from itertools import product
 optimizar_fuller = Blueprint('optimizar_fuller', __name__)
 
 # === Objetivos por norma (9 puntos, incluye 12.5 mm = 100%) ===
-CURVAS_OBJETIVO = {
-    "hormigon": [100, 100, 85, 65, 45, 30, 20, 10, 5],
-    "bloques":  [100, 100, 96, 59, 45, 24.6, 14.8, 6.35, 1.26],
-    "relleno":  [100, 100, 92, 70, 55, 40, 30, 15, 5],
-}
-
-# Tamices de referencia del objetivo (norma, 9 puntos)
+# 9 tamices (incluye 12.5 y 0.074)
 OBJ_TAMICES = [12.5, 9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15, 0.074]
+
+def objetivo_9(desde_8):
+    # Inserta 100% al inicio (12.5 mm) y duplica el último para 0.074 mm
+    y = [100.0] + list(map(float, desde_8)) + [float(desde_8[-1])]
+    return np.clip(y, 0, 100)
+
+CURVAS_OBJETIVO = {
+    "hormigon": objetivo_9([85, 65, 45, 30, 20, 10, 5, 5]),
+    "bloques":  objetivo_9([96, 59, 45, 24.6, 14.8, 6.35, 1.26, 1.26]),
+    "relleno":  objetivo_9([92, 70, 55, 40, 30, 15, 5, 5]),
+}
 
 # Estado global para recordar el "master" (los tamices reales de la planta; p.ej., 14)
 MASTER_TAMICES = None
