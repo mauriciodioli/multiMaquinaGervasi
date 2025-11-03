@@ -41,9 +41,18 @@ document.getElementById("simulador-form").addEventListener("submit", function(ev
     return res.json();
   })
   .then(data => {
-    console.log("🔍 DATA RECIBIDA:", data);
-    mostrarResultadosSimulador(data);
-  })
+      console.log("🔍 DATA RECIBIDA:", data);
+      // 👇 Agrega el gráfico
+      const img = document.getElementById("plotFuller");
+      if (img && data.grafico_base64) {
+        img.src = data.grafico_base64;
+        img.alt = "Curva resultante vs Fuller";
+        img.style.display = "";
+      }
+      // lo que ya tenías
+      mostrarResultadosSimulador(data);
+})
+
   .catch(err => {
     console.error("Error al simular mezcla:", err);
     alert("❌ Error al procesar la mezcla");

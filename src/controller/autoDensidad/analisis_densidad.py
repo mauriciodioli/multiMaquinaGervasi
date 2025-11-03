@@ -10,6 +10,8 @@ from controller.autoDensidad.calcularMezclaOptima import mostrar_datos_crudos_en
 from controller.autoDensidad.calcularMezclaOptima import encontrar_n_optimo
 from controller.autoDensidad.optimizar_fuller import generar_informe_ajuste
 import math
+import io, base64
+import matplotlib.pyplot as plt
 
 
 analisis_densidad = Blueprint('analisis_densidad', __name__)
@@ -68,18 +70,8 @@ def calcular_curva_resultante_simple(curvas_alineadas, pesos_norm):
 
 # --------- API SIMPLE DE TEST ---------
 def simular_mezcla_manual_simple(proporciones, curvas_usuario):
-    """
-    proporciones: {'arena':40, 'qwe':30, ...}  (en %)
-    curvas_usuario: {
-      'arena': {'tamices':[... opcional ...], 'reales':[...]},
-      'qwe':   {'tamices':[...],               'reales':[...]}
-    }
-    Alinea TODO a TAMICES_DEFAULT, completa faltantes con 0 y calcula resultado.
-    """
-    # 1) pesos normalizados
     nombres, pesos_norm = normalizar_pesos_porcentuales(proporciones)
 
-    # 2) alinear curvas a master, rellenando 0 donde falte
     curvas_alineadas = []
     for nombre in nombres:
         datos = curvas_usuario.get(nombre)
@@ -87,29 +79,82 @@ def simular_mezcla_manual_simple(proporciones, curvas_usuario):
             return {"error": f"❌ Faltan datos de curva para '{nombre}'"}, 400
 
         reales  = datos.get('reales', [])
-        tamices = datos.get('tamices') or datos.get('mallas')  # soporta dos nombres de campo
+        tamices = datos.get('tamices') or datos.get('mallas')
         curva_a_9 = alinear_curva_a_master(reales, tamices, TAMICES_DEFAULT)
         curvas_alineadas.append(curva_a_9)
 
     if not curvas_alineadas:
         return {"error": "❌ No se encontraron curvas válidas"}, 400
 
-    # 3) curva resultante ponderada
+    # Curva resultante ponderada
     curva_resultante = calcular_curva_resultante_simple(curvas_alineadas, pesos_norm)
 
-    # 4) curva de Fuller usando d_max = max(tamices) (→ 12.5)
+    # Fuller usando d_max del master (12.5)
     d_max = max(TAMICES_DEFAULT)
     curva_fuller = calcular_curva_fuller(TAMICES_DEFAULT, d_max=d_max, n=0.5)
 
-    # 5) diferencias y evaluación por zonas
+    # Dif y zonas
     diferencias = [abs(a - b) for a, b in zip(curva_resultante, curva_fuller)]
     zonas = evaluar_mezcla_promedio(TAMICES_DEFAULT, diferencias)
 
+    # === NUEVO: gráfico base64 ===
+    grafico_base64 = _grafico_curvas_base64(
+        tamices=TAMICES_DEFAULT,
+        curva_fuller=curva_fuller,
+        curva_resultante=curva_resultante,
+        curvas_alineadas=curvas_alineadas,
+        nombres=nombres
+    )
+
     return {
         "tamices": TAMICES_DEFAULT,
-        "curvas_alineadas": curvas_alineadas,       # útil para debug
-        "pesos_normalizados": pesos_norm,           # en fracción
+        "curvas_alineadas": curvas_alineadas,
+        "pesos_normalizados": pesos_norm,
         "curva_resultante": curva_resultante,
         "curva_fuller": curva_fuller,
-        "zonas": zonas
+        "zonas": zonas,
+        "grafico_base64": grafico_base64,   # ← úsalo directo en <img src="...">
     }
+
+    
+    
+    
+
+# --- helper de plotting ---
+def _grafico_curvas_base64(tamices, curva_fuller, curva_resultante, curvas_alineadas=None, nombres=None):
+    """
+    Devuelve data URI base64 con:
+      - Curva Fuller (línea sólida, marcadores)
+      - Curva resultante (línea discontinua)
+      - (opcional) Curvas alineadas por material, finas en gris
+    Eje X en log(mm) e invertido (de gruesos a finos).
+    """
+    fig, ax = plt.subplots(figsize=(7, 4.2))
+
+    # Curva Fuller
+    ax.plot(tamices, curva_fuller, marker='o', linewidth=1.8, label='Fuller (ideal)')
+
+    # Curva resultante
+    ax.plot(tamices, curva_resultante, marker='s', linestyle='--', linewidth=1.8, label='Resultante')
+
+    # Curvas individuales (opcionales)
+    if curvas_alineadas:
+        for i, c in enumerate(curvas_alineadas):
+            label = f"{nombres[i]} (alineada)" if nombres and i < len(nombres) else "mezcla"
+            ax.plot(tamices, c, linewidth=1.0, alpha=0.35, label=label)
+
+    ax.set_xscale('log')
+    ax.invert_xaxis()  # de grueso (izq) a fino (der)
+    ax.set_xlabel("Tamiz (mm)")
+    ax.set_ylabel("% que pasa")
+    ax.set_title("Curva resultante vs Fuller")
+    ax.grid(True, which='both', linewidth=0.4, alpha=0.5)
+    ax.legend(loc='best', fontsize='small')
+
+    buf = io.BytesIO()
+    fig.tight_layout()
+    plt.savefig(buf, format='png', dpi=140)
+    plt.close(fig)
+    buf.seek(0)
+    b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+    return f"data:image/png;base64,{b64}"
