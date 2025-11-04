@@ -516,7 +516,7 @@ function calcularTodas() {
     if (perfil_norma === "personalizado") {
         parametros_personalizados = JSON.parse(localStorage.getItem("parametros_personalizados")) || {};
     }
-debugger;
+
     // 🔽 Enviar al backend
     fetch("/densidadFullerMultiple/", {
         method: "POST",
@@ -1073,52 +1073,106 @@ function cerrarModalExportar() {
 }
 
 
+function inspeccionarCurva(curva = window.ultimaCurvaPromedio){
+  if (!curva) { console.warn('No hay curva'); return; }
+  const peek = (a,n=5)=>Array.isArray(a)?a.slice(0,n):a;
+  console.log('keys:', Object.keys(curva));
+  console.log('evaluacion:', curva.evaluacion);
+  console.log('error_promedio:', curva.error_promedio);
+  console.log('tamices (len):', curva?.tamices?.length, 'muestra:', peek(curva?.tamices));
+  console.log('promedios (len):', curva?.promedios?.length, 'muestra:', peek(curva?.promedios));
+  console.log('curva_ideal (len):', curva?.curva_ideal?.length, 'muestra:', peek(curva?.curva_ideal));
+  console.log('diferencias (len):', curva?.diferencias?.length, 'muestra:', peek(curva?.diferencias));
+  console.log('mezcla_optima:', curva?.mezcla_optima);
+  console.log('resultados:', Array.isArray(curva?.resultados) ? curva.resultados.length : curva?.resultados);
+}
 
+// --- helper: redondea porcentaje y lo muestra sin basura ---
+function formatPercent(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "0";
+  // si el valor es muy chico, mostrar 2 decimales
+  if (Math.abs(n) < 1) return n.toFixed(2).replace('.', ',');
+  // si tiene decimales, máximo 2
+  return (Math.round(n * 100) / 100).toString().replace('.', ',');
+}
 
-
-
-
+const buildClasificaciones = (tamices, clas) => {
+  if (Array.isArray(clas) && clas.length) return clas;
+  return (tamices || []).map(t => (t ?? "").toString());
+};
 
 function exportarCSV() {
   const curva = window.ultimaCurvaPromedio;
-  if (!curva || !curva.tamices || !curva.promedios) {
+  if (!curva || !Array.isArray(curva.tamices) || !Array.isArray(curva.promedios)) {
     alert("❌ No hay datos para exportar");
     return;
   }
 
-  let csv = "Tamiz (mm);% Promedio;ASTM C136 o IRAM 1505\n";
-  for (let i = 0; i < curva.tamices.length; i++) {
-    csv += `${curva.tamices[i]};${curva.promedios[i]}%;${curva.clasificaciones[i]}\n`;
+  inspeccionarCurva(curva);
+
+  const tam  = curva.tamices;
+  const prom = curva.promedios;
+  const clas = buildClasificaciones(tam, curva.clasificaciones);
+  const n = Math.min(tam.length, prom.length, clas.length);
+
+  let csv = "Tamiz (mm);% Promedio;Abertura (mm)\n";
+  for (let i = 0; i < n; i++) {
+    csv += `${tam[i] ?? ""};${formatPercent(prom[i])};${clas[i] ?? ""}\n`;
   }
 
-  // Añadir encabezado para separarlo visualmente
-  if (curva.mezcla_optima?.pesos && curva.resultados?.length) {
+  const mo = curva?.mezcla_optima;
+  const pesos = mo?.pesos;
+
+  let resultadosArray = [];
+  if (Array.isArray(curva?.resultados)) {
+    resultadosArray = curva.resultados;
+  } else if (Number.isFinite(curva?.resultados)) {
+    resultadosArray = Array.from({length: curva.resultados}, (_, i) => ({ nombre: `Producto ${i+1}` }));
+  }
+
+  let pesosArray = [];
+  if (Array.isArray(pesos)) {
+    pesosArray = pesos.map(x =>
+      (typeof x === 'number') ? x :
+      (Number.isFinite(x?.porcentaje) ? x.porcentaje :
+       Number.isFinite(x?.valor) ? x.valor : 0)
+    );
+  } else if (pesos && typeof pesos === 'object') {
+    const entries = Object.entries(pesos);
+    pesosArray = entries.map(([_, v]) => Number(v) || 0);
+    if (!resultadosArray.length) resultadosArray = entries.map(([k, _]) => ({ nombre: k }));
+  }
+
+  if (pesosArray.length || resultadosArray.length) {
     csv += "\nProducto;Porcentaje;Comentario\n";
-
-    for (let i = 0; i < curva.resultados.length; i++) {
-      const peso = curva.mezcla_optima.pesos[i];
-      const nombre = curva.resultados[i]?.nombre;
-      if (!nombre) continue;
-
+    const m = Math.max(pesosArray.length, resultadosArray.length);
+    for (let i = 0; i < m; i++) {
+      const nombre = resultadosArray[i]?.nombre ?? `Producto ${i+1}`;
+      const peso   = Number.isFinite(pesosArray[i]) ? pesosArray[i] : 0;
       let comentario = "";
       if (peso < 1) comentario = "descartada por no aportar mejora";
       else if (peso < 10) comentario = "aporte menor, ajuste fino";
       else if (peso > 50) comentario = "componente principal";
       else comentario = "contribucion equilibrada";
-
-      csv += `${nombre};${peso.toFixed(2)}%;${comentario}\n`;
+      csv += `${nombre};${formatPercent(peso)};${comentario}\n`;
     }
   }
-
-  //console.log("📤 CSV generado para exportar:\n", csv);
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = "curva_promedio.csv";
+  document.body.appendChild(a);
   a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
+
+window.exportarCSV = exportarCSV;
+window.inspeccionarCurva = inspeccionarCurva;
+
 
 
 

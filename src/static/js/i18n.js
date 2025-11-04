@@ -1,59 +1,71 @@
-// i18n.js — sistema simple de internacionalización frontend
-
-const I18N = (() => {
-  const mensajes_verifica_email = {
-    es: {
-      verificar_titulo: "📬 ¡Revisá tu correo!",
-      verificar_mensaje: "Te enviamos un enlace de confirmación a tu casilla de correo.",
-      verificar_instruccion: "Hacelo clic y luego iniciá sesión.",
-      verificar_link: "Iniciá sesión",
-      verificar_reenviar_label: "¿No lo recibiste?",
-      verificar_boton: "📨 Reenviar correo",
-      verificar_exito: "Correo reenviado correctamente.",
-      verificar_error: "No se pudo reenviar el correo."
-    },
-    en: {
-      verificar_titulo: "📬 Check your email!",
-      verificar_mensaje: "We sent you a confirmation link.",
-      verificar_instruccion: "Click it and then log in.",
-      verificar_link: "Log in",
-      verificar_reenviar_label: "Didn't receive it?",
-      verificar_boton: "📨 Resend email",
-      verificar_exito: "Email resent successfully.",
-      verificar_error: "Could not resend email."
-    },
-    it: {
-      verificar_titulo: "📬 Controlla la tua email!",
-      verificar_mensaje: "Ti abbiamo inviato un link di conferma.",
-      verificar_instruccion: "Clicca sul link e poi accedi.",
-      verificar_link: "Accedi",
-      verificar_reenviar_label: "Non l'hai ricevuto?",
-      verificar_boton: "📨 Invia di nuovo",
-      verificar_exito: "Email inviata nuovamente.",
-      verificar_error: "Impossibile inviare di nuovo l'email."
-    },
-    pt: {
-      verificar_titulo: "📬 Verifique seu e-mail!",
-      verificar_mensaje: "Enviamos um link de confirmação para o seu e-mail.",
-      verificar_instruccion: "Clique no link e depois faça login.",
-      verificar_link: "Faça login",
-      verificar_reenviar_label: "Não recebeu?",
-      verificar_boton: "📨 Reenviar e-mail",
-      verificar_exito: "E-mail reenviado com sucesso.",
-      verificar_error: "Não foi possível reenviar o e-mail."
-    },
-    pl: {
-    verificar_titulo: "📬 Sprawdź swój e-mail!",
-    verificar_mensaje: "Wysłaliśmy link potwierdzający na Twój adres e-mail.",
-    verificar_instruccion: "Kliknij go, a następnie zaloguj się.",
-    verificar_link: "Zaloguj się",
-    verificar_reenviar_label: "Nie otrzymałeś?",
-    verificar_boton: "📨 Wyślij e-mail ponownie",
-    verificar_exito: "E-mail został ponownie wysłany.",
-    verificar_error: "Nie udało się wysłać e-maila ponownie."
+// ===== i18n básico para el simulador =====
+const SIM_I18N = {
+  es: {
+    sum100_alert: "⚠️ Las proporciones deben sumar 100%",
+    bad_response: "Respuesta no válida del servidor",
+    process_error: "❌ Error al procesar la mezcla",
+    chart_alt: "Curva resultante vs Fuller",
+    header: "Resultado de simulación",
+    zone_coarse: "Zona gruesa",
+    zone_medium: "Zona media",
+    zone_fine: "Zona fina",
+    recommendation: "🔎 Recomendación",
+    hide_btn: "❌ Ocultar resultado",
+    data_error: "❌ Error: datos incompletos o mal formateados."
+  },
+  en: {
+    sum100_alert: "⚠️ Percentages must sum to 100%",
+    bad_response: "Invalid server response",
+    process_error: "❌ Error processing mix",
+    chart_alt: "Resulting curve vs Fuller",
+    header: "Simulation result",
+    zone_coarse: "Coarse zone",
+    zone_medium: "Medium zone",
+    zone_fine: "Fine zone",
+    recommendation: "🔎 Recommendation",
+    hide_btn: "❌ Hide result",
+    data_error: "❌ Error: incomplete or malformed data."
+  },
+  it: {
+    sum100_alert: "⚠️ Le percentuali devono sommare 100%",
+    bad_response: "Risposta non valida dal server",
+    process_error: "❌ Errore nell'elaborare la miscela",
+    chart_alt: "Curva risultante vs Fuller",
+    header: "Risultato della simulazione",
+    zone_coarse: "Zona grossolana",
+    zone_medium: "Zona media",
+    zone_fine: "Zona fine",
+    recommendation: "🔎 Raccomandazione",
+    hide_btn: "❌ Nascondi risultato",
+    data_error: "❌ Errore: dati incompleti o non validi."
+  },
+  pt: {
+    sum100_alert: "⚠️ As proporções devem somar 100%",
+    bad_response: "Resposta inválida do servidor",
+    process_error: "❌ Erro ao processar a mistura",
+    chart_alt: "Curva resultante vs Fuller",
+    header: "Resultado da simulação",
+    zone_coarse: "Zona grossa",
+    zone_medium: "Zona média",
+    zone_fine: "Zona fina",
+    recommendation: "🔎 Recomendação",
+    hide_btn: "❌ Ocultar resultado",
+    data_error: "❌ Erro: dados incompletos ou inválidos."
+  },
+  pl: {
+    sum100_alert: "⚠️ Udziały muszą sumować się do 100%",
+    bad_response: "Nieprawidłowa odpowiedź serwera",
+    process_error: "❌ Błąd podczas przetwarzania mieszanki",
+    chart_alt: "Krzywa wynikowa vs Fuller",
+    header: "Wynik symulacji",
+    zone_coarse: "Strefa gruba",
+    zone_medium: "Strefa średnia",
+    zone_fine: "Strefa drobna",
+    recommendation: "🔎 Rekomendacja",
+    hide_btn: "❌ Ukryj wynik",
+    data_error: "❌ Błąd: niekompletne lub nieprawidłowe dane."
   }
-  };
-
+};
 
   const mensajes_login = {
     es: {
