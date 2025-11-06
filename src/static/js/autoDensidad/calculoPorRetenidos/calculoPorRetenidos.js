@@ -233,7 +233,7 @@ async function calcularRetenidoBR() {
       data.faixas,
       { faixa: 'bloco' } // o 'paver'
     );
-
+    renderRetidoTablitas(data.tamices, data.mix_acum, data.faixas);
     abrirModal('modalRetidoBR');
 
     console.log("✅ MIX ACUM:", data.mix_acum);
@@ -400,6 +400,81 @@ function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' 
 
   // Abrir modal custom (no Bootstrap)
   abrirModal('modalRetidoBR');
+}
+
+
+
+
+
+
+
+function renderRetidoTablitas(tamices, mix_acum, faixas){
+  // Destino
+  const host = document.getElementById('retidoTables');
+  if (!host) return;
+
+  // Normalizamos filas (ignoramos valores sin banda si no existen)
+  const rows = tamices.map((t, i) => {
+    const label = String(t); // puede ser "Fundo"
+    const mix = Number(mix_acum[i] ?? 0);
+
+    const b = (faixas?.bloco?.[i]) || {};
+    const p = (faixas?.paver?.[i]) || {};
+    return {
+      label,
+      mix: isFinite(mix) ? mix.toFixed(1) : '-',
+      bmin: (b.min ?? null) != null ? Number(b.min).toFixed(0) : '-',
+      bmax: (b.max ?? null) != null ? Number(b.max).toFixed(0) : '-',
+      pmin: (p.min ?? null) != null ? Number(p.min).toFixed(0) : '-',
+      pmax: (p.max ?? null) != null ? Number(p.max).toFixed(0) : '-',
+    };
+  });
+
+  // Tabla 1: Granulometría ponderada
+  const tbl1 = `
+    <div class="mini-card">
+      <div class="mini-title">Granulometría ponderada dos agregados</div>
+      <table class="mini-table">
+        <thead><tr><th>#</th><th>%</th></tr></thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${r.label}</td>
+              <td>${r.mix}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  // Tabla 2: Faixas recomendadas (Bloco / Paver)
+  const tbl2 = `
+    <div class="mini-card">
+      <div class="mini-title">Faixas granulométricas recomendadas</div>
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th rowspan="2">Peneira</th>
+            <th colspan="2">Bloco</th>
+            <th colspan="2">Paver</th>
+          </tr>
+          <tr>
+            <th>Lim. Inf.</th><th>Lim. Sup.</th>
+            <th>Lim. Inf.</th><th>Lim. Sup.</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${r.label}</td>
+              <td>${r.bmin}</td><td>${r.bmax}</td>
+              <td>${r.pmin}</td><td>${r.pmax}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="muted" style="margin-top:6px">Valores en % de retido acumulado.</div>
+    </div>`;
+
+  host.innerHTML = tbl1 + tbl2;
 }
 
 

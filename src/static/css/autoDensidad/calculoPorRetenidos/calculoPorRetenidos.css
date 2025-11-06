@@ -53,3 +53,61 @@
 
 /* canvas blanco para que no “trasluzca” */
 #retidoChart{ background:#fff; display:block; width:100%; height:420px; }
+
+
+/* Modal con altura limitada al viewport */
+.dpia-modal__dialog{
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+.dpia-modal__head,
+.dpia-modal__foot{ flex: 0 0 auto; }
+.dpia-modal__body{
+  flex: 1 1 auto;
+  min-height: 0;             /* necesario para que overflow funcione */
+  padding: 8px 12px;
+}
+
+/* NUEVO: pila vertical (gráfico arriba, tablas abajo) */
+.retido-stack{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+}
+
+.retido-chart{ min-height: 320px; }
+
+/* Tablas debajo con scroll propio */
+.retido-tables{
+  flex: 1 1 auto;            /* ocupa el espacio restante del modal */
+  min-height: 0;
+  max-height: 100%;
+  overflow: auto;            /* ← el scroll está acá */
+  padding-right: 6px;
+}
+
+/* Cards y tablas (igual que antes) */
+.retido-tables .mini-card{
+  background:#fff; border:1px solid rgba(0,0,0,.12); border-radius:10px;
+  padding:10px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.06);
+}
+.mini-title{ font-size:.95rem; font-weight:700; margin:0 0 6px; }
+
+.mini-table{ width:100%; border-collapse:collapse; font-size:.85rem; }
+.mini-table th, .mini-table td{
+  padding:4px 6px; border:1px solid rgba(0,0,0,.12); text-align:right;
+}
+.mini-table th:first-child, .mini-table td:first-child{ text-align:center; }
+
+/* Header de tabla fijo al hacer scroll */
+.mini-table thead th{
+  position: sticky; top: 0; z-index: 1;
+  background:#f6f7f9;
+}
+
+/* Scrollbar opcional (WebKit) */
+.retido-tables::-webkit-scrollbar{ width:8px; }
+.retido-tables::-webkit-scrollbar-thumb{ background:rgba(0,0,0,.2); border-radius:6px; }

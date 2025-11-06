@@ -279,23 +279,33 @@
 
 <!-- Modal: Retido BR (gráfico) -->
 <div id="modalRetidoBR" class="dpia-modal" aria-hidden="true">
+  <div class="dpia-modal__backdrop" data-close="1"></div>
   <div class="dpia-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="retidoTitle">
-    <header class="dpia-modal__header">
+    <div class="dpia-modal__head">
       <h3 id="retidoTitle">Curva % Retido Acumulado</h3>
-
-      <!-- ✖ Cerrar -->
-      <button class="dpia-modal__x" type="button" data-close="modalRetidoBR" aria-label="Cerrar">✕</button>
-    </header>
-
-    <div class="dpia-modal__body">
-      <canvas id="retidoChart" height="360"></canvas>
+      <button class="dpia-modal__close" data-close="1" aria-label="Cerrar">✕</button>
     </div>
 
-    <footer class="dpia-modal__footer">
-      <button class="dpia-btn" type="button" data-close="modalRetidoBR">Cerrar</button>
-    </footer>
+    <!-- NUEVO: cuerpo con grid -->
+   <div class="dpia-modal__body">
+  <div class="retido-stack">
+    <div class="retido-chart">
+      <canvas id="retidoChart" height="280"></canvas>
+    </div>
+
+    <!-- Bloque de tablas con scroll propio -->
+    <section id="retidoTables" class="retido-tables"></section>
   </div>
 </div>
+
+
+    <div class="dpia-modal__foot">
+      <button class="btn" data-close="1">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
 
 
 
