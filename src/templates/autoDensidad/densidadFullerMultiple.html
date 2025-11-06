@@ -21,6 +21,9 @@
 <button class="btn btn-danger" onclick="calcularTodas()">
   {{ t_menu.get('calcular_todas', 'Calcular todas') }}
 </button>
+<button class="btn btn-danger" onclick="abrirProporcionesYCalcular()">
+  {{ t_menu.get('calcular_retenidos', 'Calcular retenidos') }}
+</button>
 
 <button class="btn btn-secondary" onclick="abrirModalTipoCurva()">
   {{ t_menu.get('seleccionar_curva_target', 'Seleccionar curva objetivo') }}
@@ -58,6 +61,35 @@
 
 
 
+
+
+
+
+<!-- Modal proporciones -->
+<div id="modalProporciones" class="dpia-modal" aria-hidden="true">
+  <div class="dpia-modal__backdrop" data-close="1"></div>
+  <div class="dpia-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="mprop-title">
+    <div class="dpia-modal__header">
+      <h3 id="mprop-title" class="dpia-modal__title">Proporciones de la mezcla (%)</h3>
+      <button class="dpia-modal__close" data-close="1" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="dpia-modal__body">
+      <p>Ingresá el % de cada agregado. La suma debe ser <b>100%</b>.</p>
+      <form id="formProporciones" class="prop-form"></form>
+      <div class="prop-total">Total: <span id="propTotal">0</span>%</div>
+      <div id="propMsg" class="prop-msg"></div>
+    </div>
+    <div class="dpia-modal__footer">
+      <button id="btnGuardarProporciones" class="dpia-btn dpia-btn--primary" disabled>Usar valores</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
 <!-- Modal para seleccionar tipo de curva objetivo -->
 <div id="modalCurvaObjetivo" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,0.7); z-index: 10000;">
   <div style="background:white; padding:2rem; margin:5% auto; width:90%; max-width:900px; border-radius:10px; position:relative;">
@@ -79,6 +111,14 @@
       </button>
 
   </div>
+
+
+
+
+
+
+
+
 </div>
 
 
@@ -237,20 +277,45 @@
 
 
 
+<!-- Modal: Retido BR (gráfico) -->
+<div id="modalRetidoBR" class="dpia-modal" aria-hidden="true">
+  <div class="dpia-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="retidoTitle">
+    <header class="dpia-modal__header">
+      <h3 id="retidoTitle">Curva % Retido Acumulado</h3>
 
+      <!-- ✖ Cerrar -->
+      <button class="dpia-modal__x" type="button" data-close="modalRetidoBR" aria-label="Cerrar">✕</button>
+    </header>
+
+    <div class="dpia-modal__body">
+      <canvas id="retidoChart" height="360"></canvas>
+    </div>
+
+    <footer class="dpia-modal__footer">
+      <button class="dpia-btn" type="button" data-close="modalRetidoBR">Cerrar</button>
+    </footer>
+  </div>
+</div>
 
 
 
 
 </div>
-  
+
+
+
+
+
+
+
     <script src="{{ url_for('static', filename='js/autoDensidad/agregados/agregaAgregado_densidadFuller.js') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js') }}"></script>     
-   
+    <script src="{{ url_for('static', filename='js/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.js') }}"></script>   
     <script src="{{ url_for('static', filename='js/autoDensidad/modalTablaTamices.js') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/guardarAnalisisGranulometrico.js') }}"></script>   
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/modalTablaTamices.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.css') }}">
 <script>
  document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('btn-guardar-analisis');

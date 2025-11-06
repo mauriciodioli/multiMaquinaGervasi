@@ -1,5 +1,5 @@
 /******************************
- * DPIA · Pannelli Front JS
+ * GERVASI · Pannelli Front JS
  ******************************/
 
 /* ==== util: badge de estado global ==== */

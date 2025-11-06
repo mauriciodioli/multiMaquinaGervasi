@@ -1,0 +1,116 @@
+/* ====== GRID & CARDS ====== */
+.pv-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: .75rem;
+}
+
+.pv-card{
+  border: 1px solid rgba(0,0,0,.12);
+  border-radius: 12px;
+  padding: .75rem .9rem;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+}
+
+.pv-card.pv-empty{
+  opacity: .6;
+  background: #fafafa;
+}
+
+.pv-card-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .35rem;
+  gap: .5rem;
+}
+
+.pv-ip{
+  font-weight: 600;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pv-metrics{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .4rem;
+  align-items: center;
+  margin: .25rem 0 .4rem;
+}
+
+.pv-metric{
+  display: flex;
+  flex-direction: column;
+  border: 1px dashed rgba(0,0,0,.12);
+  border-radius: 8px;
+  padding: .35rem .45rem;
+  min-height: 44px;
+}
+
+.pv-metric .lbl{
+  font-size: .72rem;
+  opacity: .7;
+  letter-spacing: .02em;
+}
+
+.pv-metric .val{
+  font-size: .95rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.pv-foot{
+  margin-top: auto;
+  font-size: .8rem;
+  opacity: .7;
+}
+
+/* ====== BADGES ====== */
+.badge{
+  display: inline-block;
+  padding: .15rem .5rem;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  line-height: 1.2;
+  border: 1px solid transparent;
+}
+
+.badge.ok{        background:#e6f6ec; color:#146c2e; border-color:#bfe6cb; }
+.badge.standby{   background:#fff6e5; color:#8a5a00; border-color:#ffe1a6; }
+.badge.error{     background:#fdecea; color:#b42318; border-color:#f6c2bd; }
+.badge.init{      background:#e8f1fe; color:#0b63c5; border-color:#c8ddff; }
+.badge.unknown{   background:#f3f4f6; color:#4b5563; border-color:#e5e7eb; }
+
+/* ====== TOTAL POWER STATES ====== */
+#pv-power.total-up{    box-shadow: inset 0 -3px 0 #16a34a33; }
+#pv-power.total-down{  box-shadow: inset 0 -3px 0 #dc262633; }
+#pv-power.total-flat{  box-shadow: inset 0 -3px 0 #2563eb33; }
+
+/* ====== DELTA FLASHES ====== */
+@keyframes flashUp   { from { background:#dcfce7; } to { background:transparent; } }
+@keyframes flashDown { from { background:#fee2e2; } to { background:transparent; } }
+@keyframes flashNeu  { from { background:#e0e7ff; } to { background:transparent; } }
+
+.flash-up{    animation: flashUp .9s ease-out; }
+.flash-down{  animation: flashDown .9s ease-out; }
+.flash-neutral{ animation: flashNeu .9s ease-out; }
+
+/* ====== UTIL ====== */
+.mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+.muted{ opacity:.7; }
+
+/* ====== Responsive tweaks ====== */
+@media (max-width: 640px){
+  .pv-metric .val{ font-size: .9rem; }
+  .pv-card{ padding: .65rem .7rem; }
+}
+

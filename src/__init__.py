@@ -32,6 +32,7 @@ from src.controller.administracion.crud_usuario import crud_usuario
 from src.controller.administracion.crud_entidad import crud_entidad
 from src.controller.autenticacion.login import login
 from src.utils.conexion_db_crud import conexion_db_crud
+from src.controller.autoDensidad.calculoPorRetenidos.calculoPorRetenidos import calculoPorRetenidos
 
 mail = Mail()
 
@@ -85,6 +86,7 @@ def create_app() -> Flask:
         crud_tipo_mezcla,
         crud_materia_forma,
         pannelli_solar,
+        calculoPorRetenidos,
     ):
         app.register_blueprint(bp)
 

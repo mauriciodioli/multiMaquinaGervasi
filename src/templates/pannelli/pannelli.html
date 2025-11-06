@@ -11,12 +11,23 @@
 
 <div class="titulo-maquinas" style="position: relative; text-align: center; margin-bottom: 20px;">
   <h1>Pannelli</h1>
+
+    <button id="btnSoloPannelli" class="btn btn-primary btn-sm">Ver matriz (solo_pannelli)</button>
 </div>
 
 <div class="contenedor-flex">
   {% if mensaje %}
     <div class="alert alert-info">{{ mensaje }}</div>
   {% endif %}
+  
+  
+
+<!-- TEMPLATE con el contenido del parcial (no visible) -->
+<div id="solo-pannelli-wrap" style="display:none;">
+  {% include 'pannelli/solo_pannelli.html' %}
+</div>
+
+
 
   <!-- Sidebar de paneles -->
   <div id="sidebar" class="maquinas-lista">
@@ -161,6 +172,10 @@
   </div>
 </div>
 
+
+
+
+
 <style>
   .panel-filter.active { box-shadow: 0 0 0 2px #198754 inset; font-weight: 600; }
   @media (max-width: 576px){
@@ -203,5 +218,9 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="{{ url_for('static', filename='js/maquinas/crud_front_end_maquinas.js') }}"></script>
 <script src="{{ url_for('static', filename='js/pannelli/pannelli_solar.js') }}"></script>
 <script src="{{ url_for('static', filename='js/maquinas/conexion_db.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pannelli/solo_pannelli.css') }}">
+<script defer src="{{ url_for('static', filename='js/pannelli/solo_pannelli.js') }}"></script>
+
+
 
 {% endblock %}
