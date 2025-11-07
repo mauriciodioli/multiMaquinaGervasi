@@ -541,27 +541,35 @@ function renderRetidoTablitas(tamices, mix_acum, faixas){
   }
 
   function abrirModal(id) {
-    const modal = document.getElementById(id);
-    if (!modal) return;
-    if (openModals.size === 0) { document.body.classList.add('body--modal-open'); lastActive = document.activeElement; }
-    modal.setAttribute('aria-hidden', 'false');
-    openModals.add(modal);
+  const modal = document.getElementById(id);
+  if (!modal) return;
 
-    // Cerrar por clic (✖, botón o backdrop)
-    modal.__clickHandler = (e) => {
-      const btn = e.target.closest('[data-close]');
-      if (btn) {
-        const targetId = btn.getAttribute('data-close') || modal.id;
-        cerrarModal(targetId);
-        return;
-      }
-      // backdrop: click exactamente sobre el contenedor (fuera del dialog)
-      if (e.target === modal) cerrarModal(modal.id);
-    };
-    modal.addEventListener('click', modal.__clickHandler);
-
-    focusTrap(modal);
+  if (openModals.size === 0) {
+    document.body.classList.add('body--modal-open');
+    lastActive = document.activeElement;
   }
+
+  modal.setAttribute('aria-hidden', 'false');
+  openModals.add(modal);
+
+  // ⬇️ ESTE ES EL HANDLER CORREGIDO
+  modal.__clickHandler = (e) => {
+    const btn = e.target.closest('[data-close]');
+    if (btn) {
+      // Si data-close tiene un id real, lo usamos; si es "1" o vacío, cerramos el modal actual
+      const val = btn.getAttribute('data-close');
+      const targetId = (val && val !== '1') ? val : modal.id;
+      cerrarModal(targetId);
+      return;
+    }
+    // backdrop: click exactamente sobre el contenedor (fuera del dialog)
+    if (e.target === modal) cerrarModal(modal.id);
+  };
+  modal.addEventListener('click', modal.__clickHandler);
+
+  focusTrap(modal);
+}
+
 
   function cerrarModal(id) {
     const modal = document.getElementById(id);
@@ -585,7 +593,7 @@ function renderRetidoTablitas(tamices, mix_acum, faixas){
   window.cerrarModal = cerrarModal;
 
   // Atajo que pediste
-  window.cerrarModalAgregados = () => cerrarModal('modalAgregados');
+  //window.cerrarModalAgregados = () => cerrarModal('modalAgregados');
 })();
 
 
@@ -606,6 +614,10 @@ function notify(type, title, text){
 
 
 
+window.cerrarTodosLosModales = function(){
+  if (typeof window.cerrarModal !== 'function') return;
+  document.querySelectorAll('.dpia-modal[aria-hidden="false"]').forEach(m => window.cerrarModal(m.id));
+};
 
 
 
@@ -808,7 +820,6 @@ document.getElementById('btnCalcularConsumo')?.addEventListener('click', ()=>{
   const rows = lote.agregados.map(r=>`${r.nombre}: ${r.kg} kg (${r.pct}%)`).join('<br>');
   document.getElementById('resultadoDesglose').innerHTML = rows;
 });
-
 
 
 
