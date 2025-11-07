@@ -408,6 +408,39 @@ function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' 
 
 
 
+
+
+// Guardá proporciones del último cálculo para reusarlas en el modal de consumo
+function cachearProporcionesDesdeRetido(){
+  try{
+    const data = window.granRetidoResultado;
+    if (!data?.materiales?.length) return;
+
+    // { "areia":35, "brita":10, ... }
+    const props = {};
+    data.materiales.forEach(m => props[m.nombre] = Number(m.proporcion_pct) || 0);
+    localStorage.setItem('proporcionesRetido', JSON.stringify(props));
+  }catch(e){ console.warn('No se pudo cachear proporciones:', e); }
+}
+
+// Hook del botón “Curva de consumo”
+document.getElementById('btnIrConsumo')?.addEventListener('click', () => {
+  cachearProporcionesDesdeRetido();
+  // Podés apilar modales; si preferís, cerrá el de Retido antes:
+  cerrarModal('modalRetidoBR');
+  abrirModalEnsayos();
+});
+
+
+
+
+
+
+
+
+
+
+
 function renderRetidoTablitas(tamices, mix_acum, faixas){
   // Destino
   const host = document.getElementById('retidoTables');
@@ -572,6 +605,209 @@ function notify(type, title, text){
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+let chartConsumo;
+
+function agregarFilaEnsayo(ac = '', mpa = ''){
+  const tb = document.querySelector('#tablaEnsayos tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="number" step="0.01" class="dpia-input ens-ac" value="${ac}"></td>
+    <td><input type="number" step="0.1"  class="dpia-input ens-mpa" value="${mpa}"></td>
+    <td><button class="dpia-btn dpia-btn--tiny" data-del="1">×</button></td>`;
+  tr.querySelector('[data-del]').onclick = ()=> tr.remove();
+  tb.appendChild(tr);
+}
+
+function leerEnsayos(){
+  const rows = [...document.querySelectorAll('#tablaEnsayos tbody tr')];
+  const pts = [];
+  for (const r of rows){
+    const x = parseFloat(r.querySelector('.ens-ac')?.value);
+    const y = parseFloat(r.querySelector('.ens-mpa')?.value);
+    if (!isNaN(x) && x>0 && !isNaN(y) && y>0) pts.push({x,y});
+  }
+  return pts;
+}
+
+// y = a ln(x) + b  (regresión lineal sobre (ln x, y))
+function ajustarLog(pts){
+  const X = pts.map(p => Math.log(p.x));
+  const Y = pts.map(p => p.y);
+  const n = pts.length;
+  const sum = a => a.reduce((s,v)=>s+v,0);
+  const SX = sum(X), SY = sum(Y);
+  const SXX = sum(X.map(v=>v*v));
+  const SXY = sum(X.map((v,i)=>v*Y[i]));
+  const a = (n*SXY - SX*SY) / (n*SXX - SX*SX);
+  const b = (SY - a*SX) / n;
+  return {a,b};
+}
+
+function ratioParaObjetivo(a,b,MPa){
+  return Math.exp((MPa - b)/a); // A/C requerido
+}
+
+// Usa proporciones del modal de proporciones (ya cargadas en tu flujo)
+function obtenerProporcionesMix(){
+  // 1) primero las proporciones cacheadas del retido
+  const cache = localStorage.getItem('proporcionesRetido');
+  if (cache){
+    try{
+      const obj = JSON.parse(cache);
+      const total = Object.values(obj).reduce((s,v)=>s + (Number(v)||0), 0);
+      if (total > 0) return obj;
+    }catch{}
+  }
+
+  // 2) si no, lee tablasCargadas con proporcion_pct
+  const tablas = JSON.parse(localStorage.getItem('tablasCargadas') || '[]');
+  let total = 0, map = {};
+  for (const m of tablas){
+    const p = Number(m.proporcion_pct);
+    if (!isNaN(p) && p>0){ map[m.nombre]=p; total+=p; }
+  }
+  if (total>0) return map;
+
+  // 3) reparto igual como último recurso
+  const eq = tablas.length>0 ? +(100/tablas.length).toFixed(2) : 0;
+  for (const m of tablas) map[m.nombre]=eq;
+  return map;
+}
+
+
+function dimensionarLote(kgAgregados, proporciones, acRatio){
+  const kgCem = kgAgregados / acRatio;
+  const desglose = Object.entries(proporciones).map(([nombre,p]) => {
+    return { nombre, kg: +(kgAgregados * (p/100)).toFixed(1), pct: p };
+  });
+  return { kgCemento: +kgCem.toFixed(1), agregados: desglose };
+}
+
+function renderCurvaConsumo(pts, a, b){
+  const ctx = document.getElementById('chartConsumo').getContext('2d');
+  const xs = [];
+  const ys = [];
+  // rango suave alrededor de los x medidos
+  const xmin = Math.min(...pts.map(p=>p.x));
+  const xmax = Math.max(...pts.map(p=>p.x));
+  const N = 40;
+  for (let i=0;i<=N;i++){
+    const x = xmin + (xmax-xmin)*i/N;
+    xs.push(x);
+    ys.push(a*Math.log(x) + b);
+  }
+
+  if (chartConsumo) chartConsumo.destroy();
+  chartConsumo = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: xs,
+      datasets:[
+        {label:'Ensayos', data: pts.map(p=>({x:p.x,y:p.y})), showLine:false, pointRadius:4, borderWidth:0},
+        {label:'Ajuste y = a·ln(x) + b', data: xs.map((x,i)=>({x, y:ys[i]})), borderWidth:2, pointRadius:0, tension:0}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      parsing:false, // usamos {x,y}
+      scales:{
+        x:{ type:'linear', title:{display:true, text:'Relación A/C (agregado/cemento)'} },
+        y:{ title:{display:true, text:'Resistencia (MPa)'} }
+      }
+    }
+  });
+}
+
+// Abridor del modal y defaults
+function abrirModalEnsayos(){
+  // si no hay filas, cargo 4–5 placeholders típicos
+  const tb = document.querySelector('#tablaEnsayos tbody');
+  tb.innerHTML = '';
+  [[3.5,48],[4.5,40],[5.0,35],[6.0,30],[8.0,23]].forEach(([x,y])=>agregarFilaEnsayo(x,y));
+  document.getElementById('mpaObjetivo').value = 35;
+  document.getElementById('kgAgregados').value = 1700;
+  abrirModal('modalEnsayos');
+}
+
+// Hook UI
+document.getElementById('btnAddPunto')?.addEventListener('click', ()=>agregarFilaEnsayo());
+document.getElementById('btnCalcularConsumo')?.addEventListener('click', ()=>{
+  const pts = leerEnsayos();
+  if (pts.length < 3){ alert('Ingresá al menos 3 puntos de ensayo.'); return; }
+  const {a,b} = ajustarLog(pts);
+  renderCurvaConsumo(pts, a, b);
+
+  const mpa = parseFloat(document.getElementById('mpaObjetivo').value);
+  const kgAgg = parseFloat(document.getElementById('kgAgregados').value);
+  if (isNaN(mpa) || isNaN(kgAgg) || kgAgg<=0){ alert('Completá MPa objetivo y kg de agregados.'); return; }
+
+  const xreq = ratioParaObjetivo(a,b,mpa); // A/C requerido
+  const props = obtenerProporcionesMix();
+  const lote = dimensionarLote(kgAgg, props, xreq);
+
+  document.getElementById('resultadoTrazo').innerHTML =
+    `Trazo requerido (A/C): <b>${xreq.toFixed(2)}</b>  →  Cemento: <b>${lote.kgCemento} kg</b> por ${kgAgg} kg de agregados.`;
+
+  const rows = lote.agregados.map(r=>`${r.nombre}: ${r.kg} kg (${r.pct}%)`).join('<br>');
+  document.getElementById('resultadoDesglose').innerHTML = rows;
+});
 
 
 
