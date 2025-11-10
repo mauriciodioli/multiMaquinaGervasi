@@ -41,5 +41,11 @@
   .total-flat { color:#2563eb; background:rgba(37,99,235,.12); }
 
 
+  .panel-filter.active { box-shadow: 0 0 0 2px #198754 inset; font-weight: 600; }
+  @media (max-width: 576px){
+    #panel-list button { width: 100%; text-align: left; }
+    .tabla-container { width: 100%; }
+  }
 
 
+  

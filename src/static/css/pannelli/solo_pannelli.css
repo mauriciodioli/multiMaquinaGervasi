@@ -1,116 +1,237 @@
-/* ====== GRID & CARDS ====== */
+/* ===== MODO MONITOR (fuentes grandes y tarjetas amplias) ===== */
+#sp-root{
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:0 8px;
+}
+
+/* grilla: tarjetas más anchas */
 .pv-grid{
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: .75rem;
+  display:grid;
+  gap:16px;
+  grid-auto-flow:dense;
+  /* mínimo grande y elástico en pantallas anchas */
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(clamp(340px, 28vw, 520px), 1fr)
+  );
+  align-items:stretch;
 }
 
+/* tarjeta: más aire */
 .pv-card{
-  border: 1px solid rgba(0,0,0,.12);
-  border-radius: 12px;
-  padding: .75rem .9rem;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
-  display: flex;
-  flex-direction: column;
-  min-height: 120px;
+  height:100%;
+  padding:18px 20px;
+  border:1px solid rgba(0,0,0,.14);
+  border-radius:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
 }
 
-.pv-card.pv-empty{
-  opacity: .6;
-  background: #fafafa;
-}
-
+/* cabecera (IP + badge) grande */
 .pv-card-head{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: .35rem;
-  gap: .5rem;
+  margin-bottom:.5rem;
+  gap:.75rem;
+  font-weight:700;
+  font-size:clamp(1.1rem, 1.4vw, 1.6rem);
 }
 
-.pv-ip{
-  font-weight: 600;
-  font-feature-settings: "tnum" 1, "lnum" 1;
+/* badge grande */
+.badge{
+  padding:.35rem .65rem;
+  border-radius:999px;
+  font-weight:700;
+  font-size:clamp(.95rem, 1.1vw, 1.15rem);
+  line-height:1;
+}
+
+/* KPIs grandes y bien separados */
+.pv-kpis{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:12px;
+  margin-top:8px;
+}
+.pv-kpi{
+  background:#fafafa;
+  border-radius:10px;
+  padding:12px 10px;
+  text-align:center;
+}
+.pv-kpi .lbl{
+  display:block;
+  color:#666;
+  font-size:clamp(.95rem, 1.1vw, 1.2rem);
+  margin-bottom:2px;
+}
+.pv-kpi .val{
+  font-weight:800;
+  letter-spacing:.02em;
+  /* valor GRANDE en monitor */
+  font-size:clamp(1.6rem, 2.4vw, 2.8rem);
+}
+
+/* meta (modelo) más visible */
+.pv-card-meta{
+  margin-top:auto;
+  font-size:clamp(1rem, 1.2vw, 1.25rem);
+  color:#444;
+}
+
+/* panel superior (status + power) grande */
+#sp-status-wrap .status-label{
+  font-size:clamp(1rem, 1.2vw, 1.3rem);
+  letter-spacing:.06em;
+  color:#99a2ad;
+}
+#sp-power.big{
+  font-weight:800;
+  font-size:clamp(2.2rem, 4vw, 4.4rem);
+  line-height:1.05;
+}
+
+/* flashes conservan el tamaño; solo aseguramos contraste */
+@keyframes upPulse{ 0%{background:#e9f7ef;} 100%{background:transparent;} }
+@keyframes downPulse{ 0%{background:#fdecea;} 100%{background:transparent;} }
+@keyframes neutPulse{ 0%{background:#eef3ff;} 100%{background:transparent;} }
+
+/* líneas de “Current power” (up/down/flat) más visibles */
+#sp-power.total-up{ box-shadow: inset 0 -4px 0 #c7e6cf; }
+#sp-power.total-down{ box-shadow: inset 0 -4px 0 #f5cac7; }
+#sp-power.total-flat{ box-shadow: inset 0 -4px 0 #cfd8ff; }
+
+/* En pantallas MUY grandes, subimos densidad */
+@media (min-width: 1800px){
+  .pv-grid{ gap:18px; }
+  .pv-card{ padding:22px; }
+}
+
+
+
+/* Coloreo por delta a nivel KPI */
+.pv-kpi.delta-up    { background: #e9f7ef; }   /* verde suave */
+.pv-kpi.delta-down  { background: #fdecea; }   /* rojo suave */
+.pv-kpi.delta-flat  { background: #eef3ff; }   /* azul suave (cambio pequeño) */
+.pv-kpi.delta-same  { background: #f6f6f6; }   /* sin cambio real (gris) */
+
+.pv-kpi .val{
+  position: relative;
+  display: inline-block;
+  padding-right: 1.2em;           /* lugar para el símbolo */
+}
+
+/* símbolo ▲ ▼ ▬ a la derecha del valor */
+.pv-kpi .val::after{
+  content: attr(data-trend);      /* viene del JS */
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: 800;
+  opacity: .6;
+}
+
+/* colores del símbolo */
+.pv-kpi.delta-up   .val::after { color: #1e7e34; }
+.pv-kpi.delta-down .val::after { color: #a12721; }
+.pv-kpi.delta-flat .val::after { color: #1e5aa7; }
+.pv-kpi.delta-same .val::after { color: #666; }
+
+/* ya tenés las animaciones; esto solo asegura contraste en monitor */
+.flash-up{ animation: upPulse 1s ease; }
+.flash-down{ animation: downPulse 1s ease; }
+.flash-neutral{ animation: neutPulse 1s ease; }
+
+
+
+/* ====== FIX DESBORDES EN GRID / CARDS ====== */
+
+/* Evita que el contenido de cada columna fuerce el ancho */
+.pv-grid > * { min-width: 0; }
+.pv-card     { min-width: 0; overflow: hidden; }   /* clip de animaciones */
+.pv-kpis     { min-width: 0; }
+.pv-kpi      { min-width: 0; overflow: hidden; border-radius: 10px; }
+
+/* Los valores no se salen aunque crezcan */
+.pv-kpi .val{
+  display:block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  padding-right: 1.2em;   /* espacio para ▲▼▬ */
+  position: relative;
+}
+
+/* El símbolo queda dentro del box */
+.pv-kpi .val::after{
+  content: attr(data-trend);
+  position: absolute;
+  right: .15em;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Por si el contenedor padre tiene scroll horizontal */
+#sp-cards-section { overflow-x: hidden; }
+
+/* Ajuste de columnas para evitar “puntos rotos” cerca de los breakpoints */
+.pv-grid{
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(480px, 100%), 1fr)   /* preferí 480px, pero nunca más ancho que la columna */
+  );
+}
+@media (max-width: 1100px){
+  .pv-grid{
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(min(380px, 100%), 1fr)
+    );
+  }
+}
+
+
+
+/* Tamaño y layout del valor + símbolo (no se pisan) */
+.pv-kpi .val{
+  display: inline-flex;
+  align-items: baseline;
+  gap: .4rem;
+}
+
+/* número más chico para mostrar decimales */
+.pv-kpi .val .num{
+  font-size: clamp(1.2rem, 1.8vw, 2.0rem);
+  line-height: 1.05;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.pv-metrics{
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: .4rem;
-  align-items: center;
-  margin: .25rem 0 .4rem;
+/* símbolo alineado, sin superposición */
+.pv-kpi .val .trend{
+  font-weight: 800;
+  opacity: .6;
 }
 
-.pv-metric{
-  display: flex;
-  flex-direction: column;
-  border: 1px dashed rgba(0,0,0,.12);
-  border-radius: 8px;
-  padding: .35rem .45rem;
-  min-height: 44px;
-}
+/* Colores del símbolo según estado del KPI */
+.pv-kpi.delta-up   .trend{ color:#1e7e34; }  /* verde */
+.pv-kpi.delta-down .trend{ color:#a12721; }  /* rojo  */
+.pv-kpi.delta-flat .trend{ color:#1e5aa7; }  /* azul  */
+.pv-kpi.delta-same .trend{ color:#666; }     /* gris  */
 
-.pv-metric .lbl{
-  font-size: .72rem;
-  opacity: .7;
-  letter-spacing: .02em;
-}
+/* Anti-desborde en grid/cards */
+.pv-grid > * { min-width: 0; }
+.pv-card     { min-width: 0; overflow: hidden; }
+.pv-kpis, .pv-kpi { min-width: 0; overflow: hidden; }
 
-.pv-metric .val{
-  font-size: .95rem;
-  font-weight: 600;
-  line-height: 1.2;
-}
 
-.pv-foot{
-  margin-top: auto;
-  font-size: .8rem;
-  opacity: .7;
-}
 
-/* ====== BADGES ====== */
-.badge{
-  display: inline-block;
-  padding: .15rem .5rem;
-  border-radius: 999px;
-  font-size: .72rem;
-  font-weight: 700;
-  letter-spacing: .02em;
-  line-height: 1.2;
-  border: 1px solid transparent;
-}
+.pv-kpi .val{ display:inline-flex; align-items:baseline; gap:.4rem; }
+.pv-kpi .val .num{ font-size: clamp(1.2rem, 1.8vw, 2.0rem); line-height:1.05; white-space:nowrap; }
+.pv-kpi .val .trend{ font-size: clamp(1rem, 1.4vw, 1.6rem); font-weight:800; opacity:.75; line-height:1; }
 
-.badge.ok{        background:#e6f6ec; color:#146c2e; border-color:#bfe6cb; }
-.badge.standby{   background:#fff6e5; color:#8a5a00; border-color:#ffe1a6; }
-.badge.error{     background:#fdecea; color:#b42318; border-color:#f6c2bd; }
-.badge.init{      background:#e8f1fe; color:#0b63c5; border-color:#c8ddff; }
-.badge.unknown{   background:#f3f4f6; color:#4b5563; border-color:#e5e7eb; }
-
-/* ====== TOTAL POWER STATES ====== */
-#pv-power.total-up{    box-shadow: inset 0 -3px 0 #16a34a33; }
-#pv-power.total-down{  box-shadow: inset 0 -3px 0 #dc262633; }
-#pv-power.total-flat{  box-shadow: inset 0 -3px 0 #2563eb33; }
-
-/* ====== DELTA FLASHES ====== */
-@keyframes flashUp   { from { background:#dcfce7; } to { background:transparent; } }
-@keyframes flashDown { from { background:#fee2e2; } to { background:transparent; } }
-@keyframes flashNeu  { from { background:#e0e7ff; } to { background:transparent; } }
-
-.flash-up{    animation: flashUp .9s ease-out; }
-.flash-down{  animation: flashDown .9s ease-out; }
-.flash-neutral{ animation: flashNeu .9s ease-out; }
-
-/* ====== UTIL ====== */
-.mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-.muted{ opacity:.7; }
-
-/* ====== Responsive tweaks ====== */
-@media (max-width: 640px){
-  .pv-metric .val{ font-size: .9rem; }
-  .pv-card{ padding: .65rem .7rem; }
-}
-
+.pv-kpi.delta-up   .trend{ color:#1e7e34; }
+.pv-kpi.delta-down .trend{ color:#a12721; }
+.pv-kpi.delta-flat .trend{ color:#1e5aa7; }
+.pv-kpi.delta-same .trend{ color:#666; }
