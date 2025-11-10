@@ -65,22 +65,25 @@ const SoloPannelliRunner = (() => {
     el.textContent = label;
   }
 
-  async function loadOnce(){
-    if (inflight) return;
-    inflight = true;
-    try{
-      const res = await fetch('/api/pannelli/status', { cache:'no-store' });
-      if (!res.ok) throw new Error('HTTP '+res.status);
-      const data = await res.json();
-      renderCards(data.inverters || []);
-      updateTop(data);
-    } catch(e){
-      console.warn('[solo_pannelli] ', e);
-      setBadge(els.status(), 'Fail');
-    } finally {
-      inflight = false;
-    }
+async function loadOnce(){
+  if (inflight) return;
+  inflight = true;
+  try{
+    // document.getElementById('spinner')?.style.display = ''; // si lo usás acá
+    const res = await fetch('/api/pannelli/status', { cache:'no-store' });
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    renderCards(data.inverters || []);
+    updateTop(data);
+  } catch(e){
+    console.warn('[solo_pannelli] ', e);
+    setBadge(els.status(), 'Fail');
+  } finally {
+    hideSpinner();   // << siempre lo apagás
+    inflight = false;
   }
+}
+
 
   function schedule(){
     clearTimeout(timer);
@@ -325,3 +328,109 @@ const fmtInt = (n, suf='') =>
 const fmtPow = n => fmtInt(n, ' W');
 const fmtVol = n => fmtInt(n, ' V');
 const fmtFrq = n => fmtInt(n, ' Hz'); // entero también
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// === Selectores de lo que ocultás/mostrás en modo Matriz ===
+const MATRIX_SEL = [
+  '#pv-root',                    // header tabla
+  '#pv-table',                   // tabla principal
+  '.tabla-container .table',     // otras tablas dentro del container
+  '.tabla-container table',      // fallback
+  '#sidebar',                    // sidebar
+  '#resizer'                    // separador lateral
+  
+];
+
+
+function hideSpinner(){
+  const s = document.getElementById('spinner');
+  if (!s) return;
+  s.style.display = 'none';
+  s.classList.remove('is-active','show');
+  s.setAttribute('aria-hidden','true');
+}
+
+// Helpers
+function hideMany(selectors){ selectors.forEach(s => 
+  document.querySelectorAll(s).forEach(el => el.style.display = 'none')
+);}
+function showMany(selectors){ selectors.forEach(s => 
+  document.querySelectorAll(s).forEach(el => el.style.display = '')
+);}
+
+function ensureCardsContainer(){
+  let root = document.getElementById('sp-root');
+  if (root) return root;
+  const host = document.querySelector('.tabla-container') || document.body;
+  host.insertAdjacentHTML('beforeend', `
+    <div class="grid grid-2" id="sp-root" style="margin-top:12px;">
+      <div class="card">
+        <div id="sp-status-wrap">
+          <span class="status-label">Device status</span>
+          <span id="sp-status" class="badge">—</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="muted">Current power</div>
+        <div id="sp-power" class="big mono">— W</div>
+      </div>
+      <section id="sp-cards-section" style="overflow:auto; grid-column:1 / -1;">
+        <div class="muted" style="margin-bottom:.5rem">Inverters</div>
+        <div id="sp-cards" class="pv-grid"></div>
+      </section>
+    </div>
+  `);
+  return document.getElementById('sp-root');
+}
+
+// === Mostrar tarjetas (Cards) ===
+function showCards(){
+  hideMany(MATRIX_SEL);
+  hideSpinner();                 // << oculta por si quedó activo
+  ensureCardsContainer().style.display = '';
+  SoloPannelliRunner.start?.();
+  const btn = document.getElementById('btnSoloPannelli');
+  if (btn){ btn.textContent = 'Matriz'; btn.dataset.mode = 'cards'; }
+}
+
+function showMatriz(){
+  SoloPannelliRunner.stop?.();
+  const spRoot = document.getElementById('sp-root');
+  if (spRoot) spRoot.style.display = 'none';
+  showMany(MATRIX_SEL);
+  hideSpinner();                 // << fuerza oculto al volver a tabla
+  const btn = document.getElementById('btnSoloPannelli');
+  if (btn){ btn.textContent = 'Cards'; btn.dataset.mode = 'matrix'; }
+}
+
+// === Click del botón (toggle) ===
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('btnSoloPannelli');
+  if (!btn) return;
+  // estado inicial: estás en matriz
+  btn.dataset.mode = 'matrix';
+  // alinear a la derecha (por si no pusiste el CSS)
+  btn.style.position = 'absolute';
+  btn.style.right = '0';
+  btn.style.top = '50%';
+  btn.style.transform = 'translateY(-50%)';
+
+  btn.addEventListener('click', () => {
+    if (btn.dataset.mode === 'matrix') showCards();
+    else showMatriz();
+  });
+});

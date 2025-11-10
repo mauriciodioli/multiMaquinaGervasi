@@ -1,3 +1,10 @@
+.titulo-maquinas--hdr{ position:relative; text-align:center; margin-bottom:20px; }
+.titulo-maquinas--hdr .titulo{ margin:0; }
+.titulo-maquinas--hdr #btnSoloPannelli{
+  position:absolute; right:0; top:50%; transform:translateY(-50%);
+}
+
+
 /* ===== MODO MONITOR (fuentes grandes y tarjetas amplias) ===== */
 #sp-root{
   width:100%;
