@@ -54,16 +54,37 @@ const SoloPannelliRunner = (() => {
     return (typeof n==='number' && isFinite(n)) ? n.toLocaleString('es-AR') + suf : '—';
   }
 
-  function setBadge(el, txt){
-    if (!el) return;
-    const t = String(txt||'').toLowerCase();
-    let cls='unknown', label=txt||'—';
-    if (/fail|fault|alarm|error|offline|refused|timeout|dns|modbus/.test(t)) { cls='error'; label='Fail'; }
-    else if (/standby|idle/.test(t)) { cls='standby'; label='Standby'; }
-    else if (/ok|running|online|operando/.test(t)) { cls='ok'; label='OK'; }
-    el.className = `badge ${cls}`;
-    el.textContent = label;
+function setBadge(el, txt){
+  const t = (txt ?? '').toLowerCase().trim();
+  let cls = 'unknown', label = txt || 'Unknown';
+ 
+  // ↓ Primero: casos de desconexión (tu "no conect")
+  if (
+    t.includes('no conect') ||
+    t.includes('offline') || t.includes('offline') ||
+    /refused|timeout|timed out|dns|modbus/.test(t)
+  ) {
+    cls = 'error'; label = 'Sin conexión';
+
+  } else if (t.includes('ok') || /operando|running|online/.test(t)) {
+    cls = 'ok'; label = 'OK';
+
+  } else if (t.includes('standby') || /idle/.test(t)) {
+    cls = 'standby'; label = 'Standby';
+
+  } else if (/falla|fail|failure|fault|alarm|error|offline/.test(t)) {
+    cls = 'error'; label = 'Fail';
+
+  } else if (t.includes('raw')) {
+    cls = 'unknown'; label = 'Datos crudos';
+
+  } else if (t.includes('sin datos')) {
+    cls = 'unknown'; label = 'no data';
   }
+
+  el.className = `badge ${cls}`;
+  el.textContent = label;
+}
 
 async function loadOnce(){
   if (inflight) return;
@@ -77,6 +98,7 @@ async function loadOnce(){
     updateTop(data);
   } catch(e){
     console.warn('[solo_pannelli] ', e);
+    debugger;
     setBadge(els.status(), 'Fail');
   } finally {
     hideSpinner();   // << siempre lo apagás

@@ -1,39 +1,59 @@
 /******************************
  * GERVASI · Pannelli Front JS
  ******************************/
+/* ==== util: badge de estado global/elemento ==== */
+function setBadge(el, txt) {
+  const t = String(txt ?? '').toLowerCase().trim();
+  let cls = 'unknown';
+  let label = txt || 'Unknown';
 
-/* ==== util: badge de estado global ==== */
-function setBadge(el, txt){
-  const t = (txt ?? '').toLowerCase().trim();
-  let cls = 'unknown', label = txt || 'Unknown';
-
-  // ↓ Primero: casos de desconexión (tu "no conect")
+  // 1) Desconexión / errores de red
   if (
     t.includes('no conect') ||
-    t.includes('offline') || t.includes('offline') ||
+    t.includes('offline') ||
     /refused|timeout|timed out|dns|modbus/.test(t)
   ) {
     cls = 'error'; label = 'Sin conexión';
 
+  // 2) OK / operando
   } else if (t.includes('ok') || /operando|running|online/.test(t)) {
     cls = 'ok'; label = 'OK';
 
+  // 3) Standby/idle
   } else if (t.includes('standby') || /idle/.test(t)) {
     cls = 'standby'; label = 'Standby';
 
-  } else if (/falla|fail|failure|fault|alarm|error|offline/.test(t)) {
+  // 4) Fallas (no repetir offline)
+  } else if (/falla|fail|failure|fault|alarm|error/.test(t)) {
     cls = 'error'; label = 'Fail';
 
+  // 5) Datos crudos / sin datos
   } else if (t.includes('raw')) {
     cls = 'unknown'; label = 'Datos crudos';
 
   } else if (t.includes('sin datos')) {
-    cls = 'unknown'; label = 'no data';
+    cls = 'unknown'; label = 'No data';
   }
 
-  el.className = `badge ${cls}`;
-  el.textContent = label;
+  // Actualiza badge global si existe (opcional)
+  const globalEl = document.getElementById('sp-status');
+  if (globalEl) {
+    globalEl.classList.remove('ok','error','standby','unknown');
+    globalEl.classList.add('badge', cls);
+    globalEl.textContent = label;
+  }
+
+  // Actualiza el badge recibido si existe
+  if (el) {
+    el.classList.remove('ok','error','standby','unknown');
+    el.classList.add('badge', cls);
+    el.textContent = label;
+  }
+
+  // Por si querés usar el resultado programáticamente
+  return { cls, label };
 }
+
 
 
 /* ==== estado previo para comparar difs ===== */
@@ -66,6 +86,7 @@ function flashDelta(el, oldVal, newVal, neutralIsBlue=false){
 async function loadStatus(){
   const powerEl = document.getElementById('pv-power');          // opcional
   const statusEl= document.getElementById('pv-status');          // opcional
+
   const bodyEl  = document.querySelector('#pv-table tbody');     // opcional
 
   const res = await fetch('/api/pannelli/status', { cache: 'no-store' });
@@ -99,7 +120,7 @@ async function loadStatus(){
   const states = (data.inverters||[]).map(i=> (i.status_text||'').toLowerCase());
   if (statusEl){
     let global = 'Unknown';
-   debugger;
+   
     if (states.some(s=> /falla|fail|failure|fault|alarm|error/.test(s))) {
       global='Fail';
     } else if (states.length && states.every(s=> s.includes('standby') || /idle/.test(s))) {

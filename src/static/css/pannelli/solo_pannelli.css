@@ -4,6 +4,10 @@
   position:absolute; right:0; top:50%; transform:translateY(-50%);
 }
 
+.titulo { display: inline-flex; align-items: center; gap: .5rem; }
+.icono-solar { font-size: 1.4rem; } /* escala del icono */
+
+
 
 /* ===== MODO MONITOR (fuentes grandes y tarjetas amplias) ===== */
 #sp-root{
@@ -91,6 +95,28 @@
   letter-spacing:.06em;
   color:#99a2ad;
 }
+
+/* centra horizontal y vertical */
+#sp-status-wrap{
+  width:100%;
+  display:flex;
+  align-items:center;        /* eje vertical */
+  justify-content:center;    /* eje horizontal */
+  gap:.75rem;
+  padding:12px 0;
+}
+
+/* opcional: responsive, en móvil apilado */
+@media (max-width:600px){
+  #sp-status-wrap{ flex-direction:column; gap:.4rem; }
+}
+#sp-status {
+  font-size: 3rem;     /* tamaño del texto */
+  padding: 10px 20px;     /* agranda el badge */
+  border-radius: 6px;    /* opcional */
+}
+
+
 #sp-power.big{
   font-weight:800;
   font-size:clamp(2.2rem, 4vw, 4.4rem);
