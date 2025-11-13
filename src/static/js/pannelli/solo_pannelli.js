@@ -64,7 +64,7 @@ function setBadge(el, txt){
     t.includes('offline') || t.includes('offline') ||
     /refused|timeout|timed out|dns|modbus/.test(t)
   ) {
-    cls = 'error'; label = 'Sin conexión';
+    cls = 'error'; label = 'Non in Linea';
 
   } else if (t.includes('ok') || /operando|running|online/.test(t)) {
     cls = 'ok'; label = 'OK';

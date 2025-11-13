@@ -8,11 +8,7 @@ from pymodbus.exceptions import ModbusIOException, ConnectionException
 IPS = [
     "192.168.1.101",
     "192.168.1.102",
-    "192.168.1.103",
-   # "192.168.1.104", # IP con V ausente inaxesible
-   # "192.168.1.105", # IP con V ausente inaxesible  
-   # "192.168.1.107", # IP con V ausente inaxesible
-   # "192.168.1.108", # IP con V ausente inaxesible
+    "192.168.1.103",    
     "192.168.1.109",
     "192.168.1.110",
     "192.168.1.111",

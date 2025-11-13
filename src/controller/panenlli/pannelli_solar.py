@@ -9,6 +9,9 @@ from src.utils.db_session import get_db_session
 from datetime import datetime,timedelta
 
 from src.controller.panenlli.modbus_sma import read_all, IPS
+# ✅ DLX (Danfoss) en el mismo formato que read_all de SMA
+from src.controller.panenlli.snmp_walk_dlx import read_all_dlx,  DLX_IPS
+
 
 import time
 from flask import jsonify, request
@@ -54,13 +57,23 @@ def _simplify(inv: dict):
 def pannelli_status():
     """
     Devuelve estado de todos los inversores para AJAX.
-    Opcional: ?ips=192.168.1.101,192.168.1.102
+    Opcional: ?ips=192.168.1.101,192.168.1.102  (aplica a SMA)
+    Siempre agrega los DLX definidos en DLX_IPS.
     """
     ips_param = request.args.get("ips")
-    ips = [s.strip() for s in ips_param.split(",")] if ips_param else IPS
+    sma_ips = [s.strip() for s in ips_param.split(",")] if ips_param else IPS
 
-    data = read_all(ips)                # reutiliza tu lógica sin tocar nada
-    items = [_simplify(d) for d in data]
+    # 👉 SMA (Modbus) tal como ya lo tenías
+    data_sma = read_all(sma_ips)          # lista de dicts (formato read_ip)
+    items_sma = [_simplify(d) for d in data_sma]
+
+    # 👉 DLX (Danfoss) vía HTTP RPC, mismo formato lógico
+    data_dlx = read_all_dlx(DLX_IPS)      # lista de dicts formateados como read_ip
+    items_dlx = [_simplify(d) for d in data_dlx]
+
+    # Unimos todo para el frontend
+    items = items_sma + items_dlx
+   # items = items_sma 
 
     total_power_w = sum(
         i["power_W"] for i in items if isinstance(i.get("power_W"), (int, float))

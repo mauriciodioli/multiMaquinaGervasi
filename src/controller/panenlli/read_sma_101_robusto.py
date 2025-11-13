@@ -1,6 +1,18 @@
 #!/usr/bin/env python3
 import time
 from pymodbus.client import ModbusTcpClient
+import os, json, datetime
+import socket
+from contextlib import closing
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pymodbus.client import ModbusTcpClient
+
+# Puertos “sospechosos” para DLX/SMA y web embebida
+DEFAULT_PORTS = [
+    80, 81, 8080, 8000, 8443,  # HTTP(S) típicos
+    502, 5020, 5021, 5022, 8502,  # Modbus variantes (SMA/Danfoss)
+    21, 22, 23, 161, 443          # comunes por las dudas
+]
 
 # ========= CONFIG =========
 IPS = [
@@ -8,6 +20,10 @@ IPS = [
     "192.168.1.102",
     "192.168.1.103",
     "192.168.1.104",  # Danfoss DLX
+    "192.168.1.109",
+    "192.168.1.110",
+    "192.168.1.111",
+    "192.168.1.112",
 ]
 PORT = 502
 # --- Overrides por IP (para equipos que no usan el mismo Unit/Base) ---
@@ -27,7 +43,7 @@ UNIT_IDS = [126, 1, 2]
 BASE_CANDIDATES = [40001, 40000]
 
 INTERVAL = 5  # s entre ciclos
-
+RAW_SCAN = False  # poné True cuando quieras volcar crudo
 # === OFFSETS SMA (model 101) ===
 OFF_V   = 8
 OFF_VSF = 9
@@ -283,10 +299,32 @@ def read_ip(ip):
 
 
 # ===== Loop principal =====
+# ===== Loop principal =====
 if __name__ == "__main__":
     while True:
         print("\n================ CICLO DE LECTURA ================")
         for ip in IPS:
+            # --- MODO CRUDO ---
+            if RAW_SCAN:
+                res = scan_ports(ip)  # o scan_ports(ip, ports=range(1,1025)) si querés full
+                print_scan(ip, res)
+                raw = read_ip_raw(ip)
+                print_raw_overview(raw, max_ascii=4)
+                path = save_raw_dump(raw)
+                print(f"💾 Dump guardado: {path}")
+
+                cands = guess_tracker_candidates(raw)
+                if cands:
+                    print("🧭 Candidatos X/Y (revisar):")
+                    for mid, rows in cands.items():
+                        for r in rows[:10]:
+                            print(f"   MID {mid} idx {r['idx']:>3} @addr1 {r['addr1']} "
+                                  f"u16={r['u16']} s16={r['s16']} sf={r['sf']} "
+                                  f"→ {r['scaled_u']} / {r['scaled_s']}")
+                # si querés SOLO crudo, saltá al siguiente ip:
+                # continue
+
+            # --- LECTURA NORMAL ---
             data = read_ip(ip)
             if data.get("status") == "ok":
                 st = data.get("status_text", "sin datos")
@@ -306,3 +344,290 @@ if __name__ == "__main__":
                 print(f"❌ {ip} sin datos válidos.")
         print("===================================================")
         time.sleep(INTERVAL)
+
+
+
+
+
+
+
+
+
+
+# === RAW DUMPS: inspección completa por modelo ===
+
+
+def harvest_all_models(client, unit, base, max_hops=128, take_payload=True):
+    """
+    Recorre todos los headers SunSpec a partir de `base` y devuelve
+    una lista de dicts con meta (mid, mlen, addrs) y registros crudos.
+    """
+    out = []
+    addr0 = (base + 2) - 1  # primer header (0-based)
+    hops = 0
+    while hops < max_hops:
+        hdr = read_u16s(client, unit, addr0, 2)
+        if not hdr:
+            break
+        mid, mlen = hdr
+        if mid == 0xFFFF:
+            break
+
+        regs = read_u16s(client, unit, addr0 + 2, mlen) if take_payload else []
+        entry = {
+            "mid": mid,
+            "mlen": mlen,
+            "addr0": addr0,           # 0-based header address
+            "addr1": addr0 + 1,       # 1-based header address (visual)
+            "payload_addr0": addr0+2, # 0-based payload start
+            "payload_addr1": addr0+3, # 1-based payload start
+            "regs_len": len(regs),
+            "regs": regs or [],
+        }
+
+        # Previews útiles
+        entry["u16_preview"] = (regs[:16] if regs else [])
+        entry["s16_preview"] = ([s16(x) for x in regs[:16]] if regs else [])
+
+        # Aspiramos spans ASCII (pares de bytes no nulos)
+        entry["ascii_spans"] = _extract_ascii_spans(regs)
+
+        out.append(entry)
+        addr0 = addr0 + 2 + mlen
+        hops += 1
+    return out
+
+def _extract_ascii_spans(regs):
+    """
+    Heurística: intenta armar cadenas ASCII a partir de u16 big-endian.
+    Útil para encontrar labels y strings de config.
+    """
+    spans = []
+    cur = []
+    def flush():
+        if not cur: return
+        s = "".join(cur)
+        # Filtrar basura muy corta o con pocos caracteres visibles
+        if len(s.strip()) >= 3:
+            spans.append(s)
+        cur.clear()
+
+    for r in (regs or []):
+        hi = (r >> 8) & 0xFF
+        lo = r & 0xFF
+        for b in (hi, lo):
+            if 32 <= b <= 126:        # rango ASCII imprimible
+                cur.append(chr(b))
+            elif b == 0:              # terminador C
+                flush()
+            else:
+                flush()
+    flush()
+    return spans
+
+def read_ip_raw(ip):
+    """
+    Igual filosofía que read_ip(), pero devolviendo TODO lo crudo por modelo.
+    """
+    ov = IP_OVERRIDES.get(ip, {})
+    unit_ids        = ov.get("unit_ids", UNIT_IDS)
+    base_candidates = ov.get("bases", BASE_CANDIDATES)
+    skip_signature  = ov.get("skip_signature", False)
+    timeout         = ov.get("timeout", 2.5)
+
+    meta = {"ip": ip, "status": "fail"}
+    client = ModbusTcpClient(ip, PORT, timeout=timeout)
+    with client:
+        if not client.connect():
+            return meta
+        for unit in unit_ids:
+            for base in base_candidates:
+                try:
+                    if not skip_signature and not check_sunspec_signature(client, unit, base):
+                        continue
+
+                    info = read_common(client, unit, base) or {}
+                    models = harvest_all_models(client, unit, base, take_payload=True)
+                    if not models:
+                        continue
+
+                    meta.update(info)
+                    meta.update({
+                        "status": "raw_ok",
+                        "unit_id": unit,
+                        "base_addr": base,
+                        "models": models,
+                    })
+                    return meta
+                except Exception:
+                    continue
+    return meta
+
+def save_raw_dump(data, out_dir="./raw_dumps"):
+    os.makedirs(out_dir, exist_ok=True)
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    ip = data.get("ip","unknown").replace(".","-")
+    path = os.path.join(out_dir, f"raw_{ip}_{ts}.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return path
+
+def print_raw_overview(raw_meta, max_ascii=3):
+    """
+    Vista rápida en consola: por cada MID muestra len y algunos spans ASCII.
+    """
+    if raw_meta.get("status") != "raw_ok":
+        print(f"❌ {raw_meta.get('ip')} sin raw_ok")
+        return
+    print(f"🔎 RAW {raw_meta['ip']} unit={raw_meta['unit_id']} base={raw_meta['base_addr']} "
+          f"| {raw_meta.get('manufacturer','?')} {raw_meta.get('model','?')} SN:{raw_meta.get('serial','?')}")
+    for m in raw_meta.get("models", []):
+        mids = m["mid"]; mlen = m["mlen"]; rlen = m["regs_len"]
+        spans = (m.get("ascii_spans") or [])[:max_ascii]
+        spans_str = " | ".join(spans) if spans else "—"
+        print(f"  • MID {mids:<4} @{m['addr1']:<6} len={mlen:<4} regs={rlen:<4} ascii={spans_str}")
+
+# ————————————————————————————————————————————————
+# (OPCIONAL) Marcador de candidatos a posición X/Y
+# ————————————————————————————————————————————————
+def guess_tracker_candidates(raw_meta):
+    """
+    Busca pares (idx, valor) que podrían ser ángulos/posiciones.
+    Estrategia:
+     - Considera s16 y u16.
+     - Prueba SF en [-3..+3] y marca si cae en:
+         a) 0..360   (azimut)
+         b) -180..180 (tilt/azimut con signo)
+         c) 0..1000  (mm, décimas de grado, centideg)
+    Devuelve: dict[mid] = lista de dicts {idx, u16, s16, sf, scaled, addr1}
+    """
+    if raw_meta.get("status") != "raw_ok":
+        return {}
+
+    out = {}
+    for m in raw_meta.get("models", []):
+        regs = m.get("regs") or []
+        if not regs: 
+            continue
+        candidates = []
+        for i, u in enumerate(regs):
+            sv = s16(u)
+            for sf in range(-3, 4):
+                try:
+                    scaled_u = u * (10 ** sf)
+                    scaled_s = sv * (10 ** sf)
+                except Exception:
+                    continue
+                # Rangos tentativos
+                if (0 <= scaled_u <= 360) or (-180 <= scaled_s <= 180) or (0 <= scaled_u <= 1000):
+                    candidates.append({
+                        "idx": i,
+                        "u16": u,
+                        "s16": sv,
+                        "sf": sf,
+                        "scaled_u": scaled_u,
+                        "scaled_s": scaled_s,
+                        "addr1": m["payload_addr1"] + i  # 1-based real
+                    })
+        if candidates:
+            out[m["mid"]] = candidates
+    return out
+
+
+
+
+
+
+
+
+
+
+
+
+def _is_open(ip, port, timeout=1.2):
+    """Conexión TCP básica; devuelve True si abre."""
+    try:
+        with closing(socket.create_connection((ip, port), timeout=timeout)):
+            return True
+    except (socket.timeout, ConnectionRefusedError, OSError):
+        return False
+
+def _grab_banner(ip, port, timeout=1.0):
+    """Sniff liviano: intenta leer/obtener algún banner (HTTP/Modbus)."""
+    try:
+        s = socket.create_connection((ip, port), timeout=timeout)
+        s.settimeout(timeout)
+        with closing(s):
+            # Prueba HTTP
+            try:
+                s.sendall(b"GET / HTTP/1.0\r\nHost: %b\r\n\r\n" % ip.encode())
+                data = s.recv(256)
+                if data:
+                    return data[:256].decode(errors="ignore")
+            except Exception:
+                pass
+            # Si no hubo HTTP, devolvemos vacío
+            return ""
+    except Exception:
+        return ""
+
+def _looks_like_http(banner: str) -> bool:
+    b = (banner or "").upper()
+    return ("HTTP" in b) or ("SERVER:" in b) or ("CONTENT-" in b)
+
+def _confirm_modbus(ip, port, timeout=2.0):
+    """Intenta handshake Modbus con pymodbus. No lee nada, solo conecta."""
+    try:
+        client = ModbusTcpClient(ip, port=port, timeout=timeout)
+        with client:
+            if client.connect():
+                # Conexión establecida; opcionalmente podríamos hacer un request MEI.
+                return True
+        return False
+    except Exception:
+        return False
+
+def scan_ports(ip, ports=DEFAULT_PORTS, timeout=1.2, max_workers=32):
+    """Escanea lista de puertos y devuelve dict con estado y hints."""
+    results = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        futs = {ex.submit(_is_open, ip, p, timeout): p for p in ports}
+        for fut in as_completed(futs):
+            p = futs[fut]
+            is_open = False
+            try:
+                is_open = fut.result()
+            except Exception:
+                is_open = False
+            if not is_open:
+                results[p] = {"open": False}
+                continue
+
+            # Si está open, intentamos banner y, si aplica, Modbus
+            banner = _grab_banner(ip, p, timeout=timeout)
+            looks_http = _looks_like_http(banner)
+            is_modbus = False
+            if p in (502, 5020, 5021, 5022, 8502) and not looks_http:
+                is_modbus = _confirm_modbus(ip, p, timeout=timeout)
+
+            results[p] = {
+                "open": True,
+                "http-ish": looks_http,
+                "modbus-ish": is_modbus,
+                "banner": (banner[:120] if banner else "")
+            }
+    return dict(sorted(results.items(), key=lambda kv: kv[0]))
+
+def print_scan(ip, results):
+    print(f"\n🔎 Scan {ip}")
+    for port, info in results.items():
+        if not info.get("open"):
+            print(f"  {port:>5}/tcp  closed/filtered")
+            continue
+        tags = []
+        if info.get("http-ish"): tags.append("HTTP")
+        if info.get("modbus-ish"): tags.append("MODBUS")
+        tag_str = f" [{'|'.join(tags)}]" if tags else ""
+        banner = info.get("banner") or ""
+        banner = banner.replace("\r", " ").replace("\n", " ")[:80]
+        print(f"  {port:>5}/tcp  OPEN{tag_str}  {banner}")
