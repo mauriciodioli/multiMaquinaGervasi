@@ -149,31 +149,10 @@
         </tr>
       </thead>
       <tbody id="tablaPedidosEntrega">
-        {% if trabajos and trabajos|length > 0 %}
-          {% if trabajos[0] is mapping %}
-            {# trabajos = [{..., "_panel_id": <id o "mock-1">}, ...] #}
-            {% for fila in trabajos %}
-              <tr data-panel-id="{{ fila.get('_panel_id','all') }}">
-                {% for columna in columnas %}
-                  <td>{{ fila.get(columna, '') }}</td>
-                {% endfor %}
-              </tr>
-            {% endfor %}
-          {% else %}
-            {# trabajos = [ [...], ... ] (sin filtro por panel) #}
-            {% for fila in trabajos %}
-              <tr>
-                {% for valor in fila %}
-                  <td>{{ valor }}</td>
-                {% endfor %}
-              </tr>
-            {% endfor %}
-          {% endif %}
-        {% else %}
-          <tr><td colspan="{{ columnas|length if columnas else 1 }}">No hay registros para mostrar.</td></tr>
-        {% endif %}
+        {# se llena por JS con data.inverters #}
       </tbody>
     </table>
+
   </div>
 
   <!-- Modales -->

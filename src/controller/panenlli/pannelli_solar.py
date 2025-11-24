@@ -130,9 +130,14 @@ def pannelli_crud_consulta():
 
             # === Tabla ===
             columnas = [
-                "Fecha","Potencia (W)","Energía (kWh)","Tensión (V)",
-                "Corriente (A)","Frecuencia (Hz)","Estado","Alarma","Panel"
-            ]
+                    "Date",
+                    "Power (W)",
+                    "Voltage (V)",
+                    "Frequency (Hz)",
+                    "Status",
+                    "Model"  
+                ]
+
             trabajos = []
 
             lecturas = []

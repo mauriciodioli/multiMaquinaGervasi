@@ -505,7 +505,7 @@ def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
 def status_group_from_code(code: int) -> str:
     if code is None: return "unknown"
     if 100 <= code < 200: return "init"
-    if 200 <= code < 300: return "error"
+    if 200 <= code < 300: return "ok"
     if 300 <= code < 400: return "ok"
     if 400 <= code < 500: return "standby"
     if 500 <= code < 600: return "error"

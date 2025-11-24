@@ -131,46 +131,79 @@ async function loadStatus(){
     setBadge(statusEl, global);
   }
 
-  /* ===== TABLA ===== */
-  if (bodyEl){
-    bodyEl.innerHTML = '';
-      (data.inverters||[]).forEach(i=>{
-        const ip   = i.ip || '—';
-        const old  = prevSnapshot.inv[ip] || {};
+ /* ===== TABLA ===== */
+if (bodyEl) {
+  bodyEl.innerHTML = '';
+  (data.inverters || []).forEach(i => {
+    const ip = i.ip || '—';
+    const old = prevSnapshot.inv[ip] || {};
 
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${ip}</td>
-          <td><span class="badge">${i.status_text || '—'}</span></td>
-          <td class="mono power-cell">${fmt(i.power_W,' W')}</td>
-          <td class="mono volt-cell">${fmt(i.voltage_V,' V')}</td>
-          <td class="mono freq-cell">${fmt(i.frequency_Hz,' Hz')}</td>
-          <td class="muted">${(i.manufacturer||'')+' '+(i.model||'')}</td>`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${ip}</td>
+      <td><span class="badge">${i.status_text || '—'}</span></td>
+      <td class="mono power-cell">${fmt(i.power_W, ' W')}</td>
+      <td class="mono volt-cell">${fmt(i.voltage_V, ' V')}</td>
+      <td class="mono freq-cell">${fmt(i.frequency_Hz, ' Hz')}</td>
+      <td class="muted">${(i.manufacturer || '') + ' ' + (i.model || '')}</td>`;
 
-        // ⬅️ colorear el badge por código/grupo
-        const statusBadge = tr.querySelector('td .badge');
-        setStatusBadgeByCode(statusBadge, i.status_code, i.status_text, i.status_group, i.status);
+    // ⬅️ colorear el badge por código/grupo
+    const statusBadge = tr.querySelector('td .badge');
+    setStatusBadgeByCode(statusBadge, i.status_code, i.status_text, i.status_group, i.status);
 
-        statusBadge.textContent = formatStatusLabel(i);
-        // flashes por celda (incluye neutral azul si no cambió)
-        const pc = tr.querySelector('.power-cell');
-        const vc = tr.querySelector('.volt-cell');
-        const fc = tr.querySelector('.freq-cell');
-        if (pc) flashDelta(pc, old.power_W,      i.power_W,      true);
-        if (vc) flashDelta(vc, old.voltage_V,    i.voltage_V,    true);
-        if (fc) flashDelta(fc, old.frequency_Hz, i.frequency_Hz, true);
+    statusBadge.textContent = formatStatusLabel(i);
 
-        // snapshot por IP
-        prevSnapshot.inv[ip] = {
-          power_W: i.power_W,
-          voltage_V: i.voltage_V,
-          frequency_Hz: i.frequency_Hz
-        };
+    // flashes por celda (incluye neutral azul si no cambió)
+    const pc = tr.querySelector('.power-cell');
+    const vc = tr.querySelector('.volt-cell');
+    const fc = tr.querySelector('.freq-cell');
+    if (pc) flashDelta(pc, old.power_W, i.power_W, true);
+    if (vc) flashDelta(vc, old.voltage_V, i.voltage_V, true);
+    if (fc) flashDelta(fc, old.frequency_Hz, i.frequency_Hz, true);
 
-        bodyEl.appendChild(tr);
-      });
+    // snapshot por IP
+    prevSnapshot.inv[ip] = {
+      power_W: i.power_W,
+      voltage_V: i.voltage_V,
+      frequency_Hz: i.frequency_Hz
+    };
 
-  }
+    bodyEl.appendChild(tr);
+  });
+}
+
+
+
+const pedidosBodyEl = document.getElementById('tablaPedidosEntrega');
+
+// === NUEVO: segunda tabla con los mismos inverters ===
+if (pedidosBodyEl) {
+  pedidosBodyEl.innerHTML = '';
+
+  (data.inverters || []).forEach(i => {
+    const tr2 = document.createElement('tr');
+
+    // ID de panel para que funcione el filtro por botón
+    // idealmente data.inverters[i] trae panel_id desde backend
+    const panelId = i.panel_id || i.id || 'all';
+    tr2.dataset.panelId = panelId;
+
+    // Ajustá el orden/cantidad de columnas a lo que tengas en "columnas" del <thead>
+    tr2.innerHTML = `
+      <td>${i.ip || '—'}</td>
+      
+      <td class="mono">${fmt(i.power_W, ' W')}</td>   
+      <td class="mono">${fmt(i.voltage_V, ' V')}</td>  
+      <td class="mono">${fmt(i.frequency_Hz, ' Hz')}</td>
+      
+      <td>${i.status_text || '—'}</td>
+      <td>${(i.manufacturer || '') + ' ' + (i.model || '')}</td>
+    `;
+
+    pedidosBodyEl.appendChild(tr2);
+  });
+}
+
 }
 
 /* ==== polling 3s sin solaparse ==== */
@@ -206,9 +239,9 @@ function setStatusBadgeByCode(el, code, text, group, status){
   // Clase por código
   let cls = 'unknown';
   if (typeof code === 'number') {
-    if (code >= 300 && code < 400) cls = 'ok';
+    if (code >= 200 && code < 400) cls = 'ok';
     else if (code >= 400 && code < 500) cls = 'standby';
-    else if ((code >= 200 && code < 300) || (code >= 500 && code < 600)) cls = 'error';
+    else if ((code >= 500 && code < 600)) cls = 'error';
     else if (code >= 100 && code < 200) cls = 'init';
   } else if (group) {
     const g = String(group).toLowerCase();
@@ -226,6 +259,8 @@ function setStatusBadgeByCode(el, code, text, group, status){
   if (String(status || '').toLowerCase() === 'fail') {
     label = (typeof code === 'number') ? `Fail (código ${code})` : 'Fail';
     cls = 'error';
+  }else if (typeof code === 'number') {
+    label += ` (Código ${code})`; // Agregar el código al texto
   }
 
   el.className = `badge ${cls}`;
@@ -281,7 +316,33 @@ function formatStatusLabel(i){
 
 
 
+document.addEventListener('DOMContentLoaded', () => {
+  const buttons = document.querySelectorAll('.panel-filter');
 
+  function setActive(btn){
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function filterByPanel(panelId){
+    const rows = document.querySelectorAll('#tablaPedidosEntrega tr');
+    rows.forEach(tr => {
+      const rid  = tr.getAttribute('data-panel-id');
+      const show = (panelId === 'all' || !rid || rid === panelId);
+      tr.style.display = show ? '' : 'none';
+    });
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-panel-id') || 'all';
+      setActive(btn);
+      filterByPanel(id);
+    });
+  });
+
+  filterByPanel('all');
+});
 
 
 
