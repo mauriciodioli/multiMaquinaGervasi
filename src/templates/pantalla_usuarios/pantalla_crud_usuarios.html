@@ -13,7 +13,7 @@
       </button>
 
       <div class="table-responsive">
-        <table class="table table-striped">
+        <table class="table table-striped table-responsive-cards">
     
             <thead>
                 <tr>
@@ -29,11 +29,11 @@
                     <tbody id="tabla-usuarios">
                     {% for usuario in usuarios %}
                     <tr data-fila-id="{{ usuario.id }}">
-                        <td>{{ usuario.id }}</td>
-                        <td>{{ usuario.correo_electronico }}</td>
-                        <td>{{ usuario.roll }}</td>
-                        <td>{{ usuario.activo }}</td>
-                        <td>
+                        <td data-label="ID">{{ usuario.id }}</td>
+                        <td data-label="Email">{{ usuario.correo_electronico }}</td>
+                        <td data-label="Rol">{{ usuario.roll }}</td>
+                        <td data-label="Risorsa">{{ usuario.activo }}</td>
+                        <td data-label="Entità">
                         {% if usuario.entidades %}
                             {% for entidad in usuario.entidades %}
                             <div>🏷️ {{ entidad.nombre }} </div>
@@ -42,7 +42,7 @@
                             <span class="text-muted">Nessuna entità</span>
                         {% endif %}
                         </td>
-                        <td>
+                        <td data-label="Azioni">
                         <div class="d-flex flex-wrap gap-2">
                             <button type="button" class="btn btn-info btn-sm btn-abrir-modal-entidad-usuario"
                                     data-id="{{ usuario.id }}">

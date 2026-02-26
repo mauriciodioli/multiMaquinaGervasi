@@ -45,10 +45,7 @@ def _expandir_objetivo_a_master(curva_objetivo9):
 
 @optimizar_fuller.route('/densidadFullerAutoOptimizar/', methods=['POST'])
 def auto_optimizar_curva():
-    """
-    Optimización rápida (minimiza error cuadrático frente a Fuller ideal de Dmax local)
-    para las curvas reales recibidas. NO usa los objetivos de 9 puntos, es otra cosa.
-    """
+
     data = request.get_json()
     curvas = data.get("curvas")
     tamices = data.get("tamices")
@@ -57,32 +54,31 @@ def auto_optimizar_curva():
     if not curvas or not tamices:
         return jsonify({"error": "Faltan curvas o tamices"}), 400
 
-    d_max = max(tamices)
+    # 🔹 Usamos tu motor real
+    w_opt, mezcla_opt, err = auto_optimizar_pesos(curvas, tamices)
+
+    if err:
+        return jsonify({"error": err}), 500
+
+    # Fuller solo para graficar
+    tamices_np = np.asarray(tamices, dtype=float)
+    d_max = float(np.max(tamices_np))
     n = 0.5
-    curva_fuller = [(d / d_max) ** n * 100 for d in tamices]
+    curva_fuller = ((tamices_np / d_max) ** n) * 100.0
 
-    def error_total(pesos):
-        total = sum(pesos)
-        if total == 0:
-            return float('inf')
-        normalizados = [p / total for p in pesos]
-        curva_corregida = [
-            sum(p * curva[i] for p, curva in zip(normalizados, curvas))
-            for i in range(len(tamices))
-        ]
-        return sum((curva_corregida[i] - curva_fuller[i]) ** 2 for i in range(len(tamices)))
-
-    res = minimize(error_total, x0=[1]*len(curvas), bounds=[(0, 1)]*len(curvas))
-    pesos_optimos = res.x / sum(res.x)
-
-    curva_corregida = [
-        sum(p * curva[i] for p, curva in zip(pesos_optimos, curvas))
-        for i in range(len(tamices))
-    ]
-
+    # --------- GRÁFICO INDUSTRIAL ----------
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.plot(tamices, curva_fuller, label="Fuller Ideal", color='orange', marker='x')
-    ax.plot(tamices, curva_corregida, label="Corregida Óptima", color='green', marker='s', linestyle='--')
+
+    ax.plot(tamices, curva_fuller,
+            label="Fuller Ideal",
+            color='orange',
+            marker='x')
+
+    ax.plot(tamices, mezcla_opt,
+            label="Óptima",
+            color='green',
+            marker='s',
+            linestyle='--')
 
     ax.invert_xaxis()
     ax.set_title("Optimización Automática de Mezcla")
@@ -98,11 +94,12 @@ def auto_optimizar_curva():
     plt.close()
 
     recomendaciones = [
-        f"{nombres_materiales[i]}: {peso*100:.2f}%" for i, peso in enumerate(pesos_optimos)
+        f"{nombres_materiales[i]}: {w_opt[i]*100:.2f}%"
+        for i in range(len(w_opt))
     ]
 
     return jsonify({
-        "pesos_optimizado": list(map(float, pesos_optimos)),
+        "pesos_optimizado": list(map(float, w_opt)),
         "grafico_base64": f"data:image/png;base64,{img_base64}",
         "recomendaciones": recomendaciones
     })
@@ -201,3 +198,44 @@ def generar_mezcla_complementaria(curva_objetivo, mejor_curva):
     mejor_curva   = np.asarray(mejor_curva,   dtype=float)
     complemento = np.clip(curva_objetivo - mejor_curva, 0, 100)
     return [round(float(v), 2) for v in complemento]
+
+
+def auto_optimizar_pesos(curvas, tamices, n=0.5):
+    curvas_np = np.asarray(curvas, dtype=float)              # shape: (M, L)
+    tamices_np = np.asarray(tamices, dtype=float)            # shape: (L,)
+    d_max = float(np.max(tamices_np))
+    fuller = ((tamices_np / d_max) ** n) * 100.0             # shape: (L,)
+
+    M = curvas_np.shape[0]
+    w0 = np.ones(M) / M
+
+    def obj(w):
+        mezcla = w @ curvas_np
+        return float(np.mean((mezcla - fuller) ** 2))
+
+    cons = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1.0},)
+    bounds = [(0.0, 1.0)] * M
+
+    res = minimize(obj, w0, method='SLSQP', bounds=bounds, constraints=cons)
+    if not res.success:
+        return None, None, f"Optimización no convergió: {res.message}"
+
+    w_opt = res.x
+    mezcla_opt = w_opt @ curvas_np
+    return w_opt, mezcla_opt, None
+
+def optimizar_con_objetivo(curvas_alineadas, curva_objetivo):
+    curvas_np = np.asarray(curvas_alineadas, dtype=float)   # (M, L)
+    obj_np = np.asarray(curva_objetivo, dtype=float)        # (L,)
+    M = curvas_np.shape[0]
+    w0 = np.ones(M) / M
+
+    def obj(w):
+        mezcla = w @ curvas_np
+        return float(np.mean((mezcla - obj_np) ** 2))
+
+    cons = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1.0},)
+    bounds = [(0.0, 1.0)] * M
+
+    res = minimize(obj, w0, method='SLSQP', bounds=bounds, constraints=cons)
+    return res

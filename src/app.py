@@ -36,7 +36,7 @@ if __name__ == "__main__":
     verificar_conexion_db()
     print("✅ app creada")
     if os.environ.get("WERKZEUG_RUN_MAIN"):
-        #crear_tablas(app, db)
+        crear_tablas(app, db)
         print("✅ Tablas listas")
 
     print("🚀 Ejecutando app...")

@@ -7,3 +7,143 @@ select option:checked {
     overflow-x: auto;
     max-width: 100%;
 }
+
+
+
+
+/* ===== Modal simple sin Bootstrap ===== */
+.dpia-modal{
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 9999;
+}
+
+.dpia-modal.is-open{ display: block; }
+
+.dpia-modal__backdrop{
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+}
+
+.dpia-modal__dialog{
+  position: relative;
+  margin: 6vh auto;
+  max-width: 560px;
+  width: calc(100% - 24px);
+  z-index: 1;
+}
+
+.dpia-modal__content{
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+
+.dpia-modal__header,
+.dpia-modal__footer{
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+
+.dpia-modal__footer{
+  border-bottom: none;
+  border-top: 1px solid rgba(0,0,0,.08);
+  justify-content: flex-end;
+}
+
+.dpia-modal__body{ padding: 16px; }
+
+.dpia-modal__title{ margin: 0; font-size: 1.05rem; }
+
+.dpia-modal__close{
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+
+
+
+
+
+
+/* ===== Modal DPIA (adaptado a modal-laser-produccion) ===== */
+
+.dpia-modal{
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 9999;
+}
+
+.dpia-modal.is-open{
+  display: block;
+}
+
+/* overlay */
+.dpia-modal-overlay{
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+}
+
+/* dialog / box */
+.dpia-modal-box{
+  position: relative;
+  margin: 6vh auto;
+  max-width: 900px;
+  width: calc(100% - 24px);
+  z-index: 1;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+
+/* header & footer */
+.dpia-modal-header,
+.dpia-modal-footer{
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+
+.dpia-modal-footer{
+  border-bottom: none;
+  border-top: 1px solid rgba(0,0,0,.08);
+  justify-content: flex-end;
+}
+
+/* body */
+.dpia-modal-body{
+  padding: 16px;
+}
+
+/* title */
+.dpia-modal-header h3{
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* close button */
+.dpia-modal-close{
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+}

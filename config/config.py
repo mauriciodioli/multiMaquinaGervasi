@@ -2,9 +2,9 @@ import os
 import urllib.parse
 from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv(Path('/app/.env'))
+#load_dotenv(Path('/app/.env'))
 #load_dotenv()
-
+load_dotenv(Path(__file__).resolve().parent / ".env")  # carga /config/.env
 
 
 class Config:
@@ -42,9 +42,11 @@ class Config:
      # SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{user}:{password}@{host}:{port}/{database}'
     
     
-    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
-
-
+    BOCHU_APP_ID =  os.environ["BOCHU_APP_ID"]        # ej: "op18fae905315
+    BOCHU_APP_SECRET =  os.environ["BOCHU_APP_SECRET"] # ej: "1e02e5f10c2f4bcd..."
+    BOCHU_ORG_CODE = os.environ.get("BOCHU_ORG_CODE")
+    BOCHU_BASE_URL = os.environ.get("BOCHU_BASE_URL")
+    

@@ -14,7 +14,31 @@
             <button type="button" class="btn btn-primary" id="btn-abrir-modal">
                 <i class="fas fa-server me-2"></i> Aggiungi macchina
               </button>
+          <!-- NUEVO: botón para  API BOCHU -->
+          <!-- botón existente -->
+        <button
+            type="button"
+            class="btn btn-outline-success ms-2"
+            id="btn-cargar-produccion"
+            data-card-id="241111132743">
+            <i class="fas fa-plug me-2"></i> Carica Produzione Laser
+        </button>
 
+
+          <!-- NUEVO: botón subir Excel TaskReport -->
+          <button
+            type="button"
+            class="btn btn-outline-primary ms-2"
+            id="btn-subir-taskreport"
+            data-upload-url="{{ url_for('task_report_import.importar_taskreport_excel') }}">
+            Carica TaskReport (Excel)
+          </button>
+
+
+          <div id="taskreport-upload-result" class="mt-2 small text-muted"></div>
+
+          <!-- NUEVO: lugar donde mostramos el resultado -->
+          <div id="bochu-test-result" class="mt-2 small text-muted"></div>
      
           <div class="table-responsive">
             <table class="table table-striped">
@@ -263,7 +287,135 @@
 </div>
 
 
+<!-- Modal Subir TaskReport Excel (sin Bootstrap) -->
+<div class="dpia-modal" id="modalLaserTaskReportUpload" aria-hidden="true">
+  <div class="dpia-modal__backdrop" data-close="1"></div>
+
+  <div class="dpia-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalLaserTaskReportUploadLabel">
+    <div class="dpia-modal__content">
+
+      <div class="dpia-modal__header">
+        <h5 class="dpia-modal__title" id="modalLaserTaskReportUploadLabel">Carica TaskReport (Excel)</h5>
+        <button type="button" class="dpia-modal__close btn-close" data-close="1" aria-label="Close">×</button>
+      </div>
+
+      <div class="dpia-modal__body">
+        <form id="form-taskreport-upload">
+          <div class="mb-3">
+            <label class="form-label">File Excel (.xlsx)</label>
+            <input class="form-control" type="file" id="taskreport-file" name="file" accept=".xlsx" required>
+            <small class="text-muted">Seleziona il file TaskReport_*.xlsx</small>
+          </div>
+
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label">Sheet</label>
+              <input class="form-control" type="text" id="taskreport-sheet" value="0">
+              <small class="text-muted">0 = prima sheet</small>
+            </div>
+            <div class="col-6 mb-3">
+              <label class="form-label">Mode</label>
+              <select class="form-select" id="taskreport-mode">
+                <option value="upsert" selected>upsert</option>
+                <option value="insert_only">insert_only</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="alert alert-info small mb-0">
+            Caricando, importeremo tutte le righe nel database.
+          </div>
+        </form>
+      </div>
+
+      <div class="dpia-modal__footer">
+        <button type="button" class="btn btn-secondary" data-close="1">Cancellare</button>
+        <button type="button" class="btn btn-primary" id="btn-confirmar-taskreport-upload">
+          Importa
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div id="modal-laser-produccion" class="dpia-modal hidden">
+  <div class="dpia-modal-overlay"></div>
+
+  <div class="dpia-modal-box">
+    <div class="dpia-modal-header">
+      <h3>Produzione Laser</h3>
+      <button class="dpia-modal-close" data-close>&times;</button>
+    </div>
+
+    <div class="dpia-modal-body">
+
+      <!-- FILTROS -->
+      <label>
+        Card ID
+        <input type="text" id="laser-card-id">
+      </label>
+
+      <label>
+        Start Time
+        <input type="datetime-local" id="laser-start-time">
+      </label>
+
+      <label>
+        End Time
+        <input type="datetime-local" id="laser-end-time">
+      </label>
+
+      <button class="btn" id="btn-esegui-produzione">Esegui</button>
+
+      <div id="laser-prod-status"></div>
+
+      <!-- TABLA -->
+      <div class="table-wrapper">
+        <table id="laser-prod-table" class="dpia-table">
+          <thead>
+            <tr>
+              <th>Job</th>
+              <th>Material</th>
+              <th>Spessore</th>
+              <th>Pezzi</th>
+              <th>Lunghezza</th>
+              <th>Velocità</th>
+              <th>Durata</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <div class=" dpia-modal-footer">
+      <button class="btn" data-close>Chiudi</button>
+    </div>
+  </div>
+</div>
+
+
+
 <link rel="stylesheet" href="{{ url_for('static', filename='css/maquinas/crud_maquinas.css') }}">
 
 <script src="{{ url_for('static', filename='js/maquinas/crud_maquinas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/maquinas/conexionAPILaser.js') }}"></script>
+
+<script src="{{ url_for('static', filename='js/maquinas/taskreportUpload.js') }}"></script>
+
 {% endblock %}

@@ -18,7 +18,7 @@ function verificarBloqueo() {
   if (bloqueoHasta && ahora < parseInt(bloqueoHasta)) {
     const segundosRestantes = Math.ceil((parseInt(bloqueoHasta) - ahora) / 1000);
     const lang = localStorage.getItem("lang") || "es";
-    const t = I18N.mensajes_login[lang] || I18N.mensajes_login["es"];
+    const t = I18N.dict.login[lang] || I18N.dict.login["es"];
     errorLogin.textContent = `${t.bloqueo} ${segundosRestantes} ${t.segundos}`;
 
     btnSubmit.disabled = true;
@@ -79,7 +79,7 @@ formLogin.addEventListener("submit", async (e) => {
         const tiempoBloqueo = Date.now() + bloqueoPorMs;
         localStorage.setItem("bloqueo_hasta", tiempoBloqueo.toString());
         btnSubmit.disabled = true;
-        const t = I18N.mensajes_login[lang] || I18N.mensajes_login["es"];
+        const t = I18N.dict.login[lang] || I18N.dict.login["es"];
         errorLogin.textContent = `${t.demasiados_intentos || "Demasiados intentos. Espera 60 segundos."}`;
 
         setTimeout(() => {
@@ -89,20 +89,20 @@ formLogin.addEventListener("submit", async (e) => {
           localStorage.setItem("intentos_fallidos", "0");
         }, bloqueoPorMs);
       } else {
-        const t = I18N.mensajes_login[lang] || I18N.mensajes_login["es"];
+        const t = I18N.dict.login[lang] || I18N.dict.login["es"];
         errorLogin.textContent = `${data.error || t.error_login} (Intentos: ${intentos})`;
       }
     }
   } catch (error) {
     const lang = localStorage.getItem("lang") || "es";
-    const t = I18N.mensajes_login[lang] || I18N.mensajes_login["es"];
+    const t = I18N.dict.login[lang] || I18N.dict.login["es"];
     errorLogin.textContent = t.error_conexion || "Error de conexión. Intenta más tarde.";
   }
 });
 
 // Función para aplicar los textos según el idioma
 function aplicarIdioma(lang) {
-  const t = I18N.mensajes_login[lang] || I18N.mensajes_login['es'];
+  const t = I18N.dict.login[lang] || I18N.dict.login['es'];
   document.getElementById("login-title").textContent = t.titulo;
   document.getElementById("correo").placeholder = t.correo;
   document.getElementById("password").placeholder = t.pass;
@@ -114,7 +114,8 @@ function aplicarIdioma(lang) {
 
 document.addEventListener("DOMContentLoaded", () => {
   let lang = localStorage.getItem("lang") || (navigator.language || 'es').slice(0, 2);
-  if (!I18N.mensajes_login[lang]) lang = 'es';
+  debugger;
+  if (!I18N.dict.login[lang]) lang = 'es';
   aplicarIdioma(lang);
 
   document.getElementById("lang-select").addEventListener("change", function () {

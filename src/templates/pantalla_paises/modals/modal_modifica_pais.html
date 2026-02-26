@@ -1,10 +1,10 @@
-<!-- Modal Modificar Entidad -->
-<div class="modal fade" id="modal-modificar-entidad" tabindex="-1" aria-labelledby="modalModificarLabel" aria-hidden="true">
+<!-- Modal Modificar País -->
+<div class="modal fade" id="modal-modificar-pais" tabindex="-1" aria-labelledby="modalModificarPaisLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <form id="form-modificar-entidad">
+    <form id="form-modificar-pais">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">✏️ Modificare Entità</h5>
+          <h5 class="modal-title">✏️ Modificare Paese</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
         </div>
         <div class="modal-body">
@@ -15,24 +15,13 @@
             <input type="text" class="form-control" id="mod-nombre" name="nombre" required>
           </div>
           <div class="mb-3">
-            <label for="mod-tipo" class="form-label">Tipo</label>
-            <input type="text" class="form-control" id="mod-tipo" name="tipo">
+            <label for="mod-codigo" class="form-label">Codice</label>
+            <input type="text" class="form-control" id="mod-codigo" name="codigo" required>
           </div>
-          <div class="mb-3">
-              <label for="pais" class="form-label">Paese</label>
-              <select class="form-select" id="mod-pais" name="pais" required>
-                <option value="">-- Seleziona un paese --</option>
-                {% for pais in paises %}
-                <option value="{{ pais.codigo }}">{{ pais.nombre }}</option>
-                {% endfor %}
-              </select>
-            </div>
-
           <div class="mb-3">
             <label for="mod-descripcion" class="form-label">Descrizione</label>
             <textarea class="form-control" id="mod-descripcion" name="descripcion"></textarea>
           </div>
-          
           <div class="mb-3">
             <label for="mod-estado" class="form-label">Stato</label>
             <select class="form-control" id="mod-estado" name="estado">

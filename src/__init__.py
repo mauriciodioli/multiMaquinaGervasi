@@ -6,6 +6,7 @@ from sqlalchemy.exc import OperationalError
 from config.config import Config
 from utils.db import db
 from src.model.usuario import Usuario
+from src.model.laser.task_report import task_report  # noqa: F401
 
 # ── Blueprints ─────────────────────────────────────────────
 from src.controller.trabajo_controller import trabajos_bp
@@ -30,9 +31,13 @@ from src.controller.mixFamiliari.crud_tipo_mezcla import crud_tipo_mezcla
 from src.controller.mixFamiliari.crud_materia_forma import crud_materia_forma
 from src.controller.administracion.crud_usuario import crud_usuario
 from src.controller.administracion.crud_entidad import crud_entidad
+from src.controller.administracion.crud_pais import crud_pais
 from src.controller.autenticacion.login import login
 from src.utils.conexion_db_crud import conexion_db_crud
 from src.controller.autoDensidad.calculoPorRetenidos.calculoPorRetenidos import calculoPorRetenidos
+from src.controller.maquinaLaser12000W.conexionAPI import conexionAPI
+from src.controller.maquinaLaser12000W.task_report_import import task_report_import
+
 
 mail = Mail()
 
@@ -67,6 +72,7 @@ def create_app() -> Flask:
     for bp in (
         crud_usuario, 
         crud_entidad, 
+        crud_pais,
         login,
         trabajos_bp, 
         maquinas, 
@@ -87,6 +93,9 @@ def create_app() -> Flask:
         crud_materia_forma,
         pannelli_solar,
         calculoPorRetenidos,
+        conexionAPI,
+        task_report,
+        task_report_import,
     ):
         app.register_blueprint(bp)
 

@@ -1,0 +1,69 @@
+{% extends "layouts/layout.html" %}
+
+{% block title %}Listado de Países{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <div class="titulo-maquinas">
+        <h1>Paesi</h1>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btn-abrir-modal-pais">
+        <i class="fas fa-flag me-2"></i> aggiungere paese
+      </button>
+
+      <div class="table-responsive">
+        <table class="table table-striped table-responsive-cards">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>Codice</th>
+              <th>Descrizione</th>
+              <th>Stato</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+
+          <tbody id="tabla-paises">
+            {% for pais in paises %}
+            <tr data-fila-id="{{ pais.id }}">
+              <td data-label="ID">{{ pais.id }}</td>
+              <td data-label="Nome">{{ pais.nombre }}</td>
+              <td data-label="Codice">{{ pais.codigo }}</td>
+              <td data-label="Descrizione">{{ pais.descripcion }}</td>
+              <td data-label="Stato">{{ pais.estado }}</td>
+              <td data-label="Azioni">
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button"
+                          class="btn btn-warning btn-sm btn-abrir-modal-modificar-pais"
+                          data-pais-id="{{ pais.id }}"
+                          data-nombre="{{ pais.nombre }}"
+                          data-codigo="{{ pais.codigo }}"
+                          data-descripcion="{{ pais.descripcion }}"
+                          data-estado="{{ pais.estado }}">
+                    Modificare
+                  </button>
+
+                  <button type="button"
+                          class="btn btn-danger btn-sm btn-abrir-modal-eliminar-pais"
+                          data-pais-id="{{ pais.id }}">
+                    Eliminare
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include 'pantalla_paises/modals/modal_agregar_pais.html' %}
+{% include 'pantalla_paises/modals/modal_modifica_pais.html' %}
+<script src="{{ url_for('static', filename='js/autoDensidad/paises/crud_pais.js') }}"></script>
+{% endblock %}

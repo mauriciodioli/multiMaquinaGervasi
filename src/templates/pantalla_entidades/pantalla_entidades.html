@@ -16,7 +16,7 @@
       </button>
 
       <div class="table-responsive">
-        <table class="table table-striped">
+        <table class="table table-striped table-responsive-cards">
           <thead>
             <tr>
               <th>ID</th>
@@ -32,14 +32,14 @@
           <tbody id="tabla-entidades">
             {% for entidad in entidades %}
             <tr data-fila-id="{{ entidad.id }}">
-              <td>{{ entidad.id }}</td>
-              <td>{{ entidad.nombre }}</td>
-              <td>{{ entidad.tipo }}</td>             
-              <td>{{ entidad.pais }}</td>
-              <td>{{ entidad.descripcion }}</td>
-              <td>{{ entidad.estado }}</td>
+              <td data-label="ID">{{ entidad.id }}</td>
+              <td data-label="Nome">{{ entidad.nombre }}</td>
+              <td data-label="Tipo">{{ entidad.tipo }}</td>             
+              <td data-label="Paese">{{ entidad.pais }}</td>
+              <td data-label="Descripcione">{{ entidad.descripcion }}</td>
+              <td data-label="Stato">{{ entidad.estado }}</td>
 
-              <td>
+              <td data-label="Azioni">
                 <div class="d-flex align-items-center gap-2">
                   <button type="button"
                           class="btn btn-warning btn-sm btn-abrir-modal-modificar-entidad"

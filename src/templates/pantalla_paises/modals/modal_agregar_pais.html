@@ -1,10 +1,10 @@
-<!-- Modal Agregar Entidad -->
-<div class="modal fade" id="modal-agregar-entidad" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
+<!-- Modal Agregar País -->
+<div class="modal fade" id="modal-agregar-pais" tabindex="-1" aria-labelledby="modalAgregarPaisLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <form id="form-agregar-entidad">
+    <form id="form-agregar-pais">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">➕ Aggiungi Entità</h5>
+          <h5 class="modal-title">➕ Aggiungi Paese</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
         </div>
         <div class="modal-body">
@@ -13,24 +13,13 @@
             <input type="text" class="form-control" id="nombre" name="nombre" required>
           </div>
           <div class="mb-3">
-            <label for="tipo" class="form-label">Tipo</label>
-            <input type="text" class="form-control" id="tipo" name="tipo">
+            <label for="codigo" class="form-label">Codice</label>
+            <input type="text" class="form-control" id="codigo" name="codigo" required>
           </div>
-          <div class="mb-3">
-            <label for="pais" class="form-label">Paese</label>
-            <select class="form-select" id="pais" name="pais" required>
-              <option value="">-- Seleziona un paese --</option>
-              {% for pais in paises %}
-              <option value="{{ pais.codigo }}">{{ pais.nombre }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
           <div class="mb-3">
             <label for="descripcion" class="form-label">Descrizione</label>
             <textarea class="form-control" id="descripcion" name="descripcion"></textarea>
           </div>
-          
           <div class="mb-3">
             <label for="estado" class="form-label">Stato</label>
             <select class="form-control" id="estado" name="estado">
