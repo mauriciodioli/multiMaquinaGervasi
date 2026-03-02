@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gervasi – Fuller Curve Optimizer</title>
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='48' height='48' x='2' y='2' rx='6' fill='%23C8102E'/><rect width='48' height='48' x='52' y='2' rx='6' fill='%230057A8'/><rect width='48' height='48' x='2' y='52' rx='6' fill='%23F5A800'/><rect width='48' height='48' x='52' y='52' rx='6' fill='%2300A550'/></svg>"/>
+<link rel="alternate icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='48' height='48' x='2' y='2' rx='6' fill='%23C8102E'/><rect width='48' height='48' x='52' y='2' rx='6' fill='%230057A8'/><rect width='48' height='48' x='2' y='52' rx='6' fill='%23F5A800'/><rect width='48' height='48' x='52' y='52' rx='6' fill='%2300A550'/></svg>"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --red:#C8102E;
+    --red-dark:#9e0c22;
+    --black:#111111;
+    --grey:#1e1e1e;
+    --light:#f5f5f5;
+    --white:#ffffff;
+    --accent:#e63946;
+    --font-display:'Barlow Condensed',sans-serif;
+    --font-body:'Barlow',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:var(--font-body);background:var(--black);color:var(--white);overflow-x:hidden;}
+
+  /* ─── HEADER ─── */
+  .top-bar{background:var(--red);font-size:.72rem;letter-spacing:.04em;padding:.45rem 2rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:.25rem;}
+  .top-bar span{opacity:.92;}
+
+  header{background:var(--white);padding:.9rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.18);}
+  .logo{display:flex;align-items:center;gap:.6rem;text-decoration:none;}
+  .logo-text{font-family:var(--font-display);font-size:2rem;font-weight:900;color:var(--black);letter-spacing:-.03em;}
+  .logo-icon{display:grid;grid-template-columns:1fr 1fr;gap:3px;width:28px;height:28px;}
+  .logo-icon span{border-radius:2px;}
+  .logo-icon span:nth-child(1){background:#C8102E;}
+  .logo-icon span:nth-child(2){background:#0057A8;}
+  .logo-icon span:nth-child(3){background:#F5A800;}
+  .logo-icon span:nth-child(4){background:#00A550;}
+
+  nav{display:flex;align-items:center;gap:1.6rem;}
+  nav a{font-family:var(--font-display);font-weight:600;font-size:.95rem;letter-spacing:.06em;color:var(--black);text-decoration:none;text-transform:uppercase;transition:color .2s;}
+  nav a:hover{color:var(--red);}
+
+  /* Language switcher */
+  .lang-switcher{position:relative;display:flex;align-items:center;}
+  .lang-btn{background:var(--red);color:#fff;border:none;padding:.4rem .8rem;font-family:var(--font-display);font-weight:700;font-size:.85rem;letter-spacing:.06em;cursor:pointer;border-radius:3px;text-transform:uppercase;}
+  .lang-dropdown{display:none;position:absolute;top:110%;right:0;background:#fff;border:2px solid var(--red);border-radius:4px;min-width:110px;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,.15);}
+  .lang-dropdown.open{display:block;}
+  .lang-dropdown a{display:block;padding:.5rem .9rem;font-family:var(--font-display);font-weight:600;color:var(--black);text-decoration:none;font-size:.85rem;letter-spacing:.04em;transition:background .15s;}
+  .lang-dropdown a:hover{background:var(--red);color:#fff;}
+
+  /* ─── HERO ─── */
+  .hero{min-height:88vh;background:var(--black);display:grid;grid-template-columns:1fr 1fr;align-items:center;position:relative;overflow:hidden;}
+  .hero::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(200,16,46,.06) 60px),repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(200,16,46,.06) 60px);pointer-events:none;}
+  .hero-content{padding:5rem 4rem 5rem 6rem;position:relative;z-index:2;}
+  .hero-eyebrow{font-family:var(--font-display);font-size:.8rem;letter-spacing:.18em;color:var(--red);text-transform:uppercase;margin-bottom:1.2rem;}
+  .hero-title{font-family:var(--font-display);font-size:clamp(3.2rem,6vw,5.8rem);font-weight:900;line-height:.95;text-transform:uppercase;margin-bottom:1.6rem;}
+  .hero-title span{color:var(--red);}
+  .hero-desc{font-size:1.05rem;font-weight:300;line-height:1.7;color:#ccc;max-width:480px;margin-bottom:2.4rem;}
+  .btn-primary{display:inline-block;background:var(--red);color:#fff;font-family:var(--font-display);font-weight:700;font-size:1rem;letter-spacing:.1em;text-transform:uppercase;padding:.85rem 2.2rem;border-radius:3px;text-decoration:none;transition:background .2s,transform .15s;border:none;cursor:pointer;}
+  .btn-primary:hover{background:var(--red-dark);transform:translateY(-2px);}
+  .btn-outline{display:inline-block;border:2px solid #555;color:#ccc;font-family:var(--font-display);font-weight:700;font-size:.95rem;letter-spacing:.1em;text-transform:uppercase;padding:.8rem 2rem;border-radius:3px;text-decoration:none;transition:border-color .2s,color .2s;margin-left:1rem;}
+  .btn-outline:hover{border-color:var(--red);color:var(--white);}
+  .hero-visual{padding:4rem 4rem 4rem 2rem;position:relative;z-index:2;display:flex;flex-direction:column;gap:1rem;}
+  
+  /* Animated curve visual */
+  .curve-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:1.4rem 1.6rem;position:relative;overflow:hidden;}
+  .curve-card::after{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--red);}
+  .curve-title{font-family:var(--font-display);font-size:.75rem;letter-spacing:.12em;color:#888;text-transform:uppercase;margin-bottom:.8rem;}
+  .curve-svg-wrap{width:100%;height:120px;}
+  .materials-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;}
+  .mat-pill{background:rgba(200,16,46,.12);border:1px solid rgba(200,16,46,.3);border-radius:4px;padding:.35rem .5rem;text-align:center;font-family:var(--font-display);font-size:.8rem;font-weight:700;color:var(--red);letter-spacing:.04em;transition:background .2s;}
+  .mat-pill:hover{background:rgba(200,16,46,.25);}
+
+  /* ─── STRIP ─── */
+  .strip{background:var(--red);padding:1.2rem 4rem;display:flex;align-items:center;gap:3rem;overflow:hidden;}
+  .strip-item{font-family:var(--font-display);font-size:.85rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;opacity:.9;}
+  .strip-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.5);flex-shrink:0;}
+
+  /* ─── FEATURES ─── */
+  .section{padding:6rem 6rem;}
+  .section-label{font-family:var(--font-display);font-size:.75rem;letter-spacing:.2em;color:var(--red);text-transform:uppercase;margin-bottom:.8rem;}
+  .section-title{font-family:var(--font-display);font-size:clamp(2.2rem,4vw,3.6rem);font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:1rem;}
+  .section-sub{color:#999;font-size:1rem;font-weight:300;line-height:1.7;max-width:540px;}
+
+  .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5px;margin-top:3rem;border:1.5px solid rgba(255,255,255,.06);border-radius:6px;overflow:hidden;}
+  .feat{background:rgba(255,255,255,.03);padding:2rem 1.8rem;border-right:1.5px solid rgba(255,255,255,.06);border-bottom:1.5px solid rgba(255,255,255,.06);transition:background .25s;}
+  .feat:hover{background:rgba(200,16,46,.08);}
+  .feat:nth-child(3n){border-right:none;}
+  .feat-icon{font-size:1.8rem;margin-bottom:1rem;}
+  .feat-title{font-family:var(--font-display);font-size:1.1rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;margin-bottom:.5rem;}
+  .feat-desc{font-size:.88rem;color:#aaa;line-height:1.65;}
+
+  /* ─── MATERIALS ─── */
+  .materials-section{background:rgba(255,255,255,.02);border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07);padding:5rem 6rem;}
+  .mat-showcase{display:flex;align-items:center;gap:1rem;margin-top:2.5rem;flex-wrap:wrap;}
+  .mat-badge{background:var(--grey);border:1.5px solid rgba(255,255,255,.1);border-radius:6px;padding:.9rem 1.4rem;font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:var(--white);transition:all .2s;cursor:default;}
+  .mat-badge:hover{border-color:var(--red);background:rgba(200,16,46,.15);color:var(--red);}
+  .mat-badge.highlight{border-color:var(--red);color:var(--red);}
+  .mat-arrow{color:#555;font-size:1.2rem;}
+
+  /* ─── HOW IT WORKS ─── */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:3rem;position:relative;}
+  .steps::before{content:'';position:absolute;top:2.2rem;left:10%;right:10%;height:2px;background:linear-gradient(90deg,var(--red),rgba(200,16,46,.2));z-index:0;}
+  .step{text-align:center;padding:0 1.5rem;position:relative;z-index:1;}
+  .step-num{width:3rem;height:3rem;border-radius:50%;background:var(--red);font-family:var(--font-display);font-size:1.3rem;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 1.2rem;}
+  .step-title{font-family:var(--font-display);font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem;}
+  .step-desc{font-size:.82rem;color:#999;line-height:1.6;}
+
+  /* ─── TECH ─── */
+  .tech-section{padding:5rem 6rem;background:var(--grey);}
+  .tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin-top:3rem;align-items:start;}
+  .tech-list{list-style:none;}
+  .tech-list li{display:flex;align-items:flex-start;gap:.8rem;padding:.8rem 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:.9rem;color:#ccc;line-height:1.5;}
+  .tech-list li::before{content:'✔';color:var(--red);font-weight:700;flex-shrink:0;margin-top:.1rem;}
+  .tech-badge{display:inline-block;background:rgba(200,16,46,.15);border:1px solid rgba(200,16,46,.4);color:var(--red);font-family:var(--font-display);font-size:.72rem;font-weight:700;letter-spacing:.08em;padding:.2rem .6rem;border-radius:3px;text-transform:uppercase;margin-left:.5rem;vertical-align:middle;}
+  .highlight-box{background:rgba(200,16,46,.08);border:1.5px solid rgba(200,16,46,.25);border-radius:8px;padding:2rem;position:relative;overflow:hidden;}
+  .highlight-box::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--red);}
+  .highlight-box h3{font-family:var(--font-display);font-size:1.4rem;font-weight:900;text-transform:uppercase;margin-bottom:1rem;}
+  .highlight-box p{font-size:.9rem;color:#bbb;line-height:1.7;}
+  .highlight-box .big-num{font-family:var(--font-display);font-size:4rem;font-weight:900;color:var(--red);line-height:1;margin:1rem 0 .3rem;}
+
+  /* ─── CTA ─── */
+  .cta-section{padding:6rem;text-align:center;position:relative;overflow:hidden;}
+  .cta-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 50%, rgba(200,16,46,.18), transparent);pointer-events:none;}
+  .cta-section .section-title{font-size:clamp(2.5rem,5vw,4.5rem);}
+  .cta-section .section-label,
+  .cta-section .section-title,
+  .cta-section p,
+  .cta-section div{position:relative;z-index:1;}
+
+  /* ─── FOOTER ─── */
+  footer{background:var(--grey);border-top:1px solid rgba(255,255,255,.07);padding:2rem 4rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;}
+  .footer-info{font-size:.78rem;color:#777;line-height:1.7;}
+  .footer-logo{font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:#fff;letter-spacing:-.02em;}
+
+  /* ─── RESPONSIVE ─── */
+  @media(max-width:1024px){
+    .hero{grid-template-columns:1fr;}
+    .hero-visual{display:none;}
+    .hero-content{padding:4rem 2rem;}
+    .section{padding:4rem 2rem;}
+    .features-grid{grid-template-columns:1fr 1fr;}
+    .steps{grid-template-columns:1fr 1fr;gap:2rem;}
+    .steps::before{display:none;}
+    .tech-grid{grid-template-columns:1fr;}
+    .materials-section,.tech-section,.cta-section{padding:4rem 2rem;}
+    footer{padding:1.5rem 2rem;}
+  }
+  @media(max-width:640px){
+    .features-grid{grid-template-columns:1fr;}
+    .feat:nth-child(n){border-right:none;}
+    nav{gap:.8rem;}
+    nav a{font-size:.8rem;}
+    .strip{padding:1rem 1rem;gap:1.5rem;}
+  }
+
+  /* animations */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+  .hero-content>*{animation:fadeUp .6s ease forwards;opacity:0;}
+  .hero-content>*:nth-child(1){animation-delay:.1s;}
+  .hero-content>*:nth-child(2){animation-delay:.25s;}
+  .hero-content>*:nth-child(3){animation-delay:.4s;}
+  .hero-content>*:nth-child(4){animation-delay:.55s;}
+
+  @keyframes dashDraw{from{stroke-dashoffset:600;}to{stroke-dashoffset:0;}}
+  .curve-path{stroke-dasharray:600;stroke-dashoffset:600;animation:dashDraw 2s ease forwards .8s;}
+  .curve-path-2{stroke-dasharray:600;stroke-dashoffset:600;animation:dashDraw 2s ease forwards 1.2s;}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <span>📍 <span data-i18n="hq_rome">Sede legal: Via A. Valenziani, 12 | 00187 Roma (ITALIA)</span></span>
+  <span><span data-i18n="hq_spoleto">Estabilidad: Via delle Industrie, 16 | Zona Ind. S. Chiodo | 06049 Spoleto (PG) ITALIA</span></span>
+</div>
+
+<!-- HEADER -->
+<header>
+  <a href="#" class="logo">
+    <div class="logo-icon">
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <span class="logo-text">GERVASI</span>
+  </a>
+  <nav>
+    <a href="#" data-i18n="nav_return">Return</a>
+
+      <script>
+        // Make the Return link go back to the previous page
+        document.addEventListener('DOMContentLoaded', function() {
+          var returnLink = document.querySelector('a[data-i18n="nav_return"]');
+          if (returnLink) {
+            returnLink.addEventListener('click', function(e) {
+              e.preventDefault();
+              window.history.back();
+            });
+          }
+        });
+      </script>
+    <a href="#features" data-i18n="nav_features">Características</a>
+    <a href="#how" data-i18n="nav_how">Cómo funciona</a>
+    <a href="#tech" data-i18n="nav_tech">Tecnología</a>
+    <a href="#contact" data-i18n="nav_contact">Contacto</a>
+  </nav>
+  <div class="lang-switcher">
+    <button class="lang-btn" id="langBtn">🌐 ES ▾</button>
+    <div class="lang-dropdown" id="langDropdown">
+      <a href="#" data-lang="es">🇦🇷 Español</a>
+      <a href="#" data-lang="en">🇬🇧 English</a>
+      <a href="#" data-lang="fr">🇫🇷 Français</a>
+      <a href="#" data-lang="de">🇩🇪 Deutsch</a>
+      <a href="#" data-lang="it">🇮🇹 Italiano</a>
+      <a href="#" data-lang="pl">🇵🇱 Polski</a>
+      <a href="#" data-lang="pt">🇧🇷 Português</a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <p class="hero-eyebrow" data-i18n="hero_eyebrow">Sistema avanzado de optimización de áridos</p>
+    <h1 class="hero-title" data-i18n="hero_title_html">FULLER<br/><span>CURVE</span><br/>OPTIMIZER</h1>
+    <p class="hero-desc" data-i18n="hero_desc">Optimización matemática real de mezclas de áridos contra la curva de Fuller y normas industriales. Hasta 10 materiales simultáneos, diagnóstico por tamiz e informe técnico automático.</p>
+    <div>
+      <a href="#features" class="btn-primary" data-i18n="hero_cta1">Explorar funciones</a>
+      <a href="#contact" class="btn-outline" data-i18n="hero_cta2">Contactar</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="curve-card">
+      <div class="curve-title" data-i18n="vis_curve">Curva de Fuller — Mezcla Óptima</div>
+      <div class="curve-svg-wrap">
+        <svg viewBox="0 0 320 120" width="100%" height="100%" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="gOrange" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#F5A800"/>
+              <stop offset="100%" stop-color="#e63946"/>
+            </linearGradient>
+            <linearGradient id="gGreen" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#00A550"/>
+              <stop offset="100%" stop-color="#0057A8"/>
+            </linearGradient>
+          </defs>
+          <!-- Fuller ideal -->
+          <path class="curve-path" d="M10,110 C40,95 80,70 130,45 C180,20 240,10 310,8"
+            fill="none" stroke="url(#gOrange)" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Optimized mix -->
+          <path class="curve-path-2" d="M10,108 C50,92 90,68 138,43 C186,18 248,12 310,10"
+            fill="none" stroke="url(#gGreen)" stroke-width="2" stroke-dasharray="5 3" stroke-linecap="round"/>
+          <!-- Axes -->
+          <line x1="10" y1="10" x2="10" y2="115" stroke="#444" stroke-width="1"/>
+          <line x1="10" y1="115" x2="315" y2="115" stroke="#444" stroke-width="1"/>
+          <!-- Legend -->
+          <rect x="170" y="15" width="12" height="2.5" fill="url(#gOrange)" rx="1"/>
+          <text x="186" y="19" font-size="8" fill="#aaa" font-family="Barlow Condensed">Fuller Ideal</text>
+          <rect x="170" y="26" width="12" height="2" fill="url(#gGreen)" rx="1"/>
+          <text x="186" y="30" font-size="8" fill="#aaa" font-family="Barlow Condensed">Mezcla óptima</text>
+        </svg>
+      </div>
+    </div>
+    <div class="curve-card">
+      <div class="curve-title" data-i18n="vis_mats">Materiales soportados</div>
+      <div class="materials-grid">
+        <div class="mat-pill">2</div>
+        <div class="mat-pill">3</div>
+        <div class="mat-pill">4</div>
+        <div class="mat-pill">5</div>
+        <div class="mat-pill">10+</div>
+      </div>
+      <div style="margin-top:.8rem;font-size:.78rem;color:#777;" data-i18n="vis_mats_sub">Materiales simultáneos — sin restricciones</div>
+    </div>
+    <div class="curve-card" style="display:flex;gap:2rem;align-items:center;">
+      <div>
+        <div style="font-family:var(--font-display);font-size:3rem;font-weight:900;color:var(--red);line-height:1;">7</div>
+        <div style="font-size:.75rem;color:#888;text-transform:uppercase;letter-spacing:.08em;" data-i18n="vis_engines">Motores de optimización</div>
+      </div>
+      <div>
+        <div style="font-family:var(--font-display);font-size:3rem;font-weight:900;color:#F5A800;line-height:1;">∞</div>
+        <div style="font-size:.75rem;color:#888;text-transform:uppercase;letter-spacing:.08em;" data-i18n="vis_mats2">Combinaciones evaluadas</div>
+      </div>
+      <div>
+        <div style="font-family:var(--font-display);font-size:3rem;font-weight:900;color:#00A550;line-height:1;">0</div>
+        <div style="font-size:.75rem;color:#888;text-transform:uppercase;letter-spacing:.08em;" data-i18n="vis_excel">Excel requerido</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RED STRIP -->
+<div class="strip">
+  <span class="strip-item" data-i18n="strip1">Optimización real contra Fuller</span>
+  <span class="strip-dot"></span>
+  <span class="strip-item" data-i18n="strip2">Interpolación logarítmica</span>
+  <span class="strip-dot"></span>
+  <span class="strip-item" data-i18n="strip3">Diagnóstico por tamiz</span>
+  <span class="strip-dot"></span>
+  <span class="strip-item" data-i18n="strip4">Informe técnico automático</span>
+  <span class="strip-dot"></span>
+  <span class="strip-item" data-i18n="strip5">Suma de pesos = 1 garantizada</span>
+  <span class="strip-dot"></span>
+  <span class="strip-item" data-i18n="strip6">De 2 a 10+ materiales</span>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <p class="section-label" data-i18n="feat_label">Funcionalidades clave</p>
+  <h2 class="section-title" data-i18n="feat_title">INGENIERÍA<br/>REAL</h2>
+  <p class="section-sub" data-i18n="feat_sub">Todo lo que un laboratorio de áridos necesita, disponible desde el navegador.</p>
+
+  <div class="features-grid">
+    <div class="feat">
+      <div class="feat-icon">📐</div>
+      <div class="feat-title" data-i18n="f1t">Optimización contra Fuller</div>
+      <div class="feat-desc" data-i18n="f1d">Minimiza la distancia cuadrática media entre la mezcla resultante y la curva de Fuller ideal. Algoritmo SLSQP con restricciones reales.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🎯</div>
+      <div class="feat-title" data-i18n="f2t">Optimización contra norma</div>
+      <div class="feat-desc" data-i18n="f2d">Curvas objetivo predefinidas para hormigón, bloques y relleno. Seleccioná la norma y el motor hace el resto.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📏</div>
+      <div class="feat-title" data-i18n="f3t">Interpolación logarítmica</div>
+      <div class="feat-desc" data-i18n="f3d">Expande la curva objetivo de 9 tamices estándar a los tamices reales de tu planta (master), usando escala log₁₀.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🔬</div>
+      <div class="feat-title" data-i18n="f4t">Diagnóstico por tamiz</div>
+      <div class="feat-desc" data-i18n="f4d">Detecta automáticamente desviaciones ±3% por tamiz. Muestra excesos y déficits con indicadores ✅ / ⚠️.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📄</div>
+      <div class="feat-title" data-i18n="f5t">Informe técnico automático</div>
+      <div class="feat-desc" data-i18n="f5d">Genera un informe completo con combinación óptima, error medio, curvas comparadas y recomendaciones de ajuste.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">⚗️</div>
+      <div class="feat-title" data-i18n="f6t">Mezcla complementaria</div>
+      <div class="feat-desc" data-i18n="f6d">Cuando la mezcla óptima no alcanza el objetivo, calcula automáticamente el complemento necesario por tamiz.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📊</div>
+      <div class="feat-title" data-i18n="f7t">Gráfico industrial</div>
+      <div class="feat-desc" data-i18n="f7d">Visualización profesional de la curva de Fuller, la mezcla óptima y las curvas de cada material. Exportable en PNG.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">⚖️</div>
+      <div class="feat-title" data-i18n="f8t">Restricción suma = 1</div>
+      <div class="feat-desc" data-i18n="f8d">Las proporciones siempre suman exactamente el 100%. Restricción matemática garantizada en cada optimización.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🏭</div>
+      <div class="feat-title" data-i18n="f9t">Multi-material sin límites</div>
+      <div class="feat-desc" data-i18n="f9d">Funciona con 2, 3, 4, 5 o 10+ materiales sin modificar ningún parámetro. Escala automáticamente.</div>
+    </div>
+  </div>
+</section>
+
+<!-- MATERIALS -->
+<section class="materials-section" id="materials">
+  <p class="section-label" data-i18n="mat_label">Escalabilidad total</p>
+  <h2 class="section-title" data-i18n="mat_title">FUNCIONA CON<br/>CUALQUIER CANTIDAD</h2>
+  <p class="section-sub" data-i18n="mat_sub">El motor de optimización no está limitado a dos materiales. Se adapta automáticamente.</p>
+  <div class="mat-showcase">
+    <div class="mat-badge">2</div>
+    <span class="mat-arrow">→</span>
+    <div class="mat-badge">3</div>
+    <span class="mat-arrow">→</span>
+    <div class="mat-badge">4</div>
+    <span class="mat-arrow">→</span>
+    <div class="mat-badge">5</div>
+    <span class="mat-arrow">→</span>
+    <div class="mat-badge highlight">10+</div>
+    <span style="color:#888;font-size:.85rem;margin-left:.5rem;" data-i18n="mat_note">materiales simultáneos — sin tocar nada</span>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <p class="section-label" data-i18n="how_label">Proceso</p>
+  <h2 class="section-title" data-i18n="how_title">CÓMO<br/>FUNCIONA</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title" data-i18n="s1t">Ingresás los áridos</div>
+      <div class="step-desc" data-i18n="s1d">Cargás los datos granulométricos (% que pasa por cada tamiz) de cada material de tu planta.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title" data-i18n="s2t">Seleccionás el objetivo</div>
+      <div class="step-desc" data-i18n="s2d">Fuller ideal, o norma objetivo: hormigón, bloques, relleno. El sistema interpola al master real de tu planta.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title" data-i18n="s3t">El motor optimiza</div>
+      <div class="step-desc" data-i18n="s3d">SLSQP o búsqueda exhaustiva calcula los pesos óptimos minimizando el error cuadrático medio.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-title" data-i18n="s4t">Recibís el informe</div>
+      <div class="step-desc" data-i18n="s4d">Proporciones exactas, diagnóstico por tamiz, mezcla complementaria si aplica, y gráfico exportable.</div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH -->
+<section class="tech-section" id="tech">
+  <p class="section-label" data-i18n="tech_label">Bajo el capó</p>
+  <h2 class="section-title" data-i18n="tech_title">TECNOLOGÍA<br/>INDUSTRIAL</h2>
+  <div class="tech-grid">
+    <div>
+      <ul class="tech-list">
+        <li data-i18n="t1">Optimización matemática real con <strong>scipy.optimize SLSQP</strong></li>
+        <li data-i18n="t2">Restricciones físicas reales: pesos ∈ [0,1] y Σ=1 garantizados</li>
+        <li data-i18n="t3">Curva ideal Fuller: <em>p(d) = (d/d_max)^0.5 × 100</em></li>
+        <li data-i18n="t4">Interpolación logarítmica de curva objetivo a tamices master</li>
+        <li data-i18n="t5">Diagnóstico por tamiz con umbral configurable (defecto ±3%)</li>
+        <li data-i18n="t6">Generación de mezcla complementaria por compensación de déficit</li>
+        <li data-i18n="t7">Búsqueda exhaustiva por rejilla (product) para 2–5 materiales</li>
+        <li data-i18n="t8">Gráfico industrial generado con matplotlib, exportable en PNG/base64</li>
+        <li data-i18n="t9">API REST Flask — integrable en cualquier sistema</li>
+        <li data-i18n="t10">Soporte nativo para normas: hormigón, bloques, relleno</li>
+      </ul>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:1.5rem;">
+      <div class="highlight-box">
+        <h3 data-i18n="hb1t">Eso ya no es Excel</h3>
+        <div class="big-num">7</div>
+        <p data-i18n="hb1d">Capacidades de optimización simultáneas. Matemática real, restricciones físicas, curva Fuller, norma objetivo, diagnóstico, informe y gráfico industrial.</p>
+      </div>
+      <div class="highlight-box">
+        <h3 data-i18n="hb2t">Normas soportadas</h3>
+        <p style="margin-top:.8rem;font-size:.9rem;color:#ccc;line-height:1.8;" data-i18n="hb2d">
+          🏗 <strong>Hormigón</strong> — curva objetivo para mezclas estructurales<br/>
+          🧱 <strong>Bloques</strong> — optimizado para prefabricados<br/>
+          🏔 <strong>Relleno</strong> — para capas de base y subbase
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="contact">
+  <p class="section-label" data-i18n="cta_label">Soluciones industriales</p>
+  <h2 class="section-title" data-i18n="cta_title">LISTO PARA<br/>OPTIMIZAR</h2>
+  <p style="color:#999;font-size:1rem;max-width:520px;margin:1.2rem auto 2.4rem;line-height:1.7;" data-i18n="cta_sub">Contactá con el equipo de Gervasi para integrar el optimizador Fuller en tu planta de áridos.</p>
+  <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+    <a href="https://www.gervasi.eu/es/" target="_blank" class="btn-primary" data-i18n="cta_btn1">Visitar gervasi.eu</a>
+    <a href="https://www.gervasi.eu/es/contactos/" target="_blank" class="btn-outline" data-i18n="cta_btn2">Escribir al equipo</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-logo">GERVASI <span style="color:var(--red);">●</span></div>
+    <div class="footer-info" data-i18n="footer_legal">Via A. Valenziani, 12 | 00187 Roma (Italia) — © 2024 Gervasi S.r.l.</div>
+  </div>
+  <div class="footer-info" style="text-align:right;">
+    <div data-i18n="footer_product">Fuller Curve Optimizer — Sistema de optimización de áridos</div>
+    <div>Made in Italy 🇮🇹</div>
+  </div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ─── i18n ─────────────────────────────────────────────────────────────────────
+const translations = {
+  es: {
+    nav_return: "Volver",
+    hero_eyebrow:"Sistema avanzado de optimización de áridos",
+    hero_title_html:"FULLER<br/><span>CURVE</span><br/>OPTIMIZER",
+    hero_desc:"Optimización matemática real de mezclas de áridos contra la curva de Fuller y normas industriales. Hasta 10 materiales simultáneos, diagnóstico por tamiz e informe técnico automático.",
+    hero_cta1:"Explorar funciones", hero_cta2:"Contactar",
+    vis_curve:"Curva de Fuller — Mezcla Óptima", vis_mats:"Materiales soportados",
+    vis_mats_sub:"Materiales simultáneos — sin restricciones",
+    vis_engines:"Motores de optimización", vis_mats2:"Combinaciones evaluadas", vis_excel:"Excel requerido",
+    nav_features:"Características", nav_how:"Cómo funciona", nav_tech:"Tecnología", nav_contact:"Contacto",
+    strip1:"Optimización real contra Fuller", strip2:"Interpolación logarítmica", strip3:"Diagnóstico por tamiz",
+    strip4:"Informe técnico automático", strip5:"Suma de pesos = 1 garantizada", strip6:"De 2 a 10+ materiales",
+    feat_label:"Funcionalidades clave", feat_title:"INGENIERÍA<br/>REAL",
+    feat_sub:"Todo lo que un laboratorio de áridos necesita, disponible desde el navegador.",
+    f1t:"Optimización contra Fuller", f1d:"Minimiza la distancia cuadrática media entre la mezcla resultante y la curva de Fuller ideal. Algoritmo SLSQP con restricciones reales.",
+    f2t:"Optimización contra norma", f2d:"Curvas objetivo predefinidas para hormigón, bloques y relleno. Seleccioná la norma y el motor hace el resto.",
+    f3t:"Interpolación logarítmica", f3d:"Expande la curva objetivo de 9 tamices estándar a los tamices reales de tu planta (master), usando escala log₁₀.",
+    f4t:"Diagnóstico por tamiz", f4d:"Detecta automáticamente desviaciones ±3% por tamiz. Muestra excesos y déficits con indicadores ✅ / ⚠️.",
+    f5t:"Informe técnico automático", f5d:"Genera un informe completo con combinación óptima, error medio, curvas comparadas y recomendaciones de ajuste.",
+    f6t:"Mezcla complementaria", f6d:"Cuando la mezcla óptima no alcanza el objetivo, calcula automáticamente el complemento necesario por tamiz.",
+    f7t:"Gráfico industrial", f7d:"Visualización profesional de la curva de Fuller, la mezcla óptima y las curvas de cada material. Exportable en PNG.",
+    f8t:"Restricción suma = 1", f8d:"Las proporciones siempre suman exactamente el 100%. Restricción matemática garantizada en cada optimización.",
+    f9t:"Multi-material sin límites", f9d:"Funciona con 2, 3, 4, 5 o 10+ materiales sin modificar ningún parámetro. Escala automáticamente.",
+    mat_label:"Escalabilidad total", mat_title:"FUNCIONA CON<br/>CUALQUIER CANTIDAD",
+    mat_sub:"El motor de optimización no está limitado a dos materiales. Se adapta automáticamente.",
+    mat_note:"materiales simultáneos — sin tocar nada",
+    how_label:"Proceso", how_title:"CÓMO<br/>FUNCIONA",
+    s1t:"Ingresás los áridos", s1d:"Cargás los datos granulométricos (% que pasa por cada tamiz) de cada material de tu planta.",
+    s2t:"Seleccionás el objetivo", s2d:"Fuller ideal, o norma objetivo: hormigón, bloques, relleno. El sistema interpola al master real de tu planta.",
+    s3t:"El motor optimiza", s3d:"SLSQP o búsqueda exhaustiva calcula los pesos óptimos minimizando el error cuadrático medio.",
+    s4t:"Recibís el informe", s4d:"Proporciones exactas, diagnóstico por tamiz, mezcla complementaria si aplica, y gráfico exportable.",
+    tech_label:"Bajo el capó", tech_title:"TECNOLOGÍA<br/>INDUSTRIAL",
+    t1:"Optimización matemática real con <strong>scipy.optimize SLSQP</strong>",
+    t2:"Restricciones físicas reales: pesos ∈ [0,1] y Σ=1 garantizados",
+    t3:"Curva ideal Fuller: <em>p(d) = (d/d_max)^0.5 × 100</em>",
+    t4:"Interpolación logarítmica de curva objetivo a tamices master",
+    t5:"Diagnóstico por tamiz con umbral configurable (defecto ±3%)",
+    t6:"Generación de mezcla complementaria por compensación de déficit",
+    t7:"Búsqueda exhaustiva por rejilla (product) para 2–5 materiales",
+    t8:"Gráfico industrial generado con matplotlib, exportable en PNG/base64",
+    t9:"API REST Flask — integrable en cualquier sistema",
+    t10:"Soporte nativo para normas: hormigón, bloques, relleno",
+    hb1t:"Eso ya no es Excel", hb1d:"Capacidades de optimización simultáneas. Matemática real, restricciones físicas, curva Fuller, norma objetivo, diagnóstico, informe y gráfico industrial.",
+    hb2t:"Normas soportadas", hb2d:"🏗 <strong>Hormigón</strong> — curva objetivo para mezclas estructurales<br/>🧱 <strong>Bloques</strong> — optimizado para prefabricados<br/>🏔 <strong>Relleno</strong> — para capas de base y subbase",
+    cta_label:"Soluciones industriales", cta_title:"LISTO PARA<br/>OPTIMIZAR",
+    cta_sub:"Contactá con el equipo de Gervasi para integrar el optimizador Fuller en tu planta de áridos.",
+    cta_btn1:"Visitar gervasi.eu", cta_btn2:"Escribir al equipo",
+    footer_legal:"Via A. Valenziani, 12 | 00187 Roma (Italia) — © 2024 Gervasi S.r.l.",
+    footer_product:"Fuller Curve Optimizer — Sistema de optimización de áridos",
+    hq_rome:"Sede legal: Via A. Valenziani, 12 | 00187 Roma (ITALIA)",
+    hq_spoleto:"Estabilidad: Via delle Industrie, 16 | Zona Ind. S. Chiodo | 06049 Spoleto (PG) ITALIA",
+  },
+  en: {
+    nav_return: "Return",
+    hero_eyebrow:"Advanced aggregate optimization system",
+    hero_title_html:"FULLER<br/><span>CURVE</span><br/>OPTIMIZER",
+    hero_desc:"Real mathematical optimization of aggregate mixes against the Fuller curve and industrial standards. Up to 10 simultaneous materials, sieve diagnostics, and automatic technical reports.",
+    hero_cta1:"Explore features", hero_cta2:"Contact us",
+    vis_curve:"Fuller Curve — Optimal Mix", vis_mats:"Supported materials",
+    vis_mats_sub:"Simultaneous materials — no restrictions",
+    vis_engines:"Optimization engines", vis_mats2:"Combinations evaluated", vis_excel:"Excel required",
+    nav_features:"Features", nav_how:"How it works", nav_tech:"Technology", nav_contact:"Contact",
+    strip1:"Real optimization against Fuller", strip2:"Logarithmic interpolation", strip3:"Sieve diagnostics",
+    strip4:"Automatic technical report", strip5:"Weight sum = 1 guaranteed", strip6:"2 to 10+ materials",
+    feat_label:"Key features", feat_title:"REAL<br/>ENGINEERING",
+    feat_sub:"Everything an aggregate laboratory needs, available from the browser.",
+    f1t:"Fuller optimization", f1d:"Minimizes mean squared distance between the resulting mix and the ideal Fuller curve. SLSQP algorithm with real constraints.",
+    f2t:"Standard optimization", f2d:"Predefined target curves for concrete, blocks and fill. Select the standard and the engine does the rest.",
+    f3t:"Logarithmic interpolation", f3d:"Expands the target curve from 9 standard sieves to the real sieves of your plant (master), using log₁₀ scale.",
+    f4t:"Sieve diagnostics", f4d:"Automatically detects ±3% deviations per sieve. Shows surpluses and deficits with ✅ / ⚠️ indicators.",
+    f5t:"Automatic technical report", f5d:"Generates a full report with optimal combination, mean error, compared curves, and adjustment recommendations.",
+    f6t:"Complementary mix", f6d:"When the optimal mix doesn't reach the target, it automatically calculates the needed complement per sieve.",
+    f7t:"Industrial chart", f7d:"Professional visualization of the Fuller curve, the optimal mix, and each material's curves. Exportable as PNG.",
+    f8t:"Sum = 1 constraint", f8d:"Proportions always sum exactly to 100%. Mathematically guaranteed in every optimization.",
+    f9t:"Unlimited multi-material", f9d:"Works with 2, 3, 4, 5, or 10+ materials without changing any parameter. Scales automatically.",
+    mat_label:"Total scalability", mat_title:"WORKS WITH<br/>ANY QUANTITY",
+    mat_sub:"The optimization engine is not limited to two materials. It adapts automatically.",
+    mat_note:"simultaneous materials — no changes needed",
+    how_label:"Process", how_title:"HOW IT<br/>WORKS",
+    s1t:"Enter aggregates", s1d:"Load the granulometric data (% passing each sieve) for each material in your plant.",
+    s2t:"Select the target", s2d:"Ideal Fuller, or target standard: concrete, blocks, fill. The system interpolates to your plant's real master sieves.",
+    s3t:"The engine optimizes", s3d:"SLSQP or exhaustive grid search calculates optimal weights minimizing the mean squared error.",
+    s4t:"Receive the report", s4d:"Exact proportions, sieve diagnostics, complementary mix if needed, and exportable chart.",
+    tech_label:"Under the hood", tech_title:"INDUSTRIAL<br/>TECHNOLOGY",
+    t1:"Real mathematical optimization with <strong>scipy.optimize SLSQP</strong>",
+    t2:"Real physical constraints: weights ∈ [0,1] and Σ=1 guaranteed",
+    t3:"Ideal Fuller curve: <em>p(d) = (d/d_max)^0.5 × 100</em>",
+    t4:"Logarithmic interpolation of target curve to master sieves",
+    t5:"Sieve diagnostics with configurable threshold (default ±3%)",
+    t6:"Complementary mix generation via deficit compensation",
+    t7:"Exhaustive grid search (product) for 2–5 materials",
+    t8:"Industrial chart generated with matplotlib, exportable PNG/base64",
+    t9:"REST API Flask — integrable in any system",
+    t10:"Native support for standards: concrete, blocks, fill",
+    hb1t:"That's no longer Excel", hb1d:"Simultaneous optimization capabilities. Real math, physical constraints, Fuller curve, target standard, diagnostics, report and industrial chart.",
+    hb2t:"Supported standards", hb2d:"🏗 <strong>Concrete</strong> — target curve for structural mixes<br/>🧱 <strong>Blocks</strong> — optimized for precast elements<br/>🏔 <strong>Fill</strong> — for base and subbase layers",
+    cta_label:"Industrial solutions", cta_title:"READY TO<br/>OPTIMIZE",
+    cta_sub:"Contact the Gervasi team to integrate the Fuller optimizer into your aggregate plant.",
+    cta_btn1:"Visit gervasi.eu", cta_btn2:"Email the team",
+    footer_legal:"Via A. Valenziani, 12 | 00187 Rome (Italy) — © 2024 Gervasi S.r.l.",
+    footer_product:"Fuller Curve Optimizer — Aggregate optimization system",
+    hq_rome:"Legal HQ: Via A. Valenziani, 12 | 00187 Rome (ITALY)",
+    hq_spoleto:"Operations: Via delle Industrie, 16 | Zona Ind. S. Chiodo | 06049 Spoleto (PG) ITALY",
+  },
+  fr: {
+    nav_return: "Retour",
+    hero_eyebrow:"Système avancé d'optimisation des granulats",
+    hero_title_html:"FULLER<br/><span>CURVE</span><br/>OPTIMIZER",
+    hero_desc:"Optimisation mathématique réelle des mélanges de granulats selon la courbe de Fuller et les normes industrielles. Jusqu'à 10 matériaux simultanés, diagnostic par tamis et rapport technique automatique.",
+    hero_cta1:"Explorer les fonctions", hero_cta2:"Nous contacter",
+    vis_curve:"Courbe de Fuller — Mélange Optimal", vis_mats:"Matériaux supportés",
+    vis_mats_sub:"Matériaux simultanés — sans restrictions",
+    vis_engines:"Moteurs d'optimisation", vis_mats2:"Combinaisons évaluées", vis_excel:"Excel requis",
+    nav_features:"Fonctionnalités", nav_how:"Comment ça marche", nav_tech:"Technologie", nav_contact:"Contact",
+    strip1:"Optimisation réelle contre Fuller", strip2:"Interpolation logarithmique", strip3:"Diagnostic par tamis",
+    strip4:"Rapport technique automatique", strip5:"Somme des poids = 1 garantie", strip6:"De 2 à 10+ matériaux",
+    feat_label:"Fonctionnalités clés", feat_title:"INGÉNIERIE<br/>RÉELLE",
+    feat_sub:"Tout ce qu'un laboratoire de granulats nécessite, disponible depuis le navigateur.",
+    f1t:"Optimisation Fuller", f1d:"Minimise la distance quadratique moyenne entre le mélange résultant et la courbe de Fuller idéale. Algorithme SLSQP avec contraintes réelles.",
+    f2t:"Optimisation par norme", f2d:"Courbes cibles prédéfinies pour béton, blocs et remblai. Sélectionnez la norme et le moteur fait le reste.",
+    f3t:"Interpolation logarithmique", f3d:"Étend la courbe cible de 9 tamis standards aux tamis réels de votre centrale, en échelle log₁₀.",
+    f4t:"Diagnostic par tamis", f4d:"Détecte automatiquement les écarts de ±3% par tamis. Affiche excédents et déficits avec ✅ / ⚠️.",
+    f5t:"Rapport technique automatique", f5d:"Génère un rapport complet avec la combinaison optimale, l'erreur moyenne, les courbes comparées et les recommandations d'ajustement.",
+    f6t:"Mélange complémentaire", f6d:"Quand le mélange optimal n'atteint pas la cible, calcule automatiquement le complément nécessaire par tamis.",
+    f7t:"Graphique industriel", f7d:"Visualisation professionnelle de la courbe de Fuller, du mélange optimal et des courbes de chaque matériau. Exportable en PNG.",
+    f8t:"Contrainte somme = 1", f8d:"Les proportions totalisent toujours exactement 100%. Contrainte mathématique garantie à chaque optimisation.",
+    f9t:"Multi-matériaux illimité", f9d:"Fonctionne avec 2, 3, 4, 5 ou 10+ matériaux sans modifier aucun paramètre. Évolue automatiquement.",
+    mat_label:"Évolutivité totale", mat_title:"FONCTIONNE AVEC<br/>N'IMPORTE QUELLE QUANTITÉ",
+    mat_sub:"Le moteur d'optimisation n'est pas limité à deux matériaux. Il s'adapte automatiquement.",
+    mat_note:"matériaux simultanés — sans rien modifier",
+    how_label:"Processus", how_title:"COMMENT<br/>ÇA MARCHE",
+    s1t:"Saisissez les granulats", s1d:"Chargez les données granulométriques (% passant par tamis) de chaque matériau de votre centrale.",
+    s2t:"Choisissez la cible", s2d:"Fuller idéal ou norme cible: béton, blocs, remblai. Le système interpole aux tamis master réels de votre centrale.",
+    s3t:"Le moteur optimise", s3d:"SLSQP ou recherche exhaustive calcule les poids optimaux en minimisant l'erreur quadratique moyenne.",
+    s4t:"Recevez le rapport", s4d:"Proportions exactes, diagnostic par tamis, mélange complémentaire si besoin, et graphique exportable.",
+    tech_label:"Sous le capot", tech_title:"TECHNOLOGIE<br/>INDUSTRIELLE",
+    t1:"Optimisation mathématique réelle avec <strong>scipy.optimize SLSQP</strong>",
+    t2:"Contraintes physiques réelles : poids ∈ [0,1] et Σ=1 garantis",
+    t3:"Courbe Fuller idéale : <em>p(d) = (d/d_max)^0.5 × 100</em>",
+    t4:"Interpolation logarithmique de la courbe cible aux tamis master",
+    t5:"Diagnostic par tamis avec seuil configurable (défaut ±3%)",
+    t6:"Génération de mélange complémentaire par compensation du déficit",
+    t7:"Recherche exhaustive par grille (product) pour 2–5 matériaux",
+    t8:"Graphique industriel avec matplotlib, exportable PNG/base64",
+    t9:"API REST Flask — intégrable dans tout système",
+    t10:"Support natif des normes : béton, blocs, remblai",
+    hb1t:"Ce n'est plus Excel", hb1d:"Capacités d'optimisation simultanées. Mathématiques réelles, contraintes physiques, courbe Fuller, norme cible, diagnostic, rapport et graphique industriel.",
+    hb2t:"Normes supportées", hb2d:"🏗 <strong>Béton</strong> — courbe cible pour mélanges structurels<br/>🧱 <strong>Blocs</strong> — optimisé pour préfabriqués<br/>🏔 <strong>Remblai</strong> — pour couches de base et sous-base",
+    cta_label:"Solutions industrielles", cta_title:"PRÊT À<br/>OPTIMISER",
+    cta_sub:"Contactez l'équipe Gervasi pour intégrer l'optimiseur Fuller dans votre centrale à granulats.",
+    cta_btn1:"Visiter gervasi.eu", cta_btn2:"Écrire à l'équipe",
+    footer_legal:"Via A. Valenziani, 12 | 00187 Rome (Italie) — © 2024 Gervasi S.r.l.",
+    footer_product:"Fuller Curve Optimizer — Système d'optimisation des granulats",
+    hq_rome:"Siège légal : Via A. Valenziani, 12 | 00187 Rome (ITALIE)",
+    hq_spoleto:"Exploitation : Via delle Industrie, 16 | Zona Ind. S. Chiodo | 06049 Spoleto (PG) ITALIE",
+  },
+  de: {
+    nav_return: "Zurück",
+    hero_eyebrow:"Fortgeschrittenes Zuschlagstoff-Optimierungssystem",
+    hero_title_html:"FULLER<br/><span>KURVEN</span><br/>OPTIMIERER",
+    hero_desc:"Echte mathematische Optimierung von Zuschlagstoffgemischen gegen die Fuller-Kurve und Industrienormen. Bis zu 10 gleichzeitige Materialien, Siebdiagnose und automatischer technischer Bericht.",
+    hero_cta1:"Funktionen erkunden", hero_cta2:"Kontakt",
+    vis_curve:"Fuller-Kurve — Optimales Gemisch", vis_mats:"Unterstützte Materialien",
+    vis_mats_sub:"Gleichzeitige Materialien — ohne Einschränkungen",
+    vis_engines:"Optimierungsmodule", vis_mats2:"Ausgewertete Kombinationen", vis_excel:"Excel benötigt",
+    nav_features:"Funktionen", nav_how:"Wie es funktioniert", nav_tech:"Technologie", nav_contact:"Kontakt",
+    strip1:"Echte Optimierung gegen Fuller", strip2:"Logarithmische Interpolation", strip3:"Siebdiagnose",
+    strip4:"Automatischer technischer Bericht", strip5:"Gewichtssumme = 1 garantiert", strip6:"2 bis 10+ Materialien",
+    feat_label:"Hauptfunktionen", feat_title:"ECHTE<br/>INGENIEURSKUNST",
+    feat_sub:"Alles, was ein Zuschlagstofflabor benötigt, im Browser verfügbar.",
+    f1t:"Fuller-Optimierung", f1d:"Minimiert den mittleren quadratischen Abstand zwischen dem resultierenden Gemisch und der idealen Fuller-Kurve. SLSQP-Algorithmus mit realen Einschränkungen.",
+    f2t:"Normoptimierung", f2d:"Vordefinierte Zielkurven für Beton, Blöcke und Füllmaterial. Norm auswählen, der Motor erledigt den Rest.",
+    f3t:"Logarithmische Interpolation", f3d:"Erweitert die Zielkurve von 9 Standardsieben auf die realen Siebe Ihrer Anlage (Master) mit log₁₀-Skala.",
+    f4t:"Siebdiagnose", f4d:"Erkennt automatisch Abweichungen von ±3% pro Sieb. Zeigt Über- und Unterschreitungen mit ✅ / ⚠️.",
+    f5t:"Automatischer technischer Bericht", f5d:"Erstellt einen vollständigen Bericht mit optimaler Kombination, mittlerem Fehler, verglichenen Kurven und Anpassungsempfehlungen.",
+    f6t:"Ergänzendes Gemisch", f6d:"Wenn das optimale Gemisch das Ziel nicht erreicht, berechnet es automatisch das pro Sieb benötigte Komplement.",
+    f7t:"Industriediagramm", f7d:"Professionelle Visualisierung der Fuller-Kurve, des optimalen Gemischs und der Kurven jedes Materials. Als PNG exportierbar.",
+    f8t:"Summe = 1 Bedingung", f8d:"Anteile summieren sich immer exakt auf 100%. Mathematisch garantiert bei jeder Optimierung.",
+    f9t:"Unbegrenztes Multi-Material", f9d:"Funktioniert mit 2, 3, 4, 5 oder 10+ Materialien ohne Parameteränderung. Skaliert automatisch.",
+    mat_label:"Vollständige Skalierbarkeit", mat_title:"FUNKTIONIERT MIT<br/>BELIEBIGER ANZAHL",
+    mat_sub:"Der Optimierungsmotor ist nicht auf zwei Materialien beschränkt. Er passt sich automatisch an.",
+    mat_note:"gleichzeitige Materialien — nichts ändern",
+    how_label:"Ablauf", how_title:"WIE ES<br/>FUNKTIONIERT",
+    s1t:"Zuschlagstoffe eingeben", s1d:"Granulometrische Daten (% Durchgang je Sieb) für jedes Material Ihrer Anlage laden.",
+    s2t:"Ziel auswählen", s2d:"Ideale Fuller oder Zielnorm: Beton, Blöcke, Füllmaterial. System interpoliert auf die realen Master-Siebe Ihrer Anlage.",
+    s3t:"Motor optimiert", s3d:"SLSQP oder erschöpfende Gittersuche berechnet optimale Gewichte durch Minimierung des mittleren quadratischen Fehlers.",
+    s4t:"Bericht erhalten", s4d:"Exakte Anteile, Siebdiagnose, ergänzendes Gemisch falls nötig, und exportierbares Diagramm.",
+    tech_label:"Unter der Haube", tech_title:"INDUSTRIELLE<br/>TECHNOLOGIE",
+    t1:"Echte mathematische Optimierung mit <strong>scipy.optimize SLSQP</strong>",
+    t2:"Reale physikalische Einschränkungen: Gewichte ∈ [0,1] und Σ=1 garantiert",
+    t3:"Ideale Fuller-Kurve: <em>p(d) = (d/d_max)^0,5 × 100</em>",
+    t4:"Logarithmische Interpolation der Zielkurve auf Master-Siebe",
+    t5:"Siebdiagnose mit konfigurierbarem Schwellwert (Standard ±3%)",
+    t6:"Erzeugung eines ergänzenden Gemischs durch Defizitausgleich",
+    t7:"Erschöpfende Gittersuche (product) für 2–5 Materialien",
+    t8:"Industriediagramm mit matplotlib, als PNG/base64 exportierbar",
+    t9:"REST API Flask — in jedes System integrierbar",
+    t10:"Nativer Support für Normen: Beton, Blöcke, Füllmaterial",
+    hb1t:"Das ist kein Excel mehr", hb1d:"Gleichzeitige Optimierungsfähigkeiten. Echte Mathematik, physikalische Einschränkungen, Fuller-Kurve, Zielnorm, Diagnose, Bericht und Industriediagramm.",
+    hb2t:"Unterstützte Normen", hb2d:"🏗 <strong>Beton</strong> — Zielkurve für Strukturmischungen<br/>🧱 <strong>Blöcke</strong> — optimiert für Fertigteile<br/>🏔 <strong>Füllung</strong> — für Trag- und Unterschichten",
+    cta_label:"Industrielösungen", cta_title:"BEREIT ZUR<br/>OPTIMIERUNG",
+    cta_sub:"Kontaktieren Sie das Gervasi-Team, um den Fuller-Optimierer in Ihre Zuschlagstoffanlage zu integrieren.",
+    cta_btn1:"gervasi.eu besuchen", cta_btn2:"Team schreiben",
+    footer_legal:"Via A. Valenziani, 12 | 00187 Rom (Italien) — © 2024 Gervasi S.r.l.",
+    footer_product:"Fuller Curve Optimizer — Zuschlagstoff-Optimierungssystem",
+    hq_rome:"Rechtssitz: Via A. Valenziani, 12 | 00187 Rom (ITALIEN)",
+    hq_spoleto:"Betrieb: Via delle Industrie, 16 | Zona Ind. S. Chiodo | 06049 Spoleto (PG) ITALIEN",
+  },
+  it: {
+    nav_return: "Ritorna",
+    hero_eyebrow:"Sistema avanzato di ottimizzazione degli aggregati",
+    hero_title_html:"FULLER<br/><span>CURVE</span><br/>OPTIMIZER",
+    hero_desc:"Ottimizzazione matematica reale di miscele di aggregati rispetto alla curva di Fuller e alle norme industriali. Fino a 10 materiali simultanei, diagnosi per setaccio e rapporto tecnico automatico.",
+    hero_cta1:"Esplora le funzioni", hero_cta2:"Contattaci",
+    vis_curve:"Curva di Fuller — Miscela Ottimale", vis_mats:"Materiali supportati",
+    vis_mats_sub:"Materiali simultanei — senza restrizioni",
+    vis_engines:"Motori di ottimizzazione", vis_mats2:"Combinazioni valutate", vis_excel:"Excel richiesto",
+    nav_features:"Funzionalità", nav_how:"Come funziona", nav_tech:"Tecnologia", nav_contact:"Contatti",
+    strip1:"Ottimizzazione reale contro Fuller", strip2:"Interpolazione logaritmica", strip3:"Diagnosi per setaccio",
+    strip4:"Rapporto tecnico automatico", strip5:"Somma pesi = 1 garantita", strip6:"Da 2 a 10+ materiali",
+    feat_label:"Funzionalità chiave", feat_title:"INGEGNERIA<br/>REALE",
+    feat_sub:"Tutto ciò di cui un laboratorio di aggregati ha bisogno, disponibile dal browser.",
+    f1t:"Ottimizzazione Fuller", f1d:"Minimizza la distanza quadratica media tra la miscela risultante e la curva di Fuller ideale. Algoritmo SLSQP con vincoli reali.",
+    f2t:"Ottimizzazione per norma", f2d:"Curve obiettivo predefinite per calcestruzzo, blocchi e riempimento. Seleziona la norma e il motore fa il resto.",
+    f3t:"Interpolazione logaritmica", f3d:"Espande la curva obiettivo da 9 setacci standard ai setacci reali del tuo impianto (master), usando scala log₁₀.",
+    f4t:"Diagnosi per setaccio", f4d:"Rileva automaticamente deviazioni di ±3% per setaccio. Mostra eccessi e deficit con ✅ / ⚠️.",
+    f5t:"Rapporto tecnico automatico", f5d:"Genera un rapporto completo con combinazione ottimale, errore medio, curve comparate e raccomandazioni di aggiustamento.",
+    f6t:"Miscela complementare", f6d:"Quando la miscela ottimale non raggiunge l'obiettivo, calcola automaticamente il complemento necessario per setaccio.",
+    f7t:"Grafico industriale", f7d:"Visualizzazione professionale della curva di Fuller, della miscela ottimale e delle curve di ogni materiale. Esportabile in PNG.",
+    f8t:"Vincolo somma = 1", f8d:"Le proporzioni sommano sempre esattamente al 100%. Vincolo matematico garantito ad ogni ottimizzazione.",
+    f9t:"Multi-materiale illimitato", f9d:"Funziona con 2, 3, 4, 5 o 10+ materiali senza modificare alcun parametro. Scala automaticamente.",
+    mat_label:"Scalabilità totale", mat_title:"FUNZIONA CON<br/>QUALSIASI QUANTITÀ",
+    mat_sub:"Il motore di ottimizzazione non è limitato a due materiali. Si adatta automaticamente.",
+    mat_note:"materiali simultanei — senza toccare nulla",
+    how_label:"Processo", how_title:"COME<br/>FUNZIONA",
+    s1t:"Inserisci gli aggregati", s1d:"Carica i dati granulometrici (% passante per ogni setaccio) di ogni materiale del tuo impianto.",
+    s2t:"Seleziona l'obiettivo", s2d:"Fuller ideale o norma obiettivo: calcestruzzo, blocchi, riempimento. Il sistema interpola ai setacci master reali.",
+    s3t:"Il motore ottimizza", s3d:"SLSQP o ricerca esaustiva calcola i pesi ottimali minimizzando l'errore quadratico medio.",
+    s4t:"Ricevi il rapporto", s4d:"Proporzioni esatte, diagnosi per setaccio, miscela complementare se applicabile, e grafico esportabile.",
+    tech_label:"Sotto il cofano", tech_title:"TECNOLOGIA<br/>INDUSTRIALE",
+    t1:"Ottimizzazione matematica reale con <strong>scipy.optimize SLSQP</strong>",
+    t2:"Vincoli fisici reali: pesi ∈ [0,1] e Σ=1 garantiti",
+    t3:"Curva Fuller ideale: <em>p(d) = (d/d_max)^0,5 × 100</em>",
+    t4:"Interpolazione logaritmica della curva obiettivo ai setacci master",
+    t5:"Diagnosi per setaccio con soglia configurabile (default ±3%)",
+    t6:"Generazione miscela complementare per compensazione del deficit",
+    t7:"Ricerca esaustiva a griglia (product) per 2–5 materiali",
+    t8:"Grafico industriale con matplotlib, esportabile PNG/base64",
+    t9:"API REST Flask — integrabile in qualsiasi sistema",
+    t10:"Supporto nativo per norme: calcestruzzo, blocchi, riempimento",
+    hb1t:"Non è più Excel", hb1d:"Capacità di ottimizzazione simultanee. Matematica reale, vincoli fisici, curva Fuller, norma obiettivo, diagnosi, rapporto e grafico industriale.",
+    hb2t:"Norme supportate", hb2d:"🏗 <strong>Calcestruzzo</strong> — curva obiettivo per miscele strutturali<br/>🧱 <strong>Blocchi</strong> — ottimizzato per prefabbricati<br/>🏔 <strong>Riempimento</strong> — per strati di base e sottofondo",
+    cta_label:"Soluzioni industriali", cta_title:"PRONTO PER<br/>OTTIMIZZARE",
+    cta_sub:"Contatta il team Gervasi per integrare l'ottimizzatore Fuller nel tuo impianto di aggregati.",
+    cta_btn1:"Visita gervasi.eu", cta_btn2:"Scrivi al team",
+    footer_legal:"Via A. Valenziani, 12 | 00187 Roma (Italia) — © 2024 Gervasi S.r.l.",
+    footer_product:"Fuller Curve Optimizer — Sistema di ottimizzazione degli aggregati",
+    hq_rome:"Sede legale: Via A. Valenziani, 12 | 00187 Roma (ITALIA)",
+    hq_spoleto:"Stabilità: Via delle Industrie, 16 | Zona Ind. S. Chiodo | 06049 Spoleto (PG) ITALIA",
+  },
+  pl: {
+    nav_return: "Powrót",
+    hero_eyebrow:"Zaawansowany system optymalizacji kruszyw",
+    hero_title_html:"FULLER<br/><span>KRZYWA</span><br/>OPTIMIZER",
+    hero_desc:"Rzeczywista optymalizacja matematyczna mieszanek kruszyw względem krzywej Fullera i norm przemysłowych. Do 10 materiałów jednocześnie, diagnostyka sit i automatyczny raport techniczny.",
+    hero_cta1:"Poznaj funkcje", hero_cta2:"Kontakt",
+    vis_curve:"Krzywa Fullera — Optymalna mieszanka", vis_mats:"Obsługiwane materiały",
+    vis_mats_sub:"Jednoczesne materiały — bez ograniczeń",
+    vis_engines:"Silniki optymalizacji", vis_mats2:"Oceniane kombinacje", vis_excel:"Excel wymagany",
+    nav_features:"Funkcje", nav_how:"Jak to działa", nav_tech:"Technologia", nav_contact:"Kontakt",
+    strip1:"Realna optymalizacja Fuller", strip2:"Interpolacja logarytmiczna", strip3:"Diagnostyka sit",
+    strip4:"Automatyczny raport techniczny", strip5:"Suma wag = 1 gwarantowana", strip6:"Od 2 do 10+ materiałów",
+    feat_label:"Kluczowe funkcje", feat_title:"PRAWDZIWA<br/>INŻYNIERIA",
+    feat_sub:"Wszystko, czego laboratorium kruszyw potrzebuje, dostępne z przeglądarki.",
+    f1t:"Optymalizacja Fuller", f1d:"Minimalizuje średnią kwadratową odległość między mieszanką a idealną krzywą Fullera. Algorytm SLSQP z realnymi ograniczeniami.",
+    f2t:"Optymalizacja wg normy", f2d:"Predefiniowane krzywe docelowe dla betonu, bloczków i zasypki. Wybierz normę, silnik zrobi resztę.",
+    f3t:"Interpolacja logarytmiczna", f3d:"Rozszerza krzywą docelową z 9 standardowych sit do rzeczywistych sit zakładu (master), w skali log₁₀.",
+    f4t:"Diagnostyka sit", f4d:"Automatycznie wykrywa odchylenia ±3% na sito. Pokazuje nadmiary i deficyty ze wskaźnikami ✅ / ⚠️.",
+    f5t:"Automatyczny raport techniczny", f5d:"Generuje pełny raport z optymalną kombinacją, średnim błędem, porównaniem krzywych i zaleceniami korekty.",
+    f6t:"Mieszanka uzupełniająca", f6d:"Gdy optymalna mieszanka nie osiąga celu, automatycznie oblicza potrzebne uzupełnienie na sito.",
+    f7t:"Wykres przemysłowy", f7d:"Profesjonalna wizualizacja krzywej Fullera, optymalnej mieszanki i krzywych każdego materiału. Eksport PNG.",
+    f8t:"Ograniczenie sumy = 1", f8d:"Proporcje zawsze sumują się dokładnie do 100%. Matematycznie zagwarantowane przy każdej optymalizacji.",
+    f9t:"Nieograniczone multi-materiały", f9d:"Działa z 2, 3, 4, 5 lub 10+ materiałami bez zmiany parametrów. Skaluje się automatycznie.",
+    mat_label:"Pełna skalowalność", mat_title:"DZIAŁA Z DOWOLNĄ<br/>LICZBĄ MATERIAŁÓW",
+    mat_sub:"Silnik optymalizacji nie jest ograniczony do dwóch materiałów. Dostosowuje się automatycznie.",
+    mat_note:"jednoczesnych materiałów — bez żadnych zmian",
+    how_label:"Proces", how_title:"JAK TO<br/>DZIAŁA",
+    s1t:"Wprowadź kruszywa", s1d:"Załaduj dane granulometryczne (% przejścia przez sito) dla każdego materiału z zakładu.",
+    s2t:"Wybierz cel", s2d:"Idealny Fuller lub norma docelowa: beton, bloczki, zasypka. System interpoluje do rzeczywistych sit master zakładu.",
+    s3t:"Silnik optymalizuje", s3d:"SLSQP lub wyczerpujące przeszukiwanie siatki oblicza optymalne wagi minimalizując średni błąd kwadratowy.",
+    s4t:"Otrzymaj raport", s4d:"Dokładne proporcje, diagnostyka sit, mieszanka uzupełniająca jeśli potrzeba, i wykres do eksportu.",
+    tech_label:"Pod maską", tech_title:"PRZEMYSŁOWA<br/>TECHNOLOGIA",
+    t1:"Rzeczywista optymalizacja matematyczna z <strong>scipy.optimize SLSQP</strong>",
+    t2:"Realne ograniczenia fizyczne: wagi ∈ [0,1] i Σ=1 gwarantowane",
+    t3:"Idealna krzywa Fullera: <em>p(d) = (d/d_max)^0,5 × 100</em>",
+    t4:"Logarytmiczna interpolacja krzywej docelowej do sit master",
+    t5:"Diagnostyka sit z konfigurowalnym progiem (domyślnie ±3%)",
+    t6:"Generowanie mieszanki uzupełniającej przez kompensację deficytu",
+    t7:"Wyczerpujące przeszukiwanie siatki (product) dla 2–5 materiałów",
+    t8:"Wykres przemysłowy z matplotlib, eksport PNG/base64",
+    t9:"REST API Flask — integracja z każdym systemem",
+    t10:"Natywna obsługa norm: beton, bloczki, zasypka",
+    hb1t:"To już nie Excel", hb1d:"Jednoczesne możliwości optymalizacji. Rzeczywista matematyka, ograniczenia fizyczne, krzywa Fullera, norma docelowa, diagnostyka, raport i wykres przemysłowy.",
+    hb2t:"Obsługiwane normy", hb2d:"🏗 <strong>Beton</strong> — krzywa docelowa dla mieszanek konstrukcyjnych<br/>🧱 <strong>Bloczki</strong> — zoptymalizowane dla prefabrykatów<br/>🏔 <strong>Zasypka</strong> — dla warstw podbudowy",
+    cta_label:"Rozwiązania przemysłowe", cta_title:"GOTOWY DO<br/>OPTYMALIZACJI",
+    cta_sub:"Skontaktuj się z zespołem Gervasi, aby zintegrować optymalizator Fullera w zakładzie kruszyw.",
+    cta_btn1:"Odwiedź gervasi.eu", cta_btn2:"Napisz do zespołu",
+    footer_legal:"Via A. Valenziani, 12 | 00187 Rzym (Włochy) — © 2024 Gervasi S.r.l.",
+    footer_product:"Fuller Curve Optimizer — System optymalizacji kruszyw",
+    hq_rome:"Siedziba: Via A. Valenziani, 12 | 00187 Rzym (WŁOCHY)",
+    hq_spoleto:"Produkcja: Via delle Industrie, 16 | Zona Ind. S. Chiodo | 06049 Spoleto (PG) WŁOCHY",
+  },
+  pt: {
+    hero_eyebrow:"Sistema avançado de otimização de agregados",
+    hero_title_html:"FULLER<br/><span>CURVE</span><br/>OPTIMIZER",
+    hero_desc:"Otimização matemática real de misturas de agregados contra a curva de Fuller e normas industriais. Até 10 materiais simultâneos, diagnóstico por peneira e relatório técnico automático.",
+    hero_cta1:"Explorar funções", hero_cta2:"Contato",
+    vis_curve:"Curva de Fuller — Mistura Ótima", vis_mats:"Materiais suportados",
+    vis_mats_sub:"Materiais simultâneos — sem restrições",
+    vis_engines:"Motores de otimização", vis_mats2:"Combinações avaliadas", vis_excel:"Excel necessário",
+    nav_features:"Funcionalidades", nav_how:"Como funciona", nav_tech:"Tecnologia", nav_contact:"Contato",
+    strip1:"Otimização real contra Fuller", strip2:"Interpolação logarítmica", strip3:"Diagnóstico por peneira",
+    strip4:"Relatório técnico automático", strip5:"Soma de pesos = 1 garantida", strip6:"De 2 a 10+ materiais",
+    feat_label:"Funcionalidades principais", feat_title:"ENGENHARIA<br/>REAL",
+    feat_sub:"Tudo que um laboratório de agregados precisa, disponível no navegador.",
+    f1t:"Otimização Fuller", f1d:"Minimiza a distância quadrática média entre a mistura resultante e a curva de Fuller ideal. Algoritmo SLSQP com restrições reais.",
+    f2t:"Otimização por norma", f2d:"Curvas alvo predefinidas para concreto, blocos e aterro. Selecione a norma e o motor faz o resto.",
+    f3t:"Interpolação logarítmica", f3d:"Expande a curva alvo de 9 peneiras padrão para as peneiras reais da sua planta (master), usando escala log₁₀.",
+    f4t:"Diagnóstico por peneira", f4d:"Detecta automaticamente desvios de ±3% por peneira. Mostra excessos e déficits com ✅ / ⚠️.",
+    f5t:"Relatório técnico automático", f5d:"Gera relatório completo com combinação ótima, erro médio, curvas comparadas e recomendações de ajuste.",
+    f6t:"Mistura complementar", f6d:"Quando a mistura ótima não atinge o alvo, calcula automaticamente o complemento necessário por peneira.",
+    f7t:"Gráfico industrial", f7d:"Visualização profissional da curva de Fuller, mistura ótima e curvas de cada material. Exportável em PNG.",
+    f8t:"Restrição soma = 1", f8d:"As proporções somam sempre exatamente 100%. Restrição matemática garantida em cada otimização.",
+    f9t:"Multi-material ilimitado", f9d:"Funciona com 2, 3, 4, 5 ou 10+ materiais sem modificar nenhum parâmetro. Escala automaticamente.",
+    mat_label:"Escalabilidade total", mat_title:"FUNCIONA COM<br/>QUALQUER QUANTIDADE",
+    mat_sub:"O motor de otimização não está limitado a dois materiais. Adapta-se automaticamente.",
+    mat_note:"materiais simultâneos — sem modificar nada",
+    how_label:"Processo", how_title:"COMO<br/>FUNCIONA",
+    s1t:"Inserir agregados", s1d:"Carregue os dados granulométricos (% passante por peneira) de cada material da sua planta.",
+    s2t:"Selecionar alvo", s2d:"Fuller ideal ou norma alvo: concreto, blocos, aterro. O sistema interpola para as peneiras master reais da planta.",
+    s3t:"Motor otimiza", s3d:"SLSQP ou busca exaustiva calcula os pesos ótimos minimizando o erro quadrático médio.",
+    s4t:"Receber relatório", s4d:"Proporções exatas, diagnóstico por peneira, mistura complementar se necessário, e gráfico exportável.",
+    tech_label:"Por baixo do capô", tech_title:"TECNOLOGIA<br/>INDUSTRIAL",
+    t1:"Otimização matemática real com <strong>scipy.optimize SLSQP</strong>",
+    t2:"Restrições físicas reais: pesos ∈ [0,1] e Σ=1 garantidos",
+    t3:"Curva Fuller ideal: <em>p(d) = (d/d_max)^0,5 × 100</em>",
+    t4:"Interpolação logarítmica da curva alvo para peneiras master",
+    t5:"Diagnóstico por peneira com limiar configurável (padrão ±3%)",
+    t6:"Geração de mistura complementar por compensação de déficit",
+    t7:"Busca exaustiva por grade (product) para 2–5 materiais",
+    t8:"Gráfico industrial com matplotlib, exportável PNG/base64",
+    t9:"API REST Flask — integrável em qualquer sistema",
+    t10:"Suporte nativo para normas: concreto, blocos, aterro",
+    hb1t:"Isso não é mais Excel", hb1d:"Capacidades de otimização simultâneas. Matemática real, restrições físicas, curva Fuller, norma alvo, diagnóstico, relatório e gráfico industrial.",
+    hb2t:"Normas suportadas", hb2d:"🏗 <strong>Concreto</strong> — curva alvo para misturas estruturais<br/>🧱 <strong>Blocos</strong> — otimizado para pré-fabricados<br/>🏔 <strong>Aterro</strong> — para camadas de base e sub-base",
+    cta_label:"Soluções industriais", cta_title:"PRONTO PARA<br/>OTIMIZAR",
+    cta_sub:"Entre em contato com a equipe Gervasi para integrar o otimizador Fuller na sua planta de agregados.",
+    cta_btn1:"Visitar gervasi.eu", cta_btn2:"Escrever para a equipe",
+    footer_legal:"Via A. Valenziani, 12 | 00187 Roma (Itália) — © 2024 Gervasi S.r.l.",
+    footer_product:"Fuller Curve Optimizer — Sistema de otimização de agregados",
+    hq_rome:"Sede legal: Via A. Valenziani, 12 | 00187 Roma (ITÁLIA)",
+    hq_spoleto:"Estabilidade: Via delle Industrie, 16 | Zona Ind. S. Chiodo | 06049 Spoleto (PG) ITÁLIA",
+  }
+};
+
+const flagMap = {es:'🇦🇷',en:'🇬🇧',fr:'🇫🇷',de:'🇩🇪',it:'🇮🇹',pl:'🇵🇱',pt:'🇧🇷'};
+let currentLang = 'es';
+
+function applyLang(lang){
+  if(!translations[lang]) return;
+  currentLang = lang;
+  const t = translations[lang];
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    var k = el.getAttribute('data-i18n');
+    if(t[k] !== undefined) el.innerHTML = t[k];
+  });
+  var btn = document.getElementById('langBtn');
+  if(btn) btn.textContent = flagMap[lang] + ' ' + lang.toUpperCase() + ' ▾';
+  document.documentElement.lang = lang;
+  // Update page title
+  var titles = {es:'Gervasi – Optimizador Fuller',en:'Gervasi – Fuller Optimizer',fr:'Gervasi – Optimiseur Fuller',de:'Gervasi – Fuller Optimierer',it:'Gervasi – Ottimizzatore Fuller',pl:'Gervasi – Optymalizator Fuller',pt:'Gervasi – Otimizador Fuller'};
+  document.title = titles[lang] || 'Gervasi – Fuller Optimizer';
+}
+
+// Lang dropdown toggle
+var langBtn = document.getElementById('langBtn');
+var langDropdown = document.getElementById('langDropdown');
+
+langBtn.addEventListener('click', function(e){
+  e.stopPropagation();
+  langDropdown.classList.toggle('open');
+});
+
+document.addEventListener('click', function(){
+  langDropdown.classList.remove('open');
+});
+
+// Prevent dropdown from closing when clicking inside it
+langDropdown.addEventListener('click', function(e){
+  e.stopPropagation();
+});
+
+document.querySelectorAll('[data-lang]').forEach(function(a){
+  a.addEventListener('click', function(e){
+    e.preventDefault();
+    var lang = a.getAttribute('data-lang');
+    applyLang(lang);
+    langDropdown.classList.remove('open');
+  });
+});
+
+// Apply default language on load
+document.addEventListener('DOMContentLoaded', function(){
+  applyLang('es');
+});
+</script>
+</body>
+</html>

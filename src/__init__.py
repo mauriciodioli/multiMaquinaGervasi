@@ -24,6 +24,8 @@ from src.controller.autoDensidad.simuladorDosificacion.simulador_dosificacion \
 import simulador_dosificacion
 from src.controller.autoDensidad.analisis_densidad import analisis_densidad
 from src.controller.autoDensidad.perfil_user_bp import perfil_user_bp
+from src.controller.autoDensidad.stress_blueprint import stress_bp
+
 from src.controller.mixFamiliari.crud_agregado import crud_agregado
 from src.controller.mixFamiliari.crud_mallas import crud_mallas
 from src.controller.mixFamiliari.crud_componente_quimico import crud_componente_quimico
@@ -96,6 +98,7 @@ def create_app() -> Flask:
         conexionAPI,
         task_report,
         task_report_import,
+        stress_bp,
     ):
         app.register_blueprint(bp)
 

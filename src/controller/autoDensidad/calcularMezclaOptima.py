@@ -90,7 +90,9 @@ def calcular_mezcla_optima(mezclas, tamices, d_max=25, n=0.5):
             return 1e6
         curva = mezclar_ponderado(mezclas_al, pesos)
         # comparar sólo en el rango válido L
-        return np.mean([(c - i) ** 2 for c, i in zip(curva, curva_ideal_al)])
+        mse = np.mean([(c - i) ** 2 for c, i in zip(curva, curva_ideal_al)])
+        rmse = np.sqrt(mse)
+        return rmse
 
     # 5) Optimización
     constraints = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1})

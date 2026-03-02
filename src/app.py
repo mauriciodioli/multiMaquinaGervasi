@@ -1,5 +1,7 @@
 # app.py
 from src import create_app
+from flask import render_template, request
+from utils.get_textos_menu import get_textos_menu
 from utils.db import db
 import os
 import logging
@@ -14,6 +16,13 @@ logger = logging.getLogger(__name__)
 print("📌 Inicio app.py")
 
 app = create_app()
+
+# Endpoint para /about_fuller
+@app.route("/about_fuller")
+def about_fuller():
+    lang = request.cookies.get("lang", "es")
+    t_menu = get_textos_menu(lang)
+    return render_template("about_fuller.html", t_menu=t_menu)
 def verificar_conexion_db():
     try:
         with app.app_context():
