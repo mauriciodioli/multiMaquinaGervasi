@@ -125,3 +125,74 @@ def to_float(v):
         return float(v)
     except Exception:
         return None
+
+
+def parse_hypcut_rtf_log(text):
+    """Extrae datos básicos de cortes desde un log HypCut en formato RTF.
+
+    Busca patrones del tipo:
+      - "(03/05 14:38:48)...Start"
+      - "Cutting length: 5466,00 mm, ... pierce count: 2 times"
+      - "Tempo trascorso: 19,39s"
+
+    Devuelve una lista de dicts con:
+      - start: string "MM/DD HH:MM:SS" (según log)
+      - time_consumed_s: float (segundos)
+      - cutting_length_mm: float
+      - perforation: int (pierce count)
+    """
+
+    # timestamps de inicio de corte
+    starts = re.findall(r"\((\d{2}/\d{2} \d{2}:\d{2}:\d{2})\)[^\n]*Start", text)
+
+    # tiempos reales de corte (Tempo trascorso: 19,39s)
+    times = re.findall(r"Tempo trascorso:\s*([0-9,]+)s", text)
+
+    # longitud de corte (Cutting length: 5466,00 mm, ...)
+    lengths = re.findall(r"Cutting length:\s*([0-9,]+)", text)
+
+    # número de perforaciones (pierce count: 2 times)
+    pierces = re.findall(r"pierce count:\s*(\d+)", text)
+
+    jobs = []
+    n = min(len(starts), len(times), len(lengths), len(pierces))
+
+    for i in range(n):
+        try:
+            duration_s = float(times[i].replace(",", "."))
+        except Exception:
+            duration_s = None
+
+        try:
+            cutting_len_mm = float(lengths[i].replace(",", "."))
+        except Exception:
+            cutting_len_mm = None
+
+        try:
+            pierce_count = int(pierces[i])
+        except Exception:
+            pierce_count = None
+
+        jobs.append(
+            {
+                "start": starts[i],
+                "time_consumed_s": duration_s,
+                "cutting_length_mm": cutting_len_mm,
+                "perforation": pierce_count,
+            }
+        )
+
+    return jobs
+
+
+def summarize_hypcut_rtf_log(text):
+    """Devuelve (parts, total_time_s) a partir de un log HypCut RTF.
+
+    parts = número de cortes detectados
+    total_time_s = suma de "Tempo trascorso" en segundos
+    """
+
+    jobs = parse_hypcut_rtf_log(text)
+    parts = len(jobs)
+    total_time = sum(j["time_consumed_s"] or 0.0 for j in jobs)
+    return parts, total_time

@@ -1,13 +1,38 @@
 # controller/autoDensidad/stress_blueprint.py
 
-from flask import Blueprint, request, jsonify, Response, send_file
+from flask import Blueprint, current_app, request, jsonify, Response, send_file,send_from_directory,after_this_request
 import os, time
 import numpy as np
-
+import shutil
 from controller.autoDensidad.stress_test_fuller import correr_stress_test
 from controller.autoDensidad.stress_report import build_html_report, write_pdf_report
 
+import matplotlib
+matplotlib.use("Agg") 
+import matplotlib.pyplot as plt
+
 stress_bp = Blueprint("stress_bp", __name__)
+
+
+@stress_bp.route('/stress_reports/<path:filename>')
+def descargar_reporte(filename):
+
+    base_dir = os.path.abspath(
+        os.path.join(current_app.root_path, "..", "tmp")
+    )
+
+    file_path = os.path.join(base_dir, filename)
+
+   
+
+    if os.path.exists(base_dir):
+        print("archivos en tmp:", os.listdir(base_dir))
+    else:
+        print("tmp NO EXISTE")
+
+    print("===================================\n")
+
+    return send_from_directory(base_dir, filename)
 
 def go_no_go(metrics: dict) -> dict:
     """
@@ -126,10 +151,11 @@ def stress_test_fuller():
     return jsonify({
         "mensaje": "Stress test completado",
         "decision": decision,
-        "archivos": {
-            "csv": csv_path,
-            "json": json_path,
-            "html": html_path,
-            "pdf": pdf_path,
+        "metrics": metrics,
+        "report_urls": {
+            "csv": f"/stress_reports/{os.path.basename(csv_path)}",
+            "json": f"/stress_reports/{os.path.basename(json_path)}",
+            "html": f"/stress_reports/{os.path.basename(html_path)}",
+            "pdf": f"/stress_reports/{os.path.basename(pdf_path)}",
         }
     })

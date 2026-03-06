@@ -1,12 +1,13 @@
 function aplicarIdioma(lang) {
-  const t = I18N.mensajes_registrarse[lang] || I18N.mensajes_registrarse["es"];
-  document.getElementById("registro-title").textContent = t.titulo;
-  document.getElementById("correo").placeholder = t.correo;
-  document.getElementById("password").placeholder = t.pass;
-  document.getElementById("repetir").placeholder = t.repetir;
-  document.getElementById("captcha-text").textContent = t.captcha;
-  document.getElementById("btn-registrarse").textContent = t.registrarse;
-  document.getElementById("volver-login").textContent = t.volver;
+  const msgs = I18N.dict?.registrarse?.[lang] || I18N.dict?.registrarse?.["es"];
+  if (!msgs) return;
+  document.getElementById("registro-title").textContent = msgs.titulo;
+  document.getElementById("correo").placeholder = msgs.correo;
+  document.getElementById("password").placeholder = msgs.pass;
+  document.getElementById("repetir").placeholder = msgs.repetir;
+  document.getElementById("captcha-text").textContent = msgs.captcha;
+  document.getElementById("btn-registrarse").textContent = msgs.registrarse;
+  document.getElementById("volver-login").textContent = msgs.volver;
 }
 
 function togglePassword(id) {
@@ -16,8 +17,7 @@ function togglePassword(id) {
 
 function validarFormulario() {
   const lang = localStorage.getItem("lang") || "es";
-  const t = I18N.mensajes_registrarse[lang] || I18N.mensajes_registrarse["es"];
-
+  const t = I18N.dict?.registrarse?.[lang] || I18N.dict?.registrarse?.["es"];
   const correo = document.getElementById("correo");
   const pass = document.getElementById("password");
   const repetir = document.getElementById("repetir");
@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("form-registro").addEventListener("submit", function (e) {
     e.preventDefault();
     const lang = localStorage.getItem("lang") || "es";
-    const t = I18N.mensajes_registrarse[lang] || I18N.mensajes_registrarse["es"];
+    const t = I18N.dict?.registrarse?.[lang] || I18N.dict?.registrarse?.["es"];
 
     const correo = document.getElementById("correo").value.trim();
     const password = document.getElementById("password").value;
@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!captcha) errores.push(t.errores.captcha);
 
     if (errores.length > 0) {
-      errorDiv.innerHTML = errores.map(e => `<div>⚠️ ${e}</div>`).join("");
+          errorDiv.innerHTML = errores.map(e => `<div>⚠️ ${e}</div>`).join("");
       return;
     }
 
@@ -97,11 +97,11 @@ document.addEventListener("DOMContentLoaded", () => {
            document.cookie = `lang=${lang}; path=/`;
            window.location.href = "/verifica_email/";
         } else {
-          errorDiv.textContent = data.error || "Error desconocido.";
+          errorDiv.textContent = data.error || I18N.t('login.error_servidor') || "Error desconocido.";
         }
       })
       .catch(() => {
-        errorDiv.textContent = "Error de red o servidor.";
+        errorDiv.textContent = I18N.t('login.error_conexion') || "Error de red o servidor.";
       });
   });
 
@@ -112,6 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
     langSelect.addEventListener("change", function () {
       const selectedLang = this.value;
       localStorage.setItem("lang", selectedLang);
+      document.cookie = `lang=${selectedLang}; path=/`;
       aplicarIdioma(selectedLang);
       validarFormulario();
     });

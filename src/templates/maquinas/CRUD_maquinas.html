@@ -34,6 +34,15 @@
             Carica TaskReport (Excel)
           </button>
 
+          <!-- NUEVO: botón subir TaskReport RTF -->
+          <button
+            type="button"
+            class="btn btn-outline-secondary ms-2"
+            id="btn-subir-taskreport-rtf"
+            data-upload-url="{{ url_for('task_report_import.importar_taskreport_rtf') }}">
+            Carica TaskReport (RTF)
+          </button>
+
 
           <div id="taskreport-upload-result" class="mt-2 small text-muted"></div>
 
@@ -331,6 +340,67 @@
       <div class="dpia-modal__footer">
         <button type="button" class="btn btn-secondary" data-close="1">Cancellare</button>
         <button type="button" class="btn btn-primary" id="btn-confirmar-taskreport-upload">
+          Importa
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal Subir TaskReport RTF (sin Bootstrap) -->
+<div class="dpia-modal" id="modalLaserTaskReportUploadRtf" aria-hidden="true">
+  <div class="dpia-modal__backdrop" data-close="1"></div>
+
+  <div class="dpia-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalLaserTaskReportUploadRtfLabel">
+    <div class="dpia-modal__content">
+
+      <div class="dpia-modal__header">
+        <h5 class="dpia-modal__title" id="modalLaserTaskReportUploadRtfLabel">Carica TaskReport (RTF)</h5>
+        <button type="button" class="dpia-modal__close btn-close" data-close="1" aria-label="Close">×</button>
+      </div>
+
+      <div class="dpia-modal__body">
+        <form id="form-taskreport-rtf-upload">
+          <div class="mb-3">
+            <label class="form-label">File Log HypCut (.rtf)</label>
+            <input class="form-control" type="file" id="taskreport-rtf-file" name="file" accept=".rtf" required>
+            <small class="text-muted">Seleziona il file di log HypCut (*.rtf)</small>
+          </div>
+
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label">Macchina</label>
+              <input class="form-control" type="text" id="taskreport-rtf-machine" placeholder="es. Laser12000W">
+              <small class="text-muted">Valore facoltativo salvato in TaskReport.machine</small>
+            </div>
+            <div class="col-6 mb-3">
+              <label class="form-label">Prefisso Task Name</label>
+              <input class="form-control" type="text" id="taskreport-rtf-taskname" value="HypCut">
+              <small class="text-muted">Usato come prefisso per ogni taglio</small>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label">Mode</label>
+              <select class="form-select" id="taskreport-rtf-mode">
+                <option value="upsert" selected>upsert</option>
+                <option value="insert_only">insert_only</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="alert alert-info small mb-0">
+            Caricando, importeremo tutti i tagli trovati nel log RTF nella tabella TaskReport.
+          </div>
+        </form>
+      </div>
+
+      <div class="dpia-modal__footer">
+        <button type="button" class="btn btn-secondary" data-close="1">Cancellare</button>
+        <button type="button" class="btn btn-primary" id="btn-confirmar-taskreport-rtf-upload">
           Importa
         </button>
       </div>
