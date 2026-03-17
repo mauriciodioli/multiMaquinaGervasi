@@ -226,13 +226,13 @@ async function calcularRetenidoBR() {
     }
 
     window.granRetidoResultado = data;
-
     renderRetidoGrafico(
       data.tamices,
+      data.mix_acum,
       data.mix_pasante,
-      data.faixas,
-      { faixa: 'bloco' } // o 'paver'
+      data.faixas
     );
+    //renderRetidoGrafico( data.tamices, data.mix_pasante, data.faixas, { faixa: 'bloco' } );
     renderRetidoTablitas(data.tamices, data.mix_acum, data.faixas);
     abrirModal('modalRetidoBR');
 
@@ -248,52 +248,48 @@ async function calcularRetenidoBR() {
 
 let retidoChart;
 
-function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' }) {
+//function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' }) {
+function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { faixa: 'bloco' }) {
   // Mapear a puntos X,Y en eje log y preparar etiquetas exactas (incluye FUNDO)
-  const FUNDO_X = 0.01; // ancla para "Fundo" en eje log
-  const pts = tamices.map((t, i) => ({
+ const FUNDO_X = 0.01;
+
+  const dataOrdenada = tamices.map((t, i) => ({
     x: String(t).toLowerCase() === 'fundo' ? FUNDO_X : parseFloat(t),
-    y: parseFloat(mix_acum[i]),
-    label: String(t)
-  })).filter(p => !Number.isNaN(p.x));
+    label: String(t),
+    acum: parseFloat(mix_acum[i]),
+    pasante: parseFloat(mix_pasante[i]),
+    idx: i
+  }))
+  .filter(p => !Number.isNaN(p.x))
+  .sort((a,b) => a.x - b.x);
 
-  // Ordenar por X (log)
-  pts.sort((a,b) => a.x - b.x);
-
-  // Arrays finales X/Y (sin "Fundo" para el eje visible)
-  const xs = pts.map(p => p.x);
-  const ys = pts.map(p => p.y);
-  const labels = pts.map(p => p.label);
+  // 👉 Prepare axes data
+  const xs = dataOrdenada.map(p => p.x);
+  const labels = dataOrdenada.map(p => p.label);
 
   // ---- Limites por tamiz: construimos 4 curvas (bloco min/max, paver min/max) ----
   const detBloco = (faixas && faixas.bloco) ? faixas.bloco : [];
   const detPaver = (faixas && faixas.paver) ? faixas.paver : [];
 
-  const byLabel = Object.fromEntries(tamices.map((t,i)=>[String(t), i]));
-  const toAligned = (det, pick) => tamices.map((t,i) => {
-    const d = det[i];
+  // Reordenar según xs (por si hubiese desfasajes)
+  const reorder = (det, pick) => dataOrdenada.map(p => {
+    const key = p.label;
+    const idx = tamices.findIndex(t => String(t) === key);
+    const d = det[idx];
     if (!d || d.min == null || d.max == null) return null;
     return pick === 'min' ? d.min : d.max;
   });
 
-  let blocoMin = toAligned(detBloco, 'min');
-  let blocoMax = toAligned(detBloco, 'max');
-  let paverMin = toAligned(detPaver, 'min');
-  let paverMax = toAligned(detPaver, 'max');
+  const blocoMin = reorder(detBloco, 'min');
+  const blocoMax = reorder(detBloco, 'max');
+  const paverMin = reorder(detPaver, 'min');
+  const paverMax = reorder(detPaver, 'max');
 
-  // Reordenar según xs (por si hubiese desfasajes)
-  const reorder = arr => {
-    if (!arr || !arr.length) return [];
-    return tamices.map((_,i)=>arr[i]) // ya paralelos
-      .map((v, i) => ({ x: String(tamices[i]).toLowerCase()==='fundo'?FUNDO_X:parseFloat(tamices[i]), v }))
-      .filter(o => !Number.isNaN(o.x))
-      .sort((a,b)=>a.x-b.x)
-      .map(o => o.v);
-  };
-  blocoMin = reorder(blocoMin);
-  blocoMax = reorder(blocoMax);
-  paverMin = reorder(paverMin);
-  paverMax = reorder(paverMax);
+  // Helper to convert array of y-values to {x, y} dataset format (filter out nulls)
+  const toDataset = (yArr) => dataOrdenada.map((p, i) => {
+    const y = yArr[i];
+    return y != null ? {x: p.x, y: y} : null;
+  }).filter(v => v != null);
 
   // Preparar canvas
   const ctx = document.getElementById('retidoChart').getContext('2d');
@@ -302,12 +298,11 @@ function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' 
   retidoChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: xs,
       datasets: [
         // === Limites para Blocos (azul sólido, dos curvas) ===
         {
           label: 'Limites para Blocos (min)',
-          data: blocoMin,
+          data: toDataset(blocoMin),
           borderColor: '#1f6bff',
           pointRadius: 0,
           borderWidth: 2,
@@ -315,8 +310,8 @@ function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' 
         },
         {
           label: 'Limites para Blocos (max)',
-          data: blocoMax,
-          borderColor: '#1f6bff',
+          data: toDataset(blocoMax),
+          borderColor: '#004aad',
           pointRadius: 0,
           borderWidth: 2,
           fill: false
@@ -325,7 +320,7 @@ function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' 
         // === Limites para Pavers (negro punteado, dos curvas) ===
         {
           label: 'Limites para Pavers (min)',
-          data: paverMin,
+          data: toDataset(paverMin),
           borderColor: '#111',
           borderDash: [6, 5],
           pointRadius: 0,
@@ -334,7 +329,7 @@ function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' 
         },
         {
           label: 'Limites para Pavers (max)',
-          data: paverMax,
+          data: toDataset(paverMax),
           borderColor: '#111',
           borderDash: [6, 5],
           pointRadius: 0,
@@ -344,18 +339,32 @@ function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' 
 
         // === Curva en estudio (roja sólida con puntos) ===
         {
-          label: 'curva em estudo',
-          data: ys,
+          label: 'Retido acumulado',
+          data: dataOrdenada.map(p => ({x: p.x, y: p.acum})),
           borderColor: '#e74c3c',
           backgroundColor: '#e74c3c',
           pointRadius: 3,
           tension: 0.25,
           borderWidth: 2,
-          fill: false
+          fill: false,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Pasante',
+          data: dataOrdenada.map(p => ({x: p.x, y: p.pasante})),
+          borderColor: '#2ecc71',
+          backgroundColor: '#2ecc71',
+          pointRadius: 3,
+          tension: 0.25,
+          borderWidth: 2,
+          borderDash: [5,5],
+          fill: false,
+          yAxisID: 'y1' 
         }
       ]
     },
     options: {
+      parsing: false,
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: 'nearest', intersect: false },
@@ -374,7 +383,7 @@ function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' 
       scales: {
         x: {
           type: 'logarithmic',
-          min: FUNDO_X,
+          min: Math.min(...xs) / 2,
           max: Math.max(...xs),
           ticks: {
             callback: (value) => {
@@ -389,8 +398,27 @@ function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' 
           title: { display: true, text: 'Peneira (mm)' }
         },
         y: {
-          min: 0, max: 100,
-          title: { display: true, text: '% Retido Acumulado' }
+          type: 'linear',
+          position: 'left',
+          min: 0,
+          max: 100,
+          title: {
+            display: true,
+            text: '% Retido Acumulado'
+          }
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          min: 0,
+          max: 100,
+          grid: {
+            drawOnChartArea: false
+          },
+          title: {
+            display: true,
+            text: '% Pasante'
+          }
         }
       }
     }
