@@ -190,7 +190,7 @@ function construirPayloadRetido(){
 
   if (!materiales.length) throw new Error('No hay materiales con datos de % retenido.');
 
-  const tamices = TAMICES_ORDEN.filter(t => tamicesSet.has(t));
+  const tamices = Array.from(tamicesSet);
 
   // Control rápido
   const suma = materiales.reduce((s,m)=>s+(+m.proporcion_pct||0), 0);
@@ -229,7 +229,7 @@ async function calcularRetenidoBR() {
 
     renderRetidoGrafico(
       data.tamices,
-      data.mix_acum,
+      data.mix_pasante,
       data.faixas,
       { faixa: 'bloco' } // o 'paver'
     );

@@ -100,7 +100,7 @@ def granulometria_retido():
         log(f"  - {m.get('nombre')}: prop%={m.get('proporcion_pct')}  len(ret_ind)={len(m.get('retido_ind_pct',[]))}")
 
     # 1) ordenar según norma
-    idx = _ordenar_indices(tamices)
+    idx = sorted(range(len(tamices)), key=lambda i: float(tamices[i]) if str(tamices[i]).lower() != "fundo" else -1, reverse=True)
     tamices_ord = [tamices[i] for i in idx]
     log("\n> Orden aplicado:", tamices_ord)
 
@@ -142,15 +142,19 @@ def granulometria_retido():
 
     # 3) mezcla ponderada (acumulado)
     mix_acum = _mezcla_ponderada_acum(materiales)
+
+    # 🔥 convertir a PASANTE
+    mix_pasante = [round(100 - v, 1) for v in mix_acum]
     
     log("\n> MIX ACUM (ponderado):", ["{:.1f}".format(x) for x in mix_acum])
+    log("\n> MIX PASANTE:", ["{:.1f}".format(x) for x in mix_pasante])
 
     # 4) MF
     mf = _finura_modulus(mix_acum, tamices_ord)
     log(f"> Módulo de finura (esperado ~3.55 con planilla): {mf}")
 
     # 5) validación contra faixas
-    valid = _validar_faixas(mix_acum, tamices_ord, limites)
+    valid = _validar_faixas(mix_pasante, tamices_ord, limites)
     gran_ponderada = [{"#": t, "%": mix_acum[i]} for i, t in enumerate(tamices_ord)]
     # resumen corto por tamiz
     if limites:
@@ -181,6 +185,7 @@ def granulometria_retido():
         "tamices": tamices_ord,
         "materiales": materiales,
         "mix_acum": mix_acum,
+        "mix_pasante": mix_pasante,
         "modulo_finura": mf,
         "faixas": valid,
         "gran_ponderada": gran_ponderada, 
