@@ -2,9 +2,9 @@ import os
 import urllib.parse
 from pathlib import Path
 from dotenv import load_dotenv
-#load_dotenv(Path('/app/.env'))
+load_dotenv(Path('/app/.env'))
 #load_dotenv()
-load_dotenv(Path(__file__).resolve().parent / ".env")  # carga /config/.env
+#load_dotenv(Path(__file__).resolve().parent / ".env")  # carga /config/.env
 
 
 class Config:
