@@ -192,7 +192,8 @@ function construirPayloadRetido(){
       materiales.push({
         nombre,
         proporcion_pct: pct,      // ya no hay mock
-        retido_ind_pct: retidosLoc
+        retido_ind_pct: retidosLoc,
+        normalizar: true          // STEP 3: Add normalization flag (always true for now)
       });
     }
   });
@@ -214,6 +215,10 @@ async function calcularRetenidoBR() {
   let payload;
   try { payload = construirPayloadRetido(); }
   catch (e) { alert(e.message); return; }
+
+  // STEP 6: Debug BEFORE sending
+  console.log("FINAL PAYLOAD:", payload);
+  console.log("Materiales transformados:", payload.materiales);
 
   console.log("→ Payload BR", payload);
 
@@ -243,6 +248,9 @@ async function calcularRetenidoBR() {
     );
     //renderRetidoGrafico( data.tamices, data.mix_pasante, data.faixas, { faixa: 'bloco' } );
     renderRetidoTablitas(data.tamices, data.mix_acum, data.faixas);
+    if (data.sugerencia_division) {
+      renderSugerenciaDivision(data.sugerencia_division);
+    }
     abrirModal('modalRetidoBR');
 
     console.log("✅ MIX ACUM:", data.mix_acum);
@@ -575,7 +583,88 @@ function renderRetidoTablitas(tamices, mix_acum, faixas){
   host.innerHTML = tbl1 + tbl2;
 }
 
+function renderSugerenciaDivision(sugerencia_division){
+  if (!sugerencia_division || !sugerencia_division.grupos) return;
 
+  const host = document.getElementById('retidoTables');
+  if (!host) return;
+
+  const { grupos, reconstruccion_check } = sugerencia_division;
+  if (grupos.length < 2) return;
+
+  const g1 = grupos[0];
+  const g2 = grupos[1];
+
+  // Título y descripción
+  const titulo = "Sugerencia de división en 2 sub-agregados";
+  const desc = `Basada en la curva del primer material. Error de reconstrucción: ${reconstruccion_check.error_total_pct}%`;
+
+  // Grid con 2 columnas lado a lado
+  const html = `
+    <div class="mini-card" style="grid-column: 1 / -1;">
+      <div class="mini-title" style="color: #1a73e8; font-size: 0.95rem; margin-bottom: 8px;">${titulo}</div>
+      <div style="font-size: 0.85rem; color: #666; margin-bottom: 12px;">${desc}</div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <!-- Grupo 1 -->
+        <div style="border: 1px solid #e8eef7; border-radius: 6px; padding: 10px; background: #f8fafb;">
+          <h4 style="margin: 0 0 8px 0; font-size: 0.9em; color: #1a73e8; font-weight: 600;">Grupo 1</h4>
+          <div style="font-size: 0.85rem; font-weight: 500; color: #666; margin-bottom: 8px;">
+            Proporción: <strong>${g1.proporcion_sugerida_pct}%</strong>
+          </div>
+          <table class="mini-table" style="font-size: 0.8rem; margin-bottom: 8px;">
+            <thead>
+              <tr>
+                <th>Tamiz</th>
+                <th>Ret. %</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${g1.retido_ind_pct_normalizado.map((ret, i) => `
+                <tr>
+                  <td>${g1.tamices[i]}</td>
+                  <td>${ret.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div style="font-size: 0.8rem; color: #888; border-top: 1px solid #e8eef7; padding-top: 6px;">
+            <strong>Peso original:</strong> ${g1.peso_original.toFixed(2)}%
+          </div>
+        </div>
+
+        <!-- Grupo 2 -->
+        <div style="border: 1px solid #e8eef7; border-radius: 6px; padding: 10px; background: #f8fafb;">
+          <h4 style="margin: 0 0 8px 0; font-size: 0.9em; color: #1a73e8; font-weight: 600;">Grupo 2</h4>
+          <div style="font-size: 0.85rem; font-weight: 500; color: #666; margin-bottom: 8px;">
+            Proporción: <strong>${g2.proporcion_sugerida_pct}%</strong>
+          </div>
+          <table class="mini-table" style="font-size: 0.8rem; margin-bottom: 8px;">
+            <thead>
+              <tr>
+                <th>Tamiz</th>
+                <th>Ret. %</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${g2.retido_ind_pct_normalizado.map((ret, i) => `
+                <tr>
+                  <td>${g2.tamices[i]}</td>
+                  <td>${ret.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div style="font-size: 0.8rem; color: #888; border-top: 1px solid #e8eef7; padding-top: 6px;">
+            <strong>Peso original:</strong> ${g2.peso_original.toFixed(2)}%
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  // Agregar al final del contenido existente
+  host.innerHTML += html;
+}
 
 
 (function () {

@@ -192,7 +192,13 @@ const I18N = (() => {
         retido_pasante: "Pasante",
         retido_axis_x: "Peneira (mm)",
         retido_axis_y: "% Retido Acumulado",
-        retido_axis_y1: "% Pasante"
+        retido_axis_y1: "% Pasante",
+        error_sin_valores: "El agregado no tiene valores disponibles",
+        error_sin_mezcla_seleccionada: "No hay mezcla seleccionada. Abre el modal desde un botón de mezcla.",
+        error_tabla_no_encontrada: "No se encontró la tabla en la mezcla seleccionada",
+        error_conexion_agregado: "Error al conectar con el servidor",
+        modal_titulo_agregados: "Seleccionar agregado precargado",
+        modal_boton_usar_agregado: "Usar agregado"
       },
       resultado_simulador: {
         titulo: "Resultado de simulación",
@@ -277,7 +283,13 @@ const I18N = (() => {
         retido_pasante: "Passing",
         retido_axis_x: "Sieve (mm)",
         retido_axis_y: "% Cumulative Retained",
-        retido_axis_y1: "% Passing"
+        retido_axis_y1: "% Passing",
+        error_sin_valores: "The aggregate has no available values",
+        error_sin_mezcla_seleccionada: "No mix selected. Open the modal from a mix button.",
+        error_tabla_no_encontrada: "Table not found in the selected mix",
+        error_conexion_agregado: "Error connecting to server",
+        modal_titulo_agregados: "Select preloaded aggregate",
+        modal_boton_usar_agregado: "Use aggregate"
       },
       resultado_simulador: {
         titulo: "Simulation Result",
@@ -368,6 +380,12 @@ const I18N = (() => {
         error_proporcioni: "⚠️ Le proporzioni devono sommare al 100%",
         error_procesar: "❌ Errore nell'elaborazione della miscela"
       },
+      error_sin_valores: "L'aggregato non ha valori disponibili",
+      error_sin_mezcla_seleccionada: "Nessuna miscela selezionata. Apri il modale da un pulsante di miscela.",
+      error_tabla_no_encontrada: "Tabella non trovata nella miscela selezionata",
+      error_conexion_agregado: "Errore durante la connessione al server",
+      modal_titulo_agregados: "Seleziona aggregato precarico",
+      modal_boton_usar_agregado: "Usa aggregato",
       pt: {
         sum100_alert: "⚠️ As proporções devem somar 100%",
         bad_response: "Resposta inválida do servidor",
@@ -443,7 +461,21 @@ const I18N = (() => {
         grafico_alt: "Curva resultante vs Fuller",
         error_proporciones: "⚠️ As proporções devem somar 100%",
         error_procesar: "❌ Erro ao processar a mistura"
-      }
+      },
+      error_sin_valores: "O agregado não tem valores disponíveis",
+      error_sin_mezcla_seleccionada: "Nenhuma mistura selecionada. Abra o modal a partir de um botão de mistura.",
+      error_tabla_no_encontrada: "Tabela não encontrada na mistura selecionada",
+      error_conexion_agregado: "Erro ao conectar ao servidor",
+      modal_titulo_agregados: "Selecionar agregado pré-carregado",
+      modal_boton_usar_agregado: "Usar agregado"
+    },
+    pl: {
+      error_sin_valores: "Agregat nie ma dostępnych wartości",
+      error_sin_mezcla_seleccionada: "Brak wybranej mieszanki. Otwórz modal z przycisku mieszanki.",
+      error_tabla_no_encontrada: "Tabela nie znaleziona w wybranej mieszance",
+      error_conexion_agregado: "Błąd połączenia z serwerem",
+      modal_titulo_agregados: "Wybierz wstępnie załadowany agregat",
+      modal_boton_usar_agregado: "Użyj agregatu"
     },
 
     login: {

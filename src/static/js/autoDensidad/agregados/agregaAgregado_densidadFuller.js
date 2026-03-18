@@ -16,6 +16,7 @@ function agregarAgredadosPreCardados(boton) {
                 select.appendChild(option);
             });
             document.getElementById("modalAgregados").style.display = "block";
+            actualizarTextoModalAgregados();
         });
 }
 
@@ -24,12 +25,30 @@ function cerrarModalAgregados() {
     // si querés liberar la mezcla:
     // mezclaSeleccionada = null;
 }
+
+function actualizarTextoModalAgregados() {
+    const titulo = document.getElementById("modalAgregadosTitulo");
+    const boton = document.getElementById("btnUsarAgregado");
+    
+    if (titulo && typeof I18N !== 'undefined') {
+        titulo.textContent = I18N.t('sim.modal_titulo_agregados', 'Seleccionar agregado precargado');
+    }
+    
+    if (boton && typeof I18N !== 'undefined') {
+        boton.textContent = I18N.t('sim.modal_boton_usar_agregado', 'Usar agregado');
+    }
+}
+
 function usarAgregadoSeleccionado() {
     const id = document.getElementById("selectAgregado").value;
     debugger;
 
     if (!mezclaSeleccionada) {
-        console.error("❌ No hay mezclaSeleccionada. ¿Abriste el modal desde un botón de mezcla?");
+        const msg = typeof I18N !== 'undefined' 
+            ? I18N.t('sim.error_sin_mezcla_seleccionada', 'No hay mezcla seleccionada. Abre el modal desde un botón de mezcla.')
+            : '❌ No hay mezclaSeleccionada. ¿Abriste el modal desde un botón de mezcla?';
+        notify('error', 'Error', msg);
+        console.error(msg);
         return;
     }
 
@@ -37,7 +56,15 @@ function usarAgregadoSeleccionado() {
         .then(res => res.json())
         .then(tamices => {
             if (!tamices || !tamices.length) {
-                console.error("❌ El agregado no devolvió tamices");
+                const msg = typeof I18N !== 'undefined' 
+                    ? I18N.t('sim.error_sin_valores', 'El agregado no tiene valores disponibles')
+                    : '❌ El agregado no devolvió tamices';
+                notify('error', 'Error', msg);
+                console.error(msg);
+                // Cerrar modal de agregados automáticamente cuando no hay datos
+                if (typeof cerrarModalAgregados === 'function') {
+                    setTimeout(() => cerrarModalAgregados(), 2000);
+                }
                 return;
             }
 
@@ -53,7 +80,15 @@ function usarAgregadoSeleccionado() {
             // tabla de esa mezcla
             const tbody = mezclaSeleccionada.querySelector("table.tabla tbody");
             if (!tbody) {
-                console.error("❌ No se encontró el tbody en la mezcla seleccionada");
+                const msg = typeof I18N !== 'undefined' 
+                    ? I18N.t('sim.error_tabla_no_encontrada', 'No se encontró la tabla en la mezcla seleccionada')
+                    : '❌ No se encontró el tbody en la mezcla seleccionada';
+                notify('error', 'Error', msg);
+                console.error(msg);
+                // Cerrar modal de agregados automáticamente cuando hay error en tabla
+                if (typeof cerrarModalAgregados === 'function') {
+                    setTimeout(() => cerrarModalAgregados(), 2000);
+                }
                 return;
             }
             tbody.innerHTML = "";
@@ -80,8 +115,25 @@ debugger;
             guardarTablaEnLocalStorage(mezclaSeleccionada, nombre, tamices);
         })
         .catch(err => {
+            const msg = typeof I18N !== 'undefined' 
+                ? I18N.t('sim.error_conexion_agregado', 'Error al conectar con el servidor')
+                : '❌ Error al obtener curva del agregado';
+            notify('error', 'Error', `${msg}: ${err}`);
             console.error("❌ Error al obtener curva del agregado:", err);
+            // Cerrar modal de agregados automáticamente cuando hay error de conexión
+            if (typeof cerrarModalAgregados === 'function') {
+                setTimeout(() => cerrarModalAgregados(), 2000);
+            }
         });
+}
+
+// Función fallback para notificaciones (en caso de que notify no esté global)
+function notify(type, title, text) {
+    if (window.Swal && typeof Swal.fire === 'function') {
+        Swal.fire(title || '', text || '', type || 'info');
+    } else {
+        alert(`${title ? title + ': ' : ''}${text || ''}`);
+    }
 }
 
 
