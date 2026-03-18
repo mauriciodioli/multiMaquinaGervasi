@@ -237,30 +237,18 @@ def granulometria_retido():
         log(r)
 
     # Generar sugerencia de división para el primer agregado
-    sugerencia_division = None
-    if materiales_in:
-        primer_material = materiales_in[0]
-        
-        # Extraer retidos originales (antes de cualquier normalización)
-        if "filas" in primer_material and primer_material["filas"]:
-            # Nuevo formato: mapear filas a retidos en orden de tamices
-            retido_map = {
-                str(f["tamiz"]): float(f["porcentaje"])
-                for f in primer_material["filas"]
-            }
-            retido_original = [retido_map.get(str(t), 0.0) for t in tamices_ord]
-        else:
-            # Formato antiguo
-            retido_original = primer_material.get("retido_ind_pct", [])
-        
-        # Generar sugerencia
-        if retido_original:
-            log("\n> Generando sugerencia de división para:", primer_material.get('nombre', 'Agregado 1'))
-            sugerencia_division = sugerir_division_en_dos(tamices_ord, retido_original)
-            if sugerencia_division:
-                log(f"  Grupo 1: {sugerencia_division['grupos'][0]['proporcion_sugerida_pct']}%")
-                log(f"  Grupo 2: {sugerencia_division['grupos'][1]['proporcion_sugerida_pct']}%")
-                log(f"  Error reconstrucción: {sugerencia_division['reconstruccion_check']['error_total_pct']}%")
+    # Generar sugerencia de división automáticamente
+    sugerencia_division = evaluar_y_sugerir_division(materiales_in, materiales, tamices_ord, valid, log)
+    
+    if sugerencia_division:
+        log(f"\n✓ Sugerencia de división generada:")
+        if "grupos" in sugerencia_division and len(sugerencia_division["grupos"]) >= 2:
+            log(f"  Grupo 1: {sugerencia_division['grupos'][0]['proporcion_sugerida_pct']}%")
+            log(f"  Grupo 2: {sugerencia_division['grupos'][1]['proporcion_sugerida_pct']}%")
+            if len(sugerencia_division["grupos"]) > 2:
+                log(f"  Grupo 3: {sugerencia_division['grupos'][2]['proporcion_sugerida_pct']}%")
+        if "reconstruccion_check" in sugerencia_division:
+            log(f"  Error reconstrucción: {sugerencia_division['reconstruccion_check']['error_total_pct']}%")
 
     return jsonify({
         "ok": True,
@@ -283,6 +271,94 @@ def _normalizar_ind(ret_ind):
     if total <= 0:
         return ret_ind  # evitar división por cero
     return [(x / total) * 100 for x in ret_ind]
+
+
+def evaluar_y_sugerir_division(materiales_in, materiales, tamices_ord, valid, log):
+    """
+    Evalúa si la curva tiene desviación significativa y sugiere división.
+    
+    Lógica:
+    - Si hay <2 errores vs faixas → Ninguna sugerencia
+    - Si hay 1 material + desviación → sugerir_division_en_dos
+    - Si hay 2 materiales + desviación → sugerir_division_en_tres (mezcla ponderada)
+    - Si hay >2 materiales → Ninguna sugerencia
+    
+    Args:
+        materiales_in: lista original de entrada
+        materiales: lista procesada
+        tamices_ord: tamices ordenados
+        valid: dict validación {bloco: [...], paver: [...]}
+        log: función logging
+    
+    Returns:
+        dict con sugerencia o None
+    """
+    
+    if not materiales_in or not materiales or not tamices_ord:
+        return None
+    
+    # Evaluar desviación contando errores
+    errores = 0
+    if valid and "bloco" in valid:
+        errores = max(errores, sum(1 for d in valid["bloco"] if d.get("ok") == False))
+    if valid and "paver" in valid:
+        errores = max(errores, sum(1 for d in valid["paver"] if d.get("ok") == False))
+    
+    log(f"\n> Evaluación automática de división: {errores} errores detectados")
+    
+    # Si curva es aceptable, no sugerir
+    if errores < 2:
+        log(f"  → Curva dentro de especificación (sin división sugerida)")
+        return None
+    
+    num_materiales = len(materiales_in)
+    log(f"  → Desviación detectada ({errores} errores), evaluando {num_materiales} material(es)")
+    
+    # Decidir tipo de división según cantidad de materiales
+    if num_materiales == 1:
+        # Caso: 1 material → División en 2
+        log(f"  → Intentando división en 2...")
+        
+        primer_material = materiales_in[0]
+        
+        # Extraer retidos originales
+        if "filas" in primer_material and primer_material["filas"]:
+            retido_map = {str(f["tamiz"]): float(f["porcentaje"]) for f in primer_material["filas"]}
+            retido_original = [retido_map.get(str(t), 0.0) for t in tamices_ord]
+        else:
+            retido_original = primer_material.get("retido_ind_pct", [])
+        
+        if retido_original and sum(retido_original) > 0:
+            return sugerir_division_en_dos(tamices_ord, retido_original)
+    
+    elif num_materiales == 2:
+        # Caso: 2 materiales → División en 3 (mezcla ponderada)
+        log(f"  → Intentando división en 3 con mezcla ponderada...")
+        
+        try:
+            n = len(tamices_ord)
+            retido_mix = [0.0] * n
+            
+            # Construir mezcla ponderada
+            for m in materiales:
+                w = float(m.get('w', 0.0))
+                ret_ind = m.get('ret_ind', [])
+                
+                if len(ret_ind) == n:
+                    for i in range(n):
+                        retido_mix[i] += w * float(ret_ind[i])
+            
+            if sum(retido_mix) > 0:
+                return sugerir_division_en_tres(tamices_ord, retido_mix)
+        
+        except Exception as e:
+            log(f"  ✗ Error calculando división en 3: {str(e)}")
+    
+    else:
+        # 3+ materiales → Muy complejo para sugerir
+        log(f"  → {num_materiales} materiales: demasiado complejo para sugerir (no se divide)")
+    
+    return None
 
 
 def sugerir_division_en_dos(tamices, retido_ind_pct):
@@ -462,6 +538,202 @@ def sugerir_division_en_dos(tamices, retido_ind_pct):
             "tamiz_corte": str(tamices[idx_corte ]) if idx_corte > 0 else None,
             "max_diff_pct": round(max_diff, 2),
             "acum_corte_pct": round(acum_corte, 2),
+            "criterios_aplicados": {
+                "ruido_min": RUIDO_MIN,
+                "acum_min": ACUM_MIN,
+                "acum_max": ACUM_MAX
+            }
+        }
+    }
+    
+def sugerir_division_en_tres(tamices, retido_ind_pct):
+    if len(tamices) != len(retido_ind_pct):
+        return None
+
+    n = len(tamices)
+    if n < 3:
+        return None
+
+    # =======================================
+    # 1. Normalización y acumulado
+    # =======================================
+    total = sum(retido_ind_pct)
+    if total <= 0:
+        return None
+
+    retido_norm = [(v / total) * 100 for v in retido_ind_pct]
+
+    acumulado = []
+    running = 0.0
+    for v in retido_norm:
+        running += v
+        acumulado.append(running)
+
+    # =======================================
+    # 2. Calcular diffs
+    # =======================================
+    diffs = [acumulado[i] - acumulado[i-1] for i in range(1, n)]
+
+    # =======================================
+    # 3. Filtrar candidatos válidos
+    # =======================================
+    RUIDO_MIN = 5.0
+    ACUM_MIN = 10.0
+    ACUM_MAX = 90.0
+
+    candidatos = []
+
+    for i in range(1, n-1):
+        diff_i = diffs[i-1]
+        acum_i = acumulado[i]
+
+        if diff_i < RUIDO_MIN:
+            continue
+        if acum_i < ACUM_MIN or acum_i > ACUM_MAX:
+            continue
+
+        candidatos.append((i, diff_i, acum_i))
+
+    # =======================================
+    # 4. Seleccionar 2 mejores cortes por optimización de error
+    # =======================================
+    mejor_combo = None
+    mejor_error = float("inf")
+
+    total = sum(retido_ind_pct)
+    if total <= 0:
+        return None
+
+    retido_base = [(v / total) * 100 for v in retido_ind_pct]
+
+    MIN_GRUPO = 5.0
+
+    for i in range(1, n-2):
+        for j in range(i+1, n-1):
+
+            if not (10 <= acumulado[i] <= 90):
+                continue
+            if not (10 <= acumulado[j] <= 90):
+                continue
+
+            g1 = retido_base[:i]
+            g2 = retido_base[i:j]
+            g3 = retido_base[j:]
+
+            p1 = sum(g1)
+            p2 = sum(g2)
+            p3 = sum(g3)
+
+            if p1 < MIN_GRUPO or p2 < MIN_GRUPO or p3 < MIN_GRUPO:
+                continue
+
+            total_check = p1 + p2 + p3
+            if total_check <= 0:
+                continue
+
+            prop1 = p1 / total_check * 100
+            prop2 = p2 / total_check * 100
+            prop3 = p3 / total_check * 100
+
+            def norm(arr, peso):
+                return [(v / peso) * 100 if peso > 0 else 0 for v in arr]
+
+            g1n = norm(g1, p1)
+            g2n = norm(g2, p2)
+            g3n = norm(g3, p3)
+
+            reconstruido = []
+
+            for k in range(n):
+                if k < i:
+                    val = (g1n[k] / 100.0) * prop1
+                elif k < j:
+                    val = (g2n[k - i] / 100.0) * prop2
+                else:
+                    val = (g3n[k - j] / 100.0) * prop3
+
+                reconstruido.append(val)
+
+            error = sum(abs(reconstruido[k] - retido_base[k]) for k in range(n))
+
+            if error < mejor_error:
+                mejor_error = error
+                mejor_combo = (i, j, prop1, prop2, prop3, g1n, g2n, g3n)
+
+    if mejor_combo is None:
+        return None
+    
+    idx1, idx2, prop1, prop2, prop3, g1n, g2n, g3n = mejor_combo
+
+    # =======================================
+    # 5. Extraer tamices y calcular pesos originales
+    # =======================================
+    t1 = tamices[:idx1]
+    t2 = tamices[idx1:idx2]
+    t3 = tamices[idx2:]
+
+    g1_original = retido_ind_pct[:idx1]
+    g2_original = retido_ind_pct[idx1:idx2]
+    g3_original = retido_ind_pct[idx2:]
+
+    p1_original = sum(g1_original)
+    p2_original = sum(g2_original)
+    p3_original = sum(g3_original)
+
+    # =======================================
+    # 6. Reconstrucción final y error validación
+    # =======================================
+    reconstruido = []
+
+    for k in range(n):
+        if k < idx1:
+            val = (g1n[k] / 100.0) * prop1
+        elif k < idx2:
+            val = (g2n[k - idx1] / 100.0) * prop2
+        else:
+            val = (g3n[k - idx2] / 100.0) * prop3
+
+        reconstruido.append(val)
+
+    error = sum(abs(reconstruido[k] - retido_base[k]) for k in range(n))
+
+    # =======================================
+    # 7. Output
+    # =======================================
+    return {
+        "tipo": "auto_3_inteligente",
+        "puntos_corte": [idx1, idx2],
+        "grupos": [
+            {
+                "nombre": "gruesos",
+                "tamices": [str(t) for t in t1],
+                "peso_original": round(p1_original, 2),
+                "proporcion_sugerida_pct": round(prop1, 2),
+                "retido_ind_pct_normalizado": [round(v, 2) for v in g1n]
+            },
+            {
+                "nombre": "medios",
+                "tamices": [str(t) for t in t2],
+                "peso_original": round(p2_original, 2),
+                "proporcion_sugerida_pct": round(prop2, 2),
+                "retido_ind_pct_normalizado": [round(v, 2) for v in g2n]
+            },
+            {
+                "nombre": "finos",
+                "tamices": [str(t) for t in t3],
+                "peso_original": round(p3_original, 2),
+                "proporcion_sugerida_pct": round(prop3, 2),
+                "retido_ind_pct_normalizado": [round(v, 2) for v in g3n]
+            }
+        ],
+        "reconstruccion_check": {
+            "error_total_pct": round(error, 4)
+        },
+        "debug": {
+            "acumulado": [round(x, 2) for x in acumulado],
+            "diffs": [round(x, 2) for x in diffs],
+            "idx1": idx1,
+            "idx2": idx2,
             "criterios_aplicados": {
                 "ruido_min": RUIDO_MIN,
                 "acum_min": ACUM_MIN,

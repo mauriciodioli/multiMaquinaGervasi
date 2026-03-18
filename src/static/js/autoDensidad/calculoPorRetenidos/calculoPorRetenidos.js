@@ -592,9 +592,6 @@ function renderSugerenciaDivision(sugerencia_division){
   const { grupos, reconstruccion_check, debug } = sugerencia_division;
   if (grupos.length < 2) return;
 
-  const g1 = grupos[0];
-  const g2 = grupos[1];
-
   // Traduciones
   const titulo = I18N.t('sim.division_titulo');
   const desc = I18N.t('sim.division_desc_base');
@@ -618,45 +615,25 @@ function renderSugerenciaDivision(sugerencia_division){
   const debugTablaSalto = I18N.t('sim.division_debug_tabla_salto');
   const debugTablaNota = I18N.t('sim.division_debug_tabla_nota');
 
-  // Grid con 2 columnas lado a lado
+  // Determinar grid dinámicamente basado en # de grupos
+  const numGrupos = grupos.length;
+  const gridCols = numGrupos === 2 ? '1fr 1fr' : numGrupos === 3 ? '1fr 1fr 1fr' : '1fr';
+
+  // Grid DINÁMICO
   let html = `
     <div class="mini-card" style="grid-column: 1 / -1;">
       <div class="mini-title" style="color: #1a73e8; font-size: 0.95rem; margin-bottom: 8px;">${titulo}</div>
       <div style="font-size: 0.85rem; color: #666; margin-bottom: 12px;">${desc} ${reconstruccion_check.error_total_pct}%</div>
       
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-        <!-- Grupo 1 -->
-        <div style="border: 1px solid #e8eef7; border-radius: 6px; padding: 10px; background: #f8fafb;">
-          <h4 style="margin: 0 0 8px 0; font-size: 0.9em; color: #1a73e8; font-weight: 600;">${grupo} 1</h4>
-          <div style="font-size: 0.85rem; font-weight: 500; color: #666; margin-bottom: 8px;">
-            ${proporcion} <strong>${g1.proporcion_sugerida_pct}%</strong>
-          </div>
-          <table class="mini-table" style="font-size: 0.8rem; margin-bottom: 8px;">
-            <thead>
-              <tr>
-                <th>Tamiz</th>
-                <th>Ret. %</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${g1.retido_ind_pct_normalizado.map((ret, i) => `
-                <tr>
-                  <td>${g1.tamices[i]}</td>
-                  <td>${ret.toFixed(2)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <div style="font-size: 0.8rem; color: #888; border-top: 1px solid #e8eef7; padding-top: 6px;">
-            <strong>${pesoOriginal}</strong> ${g1.peso_original.toFixed(2)}%
-          </div>
-        </div>
+      <div style="display: grid; grid-template-columns: ${gridCols}; gap: 12px;">`;
 
-        <!-- Grupo 2 -->
+  // Generar dinámicamente cada grupo
+  grupos.forEach((g, idx) => {
+    html += `
         <div style="border: 1px solid #e8eef7; border-radius: 6px; padding: 10px; background: #f8fafb;">
-          <h4 style="margin: 0 0 8px 0; font-size: 0.9em; color: #1a73e8; font-weight: 600;">${grupo} 2</h4>
+          <h4 style="margin: 0 0 8px 0; font-size: 0.9em; color: #1a73e8; font-weight: 600;">${grupo} ${idx + 1}</h4>
           <div style="font-size: 0.85rem; font-weight: 500; color: #666; margin-bottom: 8px;">
-            ${proporcion} <strong>${g2.proporcion_sugerida_pct}%</strong>
+            ${proporcion} <strong>${g.proporcion_sugerida_pct}%</strong>
           </div>
           <table class="mini-table" style="font-size: 0.8rem; margin-bottom: 8px;">
             <thead>
@@ -666,23 +643,29 @@ function renderSugerenciaDivision(sugerencia_division){
               </tr>
             </thead>
             <tbody>
-              ${g2.retido_ind_pct_normalizado.map((ret, i) => `
+              ${(g.retido_ind_pct_normalizado || []).map((ret, i) => `
                 <tr>
-                  <td>${g2.tamices[i]}</td>
-                  <td>${ret.toFixed(2)}</td>
+                  <td>${g.tamices && g.tamices[i] ? g.tamices[i] : '-'}</td>
+                  <td>${typeof ret === 'number' ? ret.toFixed(2) : '0.00'}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
           <div style="font-size: 0.8rem; color: #888; border-top: 1px solid #e8eef7; padding-top: 6px;">
-            <strong>${pesoOriginal}</strong> ${g2.peso_original.toFixed(2)}%
+            <strong>${pesoOriginal}</strong> ${typeof g.peso_original === 'number' ? g.peso_original.toFixed(2) : '0.00'}%
           </div>
-        </div>
+        </div>`;
+  });
+
+  html += `
       </div>`;
 
   // Agregar sección de debug si existe
   if (debug) {
     const debugId = 'debugSection_' + Math.random().toString(36).slice(2);
+    const esDivisionDos = numGrupos === 2 && debug.idx_corte !== undefined;
+    const esDivisionTres = numGrupos === 3 && debug.idx1 !== undefined;
+
     html += `
       <div style="margin-top: 16px; border-top: 1px solid #e8eef7; padding-top: 12px;">
         <button type="button" onclick="toggleDebugInfo('${debugId}')" 
@@ -690,23 +673,46 @@ function renderSugerenciaDivision(sugerencia_division){
           ${debugBtn}
         </button>
         <div id="${debugId}" style="display: none; margin-top: 8px; padding: 10px; background: #f8fafb; border-radius: 4px; border-left: 3px solid #dadce0;">
-          <div style="font-size: 0.8rem; line-height: 1.6; color: #555;">
+          <div style="font-size: 0.8rem; line-height: 1.6; color: #555;">`;
+
+    // DEBUG para DIVISIÓN EN 2
+    if (esDivisionDos) {
+      html += `
             <div style="margin-bottom: 10px;">
               <strong>${debugCutpoint}</strong><br>
-              ${debugIndice} ${debug.idx_corte} | ${debugTamiz} ${debug.tamiz_corte} | ${debugSalto} ${debug.max_diff_pct.toFixed(2)}%<br>
-              ${debugAcum} ${debug.acum_corte_pct.toFixed(2)}%
+              ${debugIndice} ${debug.idx_corte} | ${debugTamiz} ${debug.tamiz_corte} | ${debugSalto} ${( typeof debug.max_diff_pct === 'number' ? debug.max_diff_pct.toFixed(2) : '0.00')}%<br>
+              ${debugAcum} ${(typeof debug.acum_corte_pct === 'number' ? debug.acum_corte_pct.toFixed(2) : '0.00')}%
             </div>`;
 
-    if (debug.criterios_aplicados) {
-      html += `
+      if (debug.criterios_aplicados) {
+        html += `
             <div style="margin-bottom: 10px;">
               <strong>${debugCriterios}</strong><br>
               ${debugFiltro} ${debug.criterios_aplicados.ruido_min}%<br>
               ${debugZona} ${debug.criterios_aplicados.acum_min}% ${debugZonaEntre} ${debug.criterios_aplicados.acum_max}%
             </div>`;
+      }
     }
 
-    // Tabla de acumulado y diferencias
+    // DEBUG para DIVISIÓN EN 3
+    if (esDivisionTres) {
+      html += `
+            <div style="margin-bottom: 10px;">
+              <strong>Puntos de Corte</strong><br>
+              Índice 1: ${debug.idx1} | Índice 2: ${debug.idx2}
+            </div>`;
+
+      if (debug.criterios_aplicados) {
+        html += `
+            <div style="margin-bottom: 10px;">
+              <strong>${debugCriterios}</strong><br>
+              ${debugFiltro} ${debug.criterios_aplicados.ruido_min}%<br>
+              ${debugZona} ${debug.criterios_aplicados.acum_min}% ${debugZonaEntre} ${debug.criterios_aplicados.acum_max}%
+            </div>`;
+      }
+    }
+
+    // Tabla de acumulado y diferencias (ambos casos)
     if (debug.acumulado && debug.diffs) {
       html += `
             <div style="margin-bottom: 10px;">
@@ -723,13 +729,25 @@ function renderSugerenciaDivision(sugerencia_division){
       for (let i = 0; i < debug.acumulado.length; i++) {
         const acum = debug.acumulado[i];
         const diff = debug.diffs[i] || 0;
-        const isCutpoint = (i === debug.idx_corte - 1);
-        const bgColor = isCutpoint ? '#fff3cd' : '';
+        
+        // Destacar puntos de corte
+        let bgColor = '';
+        let highlight = false;
+        
+        if (esDivisionDos && i === debug.idx_corte - 1) {
+          bgColor = '#fff3cd';
+          highlight = true;
+        }
+        if (esDivisionTres && (i === debug.idx1 - 1 || i === debug.idx2 - 1)) {
+          bgColor = '#fff3cd';
+          highlight = true;
+        }
+        
         html += `
-                  <tr style="background: ${bgColor}; ${isCutpoint ? 'font-weight: bold;' : ''}">
+                  <tr style="background: ${bgColor}; ${highlight ? 'font-weight: bold;' : ''}">
                     <td style="padding: 3px; border: 1px solid #dadce0;">${i}</td>
-                    <td style="padding: 3px; text-align: right; border: 1px solid #dadce0;">${acum.toFixed(1)}</td>
-                    <td style="padding: 3px; text-align: right; border: 1px solid #dadce0;">${diff.toFixed(2)}</td>
+                    <td style="padding: 3px; text-align: right; border: 1px solid #dadce0;">${(typeof acum === 'number' ? acum.toFixed(1) : '0.0')}</td>
+                    <td style="padding: 3px; text-align: right; border: 1px solid #dadce0;">${(typeof diff === 'number' ? diff.toFixed(2) : '0.00')}</td>
                   </tr>`;
       }
       html += `
