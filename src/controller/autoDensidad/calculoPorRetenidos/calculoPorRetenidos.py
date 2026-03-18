@@ -287,7 +287,14 @@ def _normalizar_ind(ret_ind):
 
 def sugerir_division_en_dos(tamices, retido_ind_pct):
     """
-    División inteligente basada en el mayor salto granulométrico.
+    División inteligente basada en detección robusta del mayor salto granulométrico.
+    
+    Criterios:
+    - Evita cortes en extremos (índice 0 o n-1)
+    - Ignora ruido granulométrico (saltos < 5%)
+    - Valida que el corte esté en zona media (10% - 90% acumulado)
+    - Prioriza saltos significativos en zona media
+    - Retorna información de debug para análisis
     """
 
     if len(tamices) != len(retido_ind_pct):
@@ -297,13 +304,14 @@ def sugerir_division_en_dos(tamices, retido_ind_pct):
         return None
 
     n = len(tamices)
+    if n < 2:  # Necesitamos al menos 2 tamices para dividir
+        return None
 
-    # -------------------------------
-    # 1. Calcular acumulado
-    # -------------------------------
-    # usar los valores NORMALIZADOS (los mismos que usás en IND)
+    # =======================================
+    # 1. Calcular acumulado normalizado
+    # =======================================
     total = sum(retido_ind_pct)
-    if total == 0:
+    if total <= 0:
         return None
 
     retido_normalizado = [(v / total) * 100 for v in retido_ind_pct]
@@ -314,30 +322,72 @@ def sugerir_division_en_dos(tamices, retido_ind_pct):
         running += v
         acumulado.append(running)
 
-    if total <= 0:
-        return None
-
-    # -------------------------------
-    # 2. Detectar mayor salto
-    # -------------------------------
+    # =======================================
+    # 2. Calcular diferencias (saltos)
+    # =======================================
     diffs = []
     for i in range(1, n):
         diffs.append(acumulado[i] - acumulado[i - 1])
 
-    idx_corte = diffs.index(max(diffs)) + 1  # +1 porque diff empieza en 1
+    # =======================================
+    # 3. Detección ROBUSTA del corte
+    # =======================================
+    # Crear lista de candidatos válidos
+    RUIDO_MIN = 5.0  # Ignorar saltos < 5%
+    ACUM_MIN = 10.0  # No cortar antes de 10% acumulado
+    ACUM_MAX = 90.0  # No cortar después de 90% acumulado
+    
+    candidatos = []
+    
+    for i in range(1, n - 1):  # Evitar índices extremos (0 y n-1)
+        diff_i = diffs[i - 1]  # diffs empieza en 1, así que diff[i-1] corresponde a acumulado[i]
+        acum_i = acumulado[i]
+        
+        # Validaciones
+        if diff_i < RUIDO_MIN:
+            continue  # Ignorar ruido
+        if acum_i < ACUM_MIN or acum_i > ACUM_MAX:
+            continue  # Evitar extremos
+        
+        candidatos.append((i, diff_i, acum_i))
+    
+    # Elegir el mejor candidato
+    if candidatos:
+        # Ordenar por diff descendente
+        idx_corte, max_diff, acum_corte = max(candidatos, key=lambda x: x[1])
+    else:
+        # FALLBACK: si no hay candidatos "buenos", usar el mayor diff global
+        # pero evitando los extremos
+        max_diff_idx = None
+        max_diff_val = -1
+        
+        for i in range(1, n - 1):
+            if diffs[i - 1] > max_diff_val:
+                max_diff_val = diffs[i - 1]
+                max_diff_idx = i
+        
+        if max_diff_idx is not None:
+            idx_corte = max_diff_idx
+            max_diff = max_diff_val
+            acum_corte = acumulado[idx_corte]
+        else:
+            # Último recurso: dividir por la mitad
+            idx_corte = n // 2
+            max_diff = diffs[idx_corte - 1] if idx_corte > 0 else 0.0
+            acum_corte = acumulado[idx_corte]
 
-    # -------------------------------
-    # 3. Dividir en grupos
-    # -------------------------------
+    # =======================================
+    # 4. Dividir en grupos
+    # =======================================
     tamices_g1 = tamices[:idx_corte]
     retido_g1 = retido_ind_pct[:idx_corte]
 
     tamices_g2 = tamices[idx_corte:]
     retido_g2 = retido_ind_pct[idx_corte:]
 
-    # -------------------------------
-    # 4. Pesos
-    # -------------------------------
+    # =======================================
+    # 5. Calcular pesos
+    # =======================================
     peso_g1 = sum(retido_g1)
     peso_g2 = sum(retido_g2)
     peso_total = peso_g1 + peso_g2
@@ -348,9 +398,9 @@ def sugerir_division_en_dos(tamices, retido_ind_pct):
     prop_g1 = round((peso_g1 / peso_total) * 100, 2)
     prop_g2 = round((peso_g2 / peso_total) * 100, 2)
 
-    # -------------------------------
-    # 5. Normalización interna
-    # -------------------------------
+    # =======================================
+    # 6. Normalización interna de cada grupo
+    # =======================================
     retido_norm_g1 = [
         round((v / peso_g1) * 100, 2) if peso_g1 > 0 else 0.0
         for v in retido_g1
@@ -361,9 +411,9 @@ def sugerir_division_en_dos(tamices, retido_ind_pct):
         for v in retido_g2
     ]
 
-    # -------------------------------
-    # 6. Reconstrucción CORRECTA
-    # -------------------------------
+    # =======================================
+    # 7. Reconstrucción y validación
+    # =======================================
     reconstruido = []
 
     for i in range(n):
@@ -379,13 +429,13 @@ def sugerir_division_en_dos(tamices, retido_ind_pct):
         abs(reconstruido[i] - retido_ind_pct[i]) for i in range(n)
     )
 
-    # -------------------------------
-    # 7. Resultado
-    # -------------------------------
+    # =======================================
+    # 8. Compilar resultado con debug
+    # =======================================
     return {
         "tipo": "auto_2_inteligente",
         "punto_corte_index": idx_corte,
-        "punto_corte_tamiz": str(tamices[idx_corte - 1]),
+        "punto_corte_tamiz": str(tamices[idx_corte ]) if idx_corte > 0 else None,
         "grupos": [
             {
                 "nombre": "grueso_medio",
@@ -404,5 +454,18 @@ def sugerir_division_en_dos(tamices, retido_ind_pct):
         ],
         "reconstruccion_check": {
             "error_total_pct": round(error_total, 4)
+        },
+        "debug": {
+            "acumulado": [round(x, 2) for x in acumulado],
+            "diffs": [round(x, 2) for x in diffs],
+            "idx_corte": idx_corte,
+            "tamiz_corte": str(tamices[idx_corte ]) if idx_corte > 0 else None,
+            "max_diff_pct": round(max_diff, 2),
+            "acum_corte_pct": round(acum_corte, 2),
+            "criterios_aplicados": {
+                "ruido_min": RUIDO_MIN,
+                "acum_min": ACUM_MIN,
+                "acum_max": ACUM_MAX
+            }
         }
     }

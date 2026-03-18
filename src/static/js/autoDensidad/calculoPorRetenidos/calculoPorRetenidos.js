@@ -589,28 +589,47 @@ function renderSugerenciaDivision(sugerencia_division){
   const host = document.getElementById('retidoTables');
   if (!host) return;
 
-  const { grupos, reconstruccion_check } = sugerencia_division;
+  const { grupos, reconstruccion_check, debug } = sugerencia_division;
   if (grupos.length < 2) return;
 
   const g1 = grupos[0];
   const g2 = grupos[1];
 
-  // Título y descripción
-  const titulo = "Sugerencia de división en 2 sub-agregados";
-  const desc = `Basada en la curva del primer material. Error de reconstrucción: ${reconstruccion_check.error_total_pct}%`;
+  // Traduciones
+  const titulo = I18N.t('sim.division_titulo');
+  const desc = I18N.t('sim.division_desc_base');
+  const grupo = I18N.t('sim.division_grupo_n');
+  const proporcion = I18N.t('sim.division_proporcion');
+  const pesoOriginal = I18N.t('sim.division_peso_original');
+  const debugBtn = I18N.t('sim.division_debug_btn');
+  const debugBtnClose = I18N.t('sim.division_debug_btn_close');
+  const debugCutpoint = I18N.t('sim.division_debug_cutpoint');
+  const debugIndice = I18N.t('sim.division_debug_indice');
+  const debugTamiz = I18N.t('sim.division_debug_tamiz');
+  const debugSalto = I18N.t('sim.division_debug_salto');
+  const debugAcum = I18N.t('sim.division_debug_acum');
+  const debugCriterios = I18N.t('sim.division_debug_criterios');
+  const debugFiltro = I18N.t('sim.division_debug_filtro_ruido');
+  const debugZona = I18N.t('sim.division_debug_zona_valida');
+  const debugZonaEntre = I18N.t('sim.division_debug_zona_entre');
+  const debugAnalisis = I18N.t('sim.division_debug_analisis');
+  const debugTablaIndice = I18N.t('sim.division_debug_tabla_indice');
+  const debugTablaAcum = I18N.t('sim.division_debug_tabla_acum');
+  const debugTablaSalto = I18N.t('sim.division_debug_tabla_salto');
+  const debugTablaNota = I18N.t('sim.division_debug_tabla_nota');
 
   // Grid con 2 columnas lado a lado
-  const html = `
+  let html = `
     <div class="mini-card" style="grid-column: 1 / -1;">
       <div class="mini-title" style="color: #1a73e8; font-size: 0.95rem; margin-bottom: 8px;">${titulo}</div>
-      <div style="font-size: 0.85rem; color: #666; margin-bottom: 12px;">${desc}</div>
+      <div style="font-size: 0.85rem; color: #666; margin-bottom: 12px;">${desc} ${reconstruccion_check.error_total_pct}%</div>
       
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
         <!-- Grupo 1 -->
         <div style="border: 1px solid #e8eef7; border-radius: 6px; padding: 10px; background: #f8fafb;">
-          <h4 style="margin: 0 0 8px 0; font-size: 0.9em; color: #1a73e8; font-weight: 600;">Grupo 1</h4>
+          <h4 style="margin: 0 0 8px 0; font-size: 0.9em; color: #1a73e8; font-weight: 600;">${grupo} 1</h4>
           <div style="font-size: 0.85rem; font-weight: 500; color: #666; margin-bottom: 8px;">
-            Proporción: <strong>${g1.proporcion_sugerida_pct}%</strong>
+            ${proporcion} <strong>${g1.proporcion_sugerida_pct}%</strong>
           </div>
           <table class="mini-table" style="font-size: 0.8rem; margin-bottom: 8px;">
             <thead>
@@ -629,15 +648,15 @@ function renderSugerenciaDivision(sugerencia_division){
             </tbody>
           </table>
           <div style="font-size: 0.8rem; color: #888; border-top: 1px solid #e8eef7; padding-top: 6px;">
-            <strong>Peso original:</strong> ${g1.peso_original.toFixed(2)}%
+            <strong>${pesoOriginal}</strong> ${g1.peso_original.toFixed(2)}%
           </div>
         </div>
 
         <!-- Grupo 2 -->
         <div style="border: 1px solid #e8eef7; border-radius: 6px; padding: 10px; background: #f8fafb;">
-          <h4 style="margin: 0 0 8px 0; font-size: 0.9em; color: #1a73e8; font-weight: 600;">Grupo 2</h4>
+          <h4 style="margin: 0 0 8px 0; font-size: 0.9em; color: #1a73e8; font-weight: 600;">${grupo} 2</h4>
           <div style="font-size: 0.85rem; font-weight: 500; color: #666; margin-bottom: 8px;">
-            Proporción: <strong>${g2.proporcion_sugerida_pct}%</strong>
+            ${proporcion} <strong>${g2.proporcion_sugerida_pct}%</strong>
           </div>
           <table class="mini-table" style="font-size: 0.8rem; margin-bottom: 8px;">
             <thead>
@@ -656,14 +675,100 @@ function renderSugerenciaDivision(sugerencia_division){
             </tbody>
           </table>
           <div style="font-size: 0.8rem; color: #888; border-top: 1px solid #e8eef7; padding-top: 6px;">
-            <strong>Peso original:</strong> ${g2.peso_original.toFixed(2)}%
+            <strong>${pesoOriginal}</strong> ${g2.peso_original.toFixed(2)}%
           </div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
+
+  // Agregar sección de debug si existe
+  if (debug) {
+    const debugId = 'debugSection_' + Math.random().toString(36).slice(2);
+    html += `
+      <div style="margin-top: 16px; border-top: 1px solid #e8eef7; padding-top: 12px;">
+        <button type="button" onclick="toggleDebugInfo('${debugId}')" 
+                style="background: none; border: none; color: #1a73e8; padding: 0; cursor: pointer; font-size: 0.85rem; font-weight: 500;">
+          ${debugBtn}
+        </button>
+        <div id="${debugId}" style="display: none; margin-top: 8px; padding: 10px; background: #f8fafb; border-radius: 4px; border-left: 3px solid #dadce0;">
+          <div style="font-size: 0.8rem; line-height: 1.6; color: #555;">
+            <div style="margin-bottom: 10px;">
+              <strong>${debugCutpoint}</strong><br>
+              ${debugIndice} ${debug.idx_corte} | ${debugTamiz} ${debug.tamiz_corte} | ${debugSalto} ${debug.max_diff_pct.toFixed(2)}%<br>
+              ${debugAcum} ${debug.acum_corte_pct.toFixed(2)}%
+            </div>`;
+
+    if (debug.criterios_aplicados) {
+      html += `
+            <div style="margin-bottom: 10px;">
+              <strong>${debugCriterios}</strong><br>
+              ${debugFiltro} ${debug.criterios_aplicados.ruido_min}%<br>
+              ${debugZona} ${debug.criterios_aplicados.acum_min}% ${debugZonaEntre} ${debug.criterios_aplicados.acum_max}%
+            </div>`;
+    }
+
+    // Tabla de acumulado y diferencias
+    if (debug.acumulado && debug.diffs) {
+      html += `
+            <div style="margin-bottom: 10px;">
+              <strong>${debugAnalisis}</strong>
+              <table style="width: 100%; margin-top: 5px; border-collapse: collapse; font-size: 0.75rem;">
+                <thead style="background: #e8eef7;">
+                  <tr>
+                    <th style="padding: 3px; text-align: left; border: 1px solid #dadce0;">${debugTablaIndice}</th>
+                    <th style="padding: 3px; text-align: right; border: 1px solid #dadce0;">${debugTablaAcum}</th>
+                    <th style="padding: 3px; text-align: right; border: 1px solid #dadce0;">${debugTablaSalto}</th>
+                  </tr>
+                </thead>
+                <tbody>`;
+      for (let i = 0; i < debug.acumulado.length; i++) {
+        const acum = debug.acumulado[i];
+        const diff = debug.diffs[i] || 0;
+        const isCutpoint = (i === debug.idx_corte - 1);
+        const bgColor = isCutpoint ? '#fff3cd' : '';
+        html += `
+                  <tr style="background: ${bgColor}; ${isCutpoint ? 'font-weight: bold;' : ''}">
+                    <td style="padding: 3px; border: 1px solid #dadce0;">${i}</td>
+                    <td style="padding: 3px; text-align: right; border: 1px solid #dadce0;">${acum.toFixed(1)}</td>
+                    <td style="padding: 3px; text-align: right; border: 1px solid #dadce0;">${diff.toFixed(2)}</td>
+                  </tr>`;
+      }
+      html += `
+                </tbody>
+              </table>
+              <div style="font-size: 0.7rem; color: #999; margin-top: 4px;">
+                ${debugTablaNota}
+              </div>
+            </div>`;
+    }
+
+    html += `
+          </div>
+        </div>
+      </div>`;
+  }
+
+  html += `</div>`;
 
   // Agregar al final del contenido existente
   host.innerHTML += html;
+}
+
+// Helper para toggle de debug info
+function toggleDebugInfo(debugId) {
+  const elem = document.getElementById(debugId);
+  if (elem) {
+    const btn = elem.previousElementSibling;
+    const isOpen = elem.style.display !== 'none';
+    if (isOpen) {
+      elem.style.display = 'none';
+      const closedText = I18N.t('sim.division_debug_btn');
+      btn.textContent = closedText;
+    } else {
+      elem.style.display = 'block';
+      const openText = I18N.t('sim.division_debug_btn_close');
+      btn.textContent = openText;
+    }
+  }
 }
 
 
