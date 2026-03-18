@@ -193,7 +193,7 @@ function construirPayloadRetido(){
         nombre,
         proporcion_pct: pct,      // ya no hay mock
         retido_ind_pct: retidosLoc,
-        normalizar: true          // STEP 3: Add normalization flag (always true for now)
+        normalizar: false          // STEP 3: Add normalization flag (always true for now)
       });
     }
   });
