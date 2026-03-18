@@ -107,7 +107,16 @@ const I18N = (() => {
         btn_eliminar: "Usunąć",
         nuevo_producto: "Nowy Produkt",
         mezcla_eliminada: "🗑 Mieszanka \"{nombre}\" całkowicie usunięta.",
-        error_sin_tablas: "Brak załadowanych tabel w localStorage."
+        error_sin_tablas: "Brak załadowanych tabel w localStorage.",
+        retido_bloco_min: "Limity dla Bloków (min)",
+        retido_bloco_max: "Limity dla Bloków (max)",
+        retido_paver_min: "Limity dla Pavers (min)",
+        retido_paver_max: "Limity dla Pavers (max)",
+        retido_acumulado: "Zatrzymane kumulacyjnie",
+        retido_pasante: "Przechodzące",
+        retido_axis_x: "Sito (mm)",
+        retido_axis_y: "% Zatrzymane Kumulacyjnie",
+        retido_axis_y1: "% Przechodzące"
       },
       resultado_simulador: {
         titulo: "Wynik symulacji",
@@ -121,7 +130,7 @@ const I18N = (() => {
         grafico_alt: "Krzywa wynikowa vs Fuller",
         error_proporciones: "⚠️ Proporcje muszą dodawać się do 100%",
         error_procesar: "❌ Błąd przetwarzania mieszanki"
-      }
+      },
       es: {
         sum100_alert: "⚠️ Las proporciones deben sumar 100%",
         bad_response: "Respuesta no válida del servidor",
@@ -174,7 +183,16 @@ const I18N = (() => {
         btn_eliminar: "Eliminar",
         nuevo_producto: "Nuevo Producto",
         mezcla_eliminada: "🗑 Mezcla \"{nombre}\" eliminada completamente.",
-        error_sin_tablas: "No hay tablas cargadas en localStorage."
+        error_sin_tablas: "No hay tablas cargadas en localStorage.",
+        retido_bloco_min: "Limites para Blocos (min)",
+        retido_bloco_max: "Limites para Blocos (max)",
+        retido_paver_min: "Limites para Pavers (min)",
+        retido_paver_max: "Limites para Pavers (max)",
+        retido_acumulado: "Retido acumulado",
+        retido_pasante: "Pasante",
+        retido_axis_x: "Peneira (mm)",
+        retido_axis_y: "% Retido Acumulado",
+        retido_axis_y1: "% Pasante"
       },
       resultado_simulador: {
         titulo: "Resultado de simulación",
@@ -241,7 +259,25 @@ const I18N = (() => {
         btn_eliminar: "Delete",
         nuevo_producto: "New Product",
         mezcla_eliminada: "🗑 Mix \"{nombre}\" deleted completely.",
-        error_sin_tablas: "No loaded tables in localStorage."
+        error_sin_tablas: "No loaded tables in localStorage.",
+        retido_bloco_min: "Block Limits (min)",
+        retido_bloco_max: "Block Limits (max)",
+        retido_paver_min: "Paver Limits (min)",
+        retido_paver_max: "Paver Limits (max)",
+        retido_acumulado: "Cumulative Retained",
+        retido_pasante: "Passing",
+        retido_axis_x: "Sieve (mm)",
+        retido_axis_y: "% Cumulative Retained",
+        retido_axis_y1: "% Passing",
+        retido_bloco_min: "Block Limits (min)",
+        retido_bloco_max: "Block Limits (max)",
+        retido_paver_min: "Paver Limits (min)",
+        retido_paver_max: "Paver Limits (max)",
+        retido_acumulado: "Cumulative Retained",
+        retido_pasante: "Passing",
+        retido_axis_x: "Sieve (mm)",
+        retido_axis_y: "% Cumulative Retained",
+        retido_axis_y1: "% Passing"
       },
       resultado_simulador: {
         titulo: "Simulation Result",
@@ -308,7 +344,16 @@ const I18N = (() => {
         btn_eliminar: "Elimina",
         nuevo_producto: "Nuovo Prodotto",
         mezcla_eliminada: "🗑 Miscela \"{nombre}\" eliminata completamente.",
-        error_sin_tablas: "Nessuna tabella caricata in localStorage."
+        error_sin_tablas: "Nessuna tabella caricata in localStorage.",
+        retido_bloco_min: "Limiti per Blocchi (min)",
+        retido_bloco_max: "Limiti per Blocchi (max)",
+        retido_paver_min: "Limiti per Paver (min)",
+        retido_paver_max: "Limiti per Paver (max)",
+        retido_acumulado: "Trattenuto cumulativo",
+        retido_pasante: "Passante",
+        retido_axis_x: "Setaccio (mm)",
+        retido_axis_y: "% Trattenuto Cumulativo",
+        retido_axis_y1: "% Passante"
       },
       resultado_simulador: {
         titulo: "Risultato della simulazione",
@@ -375,7 +420,16 @@ const I18N = (() => {
         btn_eliminar: "Eliminar",
         nuevo_producto: "Novo Produto",
         mezcla_eliminada: "🗑 Mistura \"{nome}\" eliminada completamente.",
-        error_sin_tablas: "Nenhuma tabela carregada no localStorage."
+        error_sin_tablas: "Nenhuma tabela carregada no localStorage.",
+        retido_bloco_min: "Limites para Blocos (min)",
+        retido_bloco_max: "Limites para Blocos (max)",
+        retido_paver_min: "Limites para Pavers (min)",
+        retido_paver_max: "Limites para Pavers (max)",
+        retido_acumulado: "Retido acumulado",
+        retido_pasante: "Passante",
+        retido_axis_x: "Peneira (mm)",
+        retido_axis_y: "% Retido Acumulado",
+        retido_axis_y1: "% Passante"
       },
       resultado_simulador: {
         titulo: "Resultado da simulação",

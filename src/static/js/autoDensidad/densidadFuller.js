@@ -1494,7 +1494,7 @@ function abrirModalTipoCurva() {
   document.getElementById("modalCurvaObjetivo").style.display = "block";
 }
 
-function cerrarModal() {
+function cerrarModalCurvaObjetivo() {
   document.getElementById("modalCurvaObjetivo").style.display = "none";
 }
 
@@ -1502,7 +1502,7 @@ function guardarTipoCurva() {
   const seleccion = document.getElementById("tipoCurvaObjetivo").value;
   localStorage.setItem("tipo_objetivo", seleccion);
   console.log("✅ Tipo de curva objetivo guardado en localStorage:", seleccion);
-  cerrarModal();
+  cerrarModalCurvaObjetivo();
 }
 
 

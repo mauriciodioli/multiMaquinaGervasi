@@ -276,6 +276,24 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
   const xs = dataOrdenada.map(p => p.x);
   const labels = dataOrdenada.map(p => p.label);
 
+  // 🌍 Obtener etiquetas traducidas para el gráfico
+  const getLabel = (key, fallback) => {
+    if (typeof I18N === 'undefined') return fallback;
+    const val = I18N.t(key);
+    // Si devuelve [key], significa que no existe, retorna fallback
+    return val.startsWith('[') ? fallback : val;
+  };
+  
+  const labelBlocoMin = getLabel('sim.retido_bloco_min', 'Limites para Blocos (min)');
+  const labelBlocoMax = getLabel('sim.retido_bloco_max', 'Limites para Blocos (max)');
+  const labelPaverMin = getLabel('sim.retido_paver_min', 'Limites para Pavers (min)');
+  const labelPaverMax = getLabel('sim.retido_paver_max', 'Limites para Pavers (max)');
+  const labelRetidoAcum = getLabel('sim.retido_acumulado', 'Retido acumulado');
+  const labelPasante = getLabel('sim.retido_pasante', 'Pasante');
+  const axisXTitle = getLabel('sim.retido_axis_x', 'Peneira (mm)');
+  const axisYTitle = getLabel('sim.retido_axis_y', '% Retido Acumulado');
+  const axisY1Title = getLabel('sim.retido_axis_y1', '% Pasante');
+
   // ---- Limites por tamiz: construimos 4 curvas (bloco min/max, paver min/max) ----
   const detBloco = (faixas && faixas.bloco) ? faixas.bloco : [];
   const detPaver = (faixas && faixas.paver) ? faixas.paver : [];
@@ -310,7 +328,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
       datasets: [
         // === Limites para Blocos (azul sólido, dos curvas) ===
         {
-          label: 'Limites para Blocos (min)',
+          label: labelBlocoMin,
           data: toDataset(blocoMin),
           borderColor: '#1f6bff',
           pointRadius: 0,
@@ -318,7 +336,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
           fill: false
         },
         {
-          label: 'Limites para Blocos (max)',
+          label: labelBlocoMax,
           data: toDataset(blocoMax),
           borderColor: '#004aad',
           pointRadius: 0,
@@ -328,7 +346,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
 
         // === Limites para Pavers (negro punteado, dos curvas) ===
         {
-          label: 'Limites para Pavers (min)',
+          label: labelPaverMin,
           data: toDataset(paverMin),
           borderColor: '#111',
           borderDash: [6, 5],
@@ -337,7 +355,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
           fill: false
         },
         {
-          label: 'Limites para Pavers (max)',
+          label: labelPaverMax,
           data: toDataset(paverMax),
           borderColor: '#111',
           borderDash: [6, 5],
@@ -348,7 +366,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
 
         // === Curva en estudio (roja sólida con puntos) ===
         {
-          label: 'Retido acumulado',
+          label: labelRetidoAcum,
           data: dataOrdenada.map(p => ({x: p.x, y: p.acum})),
           borderColor: '#e74c3c',
           backgroundColor: '#e74c3c',
@@ -359,7 +377,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
           yAxisID: 'y'
         },
         {
-          label: 'Pasante',
+          label: labelPasante,
           data: dataOrdenada.map(p => ({x: p.x, y: p.pasante})),
           borderColor: '#2ecc71',
           backgroundColor: '#2ecc71',
@@ -404,7 +422,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
           afterBuildTicks: (axis) => {
             axis.ticks = xs.map(v => ({ value: v }));
           },
-          title: { display: true, text: 'Peneira (mm)' }
+          title: { display: true, text: axisXTitle }
         },
         y: {
           type: 'linear',
@@ -413,7 +431,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
           max: 100,
           title: {
             display: true,
-            text: '% Retido Acumulado'
+            text: axisYTitle
           }
         },
         y1: {
@@ -426,7 +444,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
           },
           title: {
             display: true,
-            text: '% Pasante'
+            text: axisY1Title
           }
         }
       }
