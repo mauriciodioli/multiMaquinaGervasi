@@ -61,6 +61,178 @@ def _finura_modulus(mix_acum, tamices, mf_sieves=MF_SIEVES_BR):
     return round(sum(float(mix_acum[i]) for i in idxs)/100.0, 2) if idxs else 0.0
 
 
+def optimizar_proporciones(materiales, tamices_ord, limites, log):
+    """
+    Optimiza automáticamente los pesos de 3 materiales para minimizar
+    desviación respecto a la faixa "bloco" CON regularización.
+    
+    Args:
+        materiales: List[{nombre, w, ret_acum, ...}]
+        tamices_ord: Sieves in order
+        limites: {"bloco": {sieve: [min, max]}, ...}
+        log: Debug logger
+    
+    Returns:
+        {
+            "tipo": "optimizacion",
+            "proporciones_optimizadas": [w1, w2, w3],
+            "error_estimado": float,
+            "mix_acum_optimizado": [float]
+        } or None if failed/not applicable
+    """
+    
+    if len(materiales) != 3:
+        return None
+    
+    if "bloco" not in limites or not limites["bloco"]:
+        return None
+    
+    try:
+        n = len(tamices_ord)
+        
+        # Pesos iniciales
+        w_inicial = np.array([float(m["w"]) for m in materiales])
+        log(f"\n[OPTIM] Pesos iniciales: {[round(w,4) for w in w_inicial]}")
+        
+        # Retacumulados por material
+        ret_acums = [np.array(m["ret_acum"]) for m in materiales]
+        
+        # Parámetro de regularización (penaliza alejarse de pesos iniciales)
+        LAMBDA_REG = 0.5  # Aumentado para fortalecer la penalización
+        
+        # Definir función objetivo CON regularización L2
+        def objetivo(pesos):
+            """
+            Minimizar: error_faixa + λ * Σ(w_i - w_i_inicial)²
+            Esto mantiene los pesos cerca del original mientras minimiza desviación
+            """
+            # Validar pesos
+            if any(w < 0 or w > 1 for w in pesos):
+                return 1e10
+            
+            s = sum(pesos)
+            if s <= 0:
+                return 1e10
+            
+            # Normalizar pesos
+            w_norm = pesos / s
+            
+            # Calcular mezcla ponderada
+            mix_acum_opt = np.zeros(n)
+            for i, m_acum in enumerate(ret_acums):
+                mix_acum_opt += w_norm[i] * m_acum
+            
+            # PARTE 1: Error respecto a faixa
+            error_faixa = 0.0
+            for k, t in enumerate(tamices_ord):
+                rng = limites["bloco"].get(str(t))
+                if not rng:
+                    continue
+                
+                lo, hi = float(rng[0]), float(rng[1])
+                x = mix_acum_opt[k]
+                
+                if lo <= x <= hi:
+                    # Dentro de faixa → error = 0
+                    pass
+                else:
+                    # Fuera de faixa → error cuadrático ponderado
+                    if x < lo:
+                        error_faixa += 2.0 * (lo - x) ** 2  # Mayor penalidad por debajo
+                    else:
+                        error_faixa += (x - hi) ** 2
+            
+            # PARTE 2: Regularización L2 (mantener pesos similares a iniciales)
+            reg_term = LAMBDA_REG * np.sum((w_norm - w_inicial) ** 2)
+            
+            total_error = error_faixa + reg_term
+            return total_error
+        
+        # Definir restricciones
+        constraints = [
+            {"type": "eq", "fun": lambda w: sum(w) - 1.0}  # suma = 1
+        ]
+        
+        bounds = [(0.0, 1.0) for _ in range(3)]  # cada peso en [0, 1]
+        
+        # MULTI-START: Intentar múltiples puntos iniciales
+        mejores_resultados = []
+        
+        # Punto 1: Pesos originales
+        puntos_inicio = [w_inicial.copy()]
+        
+        # Puntos 2-6: Perturbaciones aleatorias controladas
+        rng = np.random.RandomState(42)  # determinístico para reproducibilidad
+        for _ in range(5):
+            perturbacion = w_inicial + 0.15 * rng.randn(3)  # ±15% de perturbación
+            perturbacion = np.clip(perturbacion, 0.0, 1.0)
+            perturbacion = perturbacion / perturbacion.sum()  # renormalizar
+            puntos_inicio.append(perturbacion)
+        
+        log(f"[OPTIM] Iniciando optimización multi-start con {len(puntos_inicio)} puntos...")
+        
+        for idx, punto_inicio in enumerate(puntos_inicio):
+            result = minimize(
+                objetivo,
+                punto_inicio,
+                method="SLSQP",
+                bounds=bounds,
+                constraints=constraints,
+                options={"maxiter": 2000, "ftol": 1e-10}
+            )
+            
+            if result.success:
+                mejores_resultados.append((result.fun, result.x))
+        
+        if not mejores_resultados:
+            log(f"[OPTIM] ⚠️ Ninguna optimización convergió")
+            return None
+        
+        # Seleccionar mejor resultado
+        mejor_error, w_opt = min(mejores_resultados, key=lambda x: x[0])
+        
+        # Post-procesamiento
+        w_opt = np.clip(w_opt, 0.0, 1.0)
+        s = sum(w_opt)
+        if s <= 0:
+            return None
+        w_opt = w_opt / s  # renormalizar
+        
+        log(f"[OPTIM] Pesos optimizados (multi-start): {[round(w,4) for w in w_opt]}")
+        
+        # Calcular mix final con optimizados
+        mix_acum_opt = np.zeros(n)
+        for i, m_acum in enumerate(ret_acums):
+            mix_acum_opt += w_opt[i] * m_acum
+        
+        mix_acum_opt = [round(min(100.0, max(0.0, x)), 2) for x in mix_acum_opt]
+        
+        # Calcular error final (solo la parte de faixa, sin regularización)
+        error_final_faixa = 0.0
+        for k, t in enumerate(tamices_ord):
+            rng = limites["bloco"].get(str(t))
+            if not rng:
+                continue
+            lo, hi = float(rng[0]), float(rng[1])
+            x = mix_acum_opt[k]
+            if x < lo:
+                error_final_faixa += 2.0 * (lo - x) ** 2
+            elif x > hi:
+                error_final_faixa += (x - hi) ** 2
+        
+        log(f"[OPTIM] Error final en faixa: {round(error_final_faixa, 6)}")
+        
+        return {
+            "tipo": "optimizacion",
+            "proporciones_optimizadas": [round(w, 6) for w in w_opt],
+            "error_estimado": round(error_final_faixa, 6),
+            "mix_acum_optimizado": mix_acum_opt
+        }
+    
+    except Exception as e:
+        log(f"[OPTIM] ✗ Error en optimización: {str(e)}")
+        return None
+
 
 def _validar_faixas(mix_acum, tamices, limites):
     def eval_faixa(faixa):
@@ -250,6 +422,31 @@ def granulometria_retido():
         if "reconstruccion_check" in sugerencia_division:
             log(f"  Error reconstrucción: {sugerencia_division['reconstruccion_check']['error_total_pct']}%")
 
+    # ===============================================
+    # MÓDULO DE OPTIMIZACIÓN AUTOMÁTICA (3 MATERIALES)
+    # ===============================================
+    sugerencia_optimizacion = None
+    
+    if len(materiales) == 3 and limites:
+        # Contar errores en faixa bloco
+        errores_bloco = 0
+        if "bloco" in valid and isinstance(valid["bloco"], list):
+            errores_bloco = sum(1 for d in valid["bloco"] if d.get("ok") == False)
+        
+        log(f"\n[OPTIM CHECK] 3 materiales detectados, {errores_bloco} errores en bloco")
+        
+        # Solo optimizar si hay errores y la curva no es perfecta
+        if errores_bloco >= 1:
+            log(f"[OPTIM CHECK] Desviación detectada, iniciando optimización automática...")
+            sugerencia_optimizacion = optimizar_proporciones(materiales, tamices_ord, limites, log)
+            
+            if sugerencia_optimizacion:
+                log(f"\n✓ Optimización completada:")
+                log(f"  Proporciones encontradas: {sugerencia_optimizacion['proporciones_optimizadas']}")
+                log(f"  Error estimado: {sugerencia_optimizacion['error_estimado']}")
+        else:
+            log(f"[OPTIM CHECK] Curva dentro de especificación, sin optimización necesaria")
+
     return jsonify({
         "ok": True,
         "tamices": tamices_ord,
@@ -260,7 +457,8 @@ def granulometria_retido():
         "faixas": valid,
         "gran_ponderada": gran_ponderada, 
         "tabla": tabla,
-        "sugerencia_division": sugerencia_division
+        "sugerencia_division": sugerencia_division,
+        "sugerencia_optimizacion": sugerencia_optimizacion
     }), 200
 
 
@@ -331,9 +529,9 @@ def evaluar_y_sugerir_division(materiales_in, materiales, tamices_ord, valid, lo
         if retido_original and sum(retido_original) > 0:
             return sugerir_division_en_dos(tamices_ord, retido_original)
     
-    elif num_materiales == 2:
-        # Caso: 2 materiales → División en 3 (mezcla ponderada)
-        log(f"  → Intentando división en 3 con mezcla ponderada...")
+    elif num_materiales >= 2:
+        # Caso: 2+ materiales → División en 3 (mezcla ponderada)
+        log(f"  → Intentando división en 3 con mezcla ponderada de {num_materiales} materiales...")
         
         try:
             n = len(tamices_ord)
@@ -353,10 +551,6 @@ def evaluar_y_sugerir_division(materiales_in, materiales, tamices_ord, valid, lo
         
         except Exception as e:
             log(f"  ✗ Error calculando división en 3: {str(e)}")
-    
-    else:
-        # 3+ materiales → Muy complejo para sugerir
-        log(f"  → {num_materiales} materiales: demasiado complejo para sugerir (no se divide)")
     
     return None
 
