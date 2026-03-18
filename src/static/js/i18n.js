@@ -66,7 +66,329 @@ const I18N = (() => {
         zone_fine: "Strefa drobna",
         recommendation: "🔎 Rekomendacja",
         hide_btn: "❌ Ukryj wynik",
-        data_error: "❌ Błąd: niekompletne lub nieprawidłowe dane."
+        data_error: "❌ Błąd: niekompletne lub nieprawidłowe dane.",
+        prop_titulo: "Proporcje mieszanki (%)",
+        prop_cerrar: "Zamknij",
+        prop_instruccion: "Wpisz % każdego agregatu. Suma musi wynosić 100%.",
+        prop_total: "Razem:",
+        prop_usar_valores: "Użyj wartości",
+        retido_titulo: "Krzywa % Kumulacyjny zatrzymany",
+        retido_tabla1_titulo: "Granulometria ważona dwa agregaty",
+        retido_tabla1_col1: "#",
+        retido_tabla1_col2: "%",
+        retido_tabla2_titulo: "Zalecane zakresy granulometryczne",
+        retido_tabla2_col1: "Sita",
+        retido_tabla2_col2: "Blok",
+        retido_tabla2_col3: "Paver",
+        retido_tabla2_col4: "Lim. Inf.",
+        retido_tabla2_col5: "Lim. Sup.",
+        retido_tabla2_nota: "Wartości w % kumulacyjnie zatrzymane.",
+        btn_cerrar: "Zamknij",
+        btn_consumo: "Krzywa zużycia",
+        ensayos_titulo: "Badania: Stosunek Agregat/Cement (A/C) vs Wytrzymałość (MPa)",
+        ensayos_resistencia_label: "Docelowa wytrzymałość (MPa)",
+        ensayos_masa_label: "Całkowita masa kruszyw na m³ (kg)",
+        ensayos_tabla_label: "Punkty badań (A/C, MPa)",
+        ensayos_tabla_col1: "A/C",
+        ensayos_tabla_col2: "MPa",
+        ensayos_btn_agregar: "+ Dodaj punkt",
+        ensayos_resultado_titulo: "Wynik (dla docelowej MPa)",
+        ensayos_btn_cancelar: "Anuluj",
+        ensayos_btn_calcular: "Oblicz",
+        consumo_trazo_label: "Wymagany stosunek (A/C):",
+        consumo_cemento_label: "Cement:",
+        consumo_por_label: "na",
+        consumo_kg_agregados: "kg kruszyw",
+        prop_error_suma_100: "Suma musi wynosić dokładnie 100%.",
+        chart_label_ensayos: "Testy",
+        chart_label_ajuste: "Dopasowanie y = a·ln(x) + b",
+        chart_axis_x: "Stosunek A/C (kruszyw/cementu)",
+        chart_axis_y: "Wytrzymałość (MPa)",
+        btn_eliminar: "Usunąć",
+        nuevo_producto: "Nowy Produkt",
+        mezcla_eliminada: "🗑 Mieszanka \"{nombre}\" całkowicie usunięta.",
+        error_sin_tablas: "Brak załadowanych tabel w localStorage."
+      },
+      resultado_simulador: {
+        titulo: "Wynik symulacji",
+        zona_gruesa: "Strefa gruba:",
+        zona_media: "Strefa średnia:",
+        zona_fina: "Strefa drobna:",
+        recomendacion: "🔎 Rekomendacja:",
+        btn_ocultar: "❌ Ukryj wynik"
+      },
+      simulador_dosificacion: {
+        grafico_alt: "Krzywa wynikowa vs Fuller",
+        error_proporciones: "⚠️ Proporcje muszą dodawać się do 100%",
+        error_procesar: "❌ Błąd przetwarzania mieszanki"
+      }
+      es: {
+        sum100_alert: "⚠️ Las proporciones deben sumar 100%",
+        bad_response: "Respuesta no válida del servidor",
+        process_error: "❌ Error al procesar la mezcla",
+        chart_alt: "Curva resultante vs Fuller",
+        header: "Resultado de simulación",
+        zone_coarse: "Zona gruesa",
+        zone_medium: "Zona media",
+        zone_fine: "Zona fina",
+        recommendation: "🔎 Recomendación",
+        hide_btn: "❌ Ocultar resultado",
+        data_error: "❌ Error: datos incompletos o mal formateados.",
+        prop_titulo: "Proporciones de la mezcla (%)",
+        prop_cerrar: "Cerrar",
+        prop_instruccion: "Ingresá el % de cada agregado. La suma debe ser 100%.",
+        prop_total: "Total:",
+        prop_usar_valores: "Usar valores",
+        retido_titulo: "Curva % Retido Acumulado",
+        retido_tabla1_titulo: "Granulometría ponderada dos agregados",
+        retido_tabla1_col1: "#",
+        retido_tabla1_col2: "%",
+        retido_tabla2_titulo: "Faixas granulométricas recomendadas",
+        retido_tabla2_col1: "Peneira",
+        retido_tabla2_col2: "Bloco",
+        retido_tabla2_col3: "Paver",
+        retido_tabla2_col4: "Lim. Inf.",
+        retido_tabla2_col5: "Lim. Sup.",
+        retido_tabla2_nota: "Valores en % de retido acumulado.",
+        btn_cerrar: "Cerrar",
+        btn_consumo: "Curva de consumo",
+        ensayos_titulo: "Ensayos: Relación Agregado/Cemento (A/C) vs Resistencia (MPa)",
+        ensayos_resistencia_label: "Resistencia objetivo (MPa)",
+        ensayos_masa_label: "Masa total de agregados por m³ (kg)",
+        ensayos_tabla_label: "Puntos de ensayo (A/C, MPa)",
+        ensayos_tabla_col1: "A/C",
+        ensayos_tabla_col2: "MPa",
+        ensayos_btn_agregar: "+ Agregar punto",
+        ensayos_resultado_titulo: "Resultado (para la MPa objetivo)",
+        ensayos_btn_cancelar: "Cancelar",
+        ensayos_btn_calcular: "Calcular",
+        consumo_trazo_label: "Trazo requerido (A/C):",
+        consumo_cemento_label: "Cemento:",
+        consumo_por_label: "por",
+        consumo_kg_agregados: "kg de agregados",
+        prop_error_suma_100: "La suma debe ser exactamente 100%.",
+        chart_label_ensayos: "Ensayos",
+        chart_label_ajuste: "Ajuste y = a·ln(x) + b",
+        chart_axis_x: "Relación A/C (agregado/cemento)",
+        chart_axis_y: "Resistencia (MPa)",
+        btn_eliminar: "Eliminar",
+        nuevo_producto: "Nuevo Producto",
+        mezcla_eliminada: "🗑 Mezcla \"{nombre}\" eliminada completamente.",
+        error_sin_tablas: "No hay tablas cargadas en localStorage."
+      },
+      resultado_simulador: {
+        titulo: "Resultado de simulación",
+        zona_gruesa: "Zona gruesa:",
+        zona_media: "Zona media:",
+        zona_fina: "Zona fina:",
+        recomendacion: "🔎 Recomendación:",
+        btn_ocultar: "❌ Ocultar resultado"
+      },
+      simulador_dosificacion: {
+        grafico_alt: "Curva resultante vs Fuller",
+        error_proporciones: "⚠️ Las proporciones deben sumar 100%",
+        error_procesar: "❌ Error al procesar la mezcla"
+      },
+      en: {
+        sum100_alert: "⚠️ Percentages must sum to 100%",
+        bad_response: "Invalid server response",
+        process_error: "❌ Error processing mix",
+        chart_alt: "Resulting curve vs Fuller",
+        header: "Simulation result",
+        zone_coarse: "Coarse zone",
+        zone_medium: "Medium zone",
+        zone_fine: "Fine zone",
+        recommendation: "🔎 Recommendation",
+        hide_btn: "❌ Hide result",
+        data_error: "❌ Error: incomplete or malformed data.",
+        prop_titulo: "Mix proportions (%)",
+        prop_cerrar: "Close",
+        prop_instruccion: "Enter the % of each aggregate. The sum must be 100%.",
+        prop_total: "Total:",
+        prop_usar_valores: "Use values",
+        retido_titulo: "Cumulative % Retained Curve",
+        retido_tabla1_titulo: "Weighted granulometry two aggregates",
+        retido_tabla1_col1: "#",
+        retido_tabla1_col2: "%",
+        retido_tabla2_titulo: "Recommended granulometric ranges",
+        retido_tabla2_col1: "Sieve",
+        retido_tabla2_col2: "Block",
+        retido_tabla2_col3: "Paver",
+        retido_tabla2_col4: "Lower Limit",
+        retido_tabla2_col5: "Upper Limit",
+        retido_tabla2_nota: "Values in % cumulative retained.",
+        btn_cerrar: "Close",
+        btn_consumo: "Consumption curve",
+        ensayos_titulo: "Tests: Aggregate/Cement Ratio (A/C) vs Strength (MPa)",
+        ensayos_resistencia_label: "Target strength (MPa)",
+        ensayos_masa_label: "Total mass of aggregates per m³ (kg)",
+        ensayos_tabla_label: "Test points (A/C, MPa)",
+        ensayos_tabla_col1: "A/C",
+        ensayos_tabla_col2: "MPa",
+        ensayos_btn_agregar: "+ Add point",
+        ensayos_resultado_titulo: "Result (for target MPa)",
+        ensayos_btn_cancelar: "Cancel",
+        ensayos_btn_calcular: "Calculate",
+        consumo_trazo_label: "Required ratio (A/C):",
+        consumo_cemento_label: "Cement:",
+        consumo_por_label: "per",
+        consumo_kg_agregados: "kg of aggregates",
+        prop_error_suma_100: "The sum must be exactly 100%.",
+        chart_label_ensayos: "Tests",
+        chart_label_ajuste: "Fit y = a·ln(x) + b",
+        chart_axis_x: "A/C Ratio (aggregate/cement)",
+        chart_axis_y: "Strength (MPa)",
+        btn_eliminar: "Delete",
+        nuevo_producto: "New Product",
+        mezcla_eliminada: "🗑 Mix \"{nombre}\" deleted completely.",
+        error_sin_tablas: "No loaded tables in localStorage."
+      },
+      resultado_simulador: {
+        titulo: "Simulation Result",
+        zona_gruesa: "Coarse Zone:",
+        zona_media: "Medium Zone:",
+        zona_fina: "Fine Zone:",
+        recomendacion: "🔎 Recommendation:",
+        btn_ocultar: "❌ Hide Result"
+      },
+      simulador_dosificacion: {
+        grafico_alt: "Resulting curve vs Fuller",
+        error_proporciones: "⚠️ Proportions must add up to 100%",
+        error_procesar: "❌ Error processing the mix"
+      },
+      it: {
+        sum100_alert: "⚠️ Le percentuali devono sommare 100%",
+        bad_response: "Risposta non valida dal server",
+        process_error: "❌ Errore nell'elaborare la miscela",
+        chart_alt: "Curva risultante vs Fuller",
+        header: "Risultato della simulazione",
+        zone_coarse: "Zona grossolana",
+        zone_medium: "Zona media",
+        zone_fine: "Zona fine",
+        recommendation: "🔎 Raccomandazione",
+        hide_btn: "❌ Nascondi risultato",
+        data_error: "❌ Errore: dati incompleti o non validi.",
+        prop_titulo: "Proporzioni della miscela (%)",
+        prop_cerrar: "Chiudi",
+        prop_instruccion: "Inserisci la % di ogni aggregato. La somma deve essere 100%.",
+        prop_total: "Totale:",
+        prop_usar_valores: "Usa valori",
+        retido_titulo: "Curva % Trattenuto Cumulato",
+        retido_tabla1_titulo: "Granulometria ponderata due aggregati",
+        retido_tabla1_col1: "#",
+        retido_tabla1_col2: "%",
+        retido_tabla2_titulo: "Intervalli granulometrici consigliati",
+        retido_tabla2_col1: "Setaccio",
+        retido_tabla2_col2: "Blocco",
+        retido_tabla2_col3: "Paver",
+        retido_tabla2_col4: "Lim. Inf.",
+        retido_tabla2_col5: "Lim. Sup.",
+        retido_tabla2_nota: "Valori in % trattenuto cumulato.",
+        btn_cerrar: "Chiudi",
+        btn_consumo: "Curva di consumo",
+        ensayos_titulo: "Test: Rapporto Aggregato/Cemento (A/C) vs Resistenza (MPa)",
+        ensayos_resistencia_label: "Resistenza obiettivo (MPa)",
+        ensayos_masa_label: "Massa totale aggregati per m³ (kg)",
+        ensayos_tabla_label: "Punti di prova (A/C, MPa)",
+        ensayos_tabla_col1: "A/C",
+        ensayos_tabla_col2: "MPa",
+        ensayos_btn_agregar: "+ Aggiungi punto",
+        ensayos_resultado_titulo: "Risultato (per MPa obiettivo)",
+        ensayos_btn_cancelar: "Annulla",
+        ensayos_btn_calcular: "Calcola",
+        consumo_trazo_label: "Rapporto richiesto (A/C):",
+        consumo_cemento_label: "Cemento:",
+        consumo_por_label: "per",
+        consumo_kg_agregados: "kg di aggregati",
+        prop_error_suma_100: "La somma deve essere esattamente 100%.",
+        chart_label_ensayos: "Prove",
+        chart_label_ajuste: "Adattamento y = a·ln(x) + b",
+        chart_axis_x: "Rapporto A/C (aggregato/cemento)",
+        chart_axis_y: "Resistenza (MPa)",
+        btn_eliminar: "Elimina",
+        nuevo_producto: "Nuovo Prodotto",
+        mezcla_eliminada: "🗑 Miscela \"{nombre}\" eliminata completamente.",
+        error_sin_tablas: "Nessuna tabella caricata in localStorage."
+      },
+      resultado_simulador: {
+        titulo: "Risultato della simulazione",
+        zona_gruesa: "Zona grossa:",
+        zona_media: "Zona media:",
+        zona_fina: "Zona fine:",
+        recomendacion: "🔎 Raccomandazione:",
+        btn_ocultar: "❌ Nascondi risultato"
+      },
+      simulador_dosificacion: {
+        grafico_alt: "Curva risultante vs Fuller",
+        error_proporcioni: "⚠️ Le proporzioni devono sommare al 100%",
+        error_procesar: "❌ Errore nell'elaborazione della miscela"
+      },
+      pt: {
+        sum100_alert: "⚠️ As proporções devem somar 100%",
+        bad_response: "Resposta inválida do servidor",
+        process_error: "❌ Erro ao processar a mistura",
+        chart_alt: "Curva resultante vs Fuller",
+        header: "Resultado da simulação",
+        zone_coarse: "Zona grossa",
+        zone_medium: "Zona média",
+        zone_fine: "Zona fina",
+        recommendation: "🔎 Recomendação",
+        hide_btn: "❌ Ocultar resultado",
+        data_error: "❌ Erro: dados incompletos ou inválidos.",
+        prop_titulo: "Proporções da mistura (%)",
+        prop_cerrar: "Fechar",
+        prop_instruccion: "Insira a % de cada agregado. A soma deve ser 100%.",
+        prop_total: "Total:",
+        prop_usar_valores: "Usar valores",
+        retido_titulo: "Curva % Retido Acumulado",
+        retido_tabla1_titulo: "Granulometria ponderada dois agregados",
+        retido_tabla1_col1: "#",
+        retido_tabla1_col2: "%",
+        retido_tabla2_titulo: "Faixas granulométricas recomendadas",
+        retido_tabla2_col1: "Peneira",
+        retido_tabla2_col2: "Bloco",
+        retido_tabla2_col3: "Paver",
+        retido_tabla2_col4: "Lim. Inf.",
+        retido_tabla2_col5: "Lim. Sup.",
+        retido_tabla2_nota: "Valores em % retido acumulado.",
+        btn_cerrar: "Fechar",
+        btn_consumo: "Curva de consumo",
+        ensayos_titulo: "Ensaios: Relação Agregado/Cimento (A/C) vs Resistência (MPa)",
+        ensayos_resistencia_label: "Resistência alvo (MPa)",
+        ensayos_masa_label: "Massa total de agregados por m³ (kg)",
+        ensayos_tabla_label: "Pontos de ensaio (A/C, MPa)",
+        ensayos_tabla_col1: "A/C",
+        ensayos_tabla_col2: "MPa",
+        ensayos_btn_agregar: "+ Adicionar ponto",
+        ensayos_resultado_titulo: "Resultado (para a MPa alvo)",
+        ensayos_btn_cancelar: "Cancelar",
+        ensayos_btn_calcular: "Calcular",
+        consumo_trazo_label: "Traço requerido (A/C):",
+        consumo_cemento_label: "Cimento:",
+        consumo_por_label: "por",
+        consumo_kg_agregados: "kg de agregados",
+        prop_error_suma_100: "A soma deve ser exatamente 100%.",
+        chart_label_ensayos: "Ensaios",
+        chart_label_ajuste: "Ajuste y = a·ln(x) + b",
+        chart_axis_x: "Relação A/C (agregado/cimento)",
+        chart_axis_y: "Resistência (MPa)",
+        btn_eliminar: "Eliminar",
+        nuevo_producto: "Novo Produto",
+        mezcla_eliminada: "🗑 Mistura \"{nome}\" eliminada completamente.",
+        error_sin_tablas: "Nenhuma tabela carregada no localStorage."
+      },
+      resultado_simulador: {
+        titulo: "Resultado da simulação",
+        zona_gruesa: "Zona grossa:",
+        zona_media: "Zona média:",
+        zona_fina: "Zona fina:",
+        recomendacion: "🔎 Recomendação:",
+        btn_ocultar: "❌ Occultar resultado"
+      },
+      simulador_dosificacion: {
+        grafico_alt: "Curva resultante vs Fuller",
+        error_proporciones: "⚠️ As proporções devem somar 100%",
+        error_procesar: "❌ Erro ao processar a mistura"
       }
     },
 
@@ -319,9 +641,17 @@ const I18N = (() => {
   const SUP_LANGS = new Set(["es", "en", "it", "pt", "pl"]);
 
   function getLang() {
+    // Primero intenta leer de localStorage
+    let v = localStorage.getItem("lang") || "";
+    if (SUP_LANGS.has(v)) return v;
+    
+    // Si no está en localStorage, intenta desde las cookies
     const raw = document.cookie.split("; ").find(c => c.startsWith("lang="));
-    const v = raw ? decodeURIComponent(raw.split("=")[1] || "") : "";
-    return SUP_LANGS.has(v) ? v : "es";
+    v = raw ? decodeURIComponent(raw.split("=")[1] || "") : "";
+    if (SUP_LANGS.has(v)) return v;
+    
+    // Default a español
+    return "es";
   }
 
   // t("login.titulo") / t("registrarse.errores.correo") / t("sim.header") / t("verificar.titulo")
@@ -342,5 +672,25 @@ const I18N = (() => {
     return node !== undefined ? node : `[${key}]`;
   }
 
-  return { t, getLang, dict };
+  // Función auxiliar para traducir elementos con data-i18n
+  function applyTranslations(container = document) {
+    container.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      const text = t(key);
+      
+      if (el.tagName === 'BUTTON') {
+        el.textContent = text;
+        if (el.hasAttribute('aria-label')) {
+          el.setAttribute('aria-label', text);
+        }
+        if (el.hasAttribute('title')) {
+          el.setAttribute('title', text);
+        }
+      } else {
+        el.textContent = text;
+      }
+    });
+  }
+
+  return { t, getLang, applyTranslations, dict };
 })();

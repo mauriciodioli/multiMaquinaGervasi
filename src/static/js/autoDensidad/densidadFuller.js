@@ -150,10 +150,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const tabla = document.getElementById("tabla").getElementsByTagName('tbody')[0];
       const fila = tabla.insertRow();
+      const btnLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
       fila.innerHTML = `
         <td contenteditable="true">${tamiz}</td>
         <td contenteditable="true">${porcentaje}</td>
-        <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminare</button></td>
+        <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnLabel}</button></td>
         `;
 
 
@@ -226,12 +227,14 @@ function agregarMezcla() {
     mezclaDiv.setAttribute("data-mezcla-id", `mezcla-${mezclaId}`);
 
     const tamices = [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15];
+    const btnEliminarLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
+    const nuevoProductoLabel = typeof I18N !== 'undefined' ? I18N.t('sim.nuevo_producto') : 'Nuevo Producto';
 
     const filasHTML = tamices.map(t => `
         <tr>
             <td contenteditable="true">${t}</td>
             <td contenteditable="true"></td>
-            <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminare</button></td>
+            <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnEliminarLabel}</button></td>
         </tr>
     `).join("");
 
@@ -241,8 +244,8 @@ function agregarMezcla() {
                 <h3>Aggregato</h3>
                 <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il aggregato</button>
             </div>
-            <h3>Nuevo Producto</h3>
-            <input type="text" value="Nuevo Producto" class="nombreProducto" data-original="Nuevo Producto">
+            <h3>${nuevoProductoLabel}</h3>
+            <input type="text" value="${nuevoProductoLabel}" class="nombreProducto" data-original="${nuevoProductoLabel}">
             <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Aggiungi Riga</button>
             <button class="btn btn-danger" onclick="agregarAgredadosPreCardados(this)">select precargados</button>
             <button class="btn btn-danger" onclick="agregarTablaAlocalStorage(this)">save</button>
@@ -342,6 +345,7 @@ function eliminarMezcla(boton) {
     const mezclaDiv = boton.closest('.mezcla');
     const inputNombre = mezclaDiv.querySelector('.nombreProducto');
     const nombre = inputNombre?.value?.trim();
+    const mezclaId = mezclaDiv.getAttribute('data-mezcla-id');
 
     if (!nombre) {
         alert("❌ No se pudo identificar el nombre del producto.");
@@ -349,6 +353,31 @@ function eliminarMezcla(boton) {
     }
 
     console.log("🔧 Nombre a eliminar:", nombre);
+    console.log("🔧 MezclaId a eliminar:", mezclaId);
+
+    // ==============================
+    // 🔍 Paso 0: Eliminar de localStorage.tablasCargadas
+    // ==============================
+    if (mezclaId) {
+        let tablasCargadas = [];
+        try {
+            const raw = localStorage.getItem("tablasCargadas");
+            if (raw) {
+                tablasCargadas = JSON.parse(raw);
+            }
+        } catch (e) {
+            console.error("❌ Error al parsear tablasCargadas:", e);
+            tablasCargadas = [];
+        }
+
+        console.log("📦 tablasCargadas antes:", tablasCargadas);
+
+        const tablasActualizadas = tablasCargadas.filter(t => t.mezclaId !== mezclaId);
+
+        console.log("✅ tablasCargadas después:", tablasActualizadas);
+
+        localStorage.setItem("tablasCargadas", JSON.stringify(tablasActualizadas));
+    }
 
     // 🧹 Eliminar visualmente
     mezclaDiv.remove();
@@ -410,7 +439,9 @@ function eliminarMezcla(boton) {
 
     document.cookie = `mezclas_guardadas=${encodeURIComponent(JSON.stringify(mezclas))}; path=/`;
 
-    alert(`🗑 Mezcla "${nombre}" eliminada completamente.`);
+    // Mostrar notificación internacionalizada
+    const mensaje = typeof I18N !== 'undefined' ? I18N.t('sim.mezcla_eliminada').replace('{nombre}', nombre) : `🗑 Mezcla "${nombre}" eliminada completamente.`;
+    showToast(mensaje);
 }
 
 
@@ -440,10 +471,11 @@ function agregarFilaMultiple(btn) {
 
     // 3. crear la fila
     const fila = document.createElement("tr");
+    const btnLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
     fila.innerHTML = `
         <td contenteditable="true">0</td>
         <td contenteditable="true">0</td>
-        <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
+        <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnLabel}</button></td>
     `;
     tbody.appendChild(fila);
     console.log("✅ Fila agregada a ESTA tabla");
@@ -1307,6 +1339,7 @@ function cargarDatosPorDefecto() {
     const mezclaDiv = document.createElement("div");
     mezclaDiv.className = "mezcla";
 
+    const btnLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
     mezclaDiv.innerHTML = `
     <div class="contenedor-producto">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1325,7 +1358,7 @@ function cargarDatosPorDefecto() {
                 <tr>
                   <td contenteditable="true">${t}</td>
                   <td contenteditable="true">${m.porcentajes[i]}</td>
-                  <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminare</button></td>
+                  <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnLabel}</button></td>
                 </tr>
               `).join("")}
             </tbody>
@@ -1683,11 +1716,12 @@ function getCookie(nombre) {
     const mezclaDiv = document.createElement("div");
     mezclaDiv.className = "mezcla";
 
+    const btnLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
     const filas = datos.tamices.map((t, i) => `
       <tr>
         <td contenteditable="true">${t}</td>
         <td contenteditable="true">${datos.reales[i]}</td>
-        <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminare</button></td>
+        <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnLabel}</button></td>
       </tr>`).join("");
 
     const nombreVisible = nombres.find(n => n.toLowerCase().replace(/\s/g, "") === clave.toLowerCase()) || clave;

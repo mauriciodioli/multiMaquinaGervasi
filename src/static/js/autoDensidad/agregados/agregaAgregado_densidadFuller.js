@@ -163,13 +163,15 @@ function restaurarTablasDesdeLocalStorage() {
             mezclaEl.className = "mezcla";
             mezclaEl.setAttribute("data-mezcla-id", tab.mezclaId || `mezcla-${idx}`);
 
+            const nuevoProductoLabel = typeof I18N !== 'undefined' ? I18N.t('sim.nuevo_producto') : 'Nuevo Producto';
+
             mezclaEl.innerHTML = `
                 <div class="contenedor-producto">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <h3>Aggregato</h3>
                         <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il aggregato</button>
                     </div>
-                    <h3>Nuevo Producto</h3>
+                    <h3>${nuevoProductoLabel}</h3>
                     <input type="text" value="" class="nombreProducto" data-original="">
                     <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Aggiungi Riga</button>
                     <button class="btn btn-danger" onclick="agregarAgredadosPreCardados(this)">select precargados</button>

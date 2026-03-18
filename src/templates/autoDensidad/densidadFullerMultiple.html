@@ -70,17 +70,17 @@
   <div class="dpia-modal__backdrop" data-close="1"></div>
   <div class="dpia-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="mprop-title">
     <div class="dpia-modal__header">
-      <h3 id="mprop-title" class="dpia-modal__title">Proporciones de la mezcla (%)</h3>
-      <button class="dpia-modal__close" data-close="1" aria-label="Cerrar">✕</button>
+      <h3 id="mprop-title" class="dpia-modal__title" data-i18n="sim.prop_titulo">Proporciones de la mezcla (%)</h3>
+      <button class="dpia-modal__close" data-close="1" data-i18n="sim.btn_cerrar" aria-label="Cerrar" title="Cerrar">✕</button>
     </div>
     <div class="dpia-modal__body">
-      <p>Ingresá el % de cada agregado. La suma debe ser <b>100%</b>.</p>
+      <p data-i18n="sim.prop_instruccion">Ingresá el % de cada agregado. La suma debe ser <b>100%</b>.</p>
       <form id="formProporciones" class="prop-form"></form>
-      <div class="prop-total">Total: <span id="propTotal">0</span>%</div>
+      <div class="prop-total"><span data-i18n="sim.prop_total">Total:</span> <span id="propTotal">0</span>%</div>
       <div id="propMsg" class="prop-msg"></div>
     </div>
     <div class="dpia-modal__footer">
-      <button id="btnGuardarProporciones" class="dpia-btn dpia-btn--primary" disabled>Usar valores</button>
+      <button id="btnGuardarProporciones" class="dpia-btn dpia-btn--primary" data-i18n="sim.prop_usar_valores" disabled>Usar valores</button>
     </div>
   </div>
 </div>
@@ -282,8 +282,8 @@
   <div class="dpia-modal__backdrop" data-close="1"></div>
   <div class="dpia-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="retidoTitle">
     <div class="dpia-modal__head">
-      <h3 id="retidoTitle">Curva % Retido Acumulado</h3>
-      <button class="dpia-modal__close" data-close="1" aria-label="Cerrar">✕</button>
+      <h3 id="retidoTitle" data-i18n="sim.retido_titulo">Curva % Retido Acumulado</h3>
+      <button class="dpia-modal__close" data-close="1" data-i18n="sim.btn_cerrar" aria-label="Cerrar" title="Cerrar">✕</button>
     </div>
 
     <!-- NUEVO: cuerpo con grid -->
@@ -300,8 +300,8 @@
 
 
    <div class="dpia-modal__foot">
-      <button class="btn" data-close="1">Cerrar</button>
-      <button class="btn btn-primary" id="btnIrConsumo">Curva de consumo</button>
+      <button class="btn" data-close="1" data-i18n="sim.btn_cerrar">Cerrar</button>
+      <button class="btn btn-primary" id="btnIrConsumo" data-i18n="sim.btn_consumo">Curva de consumo</button>
   </div>
 
   </div>
@@ -316,29 +316,29 @@
   <div class="dpia-modal__backdrop" data-close="1"></div>
   <div class="dpia-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="ensayosTitle" tabindex="-1">
     <div class="dpia-modal__header">
-      <h3 id="ensayosTitle">Ensayos: Relación Agregado/Cemento (A/C) vs Resistencia (MPa)</h3>
-      <button class="dpia-modal__close" data-close="1" aria-label="Cerrar">✕</button>
+      <h3 id="ensayosTitle" data-i18n="sim.ensayos_titulo">Ensayos: Relación Agregado/Cemento (A/C) vs Resistencia (MPa)</h3>
+      <button class="dpia-modal__close" data-close="1" data-i18n="sim.btn_cerrar" aria-label="Cerrar" title="Cerrar">✕</button>
     </div>
 
     <div class="dpia-modal__body">
       <div class="grid grid-cols-2 gap-8">
         <div>
-          <label>Resistencia objetivo (MPa)</label>
+          <label data-i18n="sim.ensayos_resistencia_label">Resistencia objetivo (MPa)</label>
           <input id="mpaObjetivo" type="number" step="0.1" class="dpia-input" placeholder="Ej: 35">
         </div>
         <div>
-          <label>Masa total de agregados por m³ (kg)</label>
+          <label data-i18n="sim.ensayos_masa_label">Masa total de agregados por m³ (kg)</label>
           <input id="kgAgregados" type="number" step="1" class="dpia-input" placeholder="Ej: 1700">
         </div>
       </div>
 
       <div class="mt-3">
-        <label>Puntos de ensayo (A/C, MPa)</label>
+        <label data-i18n="sim.ensayos_tabla_label">Puntos de ensayo (A/C, MPa)</label>
         <table class="dpia-table" id="tablaEnsayos">
-          <thead><tr><th>A/C</th><th>MPa</th><th></th></tr></thead>
+          <thead><tr><th data-i18n="sim.ensayos_tabla_col1">A/C</th><th data-i18n="sim.ensayos_tabla_col2">MPa</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
-        <button id="btnAddPunto" class="dpia-btn dpia-btn--ghost">+ Agregar punto</button>
+        <button id="btnAddPunto" class="dpia-btn dpia-btn--ghost" data-i18n="sim.ensayos_btn_agregar">+ Agregar punto</button>
       </div>
 
       <div class="mt-4" style="height: 300px">
@@ -346,15 +346,15 @@
       </div>
 
       <div class="mt-4">
-        <h4>Resultado (para la MPa objetivo)</h4>
+        <h4 data-i18n="sim.ensayos_resultado_titulo">Resultado (para la MPa objetivo)</h4>
         <div id="resultadoTrazo" class="dpia-note"></div>
         <div id="resultadoDesglose" class="dpia-note"></div>
       </div>
     </div>
 
     <div class="dpia-modal__footer">
-      <button class="dpia-btn dpia-btn--secondary" data-close="1">Cancelar</button>
-      <button class="dpia-btn dpia-btn--primary" id="btnCalcularConsumo">Calcular</button>
+      <button class="dpia-btn dpia-btn--secondary" data-close="1" data-i18n="sim.ensayos_btn_cancelar">Cancelar</button>
+      <button class="dpia-btn dpia-btn--primary" id="btnCalcularConsumo" data-i18n="sim.ensayos_btn_calcular">Calcular</button>
     </div>
   </div>
 </div>
@@ -379,14 +379,43 @@
     <script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js') }}"></script>     
     <script src="{{ url_for('static', filename='js/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.js') }}"></script>   
     <script src="{{ url_for('static', filename='js/autoDensidad/modalTablaTamices.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/autoDensidad/guardarAnalisisGranulometrico.js') }}"></script>   
+    <script src="{{ url_for('static', filename='js/autoDensidad/guardarAnalisisGranulometrico.js') }}"></script>
+
+    <!-- Traducción automática de modales -->
+    <script>
+      // Aplicar traducciones iniciales cuando la página carga
+      document.addEventListener('DOMContentLoaded', () => {
+        I18N.applyTranslations();
+      });
+
+      // Interceptar las funciones que abren modales para traducir automáticamente
+      const originalShowModal = window.showModal || function() {};
+      window.showModal = function(modalId) {
+        originalShowModal(modalId);
+        setTimeout(() => {
+          const modal = document.getElementById(modalId);
+          if (modal) I18N.applyTranslations(modal);
+        }, 50);
+      };
+
+      // Para todos los botones que abren modales, aplicar traducciones
+      document.addEventListener('click', (e) => {
+        if (e.target.matches('[data-close], [onclick*="Modal"]')) {
+          setTimeout(() => {
+            document.querySelectorAll('[role="dialog"], .modal').forEach(modal => {
+              I18N.applyTranslations(modal);
+            });
+          }, 50);
+        }
+      });
+    </script>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/modalTablaTamices.css') }}">
       <link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.css') }}">
 <script>
  document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('btn-guardar-analisis');
-  debugger;
+  
   
     // Podés usar cualquiera de las dos líneas; ambas funcionan con tu t():
     // btn.innerHTML = `📊 ${I18N.t('login.guardar_analisis_granulometrico')}`;

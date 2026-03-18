@@ -22,7 +22,8 @@ document.getElementById("simulador-form").addEventListener("submit", function(ev
   }
 
   if (Math.abs(suma - 100) > 0.01) {
-    alert("⚠️ Las proporciones deben sumar 100%");
+    const msg = typeof I18N !== 'undefined' ? I18N.t('sim.simulador_dosificacion.error_proporciones') : "⚠️ Las proporciones deben sumar 100%";
+    showToast(msg);
     return;
   }
 
@@ -46,7 +47,7 @@ document.getElementById("simulador-form").addEventListener("submit", function(ev
       const img = document.getElementById("plotFuller");
       if (img && data.grafico_base64) {
         img.src = data.grafico_base64;
-        img.alt = "Curva resultante vs Fuller";
+        img.alt = typeof I18N !== 'undefined' ? I18N.t('sim.simulador_dosificacion.grafico_alt') : "Curva resultante vs Fuller";
         img.style.display = "";
       }
       // lo que ya tenías
@@ -55,7 +56,8 @@ document.getElementById("simulador-form").addEventListener("submit", function(ev
 
   .catch(err => {
     console.error("Error al simular mezcla:", err);
-    alert("❌ Error al procesar la mezcla");
+    const msg = typeof I18N !== 'undefined' ? I18N.t('sim.simulador_dosificacion.error_procesar') : "❌ Error al procesar la mezcla";
+    showToast(msg);
   });
 });
 
@@ -98,21 +100,21 @@ function mostrarResultadosSimulador(data) {
   let html = `
     <div class="simulacion-header">
       <span class="icono-check">✅</span>
-      <h4 class="titulo-simulacion">Resultado de simulación</h4>
+      <h4 class="titulo-simulacion">${typeof I18N !== 'undefined' ? I18N.t('sim.resultado_simulador.titulo') : 'Resultado de simulación'}</h4>
     </div>
     <ul>
-      <li><strong>Zona gruesa:</strong> ${zonas.gruesos.toFixed(2)}%</li>
-      <li><strong>Zona media:</strong> ${zonas.medios.toFixed(2)}%</li>
-      <li><strong>Zona fina:</strong> ${zonas.finos.toFixed(2)}%</li>
+      <li><strong>${typeof I18N !== 'undefined' ? I18N.t('sim.resultado_simulador.zona_gruesa') : 'Zona gruesa:'}</strong> ${zonas.gruesos.toFixed(2)}%</li>
+      <li><strong>${typeof I18N !== 'undefined' ? I18N.t('sim.resultado_simulador.zona_media') : 'Zona media:'}</strong> ${zonas.medios.toFixed(2)}%</li>
+      <li><strong>${typeof I18N !== 'undefined' ? I18N.t('sim.resultado_simulador.zona_fina') : 'Zona fina:'}</strong> ${zonas.finos.toFixed(2)}%</li>
     </ul>
   `;
 
   if (data.recomendacion) {
-    html += `<p><strong>🔎 Recomendación:</strong> ${data.recomendacion}</p>`;
+    html += `<p><strong>${typeof I18N !== 'undefined' ? I18N.t('sim.resultado_simulador.recomendacion') : '🔎 Recomendación:'}</strong> ${data.recomendacion}</p>`;
   }
 
   html += `
-    <button id="btnOcultarResultado" class="btn-ocultar-resultado">❌ Ocultar resultado</button>
+    <button id="btnOcultarResultado" class="btn-ocultar-resultado">${typeof I18N !== 'undefined' ? I18N.t('sim.resultado_simulador.btn_ocultar') : '❌ Ocultar resultado'}</button>
   `;
 
   div.innerHTML = html;

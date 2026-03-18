@@ -30,7 +30,8 @@ function guardarProporciones(map){
 function abrirModalProporciones(onOk){
   const tablas = leerTablasCargadas();
   if (!Array.isArray(tablas) || !tablas.length){
-    alert('No hay tablas cargadas en localStorage.');
+    const msg = typeof I18N !== 'undefined' ? I18N.t('sim.error_sin_tablas') : 'No hay tablas cargadas en localStorage.';
+    showToast(msg);
     return;
   }
 
@@ -75,7 +76,7 @@ function abrirModalProporciones(onOk){
     if (Math.abs(total - 100) < 0.01){
       btn.disabled = false;
     } else {
-      msg.textContent = 'La suma debe ser exactamente 100%.';
+      msg.textContent = I18N.t('sim.prop_error_suma_100');
     }
     // guardado en caliente (opcional)
     guardarProporciones(map);
@@ -92,6 +93,13 @@ function abrirModalProporciones(onOk){
   };
 
   abrirModal('modalProporciones');
+  // Traducir el modal con el idioma actual
+  setTimeout(() => {
+    const modal = document.getElementById('modalProporciones');
+    if (modal && typeof I18N !== 'undefined') {
+      I18N.applyTranslations(modal);
+    }
+  }, 50);
 }
 
 
@@ -100,7 +108,8 @@ function abrirProporcionesYCalcular(){
   // sanity check: debe existir tablasCargadas en localStorage
   const tablas = leerTablasCargadas?.() || [];
   if (!Array.isArray(tablas) || !tablas.length){
-    alert('No hay tablas cargadas en localStorage (tablasCargadas).');
+    const msg = typeof I18N !== 'undefined' ? I18N.t('sim.error_sin_tablas') : 'No hay tablas cargadas en localStorage.';
+    showToast(msg);
     return;
   }
 
@@ -492,11 +501,14 @@ function renderRetidoTablitas(tamices, mix_acum, faixas){
   });
 
   // Tabla 1: Granulometría ponderada
+  const tbl1Title = I18N.t('sim.retido_tabla1_titulo');
+  const col1Title = I18N.t('sim.retido_tabla1_col1');
+  const col2Title = I18N.t('sim.retido_tabla1_col2');
   const tbl1 = `
     <div class="mini-card">
-      <div class="mini-title">Granulometría ponderada dos agregados</div>
+      <div class="mini-title">${tbl1Title}</div>
       <table class="mini-table">
-        <thead><tr><th>#</th><th>%</th></tr></thead>
+        <thead><tr><th>${col1Title}</th><th>${col2Title}</th></tr></thead>
         <tbody>
           ${rows.map(r => `
             <tr>
@@ -508,19 +520,26 @@ function renderRetidoTablitas(tamices, mix_acum, faixas){
     </div>`;
 
   // Tabla 2: Faixas recomendadas (Bloco / Paver)
+  const tbl2Title = I18N.t('sim.retido_tabla2_titulo');
+  const tbl2Nota = I18N.t('sim.retido_tabla2_nota');
+  const col1 = I18N.t('sim.retido_tabla2_col1');
+  const col2 = I18N.t('sim.retido_tabla2_col2');
+  const col3 = I18N.t('sim.retido_tabla2_col3');
+  const col4 = I18N.t('sim.retido_tabla2_col4');
+  const col5 = I18N.t('sim.retido_tabla2_col5');
   const tbl2 = `
     <div class="mini-card">
-      <div class="mini-title">Faixas granulométricas recomendadas</div>
+      <div class="mini-title">${tbl2Title}</div>
       <table class="mini-table">
         <thead>
           <tr>
-            <th rowspan="2">Peneira</th>
-            <th colspan="2">Bloco</th>
-            <th colspan="2">Paver</th>
+            <th rowspan="2">${col1}</th>
+            <th colspan="2">${col2}</th>
+            <th colspan="2">${col3}</th>
           </tr>
           <tr>
-            <th>Lim. Inf.</th><th>Lim. Sup.</th>
-            <th>Lim. Inf.</th><th>Lim. Sup.</th>
+            <th>${col4}</th><th>${col5}</th>
+            <th>${col4}</th><th>${col5}</th>
           </tr>
         </thead>
         <tbody>
@@ -532,7 +551,7 @@ function renderRetidoTablitas(tamices, mix_acum, faixas){
             </tr>`).join('')}
         </tbody>
       </table>
-      <div class="muted" style="margin-top:6px">Valores en % de retido acumulado.</div>
+      <div class="muted" style="margin-top:6px">${tbl2Nota}</div>
     </div>`;
 
   host.innerHTML = tbl1 + tbl2;
@@ -707,10 +726,11 @@ let chartConsumo;
 function agregarFilaEnsayo(ac = '', mpa = ''){
   const tb = document.querySelector('#tablaEnsayos tbody');
   const tr = document.createElement('tr');
+  const btnLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
   tr.innerHTML = `
     <td><input type="number" step="0.01" class="dpia-input ens-ac" value="${ac}"></td>
     <td><input type="number" step="0.1"  class="dpia-input ens-mpa" value="${mpa}"></td>
-    <td><button class="dpia-btn dpia-btn--tiny" data-del="1">×</button></td>`;
+    <td><button class="dpia-btn dpia-btn--tiny" data-del="1" title="${btnLabel}">×</button></td>`;
   tr.querySelector('[data-del]').onclick = ()=> tr.remove();
   tb.appendChild(tr);
 }
@@ -794,22 +814,28 @@ function renderCurvaConsumo(pts, a, b){
     ys.push(a*Math.log(x) + b);
   }
 
+  // Obtener labels traducidos
+  const labelEnsayos = I18N.t('sim.chart_label_ensayos');
+  const labelAjuste = I18N.t('sim.chart_label_ajuste');
+  const axisX = I18N.t('sim.chart_axis_x');
+  const axisY = I18N.t('sim.chart_axis_y');
+
   if (chartConsumo) chartConsumo.destroy();
   chartConsumo = new Chart(ctx, {
     type:'line',
     data:{
       labels: xs,
       datasets:[
-        {label:'Ensayos', data: pts.map(p=>({x:p.x,y:p.y})), showLine:false, pointRadius:4, borderWidth:0},
-        {label:'Ajuste y = a·ln(x) + b', data: xs.map((x,i)=>({x, y:ys[i]})), borderWidth:2, pointRadius:0, tension:0}
+        {label:labelEnsayos, data: pts.map(p=>({x:p.x,y:p.y})), showLine:false, pointRadius:4, borderWidth:0},
+        {label:labelAjuste, data: xs.map((x,i)=>({x, y:ys[i]})), borderWidth:2, pointRadius:0, tension:0}
       ]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
       parsing:false, // usamos {x,y}
       scales:{
-        x:{ type:'linear', title:{display:true, text:'Relación A/C (agregado/cemento)'} },
-        y:{ title:{display:true, text:'Resistencia (MPa)'} }
+        x:{ type:'linear', title:{display:true, text:axisX} },
+        y:{ title:{display:true, text:axisY} }
       }
     }
   });
@@ -842,8 +868,13 @@ document.getElementById('btnCalcularConsumo')?.addEventListener('click', ()=>{
   const props = obtenerProporcionesMix();
   const lote = dimensionarLote(kgAgg, props, xreq);
 
+  const trazoLabel = I18N.t('sim.consumo_trazo_label');
+  const cementoLabel = I18N.t('sim.consumo_cemento_label');
+  const porLabel = I18N.t('sim.consumo_por_label');
+  const kgAgLabel = I18N.t('sim.consumo_kg_agregados');
+
   document.getElementById('resultadoTrazo').innerHTML =
-    `Trazo requerido (A/C): <b>${xreq.toFixed(2)}</b>  →  Cemento: <b>${lote.kgCemento} kg</b> por ${kgAgg} kg de agregados.`;
+    `${trazoLabel} <b>${xreq.toFixed(2)}</b>  →  ${cementoLabel} <b>${lote.kgCemento} kg</b> ${porLabel} ${kgAgg} ${kgAgLabel}.`;
 
   const rows = lote.agregados.map(r=>`${r.nombre}: ${r.kg} kg (${r.pct}%)`).join('<br>');
   document.getElementById('resultadoDesglose').innerHTML = rows;
