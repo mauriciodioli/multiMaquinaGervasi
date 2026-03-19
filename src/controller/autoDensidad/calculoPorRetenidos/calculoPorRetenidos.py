@@ -97,18 +97,19 @@ def optimizar_proporciones(materiales, tamices_ord, limites, log):
         # Retacumulados por material
         ret_acums = [np.array(m["ret_acum"]) for m in materiales]
         
-        # Parámetro de regularización (penaliza alejarse de pesos iniciales)
-        LAMBDA_REG = 0.5  # Aumentado para fortalecer la penalización
+        # ====== ESTRATEGIA D: OPTIMIZACIÓN SIN RESTRICCIONES DE MÍNIMO ======
+        # Si no hay solución viable, simplemente retorna None
+        # No usamos MIN_WEIGHT porque esto paraliza la búsqueda
+        LAMBDA_REG = 10.0  # Regularización moderada (NO 100)
         
-        # Definir función objetivo CON regularización L2
+        # Definir función objetivo SIMPLE pero EFECTIVA
         def objetivo(pesos):
             """
-            Minimizar: error_faixa + λ * Σ(w_i - w_i_inicial)²
-            Esto mantiene los pesos cerca del original mientras minimiza desviación
+            Minimizar: error_faixa + λ * varianza_de_cambios
+            Sin restricciones duras que paralicen el optimizador
             """
-            # Validar pesos
-            if any(w < 0 or w > 1 for w in pesos):
-                return 1e10
+            # Clip automático
+            pesos = np.clip(pesos, 0.0, 1.0)
             
             s = sum(pesos)
             if s <= 0:
@@ -133,72 +134,67 @@ def optimizar_proporciones(materiales, tamices_ord, limites, log):
                 x = mix_acum_opt[k]
                 
                 if lo <= x <= hi:
-                    # Dentro de faixa → error = 0
                     pass
                 else:
-                    # Fuera de faixa → error cuadrático ponderado
+                    # Penalidad proporcional a la desviación
                     if x < lo:
-                        error_faixa += 2.0 * (lo - x) ** 2  # Mayor penalidad por debajo
+                        error_faixa += (lo - x) ** 2
                     else:
                         error_faixa += (x - hi) ** 2
             
-            # PARTE 2: Regularización L2 (mantener pesos similares a iniciales)
-            reg_term = LAMBDA_REG * np.sum((w_norm - w_inicial) ** 2)
+            # PARTE 2: Regularización SUAVE - solo penalizar cambios DRÁSTICOS
+            cambios = np.abs(w_norm - w_inicial)
+            reg_term = LAMBDA_REG * np.sum(cambios)  # L1, no L2
             
             total_error = error_faixa + reg_term
             return total_error
         
         # Definir restricciones
         constraints = [
-            {"type": "eq", "fun": lambda w: sum(w) - 1.0}  # suma = 1
+            {"type": "eq", "fun": lambda w: sum(w) - 1.0}
         ]
         
-        bounds = [(0.0, 1.0) for _ in range(3)]  # cada peso en [0, 1]
+        # Bounds normales: SIN restricciones mínimas de presencia
+        bounds = [(0.0, 1.0) for _ in range(3)]
         
-        # MULTI-START: Intentar múltiples puntos iniciales
-        mejores_resultados = []
+        log(f"[OPTIM] Bounds relajados: [0.0, 1.0]")
+        log(f"[OPTIM] Regularización moderada: LAMBDA_REG={LAMBDA_REG}")
         
-        # Punto 1: Pesos originales
-        puntos_inicio = [w_inicial.copy()]
+        # Solo 1 intento simple sin multi-start
+        log(f"[OPTIM] Optimizando con pesos iniciales como punto de partida...")
         
-        # Puntos 2-6: Perturbaciones aleatorias controladas
-        rng = np.random.RandomState(42)  # determinístico para reproducibilidad
-        for _ in range(5):
-            perturbacion = w_inicial + 0.15 * rng.randn(3)  # ±15% de perturbación
-            perturbacion = np.clip(perturbacion, 0.0, 1.0)
-            perturbacion = perturbacion / perturbacion.sum()  # renormalizar
-            puntos_inicio.append(perturbacion)
+        result = minimize(
+            objetivo,
+            w_inicial,
+            method="SLSQP",
+            bounds=bounds,
+            constraints=constraints,
+            options={"maxiter": 5000, "ftol": 1e-12}
+        )
         
-        log(f"[OPTIM] Iniciando optimización multi-start con {len(puntos_inicio)} puntos...")
-        
-        for idx, punto_inicio in enumerate(puntos_inicio):
-            result = minimize(
-                objetivo,
-                punto_inicio,
-                method="SLSQP",
-                bounds=bounds,
-                constraints=constraints,
-                options={"maxiter": 2000, "ftol": 1e-10}
-            )
-            
-            if result.success:
-                mejores_resultados.append((result.fun, result.x))
-        
-        if not mejores_resultados:
-            log(f"[OPTIM] ⚠️ Ninguna optimización convergió")
+        if not result.success:
+            log(f"[OPTIM] ⚠️ Optimización no convergió: {result.message}")
             return None
         
-        # Seleccionar mejor resultado
-        mejor_error, w_opt = min(mejores_resultados, key=lambda x: x[0])
-        
-        # Post-procesamiento
+        w_opt = result.x
         w_opt = np.clip(w_opt, 0.0, 1.0)
         s = sum(w_opt)
         if s <= 0:
             return None
-        w_opt = w_opt / s  # renormalizar
+        w_opt = w_opt / s  # Normalizar para que sume 1
         
-        log(f"[OPTIM] Pesos optimizados (multi-start): {[round(w,4) for w in w_opt]}")
+        # POST-CHECK: Si la solución es PEOR que la inicial, rechazarla
+        error_inicial = objetivo(w_inicial)
+        error_final = objetivo(w_opt)
+        
+        log(f"[OPTIM] Error inicial: {round(error_inicial, 4)}")
+        log(f"[OPTIM] Error final: {round(error_final, 4)}")
+        
+        if error_final >= error_inicial * 0.95:  # Mejora menor al 5%
+            log(f"[OPTIM] ⚠️ Mejora insuficiente ({round(error_final/error_inicial*100, 1)}%). Rechazando optimización.")
+            return None
+        
+        log(f"[OPTIM] ✅ Optimización exitosa: {[round(float(w),4) for w in w_opt]}")
         
         # Calcular mix final con optimizados
         mix_acum_opt = np.zeros(n)

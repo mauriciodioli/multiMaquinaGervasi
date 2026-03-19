@@ -14,7 +14,10 @@ const I18N = (() => {
         zone_fine: "Zona fina",
         recommendation: "🔎 Recomendación",
         hide_btn: "❌ Ocultar resultado",
-        data_error: "❌ Error: datos incompletos o mal formateados."
+        data_error: "❌ Error: datos incompletos o mal formateados.",
+        factor_prompt_title: "Ingresar un número entre 0 y 1 (dejar vacío para usar 1):\n\n",
+        factor_prompt_desc: "📌 factor controla la intensidad del ajuste hacia la curva objetivo.\n• factor = 0 → no aplicás corrección (curva = promedio)\n• factor = 1 → corrección completa (curva = Fuller)\n• 0 < factor < 1 → corrección parcial\n• factor > 1 → sobreajuste (te pasás de Fuller)\n• factor < 0 → te alejás de Fuller",
+        factor_invalid: "❌ Número inválido. Ingresá un valor entre 0 y 1."
       },
       en: {
         sum100_alert: "⚠️ Percentages must sum to 100%",
@@ -27,7 +30,10 @@ const I18N = (() => {
         zone_fine: "Fine zone",
         recommendation: "🔎 Recommendation",
         hide_btn: "❌ Hide result",
-        data_error: "❌ Error: incomplete or malformed data."
+        data_error: "❌ Error: incomplete or malformed data.",
+        factor_prompt_title: "Enter a number between 0 and 1 (leave empty to use 1):\n\n",
+        factor_prompt_desc: "📌 factor controls the intensity of adjustment towards the target curve.\n• factor = 0 → no correction applied (curve = average)\n• factor = 1 → complete correction (curve = Fuller)\n• 0 < factor < 1 → partial correction\n• factor > 1 → over-adjustment (you exceed Fuller)\n• factor < 0 → you move away from Fuller",
+        factor_invalid: "❌ Invalid number. Enter a value between 0 and 1."
       },
       it: {
         sum100_alert: "⚠️ Le percentuali devono sommare 100%",
@@ -40,7 +46,10 @@ const I18N = (() => {
         zone_fine: "Zona fine",
         recommendation: "🔎 Raccomandazione",
         hide_btn: "❌ Nascondi risultato",
-        data_error: "❌ Errore: dati incompleti o non validi."
+        data_error: "❌ Errore: dati incompleti o non validi.",
+        factor_prompt_title: "Inserire un numero tra 0 e 1 (lasciare vuoto per usare 1):\n\n",
+        factor_prompt_desc: "📌 factor controlla l'intensità dell'aggiustamento verso la curva obiettivo.\n• factor = 0 → nessuna correzione applicata (curva = media)\n• factor = 1 → correzione completa (curva = Fuller)\n• 0 < factor < 1 → correzione parziale\n• factor > 1 → sovra-aggiustamento (superi Fuller)\n• factor < 0 → ti allontani da Fuller",
+        factor_invalid: "❌ Numero non valido. Inserire un valore tra 0 e 1."
       },
       pt: {
         sum100_alert: "⚠️ As proporções devem somar 100%",
@@ -53,7 +62,10 @@ const I18N = (() => {
         zone_fine: "Zona fina",
         recommendation: "🔎 Recomendação",
         hide_btn: "❌ Ocultar resultado",
-        data_error: "❌ Erro: dados incompletos ou inválidos."
+        data_error: "❌ Erro: dados incompletos ou inválidos.",
+        factor_prompt_title: "Inserir um número entre 0 e 1 (deixar vazio para usar 1):\n\n",
+        factor_prompt_desc: "📌 factor controla a intensidade do ajuste em relação à curva objetivo.\n• factor = 0 → nenhuma correção aplicada (curva = média)\n• factor = 1 → correção completa (curva = Fuller)\n• 0 < factor < 1 → correção parcial\n• factor > 1 → ajuste excessivo (você ultrapassa Fuller)\n• factor < 0 → você se afasta de Fuller",
+        factor_invalid: "❌ Número inválido. Insira um valor entre 0 e 1."
       },
       pl: {
         sum100_alert: "⚠️ Udziały muszą sumować się do 100%",
@@ -67,6 +79,9 @@ const I18N = (() => {
         recommendation: "🔎 Rekomendacja",
         hide_btn: "❌ Ukryj wynik",
         data_error: "❌ Błąd: niekompletne lub nieprawidłowe dane.",
+        factor_prompt_title: "Wpisz liczbę między 0 a 1 (pozostaw puste, aby użyć 1):\n\n",
+        factor_prompt_desc: "📌 factor kontroluje intensywność dostosowania w kierunku krzywej docelowej.\n• factor = 0 → bez zastosowanej korekty (krzywa = średnia)\n• factor = 1 → pełna korekta (krzywa = Fuller)\n• 0 < factor < 1 → korekta częściowa\n• factor > 1 → nad-dostosowanie (przekroczysz Fuller)\n• factor < 0 → oddalasz się od Fuller",
+        factor_invalid: "❌ Nieprawidłowa liczba. Wpisz wartość między 0 a 1."
         prop_titulo: "Proporcje mieszanki (%)",
         prop_cerrar: "Zamknij",
         prop_instruccion: "Wpisz % każdego agregatu. Suma musi wynosić 100%.",

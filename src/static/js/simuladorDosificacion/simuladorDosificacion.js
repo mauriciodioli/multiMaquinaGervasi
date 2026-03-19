@@ -93,28 +93,29 @@ function mostrarResultadosSimulador(data) {
     typeof zonas.medios !== "number" ||
     typeof zonas.finos !== "number"
   ) {
-    div.innerHTML = `<p style="color:red;">❌ Error: datos incompletos o mal formateados.</p>`;
+    const errorMsg = typeof I18N !== 'undefined' ? I18N.t('sim.data_error') : '❌ Error: datos incompletos o mal formateados.';
+    div.innerHTML = `<p style="color:red;">${errorMsg}</p>`;
     return;
   }
 
   let html = `
     <div class="simulacion-header">
       <span class="icono-check">✅</span>
-      <h4 class="titulo-simulacion">${typeof I18N !== 'undefined' ? I18N.t('sim.resultado_simulador.titulo') : 'Resultado de simulación'}</h4>
+      <h4 class="titulo-simulacion">${typeof I18N !== 'undefined' ? I18N.t('sim.header') : 'Resultado de simulación'}</h4>
     </div>
     <ul>
-      <li><strong>${typeof I18N !== 'undefined' ? I18N.t('sim.resultado_simulador.zona_gruesa') : 'Zona gruesa:'}</strong> ${zonas.gruesos.toFixed(2)}%</li>
-      <li><strong>${typeof I18N !== 'undefined' ? I18N.t('sim.resultado_simulador.zona_media') : 'Zona media:'}</strong> ${zonas.medios.toFixed(2)}%</li>
-      <li><strong>${typeof I18N !== 'undefined' ? I18N.t('sim.resultado_simulador.zona_fina') : 'Zona fina:'}</strong> ${zonas.finos.toFixed(2)}%</li>
+      <li><strong>${typeof I18N !== 'undefined' ? I18N.t('sim.zone_coarse') : 'Zona gruesa'}:</strong> ${zonas.gruesos.toFixed(2)}%</li>
+      <li><strong>${typeof I18N !== 'undefined' ? I18N.t('sim.zone_medium') : 'Zona media'}:</strong> ${zonas.medios.toFixed(2)}%</li>
+      <li><strong>${typeof I18N !== 'undefined' ? I18N.t('sim.zone_fine') : 'Zona fina'}:</strong> ${zonas.finos.toFixed(2)}%</li>
     </ul>
   `;
 
   if (data.recomendacion) {
-    html += `<p><strong>${typeof I18N !== 'undefined' ? I18N.t('sim.resultado_simulador.recomendacion') : '🔎 Recomendación:'}</strong> ${data.recomendacion}</p>`;
+    html += `<p><strong>${typeof I18N !== 'undefined' ? I18N.t('sim.recommendation') : '🔎 Recomendación'}:</strong> ${data.recomendacion}</p>`;
   }
 
   html += `
-    <button id="btnOcultarResultado" class="btn-ocultar-resultado">${typeof I18N !== 'undefined' ? I18N.t('sim.resultado_simulador.btn_ocultar') : '❌ Ocultar resultado'}</button>
+    <button id="btnOcultarResultado" class="btn-ocultar-resultado">${typeof I18N !== 'undefined' ? I18N.t('sim.hide_btn') : '❌ Ocultar resultado'}</button>
   `;
 
   div.innerHTML = html;

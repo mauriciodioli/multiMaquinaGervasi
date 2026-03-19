@@ -95,10 +95,11 @@ function usarAgregadoSeleccionado() {
 
             tamices.forEach(t => {
                 const fila = document.createElement("tr");
+                const btnLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
                 fila.innerHTML = `
                     <td contenteditable="true">${t.tamiz}</td>
                     <td contenteditable="true">${isNaN(t.porcentaje) ? "" : t.porcentaje}</td>
-                    <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
+                    <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnLabel}</button></td>
                 `;
                 tbody.appendChild(fila);
             });
@@ -254,10 +255,11 @@ function restaurarTablasDesdeLocalStorage() {
 
         (tab.filas || []).forEach(f => {
             const fila = document.createElement("tr");
+            const btnLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
             fila.innerHTML = `
                 <td contenteditable="true">${f.tamiz || ""}</td>
                 <td contenteditable="true">${f.porcentaje || ""}</td>
-                <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
+                <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnLabel}</button></td>
             `;
             tbody.appendChild(fila);
         });

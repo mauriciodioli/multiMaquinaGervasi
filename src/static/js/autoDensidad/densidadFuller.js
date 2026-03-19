@@ -961,16 +961,10 @@ function generarGraficoProporciones(pesos, nombres) {
 
 function generarMezclaCorregida() {
 
-   let input = prompt(
-                      "Ingresar un número entre 0 y 1 (dejar vacío para usar 1):\n\n" +
-                      "📌 factor controla la intensidad del ajuste hacia la curva objetivo.\n" +
-                      "• factor = 0 → no aplicás corrección (curva = promedio)\n" +
-                      "• factor = 1 → corrección completa (curva = Fuller)\n" +
-                      "• 0 < factor < 1 → corrección parcial\n" +
-                      "• factor > 1 → sobreajuste (te pasás de Fuller)\n" +
-                      "• factor < 0 → te alejás de Fuller",
-                      "1"
-                    );
+   const promptTitle = typeof I18N !== 'undefined' ? I18N.t('sim.factor_prompt_title') : "Ingresar un número entre 0 y 1 (dejar vacío para usar 1):\n\n";
+   const promptDesc = typeof I18N !== 'undefined' ? I18N.t('sim.factor_prompt_desc') : "📌 factor controla la intensidad del ajuste hacia la curva objetivo.\n• factor = 0 → no aplicás corrección (curva = promedio)\n• factor = 1 → corrección completa (curva = Fuller)\n• 0 < factor < 1 → corrección parcial\n• factor > 1 → sobreajuste (te pasás de Fuller)\n• factor < 0 → te alejás de Fuller";
+   
+   let input = prompt(promptTitle + promptDesc, "1");
 
 
 
@@ -985,7 +979,8 @@ function generarMezclaCorregida() {
     const factor = parseFloat(input);
 
     if (isNaN(factor) || factor < 0 || factor > 1) {
-        alert("❌ Número inválido. Ingresá un valor entre 0 y 1.");
+        const errorMsg = typeof I18N !== 'undefined' ? I18N.t('sim.factor_invalid') : "❌ Número inválido. Ingresá un valor entre 0 y 1.";
+        alert(errorMsg);
         return;
     }
 

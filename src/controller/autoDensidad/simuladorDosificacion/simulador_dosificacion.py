@@ -63,8 +63,9 @@ def simular_mezcla_manual():
     if isinstance(resultado, tuple):  # caso de error
         return jsonify(resultado[0]), resultado[1]
 
+    lang = request.cookies.get("lang", "es")
     zonas = resultado.get("zonas", {})
-    recomendacion = generar_recomendacion(zonas)
+    recomendacion = generar_recomendacion(zonas, lang)
     resultado["recomendacion"] = recomendacion
 
     return jsonify(resultado)
@@ -73,7 +74,58 @@ def simular_mezcla_manual():
 
 
 
-def generar_recomendacion(zonas):
+def generar_recomendacion(zonas, lang="es"):
+    traducciones = {
+        "es": {
+            "equilibrado": "✅ La mezcla está bastante equilibrada. Puedes probarla en planta.",
+            "exceso_finos": "⚠️ Hay un exceso de finos. Reduce la arena fina o aumenta la grava gruesa como Piedra Negra.",
+            "deficit_finos": "⚠️ Faltan finos. Añade material más fino.",
+            "exceso_medios": "⚠️ Exceso de materiales medios. Reduce áridos medios o similares.",
+            "deficit_medios": "⚠️ Déficit en materiales medios. Aumenta áridos medios o componentes intermedios.",
+            "exceso_gruesos": "⚠️ Exceso de materiales gruesos. Reduce la componente gruesa como Piedra Negra.",
+            "deficit_gruesos": "⚠️ Faltan materiales gruesos. Añade Piedra Negra o similares."
+        },
+        "en": {
+            "equilibrado": "✅ The mix is well balanced. You can test it in the plant.",
+            "exceso_finos": "⚠️ There is an excess of fines. Reduce fine sand or increase coarse gravel like Black Stone.",
+            "deficit_finos": "⚠️ Not enough fines. Add finer material.",
+            "exceso_medios": "⚠️ Excess of medium materials. Reduce medium aggregates or similar.",
+            "deficit_medios": "⚠️ Deficit in medium materials. Increase medium aggregates or intermediate components.",
+            "exceso_gruesos": "⚠️ Excess of coarse materials. Reduce the coarse component like Black Stone.",
+            "deficit_gruesos": "⚠️ Not enough coarse materials. Add Black Stone or similar."
+        },
+        "it": {
+            "equilibrado": "✅ Il mix è abbastanza equilibrato. Puoi provarlo in impianto.",
+            "exceso_finos": "⚠️ C'è un eccesso di multe. Riduci la grana fine o aumenta quella grossa come la Pietra Nera.",
+            "deficit_finos": "⚠️ Mancano le multe. Aggiungi materiale più fine.",
+            "exceso_medios": "⚠️ Eccesso di materiali medi. Riduci telai o simili.",
+            "deficit_medios": "⚠️ Deficit nei materiali medi. Aumenta telai o componenti intermedi.",
+            "exceso_gruesos": "⚠️ Eccesso di materiali grossi. Riduci la componente grossa come la Pietra Nera.",
+            "deficit_gruesos": "⚠️ Mancano materiali grossi. Aggiungi Pietra Nera o simili."
+        },
+        "pt": {
+            "equilibrado": "✅ A mistura está bem equilibrada. Você pode testá-la na planta.",
+            "exceso_finos": "⚠️ Há um excesso de finos. Reduza a areia fina ou aumente a brita grossa como Pedra Preta.",
+            "deficit_finos": "⚠️ Faltam finos. Adicione material mais fino.",
+            "exceso_medios": "⚠️ Excesso de materiais médios. Reduza agregados médios ou similares.",
+            "deficit_medios": "⚠️ Déficit em materiais médios. Aumente agregados médios ou componentes intermediários.",
+            "exceso_gruesos": "⚠️ Excesso de materiais grossos. Reduza o componente grosso como Pedra Preta.",
+            "deficit_gruesos": "⚠️ Faltam materiais grossos. Adicione Pedra Preta ou similares."
+        },
+        "pl": {
+            "equilibrado": "✅ Mieszanka jest dobrze wyważona. Możesz ją przetestować w instalacji.",
+            "exceso_finos": "⚠️ Nadmiar materiałów drobnych. Zmniejsz piasek drobny lub zwiększ żwir grubego taki jak Czarny Kamień.",
+            "deficit_finos": "⚠️ Brakuje materiałów drobnych. Dodaj materiał bardziej drobny.",
+            "exceso_medios": "⚠️ Nadmiar materiałów średnich. Zmniejsz kruszywa średnie lub podobne.",
+            "deficit_medios": "⚠️ Niedobór materiałów średnich. Zwiększ kruszywa średnie lub komponenty pośrednie.",
+            "exceso_gruesos": "⚠️ Nadmiar materiałów grubych. Zmniejsz komponent gruby taki jak Czarny Kamień.",
+            "deficit_gruesos": "⚠️ Brakuje materiałów grubych. Dodaj Czarny Kamień lub podobne."
+        }
+    }
+
+    # Obtén el diccionario de idioma, con fallback a español
+    msgs = traducciones.get(lang, traducciones["es"])
+    
     errores = zonas.get("error_por_zona", {})
     gruesos = errores.get("gruesos", 0)
     medios = errores.get("medios", 0)
@@ -89,22 +141,22 @@ def generar_recomendacion(zonas):
     zona, valor = zona_dominante
 
     if abs(valor) < delta:
-        return "✅ Il mix è abbastanza equilibrato. Puoi provarlo in impianto."
+        return msgs["equilibrado"]
 
     if zona == "finos":
         if valor > 0:
-            return "⚠️ C'è un eccesso di multe. Riduci la grana fine o aumenta quella grossa come la Pietra Nera."
+            return msgs["exceso_finos"]
         else:
-            return "⚠️ Mancano le multe. Aggiungi materiale più fine."
+            return msgs["deficit_finos"]
     elif zona == "medios":
         if valor > 0:
-            return "⚠️ Eccesso di materiali medi. Riduci telai o simili."
+            return msgs["exceso_medios"]
         else:
-            return "⚠️ Deficit nei materiali medi. Aumenta telai o componenti intermedi."
+            return msgs["deficit_medios"]
     elif zona == "gruesos":
         if valor > 0:
-            return "⚠️ Eccesso di materiali grossi. Riduci la componente grossa come la Pietra Nera."
+            return msgs["exceso_gruesos"]
         else:
-            return "⚠️ Mancano materiali grossi. Aggiungi Pietra Nera o simili."
+            return msgs["deficit_gruesos"]
 
 
