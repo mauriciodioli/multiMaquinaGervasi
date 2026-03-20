@@ -100,39 +100,83 @@ print(f"\n✓ Cumplimiento banda ideal: {cumpl_ideal}/{len(tamices)} ({cumpl_ide
 print(f"✓ Desviación promedio: {desv_promedio:.2f}%")
 
 # =====================================================
-# PASO 3: GENERAR TABLA VIRTUAL BASADA EN ESTOS DATOS
+# PASO 2.5: EVALUACIÓN DE CRITERIOS DE DECISIÓN
 # =====================================================
+
+print("\n" + "="*80)
+print("2️⃣.5️⃣  EVALUACIÓN DE CRITERIOS DE DECISIÓN")
+print("="*80)
+
+# Criterion 1: Cumplimiento de banda (OBLIGATORIO)
+cumplimiento_banda_pct = (cumpl_inicial / len(tamices)) * 100
+umbral_cumplimiento = 95.0  # Mínimo requerido por norma
+
+# Criterion 2: Desviación del centro (CALIDAD OPCIONAL)
+desviacion_media_centro = desv_promedio
+umbral_calidad = 5.5  # ±5.5% es la banda ideal
+
+print(f"\nCRITERIO 1 - CUMPLIMIENTO DE BANDA (Obligatorio):")
+print(f"   • Cumplimiento actual: {cumplimiento_banda_pct:.1f}%")
+print(f"   • Umbral requerido: {umbral_cumplimiento:.1f}%")
+cumple_banda = cumplimiento_banda_pct >= umbral_cumplimiento
+print(f"   • Estado: {'✓ CUMPLE' if cumple_banda else '✗ NO CUMPLE'}")
+
+print(f"\nCRITERIO 2 - DESVIACIÓN DEL CENTRO (Calidad Opcional):")
+print(f"   • Desviación media: {desviacion_media_centro:.2f}%")
+print(f"   • Umbral calidad: {umbral_calidad:.1f}%")
+es_baja_desviacion = desviacion_media_centro <= umbral_calidad
+print(f"   • Estado: {'✓ BUENA CALIDAD' if es_baja_desviacion else '⚠ CALIDAD MEJORA'}")
+
+print(f"\nDECISIÓN DE TABLA VIRTUAL:")
+if cumple_banda:
+    print(f"   ✓ CUMPLE BANDA → NO GENERAR tabla virtual")
+    print(f"     La solución actual ya satisface la especificación.")
+    if not es_baja_desviacion:
+        print(f"   💡 Nota: Desviación media {desviacion_media_centro:.2f}% > {umbral_calidad}%")
+        print(f"     Se podría mejorar calidad, pero NO es obligatorio.")
+    generar_tabla_virtual_flag = False
+else:
+    print(f"   ✗ NO CUMPLE BANDA → GENERAR tabla virtual")
+    print(f"     La solución actual NO satisface la especificación.")
+    generar_tabla_virtual_flag = True
 
 print("\n" + "="*80)
 print("3️⃣  GENERACIÓN DE TABLA VIRTUAL DIRIGIDA")
 print("="*80)
 
-print("\nGenerando tabla virtual A PARTIR DE DATOS REALES...")
+# LÓGICA CORRECTA: Solo generar si NO cumple banda
+if not generar_tabla_virtual_flag:
+    print("\n⏭ SALTANDO generación de tabla virtual (ya cumple banda)")
+    pasante_virtual = pasante_real.copy()
+    es_valida = True
+    reporte_validacion = {'valido': True}
+else:
+    print("\nGenerando tabla virtual A PARTIR DE DATOS REALES...")
 
-# La tabla real ES la "mezcla" actual
-# Vamos a generar una tabla virtual que la mejore
-pasante_virtual, debug_info = generar_tabla_virtual(
-    pasante_mezcla=pasante_real[::-1].tolist(),  # Invertir para función
-    banda_min=banda_min[::-1].tolist(),
-    banda_max=banda_max[::-1].tolist(),
-    tamices=[str(x) for x in tamices[::-1]],
-    metodo="principal",
-    factor_suavizado=0.5,
-)
+    # La tabla real ES la "mezcla" actual
+    # Vamos a generar una tabla virtual que la mejore
+    pasante_virtual, debug_info = generar_tabla_virtual(
+        pasante_mezcla=pasante_real[::-1].tolist(),  # Invertir para función
+        banda_min=banda_min[::-1].tolist(),
+        banda_max=banda_max[::-1].tolist(),
+        tamices=[str(x) for x in tamices[::-1]],
+        metodo="principal",
+        factor_suavizado=0.5,
+    )
 
-pasante_virtual = np.array(pasante_virtual)[::-1]
+    pasante_virtual = np.array(pasante_virtual)[::-1]
 
-# Validar tabla virtual
-es_valida, reporte_validacion = validar_tabla_virtual(
-    pasante_virtual=pasante_virtual.tolist(),
-    pasante_mezcla=pasante_real.tolist(),
-    banda_min=banda_min.tolist(),
-    banda_max=banda_max.tolist()
-)
+    # Validar tabla virtual
+    es_valida, reporte_validacion = validar_tabla_virtual(
+        pasante_virtual=pasante_virtual.tolist(),
+        pasante_mezcla=pasante_real.tolist(),
+        banda_min=banda_min.tolist(),
+        banda_max=banda_max.tolist()
+    )
 
-print(f"\n✓ Tabla virtual generada: {['RECHAZADA', 'VÁLIDA'][es_valida]}")
-if not es_valida and 'fallos' in reporte_validacion:
-    print(f"  Razón: {reporte_validacion['fallos']}")
+    print(f"\n✓ Tabla virtual generada: {['RECHAZADA', 'VÁLIDA'][es_valida]}")
+    if not es_valida and 'fallos' in reporte_validacion:
+        print(f"  Razón: {reporte_validacion['fallos']}")
 
 # =====================================================
 # RESULTADO: TABLA REAL vs VIRTUAL
@@ -161,6 +205,8 @@ error_virt = sum([max(0, banda_min[i] - pasante_virtual[i], pasante_virtual[i] -
 
 cumpl_real = sum([1 for p, min_b, max_b in zip(pasante_real, banda_min, banda_max) if min_b <= p <= max_b])
 cumpl_virt = sum([1 for p, min_b, max_b in zip(pasante_virtual, banda_min, banda_max) if min_b <= p <= max_b])
+cumpl_real_pct = (cumpl_real / len(tamices)) * 100
+cumpl_virt_pct = (cumpl_virt / len(tamices)) * 100
 
 print(f"\n{'Métrica':>30} | {'Real':>10} | {'Virtual':>10} | {'Mejora':>10}")
 print("-" * 80)
@@ -324,30 +370,98 @@ plt.savefig("/workspaces/multiMaquinaGervasi/audit_datos_reales_resultado.png", 
 print("✅ Gráfico completo guardado: audit_datos_reales_resultado.png")
 
 # =====================================================
-# RESUMEN FINAL
+# RESUMEN TÉCNICO FINAL
 # =====================================================
 
 print("\n" + "="*80)
-print("CONCLUSIÓN FINAL")
+print("ANÁLISIS TÉCNICO FINAL")
 print("="*80)
 
 print(f"""
 ✓ TABLA REAL:
-  - Cumplimiento: {cumpl_real}/7 tamices (100%)
+  - Cumplimiento: {cumpl_real}/7 tamices ({cumpl_real_pct:.1f}%)
   - Error total: {error_real:.2f}%
-  - Estado: {'✅ VÁLIDA' if cumpl_real == 7 else '⚠️ PARCIAL'}
+  - Estado: {'✅ VÁLIDA' if cumpl_real_pct >= 95 else '⚠️ PARCIAL'}
 
 ✓ TABLA VIRTUAL GENERADA:
   - Cumplimiento: {cumpl_virt}/7 tamices ({cumpl_virt*100/7:.1f}%)
   - Error total: {error_virt:.2f}%
-  - Validación: {'✅ VÁLIDA' if es_valida else '⚠️ RECHAZADA (pero usable)'}
+  - Estado: {'✅ NO GENERADA (ya cumple)' if not generar_tabla_virtual_flag else '✅ VALIDA' if es_valida else '⚠️ PERO USABLE'}
 
 🎯 MEJORA LOGRADA:
   - Diferencia cumplimiento: {cumpl_virt - cumpl_real:+d} tamices
   - Reducción error: {error_real - error_virt:+.2f}%
   - Mejor centrado: {desv_ideal_real - desv_ideal_virt:+.2f}% hacia centro ideal
-
-📊 ESTADO: {'✅ TABLA REAL YA CUMPLE OBJETIVOS' if cumpl_real == 7 else '⚠️ TABLA VIRTUAL PODRÍA MEJORAR'}
 """)
 
+# =====================================================
+# RECETA DE MEZCLA PARA PLANTA
+# =====================================================
+
+print("\n" + "="*80)
+print("RECETA FINAL PARA PRODUCCIÓN")
+print("="*80)
+
+print(f"""
+ESTADO DE SOLUCIÓN:
+  ✓ Cumple banda de especificación: {'SÍ' if cumpl_real_pct >= 95 else 'NO'}
+  ✓ Error total: {error_real:.2f}%
+  ✓ Calidad (desv. centro): {desv_ideal_real:.2f}%
+
+PROPORCIONES FINALES:
+""")
+
+if not generar_tabla_virtual_flag:
+    # Solo tabla real, 100%
+    print(f"""  ✓ Tabla real (datos proporcionados): 100.0%
+
+  TOTAL: 100%
+
+INSTRUCCIÓN OPERATIVA:
+
+  "Usar directamente los materiales en las proporciones de la tabla real.
+   No se requiere tabla virtual - la especificación ya se cumple."
+
+SEMÁFORO: 🟢 OK - USAR DIRECTAMENTE
+""")
+else:
+    # Tabla real + tabla virtual
+    print(f"""  ✓ Tabla real: 50.0%
+  ✓ Tabla virtual (generada): 50.0%
+
+  TOTAL: 100%
+
+INSTRUCCIÓN OPERATIVA:
+
+  "Mezclar partes iguales de:
+   - Materiales según tabla real
+   - Materiales de tabla virtual (generada)"
+
+VALIDACIÓN TABLA VIRTUAL:
+""")
+    
+    if es_valida:
+        print(f"""  ✔ Tabla virtual VALIDADA CORRECTAMENTE
+     Sin problemas técnicos - puede usarse sin restricciones
+""")
+    else:
+        print(f"""  ⚠ ADVERTENCIA en tabla virtual:
+     - Problema: Saltos de tamaño mayor a 20%
+     - Recomendación: Validar manualmente o suavizar la curva
+     - Uso: Posible pero revisar resultados experimentales
+""")
+
+print(f"""RESUMEN PARA OPERADOR:
+
+  Antes: {cumpl_real}/7 tamices OK ({cumpl_real_pct:.0f}%)
+  Después: {cumpl_virt}/7 tamices OK ({cumpl_virt*100/7:.0f}%)
+  Mejora: +{cumpl_virt - cumpl_real} tamiz{'es' if cumpl_virt - cumpl_real > 1 else ''}
+  Error reducido: {error_real:.2f}% → {error_virt:.2f}%
+
+SEMÁFORO: {'🟢 OK - USAR DIRECTAMENTE' if not generar_tabla_virtual_flag else '🟢 OK - MEZCLAR TABLAS' if es_valida else '🟡 OK CON ADVERTENCIA'}
+""")
+
+print("="*80)
+print("FIN DEL INFORME DE AUDITORÍA")
 print("="*80 + "\n")
+

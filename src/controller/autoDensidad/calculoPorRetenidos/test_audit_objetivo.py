@@ -342,5 +342,4 @@ ax2.grid(True, axis='y', alpha=0.3)
 plt.tight_layout()
 plt.savefig("audit_objetivo_resultado.png", dpi=150)
 print("✅ Gráfico guardado: audit_objetivo_resultado.png")
-
-plt.show()
+plt.close()

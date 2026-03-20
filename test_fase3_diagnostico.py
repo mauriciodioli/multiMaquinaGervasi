@@ -162,7 +162,7 @@ print("GENERANDO VISUALIZACIONES...")
 print("=" * 90)
 
 fig = plt.figure(figsize=(20, 14))
-gs = fig.add_gridspec(4, 3, hspace=0.5, wspace=0.35, height_ratios=[1.2, 0.8, 0.8, 0.8])
+gs = fig.add_gridspec(3, 3, hspace=0.55, wspace=0.35)
 
 # =====================================================================
 # 1. FLUJO DE ITERACIONES (CON DIAGNOSTICO RESIDUAL) - SEPARADO
@@ -171,19 +171,14 @@ gs = fig.add_gridspec(4, 3, hspace=0.5, wspace=0.35, height_ratios=[1.2, 0.8, 0.
 ax1 = fig.add_subplot(gs[0, :])
 ax1.axis('off')
 
-flujo_text = """
-FLUJO DE OPTIMIZACIÓN CON FASE 3
+flujo_text = """FLUJO DE OPTIMIZACIÓN CON FASE 3
+ITER.0: Err 2.00% | F1:Eval | F2:Opt | F3:DIAG DÉFICIT 2.00% zona MEDIOS (0.5mm: 0→2%) | F4:TV | F5:Reopt → 1.73%
+ITER.1: Err 1.73% | F1-2:Mezcla+Opt | F3:DIAG DÉFICIT 1.73% zona MEDIOS (0.5mm: 0.3→2%) | F4:TV | F5:Reopt → 0.00%
+ITER.2: Err 0.00% | F1-2:OK | F3:SIN DIAG (PERFECTO) | F6:PARADA ✓ CUMPL 100%"""
 
-ITERACIÓN 0 (Error: 2.00%) → FASE 1: Evaluar | FASE 2: Optimizar | FASE 3: Diagnóstico DETECTA DÉFICIT 2.00% en zona MEDIOS, tamiz 0.5mm falta (necesita 2%, tiene 0%) | FASE 4: Genera TV | FASE 5: Reoptimiza → Error 1.73%
-
-ITERACIÓN 1 (Error: 1.73%) → FASE 1-2: Mezcla + Optimización | FASE 3: Diagnóstico DETECTA DÉFICIT 1.73% en zona MEDIOS, tamiz 0.5mm falta (necesita 2%, tiene 0.3%) | FASE 4: Genera TV | FASE 5: Reoptimiza → Error 0.00%
-
-ITERACIÓN 2 (Error: 0.00%) → FASE 1-2: OK | FASE 3: SIN DIAGNÓSTICO (perfecto) | FASE 6: PARADA → PERFECCIÓN ALCANZADA ✓
-"""
-
-ax1.text(0.05, 0.5, flujo_text, transform=ax1.transAxes, fontsize=9.8,
+ax1.text(0.02, 0.5, flujo_text, transform=ax1.transAxes, fontsize=9.5,
          verticalalignment='center', fontfamily='monospace',
-         bbox=dict(boxstyle='round,pad=1', facecolor='lightyellow', alpha=0.8, edgecolor='black', linewidth=2))
+         bbox=dict(boxstyle='round,pad=0.8', facecolor='#FFFACD', alpha=0.9, edgecolor='#FF8C00', linewidth=2.5))
 
 # =====================================================================
 # 2. GRÁFICO: TRAYECTORIA DE ERROR
