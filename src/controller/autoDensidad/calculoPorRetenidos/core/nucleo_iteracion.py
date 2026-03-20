@@ -10,6 +10,7 @@ from .nucleo_mezcla import calcular_mezcla_pasante
 from .nucleo_error import crear_reporte_error
 from .nucleo_decision import crear_reporte_decision
 from .nucleo_optimizacion import optimizar_proporciones, generar_tabla_virtual
+from .nucleo_diagnostico_residual import diagnosticar_residual, imprimir_diagnostico_residual
 
 
 class EstadoIteracion:
@@ -21,6 +22,7 @@ class EstadoIteracion:
         self.pasante_mezcla = []
         self.reporte_error = None
         self.reporte_decision = None
+        self.diagnostico_residual = None  # NUEVO: Fase 3
         self.proporciones = []
         self.error_total = 0.0
         self.cumplimiento = 0.0
@@ -139,6 +141,17 @@ def ejecutar_iteracion(config, historial):
     estado.pasante_mezcla = pasante_mezcla
     estado.reporte_error = reporte_error
     estado.reporte_decision = reporte_decision
+    
+    # NUEVO Paso 4B: Diagnóstico del error residual (Fase 3)
+    # Solo si hay error residual (no es perfecto)
+    if not reporte_error['es_perfecto']:
+        estado.diagnostico_residual = diagnosticar_residual(
+            pasante_mezcla,
+            [config['limites'][str(t)][0] for t in config['tamices']],
+            [config['limites'][str(t)][1] for t in config['tamices']],
+            config['tamices']
+        )
+    
     estado.proporciones = [m.get('w', 0) for m in config['materiales']]
     estado.error_total = reporte_error['error_total']
     estado.cumplimiento = reporte_error['cumplimiento_total_pct'] / 100.0
@@ -235,6 +248,10 @@ def ejecutar_optimizacion_completa(config_inicial, callback_progreso=None):
             # Paso 2: Si no hay mejora significativa, generar tabla virtual
             if not resultado_iter['reporte_decision']['mejora']['mejora_significativa'] and \
                historial.tablas_virtuales_usadas < max_tablas:
+                
+                # NUEVO: Imprimir diagnóstico residual (Fase 3) ANTES de generar tabla virtual
+                if resultado_iter['estado'].diagnostico_residual:
+                    imprimir_diagnostico_residual(resultado_iter['estado'].diagnostico_residual)
                 
                 tabla_virtual = generar_tabla_virtual(
                     config['materiales'],
