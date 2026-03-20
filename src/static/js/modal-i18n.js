@@ -4,16 +4,20 @@
  * Lee el idioma de localStorage.lang
  */
 
+// Verificar primero si I18N está disponible globalmente
+const i18nReady = () => typeof I18N !== 'undefined' && I18N && typeof I18N.t === 'function';
+
 // Función para traducir un modal específico
 function translateModal(modalSelector) {
+  if (!i18nReady()) return;
   const modal = document.querySelector(modalSelector);
   if (!modal) return;
-  
   I18N.applyTranslations(modal);
 }
 
 // Función para traducir todos los modales abiertos
 function translateAllModals() {
+  if (!i18nReady()) return;
   document.querySelectorAll('[role="dialog"]').forEach(modal => {
     I18N.applyTranslations(modal);
   });
@@ -33,22 +37,29 @@ function openModalWithTranslations(modalSelector, openFunction) {
   }
   
   // Aplicar traducciones al modal
-  setTimeout(() => translateModal(modalSelector), 50);
+  if (i18nReady()) {
+    setTimeout(() => translateModal(modalSelector), 50);
+  }
 }
 
 // Listener para cambios de idioma (si tienes un selector de idioma)
 document.addEventListener('languageChanged', () => {
-  translateAllModals();
+  if (i18nReady()) {
+    translateAllModals();
+  }
 });
 
 // También traducir cuando se cambia localStorage.lang
 window.addEventListener('storage', (event) => {
-  if (event.key === 'lang') {
+  if (event.key === 'lang' && i18nReady()) {
     translateAllModals();
   }
 });
 
 // Aplicar traducciones a elementos con data-i18n al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
-  I18N.applyTranslations();
+  if (i18nReady()) {
+    I18N.applyTranslations();
+  }
 });
+

@@ -16,6 +16,15 @@ from src.utils.auth import current_user
 import math
 from src.utils.get_textos_menu  import get_textos_menu
 
+# ===== Importaciones del sistema de optimización granulométrica =====
+from .core.api_integracion import (
+    optimizar_mezcla,
+    analizar_mezcla_actual,
+    validar_configuracion,
+    exportar_resultado
+)
+from .core import crear_material
+
 
 
 
@@ -443,6 +452,69 @@ def granulometria_retido():
         else:
             log(f"[OPTIM CHECK] Curva dentro de especificación, sin optimización necesaria")
 
+    # ===============================================
+    # MÓDULO DE DIVISIÓN EN N TABLAS (2, 3, 4, 5)
+    # ===============================================
+    divisiones_n_tablas = None
+    
+    if materiales_in and len(materiales_in) > 0:
+        try:
+            primer_material = materiales_in[0]
+            
+            # Extraer retido original
+            if "filas" in primer_material and primer_material["filas"]:
+                retido_map = {str(f["tamiz"]): float(f["porcentaje"]) for f in primer_material["filas"]}
+                retido_original = [retido_map.get(str(t), 0.0) for t in tamices_ord]
+            else:
+                retido_original = primer_material.get("retido_ind_pct", [])
+            
+            if retido_original and sum(retido_original) > 0:
+                log(f"\n[N-TABLAS] Evaluando divisiones en 2, 3, 4, 5 tablas...")
+                
+                # Llamar a comparar_divisiones
+                resultado = comparar_divisiones(
+                    tamices=tamices_ord,
+                    retido_ind_pct=retido_original,
+                    limites=limites,
+                    opciones=[2, 3, 4, 5],
+                    log=log
+                )
+                
+                if resultado:
+                    divisiones_n_tablas = {
+                        "mejor_opcion": resultado["mejor_opcion"],
+                        "cortes_recomendados": resultado["cortes_recomendados"],
+                        "proporciones_optimas": [float(p) for p in resultado["proporciones_optimas"]],
+                        "tablas_resultantes": [
+                            {
+                                "inicio": t["inicio"],
+                                "fin": t["fin"],
+                                "tamices": [str(s) for s in tamices_ord[t["inicio"]:t["fin"]]],
+                                "retido_norm": [float(v) for v in t["retido_norm"]]
+                            }
+                            for t in resultado["tablas_resultantes"]
+                        ],
+                        "curva_reconstruida": [float(v) for v in resultado["curva_reconstruida"]],
+                        "comparativa": [
+                            {
+                                "n_partes": c["n_partes"],
+                                "cortes": c["cortes"],
+                                "score_fisico": float(c["score_fisico"]),
+                                "penalizacion_complejidad": c["penalizacion_complejidad"],
+                                "score_total": float(c["score_total"]),
+                                "validacion_pct": float(c["validacion_pct"])
+                            }
+                            for c in resultado["comparativa"]
+                        ],
+                        "recomendacion": resultado["recomendacion"]
+                    }
+                    log(f"\n✓ Divisiones en N tablas calculadas correctamente")
+        
+        except Exception as e:
+            log(f"\n✗ Error calculando divisiones N tablas: {str(e)}")
+            import traceback
+            log(traceback.format_exc())
+
     return jsonify({
         "ok": True,
         "tamices": tamices_ord,
@@ -454,8 +526,10 @@ def granulometria_retido():
         "gran_ponderada": gran_ponderada, 
         "tabla": tabla,
         "sugerencia_division": sugerencia_division,
-        "sugerencia_optimizacion": sugerencia_optimizacion
+        "sugerencia_optimizacion": sugerencia_optimizacion,
+        "divisiones_n_tablas": divisiones_n_tablas
     }), 200
+
 
 
 
@@ -931,3 +1005,590 @@ def sugerir_division_en_tres(tamices, retido_ind_pct):
             }
         }
     }
+
+
+# ============================================================================
+# NUEVAS FUNCIONES: GENERALIZACIÓN A N TABLAS (2, 3, 4, 5)
+# ============================================================================
+
+def _objetivo_fisico(mix_reconstruida, tamices, limites, pesos=None):
+    """
+    Calcula score físico con 3 componentes:
+    1. Error Fuller base (desviación cuadrática vs ideal)
+    2. Penalización por puntos fuera de banda (×10.0)
+    3. Penalización por quiebres abruptos >20% (×0.5)
+    """
+    bloco = limites.get("bloco", {})
+    
+    error_fuller = 0.0
+    puntos_fuera = 0.0
+    penalizacion_quiebres = 0.0
+    
+    for k, tamiz in enumerate(tamices):
+        rng = bloco.get(str(tamiz))
+        if not rng:
+            continue
+        
+        lo, hi = float(rng[0]), float(rng[1])
+        val = float(mix_reconstruida[k])
+        ideal = (lo + hi) / 2.0
+        
+        # 1. Error Fuller
+        error_fuller += (val - ideal) ** 2
+        
+        # 2. Penalización fuera banda
+        if val < lo or val > hi:
+            exceso = max(0, lo - val) if val < lo else max(0, val - hi)
+            puntos_fuera += exceso ** 2
+        
+        # 3. Penalización por quiebres (cambios >20%)
+        if k > 0:
+            cambio = abs(mix_reconstruida[k] - mix_reconstruida[k-1])
+            if cambio > 20.0:  # threshold: 20%
+                penalizacion_quiebres += (cambio - 20.0) ** 2
+    
+    score = error_fuller + 10.0 * puntos_fuera + 0.5 * penalizacion_quiebres
+    return score
+
+
+def _optimizar_proporciones_para_grupos(grupos, tamices, limites, n_partes, n_tamices, log=None):
+    """
+    Optimiza proporciones p_i para N grupos normalizados.
+    
+    Restricciones:
+    - sum(p_i) = 1
+    - p_i >= mínimo_por_n (10%, 8%, 5%, 4%)
+    
+    Returns: (proporciones_opt, score_minimo, mix_reconstruida)
+    """
+    
+    min_por_n = {2: 0.10, 3: 0.08, 4: 0.05, 5: 0.04}
+    min_prop = min_por_n.get(n_partes, 0.05)
+    
+    # Proporciones iniciales uniformes
+    p_inicial = np.array([1.0 / n_partes] * n_partes)
+    
+    def objetivo(p):
+        """Función objetivo: score físico"""
+        p_norm = np.clip(p, 0, 1)
+        s = np.sum(p_norm)
+        if s <= 0:
+            return 1e10
+        p_norm = p_norm / s
+        
+        # Reconstruir mezcla
+        mix_recon = np.zeros(n_tamices)
+        for i, grupo in enumerate(grupos):
+            for k, val in enumerate(grupo["retido"]):
+                if k < n_tamices:
+                    mix_recon[k] += p_norm[i] * val
+        
+        score = _objetivo_fisico(mix_recon, tamices, limites)
+        return score
+    
+    # Restricción de igualdad
+    def constr_sum(p):
+        return np.sum(p) - 1.0
+    
+    # Restricciones de desigualdad (mínimos)
+    bounds = [(min_prop, 1.0) for _ in range(n_partes)]
+    constraints = {'type': 'eq', 'fun': constr_sum}
+    
+    try:
+        result = minimize(
+            objetivo,
+            p_inicial,
+            method='SLSQP',
+            bounds=bounds,
+            constraints=constraints,
+            options={'maxiter': 500, 'ftol': 1e-6}
+        )
+        
+        p_opt = np.clip(result.x, 0, 1)
+        p_opt = p_opt / np.sum(p_opt)
+        
+        # Reconstruir con óptimo
+        mix_recon = np.zeros(n_tamices)
+        for i, grupo in enumerate(grupos):
+            for k, val in enumerate(grupo["retido"]):
+                if k < n_tamices:
+                    mix_recon[k] += p_opt[i] * val
+        
+        score_opt = objetivo(p_opt)
+        
+        if log:
+            log(f"[OPTIM] Proporciones óptimas: {[f'{p*100:.1f}%' for p in p_opt]}")
+            log(f"[OPTIM] Score: {score_opt:.2f}")
+        
+        return p_opt, score_opt, mix_recon
+    
+    except Exception as e:
+        if log:
+            log(f"[OPTIM ERROR] {str(e)}")
+        return p_inicial, objetivo(p_inicial), np.zeros(n_tamices)
+
+
+def sugerir_division_en_n(tamices, retido_ind_pct, n_partes, limites, log=None):
+    """
+    Encuentra mejor partición en N tablas con proporciones optimizadas.
+    
+    Returns: {
+        "n_partes": int,
+        "cortes": tuple,
+        "tablas": [...],
+        "proporciones_opt": [...],
+        "score_fisico": float,
+        "mix_reconstruida": [...],
+        "validacion": {...}
+    }
+    """
+    
+    if log is None:
+        log = lambda x: None
+    
+    n_tamices = len(tamices)
+    MIN_TAMICES = 2
+    
+    # Búsqueda exhaustiva con stride
+    mejor_error = float('inf')
+    mejor_cortes = None
+    mejor_proporciones = None
+    
+    if n_partes == 2:
+        # 1 punto de corte
+        for i in range(MIN_TAMICES, n_tamices - MIN_TAMICES):
+            g1 = retido_ind_pct[:i]
+            g2 = retido_ind_pct[i:]
+            
+            p1, p2 = sum(g1), sum(g2)
+            if p1 <= 0 or p2 <= 0:
+                continue
+            
+            g1n = [(v / p1) * 100 for v in g1]
+            g2n = [(v / p2) * 100 for v in g2]
+            
+            grupos = [{"retido": g1n}, {"retido": g2n}]
+            prop_opt, error_opt, mix_recon = _optimizar_proporciones_para_grupos(
+                grupos, tamices, limites, n_partes, n_tamices, log
+            )
+            
+            if error_opt < mejor_error:
+                mejor_error = error_opt
+                mejor_cortes = (i,)
+                mejor_proporciones = prop_opt
+    
+    elif n_partes == 3:
+        # 2 puntos de corte
+        for i in range(MIN_TAMICES, n_tamices - 2*MIN_TAMICES):
+            for j in range(i + MIN_TAMICES, n_tamices - MIN_TAMICES):
+                g1 = retido_ind_pct[:i]
+                g2 = retido_ind_pct[i:j]
+                g3 = retido_ind_pct[j:]
+                
+                p1, p2, p3 = sum(g1), sum(g2), sum(g3)
+                if p1 <= 0 or p2 <= 0 or p3 <= 0:
+                    continue
+                
+                g1n = [(v / p1) * 100 for v in g1]
+                g2n = [(v / p2) * 100 for v in g2]
+                g3n = [(v / p3) * 100 for v in g3]
+                
+                grupos = [{"retido": g1n}, {"retido": g2n}, {"retido": g3n}]
+                prop_opt, error_opt, mix_recon = _optimizar_proporciones_para_grupos(
+                    grupos, tamices, limites, n_partes, n_tamices, log
+                )
+                
+                if error_opt < mejor_error:
+                    mejor_error = error_opt
+                    mejor_cortes = (i, j)
+                    mejor_proporciones = prop_opt
+    
+    elif n_partes == 4:
+        stride = max(1, n_tamices // (n_partes + 1))
+        for i in range(MIN_TAMICES, n_tamices - 3, stride):
+            for j in range(i + MIN_TAMICES, n_tamices - 2, stride):
+                for k in range(j + MIN_TAMICES, n_tamices - MIN_TAMICES, stride):
+                    g1 = retido_ind_pct[:i]
+                    g2 = retido_ind_pct[i:j]
+                    g3 = retido_ind_pct[j:k]
+                    g4 = retido_ind_pct[k:]
+                    
+                    p1, p2, p3, p4 = sum(g1), sum(g2), sum(g3), sum(g4)
+                    if p1 <= 0 or p2 <= 0 or p3 <= 0 or p4 <= 0:
+                        continue
+                    
+                    g1n = [(v / p1) * 100 for v in g1]
+                    g2n = [(v / p2) * 100 for v in g2]
+                    g3n = [(v / p3) * 100 for v in g3]
+                    g4n = [(v / p4) * 100 for v in g4]
+                    
+                    grupos = [{"retido": g1n}, {"retido": g2n}, {"retido": g3n}, {"retido": g4n}]
+                    prop_opt, error_opt, mix_recon = _optimizar_proporciones_para_grupos(
+                        grupos, tamices, limites, n_partes, n_tamices, log
+                    )
+                    
+                    if error_opt < mejor_error:
+                        mejor_error = error_opt
+                        mejor_cortes = (i, j, k)
+                        mejor_proporciones = prop_opt
+    
+    elif n_partes == 5:
+        stride = max(1, n_tamices // (n_partes + 1))
+        for i in range(MIN_TAMICES, n_tamices - 4, stride):
+            for j in range(i + MIN_TAMICES, n_tamices - 3, stride):
+                for k in range(j + MIN_TAMICES, n_tamices - 2, stride):
+                    for m in range(k + MIN_TAMICES, n_tamices - 1, stride):
+                        g1 = retido_ind_pct[:i]
+                        g2 = retido_ind_pct[i:j]
+                        g3 = retido_ind_pct[j:k]
+                        g4 = retido_ind_pct[k:m]
+                        g5 = retido_ind_pct[m:]
+                        
+                        p1, p2, p3, p4, p5 = sum(g1), sum(g2), sum(g3), sum(g4), sum(g5)
+                        if p1 <= 0 or p2 <= 0 or p3 <= 0 or p4 <= 0 or p5 <= 0:
+                            continue
+                        
+                        g1n = [(v / p1) * 100 for v in g1]
+                        g2n = [(v / p2) * 100 for v in g2]
+                        g3n = [(v / p3) * 100 for v in g3]
+                        g4n = [(v / p4) * 100 for v in g4]
+                        g5n = [(v / p5) * 100 for v in g5]
+                        
+                        grupos = [{"retido": g1n}, {"retido": g2n}, {"retido": g3n}, 
+                                 {"retido": g4n}, {"retido": g5n}]
+                        prop_opt, error_opt, mix_recon = _optimizar_proporciones_para_grupos(
+                            grupos, tamices, limites, n_partes, n_tamices, log
+                        )
+                        
+                        if error_opt < mejor_error:
+                            mejor_error = error_opt
+                            mejor_cortes = (i, j, k, m)
+                            mejor_proporciones = prop_opt
+    
+    if mejor_cortes is None:
+        log(f"[DIVISIÓN {n_partes}] No se encontraron cortes válidos")
+        return None
+    
+    # Construir salida
+    ret_ind_base = [float(v) for v in retido_ind_pct]
+    
+    # Dividir según mejores cortes
+    tablas = []
+    indices_corte = [0] + list(mejor_cortes) + [n_tamices]
+    
+    for idx_grupo in range(len(indices_corte) - 1):
+        inicio = indices_corte[idx_grupo]
+        fin = indices_corte[idx_grupo + 1]
+        
+        g = ret_ind_base[inicio:fin]
+        p = sum(g)
+        
+        gn = [(v / p) * 100 if p > 0 else 0 for v in g]
+        
+        tablas.append({
+            "inicio": inicio,
+            "fin": fin,
+            "retido_norm": gn
+        })
+    
+    # Reconstruir mezcla con proporciones óptimas
+    mix_recon = []
+    for k in range(n_tamices):
+        val = 0.0
+        for g_idx, tabla in enumerate(tablas):
+            if tabla["inicio"] <= k < tabla["fin"]:
+                idx_local = k - tabla["inicio"]
+                val += float(mejor_proporciones[g_idx]) * float(tabla["retido_norm"][idx_local])
+        mix_recon.append(round(float(val), 2))
+    
+    # Validación
+    bloco = limites.get("bloco", {})
+    puntos_dentro = 0
+    puntos_total = 0
+    
+    for k, tamiz in enumerate(tamices):
+        rng = bloco.get(str(tamiz))
+        if rng:
+            lo, hi = float(rng[0]), float(rng[1])
+            if lo <= mix_recon[k] <= hi:
+                puntos_dentro += 1
+            puntos_total += 1
+    
+    return {
+        "n_partes": n_partes,
+        "cortes": mejor_cortes,
+        "tablas": tablas,
+        "proporciones_opt": mejor_proporciones,
+        "score_fisico": round(float(mejor_error), 2),
+        "mix_reconstruida": mix_recon,
+        "validacion": {
+            "dentro_faixa": puntos_dentro,
+            "total": puntos_total,
+            "validacion_pct": round((puntos_dentro / puntos_total * 100) if puntos_total > 0 else 0, 1)
+        }
+    }
+
+
+def comparar_divisiones(tamices, retido_ind_pct, limites, opciones=None, log=None):
+    """
+    Función de alto nivel: compara divisiones en 2, 3, 4, 5 tablas.
+    
+    Returns: {
+        "mejor_opcion": int,
+        "cortes_recomendados": tuple,
+        "proporciones_optimas": [...],
+        "tablas_resultantes": [...],
+        "curva_reconstruida": [...],
+        "comparativa": [...],
+        "recomendacion": str
+    }
+    """
+    
+    if log is None:
+        log = lambda x: None
+    
+    if opciones is None:
+        opciones = [2, 3, 4, 5]
+    
+    log("\n" + "=" * 80)
+    log("[COMPARATIVA] Evaluando divisiones en 2, 3, 4 y 5 tablas...")
+    log("=" * 80)
+    
+    # Penalizaciones por complejidad
+    penalizaciones = {2: 0, 3: 20, 4: 50, 5: 100}
+    
+    resultados = []
+    mejor_total = None
+    mejor_score_total = float('inf')
+    
+    for n in opciones:
+        log(f"\n[COMPARATIVA] Evaluando {n} tablas...")
+        
+        res = sugerir_division_en_n(tamices, retido_ind_pct, n, limites, log)
+        
+        if res:
+            penal = penalizaciones.get(n, 0)
+            score_total = res["score_fisico"] + penal
+            
+            log(f"  ✓ Score físico: {res['score_fisico']:.2f}")
+            log(f"    Penalización complejidad ({n} tablas): +{penal}")
+            log(f"    SCORE TOTAL: {score_total:.2f}")
+            log(f"    Cortes en índices: {res['cortes']}")
+            log(f"    % dentro faixa: {res['validacion']['validacion_pct']:.1f}%")
+            
+            resultados.append({
+                "n_partes": n,
+                "cortes": res["cortes"],
+                "score_fisico": res["score_fisico"],
+                "penalizacion_complejidad": penal,
+                "score_total": score_total,
+                "validacion_pct": res["validacion"]["validacion_pct"],
+                "proporciones_opt": res["proporciones_opt"],
+                "tablas": res["tablas"],
+                "mix_recon": res["mix_reconstruida"]
+            })
+            
+            if score_total < mejor_score_total:
+                mejor_score_total = score_total
+                mejor_total = n
+    
+    if not resultados:
+        log("❌ No se pudieron calcular divisiones")
+        return None
+    
+    mejor_res = next(r for r in resultados if r["n_partes"] == mejor_total)
+    
+    log("\n" + "=" * 80)
+    log("[COMPARATIVA] RECOMENDACIÓN FINAL")
+    log("=" * 80)
+    log(f"\nTabla comparativa:")
+    for r in resultados:
+        marca = " 👈 RECOMENDADO" if r["n_partes"] == mejor_total else ""
+        log(f"  {r['n_partes']} tablas: score_físico={r['score_fisico']:.2f} + "
+            f"complejidad=+{r['penalizacion_complejidad']} = TOTAL={r['score_total']:.2f} {marca}")
+    
+    return {
+        "mejor_opcion": mejor_total,
+        "cortes_recomendados": mejor_res["cortes"],
+        "proporciones_optimas": [float(p) for p in mejor_res["proporciones_opt"]],
+        "tablas_resultantes": mejor_res["tablas"],
+        "curva_reconstruida": mejor_res["mix_recon"],
+        "comparativa": resultados,
+        "recomendacion": (
+            f"Se recomienda dividir la curva en {mejor_total} tablas "
+            f"(cortes en índices {mejor_res['cortes']}) con proporciones "
+            f"{[f'{p*100:.1f}%' for p in mejor_res['proporciones_opt']]}. "
+            f"Score total: {mejor_score_total:.2f}"
+        )
+    }
+
+
+# ============================================================================
+# ENDPOINTS DE OPTIMIZACIÓN GRANULOMÉTRICA (NÚCLEO PYTHON)
+# ============================================================================
+
+@calculoPorRetenidos.route('/optimizar', methods=['POST'])
+def api_optimizar_mezcla():
+    """
+    API para optimizar mezcla granulométrica
+    
+    POST /calculoPorRetenidos/optimizar
+    
+    Payload JSON:
+    {
+        "materiales": [
+            {
+                "nombre": "Arena fina",
+                "pasante": [100, 98, 82, ...],
+                "w": 0.35
+            },
+            ...
+        ],
+        "limites": {
+            "12.5": [0, 10],
+            "9.5": [10, 30],
+            ...
+        },
+        "tamices": ["12.5", "9.5", "6.3", ...],
+        "opciones": {
+            "max_iteraciones": 5,
+            "max_tablas_virtuales": 3,
+            "verbose": false
+        }
+    }
+    
+    Returns:
+    {
+        "exito": true,
+        "proporciones_optimizadas": [0.35, 0.65],
+        "proporciones_pct": [35.00, 65.00],
+        "proporciones_formato": ["Arena fina: 35%", "Grava: 65%"],
+        "error_minimo": 0.523,
+        "mejora_total": 2.847,
+        "mejora_total_pct": 84.50,
+        "cumplimiento_pct": 96.23,
+        "iteraciones_realizadas": 3,
+        "tablas_virtuales_usadas": 1,
+        "razon_parada": "aceptable",
+        "detalles_error": {...},
+        "detalles_decision": {...},
+        "historial_completo": {...},
+        "mensaje": "..."
+    }
+    """
+    try:
+        config = request.get_json(force=True)
+        
+        # Validar configuración
+        validacion = validar_configuracion(config)
+        if not validacion['valido']:
+            return jsonify({
+                'exito': False,
+                'error': 'Validación fallida',
+                'detalles': validacion['errores'],
+                'mensaje': '; '.join(validacion['errores'])
+            }), 400
+        
+        # Ejecutar optimización
+        resultado = optimizar_mezcla(config)
+        
+        # Retornar resultado
+        return jsonify(resultado), 200
+    
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'exito': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
+
+
+@calculoPorRetenidos.route('/analizar', methods=['POST'])
+def api_analizar_mezcla():
+    """
+    API para analizar mezcla actual sin optimizar
+    
+    POST /calculoPorRetenidos/analizar
+    
+    Payload JSON:
+    {
+        "materiales": [...],
+        "limites": {...},
+        "tamices": [...]
+    }
+    
+    Returns:
+    {
+        "exito": true,
+        "pasante_mezcla": [100, 95, 80, ...],
+        "error_total": 1.523,
+        "cumplimiento_pct": 85.2,
+        "errores_por_tamiz": [...],
+        "errores_por_zona": {...},
+        "zona_critica": "fina",
+        "suficiencia": "marginal",
+        "recomendacion": "...",
+        "mensaje": "Análisis completado: ..."
+    }
+    """
+    try:
+        config = request.get_json(force=True)
+        
+        # Validar configuración
+        validacion = validar_configuracion(config)
+        if not validacion['valido']:
+            return jsonify({
+                'exito': False,
+                'error': 'Validación fallida',
+                'detalles': validacion['errores'],
+                'mensaje': '; '.join(validacion['errores'])
+            }), 400
+        
+        # Ejecutar análisis
+        resultado = analizar_mezcla_actual(config)
+        
+        # Retornar resultado
+        return jsonify(resultado), 200
+    
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'exito': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
+
+
+@calculoPorRetenidos.route('/status', methods=['GET'])
+def api_status():
+    """
+    Verifica estado del sistema de optimización
+    
+    GET /calculoPorRetenidos/status
+    
+    Returns:
+    {
+        "status": "ok",
+        "sistema": "Optimización Granulométrica",
+        "version": "1.0.0",
+        "endpoints": ["/optimizar", "/analizar", "/status"]
+    }
+    """
+    return jsonify({
+        'status': 'ok',
+        'sistema': 'Optimización Granulométrica v1.0.0',
+        'endpoints': [
+            'POST /calculoPorRetenidos/optimizar - Optimizar mezcla completa',
+            'POST /calculoPorRetenidos/analizar - Analizar mezcla actual',
+            'GET /calculoPorRetenidos/status - Estado del sistema'
+        ],
+        'modulos': [
+            'nucleo_mezcla - Cálculos de mezcla (PASANTE-only)',
+            'nucleo_error - Sistema de error lineal',
+            'nucleo_decision - Lógica de decisión (4 niveles, 4 paradas)',
+            'nucleo_optimizacion - Optimización por gradiente',
+            'nucleo_iteracion - Control de iteraciones',
+            'api_integracion - API principal'
+        ]
+    }), 200

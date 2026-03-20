@@ -960,27 +960,25 @@ function generarGraficoProporciones(pesos, nombres) {
 
 
 function generarMezclaCorregida() {
-
-   const promptTitle = typeof I18N !== 'undefined' ? I18N.t('sim.factor_prompt_title') : "Ingresar un número entre 0 y 1 (dejar vacío para usar 1):\n\n";
-   const promptDesc = typeof I18N !== 'undefined' ? I18N.t('sim.factor_prompt_desc') : "📌 factor controla la intensidad del ajuste hacia la curva objetivo.\n• factor = 0 → no aplicás corrección (curva = promedio)\n• factor = 1 → corrección completa (curva = Fuller)\n• 0 < factor < 1 → corrección parcial\n• factor > 1 → sobreajuste (te pasás de Fuller)\n• factor < 0 → te alejás de Fuller";
+   // Helper única para i18n
+   const t = (key, fallback) => typeof I18N !== 'undefined' ? I18N.t(key) : fallback;
    
-   let input = prompt(promptTitle + promptDesc, "1");
-
-
-
-
-
-   let tipo_objetivo = localStorage.getItem('tipo_objetivo')
-    // Si el usuario aprieta "Cancelar" o deja vacío, se usa 1
-    if (input === null || input.trim() === "") {
+   // Prompt con traducciones
+   const promptMsg = t('sim.factor_prompt_title', "Ingresar un número entre 0 y 1 (dejar vacío para usar 1):\n\n") + 
+                     t('sim.factor_prompt_desc', "📌 factor controla la intensidad del ajuste hacia la curva objetivo.\n• factor = 0 → no aplicás corrección (curva = promedio)\n• factor = 1 → corrección completa (curva = Fuller)\n• 0 < factor < 1 → corrección parcial\n• factor > 1 → sobreajuste (te pasás de Fuller)\n• factor < 0 → te alejás de Fuller");
+   
+   let input = prompt(promptMsg, "1");
+   let tipo_objetivo = localStorage.getItem('tipo_objetivo');
+   
+   // Si el usuario aprieta "Cancelar" o deja vacío, se usa 1
+   if (input === null || input.trim() === "") {
         input = "1";
     }
 
     const factor = parseFloat(input);
 
     if (isNaN(factor) || factor < 0 || factor > 1) {
-        const errorMsg = typeof I18N !== 'undefined' ? I18N.t('sim.factor_invalid') : "❌ Número inválido. Ingresá un valor entre 0 y 1.";
-        alert(errorMsg);
+        alert(t('sim.factor_invalid', "❌ Número inválido. Ingresá un valor entre 0 y 1."));
         return;
     }
 
@@ -993,83 +991,58 @@ function generarMezclaCorregida() {
             nombreProductos: nombreProductos,
             tamices: tamices,
             factor: factor,
-            tipo_objetivo:tipo_objetivo
+            tipo_objetivo: tipo_objetivo
         })
     })
     .then(res => res.json())
     .then(data => {
         if (data.grafico_base64) {
-              const contenedor = document.getElementById("contenedorGraficoCurva");
-              
-              // Insertar imagen y tabla vacía
-              contenedor.innerHTML = `
-                 <img src="${data.grafico_base64}" style="max-width:100%; height:auto; margin-bottom: 15px;">
-                   <h6>⚖️ Pesos proporcionales por zona y mezcla:</h6>
-                  <table class="tabla-interpretacion">
-                      <thead>
-                          <tr>
-                              <th>Mezcla</th>
-                                <th>Gruesos (%)</th>
-                                <th>Medios (%)</th>
-                                <th>Finos (%)</th>
-                              </tr>
-                      </thead>
-                      <tbody id="tablaInterpretacionCuerpo"></tbody>
-                  </table>
-              `;
+              // Todas las traducciones juntas
+              const labels = {
+                  weightsHeader: t('sim.weights_header', "⚖️ Pesos proporcionales por zona y mezcla:"),
+                  mixLabel: t('sim.mix_label', "Mezcla"),
+                  coarseLabel: t('sim.coarse_label', "Gruesos (%)"),
+                  mediumLabel: t('sim.medium_label', "Medios (%)"),
+                  fineLabel: t('sim.fine_label', "Finos (%)"),
+                  recsHeader: t('sim.recommendations_header', "🛠️ Recomendaciones automáticas:"),
+                  numLabel: t('sim.number_label', "#"),
+                  recLabel: t('sim.recommendation_label', "Recomendación")
+              };
 
-              // Cargar datos en la tabla
-              const cuerpo = document.getElementById("tablaInterpretacionCuerpo");
-              Object.entries(data.pesos_por_zona).forEach(([mezcla, zonas]) => {
-              const filaZona = `
-                  <tr>
-                      <td>${mezcla}</td>
-                      <td>${zonas.gruesos?.toFixed(2) ?? "0.00"}</td>
-                      <td>${zonas.medios?.toFixed(2) ?? "0.00"}</td>
-                      <td>${zonas.finos?.toFixed(2) ?? "0.00"}</td>
-                  </tr>
-                  `;
-                  cuerpo.innerHTML += filaZona;
-              });
+              // Construir tabla de pesos
+              const tablaRec = Object.entries(data.pesos_por_zona)
+                  .map(([mezcla, zonas]) => 
+                      `<tr><td>${mezcla}</td><td>${zonas.gruesos?.toFixed(2) ?? "0.00"}</td><td>${zonas.medios?.toFixed(2) ?? "0.00"}</td><td>${zonas.finos?.toFixed(2) ?? "0.00"}</td></tr>`
+                  ).join('');
 
-              // Insertar recomendaciones automáticas si hay
+              // Construir tabla de recomendaciones (si hay)
+              let tablaRecommendations = '';
               if (data.acciones_recomendadas && data.acciones_recomendadas.length > 0) {
-                 let tablaRecomendaciones = `
-                                              <h6>🛠️ Automatic recommendations:</h6>
-                                              <table class="tabla-interpretacion">
-                                                <thead>
-                                                  <tr>
-                                                    <th>#</th>
-                                                    <th>Recomendación</th>
-                                                  </tr>
-                                                </thead>
-                                                <tbody>
-                                            `;
-
-                                            data.acciones_recomendadas.forEach((rec, index) => {
-                                                tablaRecomendaciones += `
-                                                  <tr>
-                                                    <td>${index + 1}</td>
-                                                    <td>${rec}</td>
-                                                  </tr>
-                                                `;
-                                            });
-
-                                            tablaRecomendaciones += `
-                                                </tbody>
-                                              </table>
-                                            `;
-
-                  contenedor.innerHTML += tablaRecomendaciones;
-
+                  tablaRecommendations = `
+                      <h6>${labels.recsHeader}</h6>
+                      <table class="tabla-interpretacion">
+                          <thead><tr><th>${labels.numLabel}</th><th>${labels.recLabel}</th></tr></thead>
+                          <tbody>
+                              ${data.acciones_recomendadas.map((rec, idx) => `<tr><td>${idx + 1}</td><td>${rec}</td></tr>`).join('')}
+                          </tbody>
+                      </table>
+                  `;
               }
 
-          // Mostrar modal
-          abrirModalGraficoCorreccion();
+              // Renderizar todo
+              document.getElementById("contenedorGraficoCurva").innerHTML = `
+                  <img src="${data.grafico_base64}" style="max-width:100%; height:auto; margin-bottom: 15px;">
+                  <h6>${labels.weightsHeader}</h6>
+                  <table class="tabla-interpretacion">
+                      <thead><tr><th>${labels.mixLabel}</th><th>${labels.coarseLabel}</th><th>${labels.mediumLabel}</th><th>${labels.fineLabel}</th></tr></thead>
+                      <tbody>${tablaRec}</tbody>
+                  </table>
+                  ${tablaRecommendations}
+              `;
 
-
+              abrirModalGraficoCorreccion();
         } else if (data.error) {
-            alert("Error: " + data.error);
+            alert(t('sim.error_response', "❌ Error al procesar la curva corregida:") + " " + data.error);
         }
     })
     .catch(err => {

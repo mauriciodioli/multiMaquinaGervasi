@@ -375,6 +375,7 @@
 
 
 
+    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/agregados/agregaAgregado_densidadFuller.js') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js') }}"></script>     
     <script src="{{ url_for('static', filename='js/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.js') }}"></script>   
@@ -385,7 +386,9 @@
     <script>
       // Aplicar traducciones iniciales cuando la página carga
       document.addEventListener('DOMContentLoaded', () => {
-        I18N.applyTranslations();
+        if (typeof I18N !== 'undefined' && I18N && typeof I18N.applyTranslations === 'function') {
+          I18N.applyTranslations();
+        }
       });
 
       // Interceptar las funciones que abren modales para traducir automáticamente
@@ -394,7 +397,9 @@
         originalShowModal(modalId);
         setTimeout(() => {
           const modal = document.getElementById(modalId);
-          if (modal) I18N.applyTranslations(modal);
+          if (modal && typeof I18N !== 'undefined' && I18N && typeof I18N.applyTranslations === 'function') {
+            I18N.applyTranslations(modal);
+          }
         }, 50);
       };
 
@@ -402,9 +407,11 @@
       document.addEventListener('click', (e) => {
         if (e.target.matches('[data-close], [onclick*="Modal"]')) {
           setTimeout(() => {
-            document.querySelectorAll('[role="dialog"], .modal').forEach(modal => {
-              I18N.applyTranslations(modal);
-            });
+            if (typeof I18N !== 'undefined') {
+              document.querySelectorAll('[role="dialog"], .modal').forEach(modal => {
+                I18N.applyTranslations(modal);
+              });
+            }
           }, 50);
         }
       });
@@ -416,10 +423,13 @@
  document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('btn-guardar-analisis');
   
-  
+  if (typeof I18N !== 'undefined') {
     // Podés usar cualquiera de las dos líneas; ambas funcionan con tu t():
     // btn.innerHTML = `📊 ${I18N.t('login.guardar_analisis_granulometrico')}`;
     btn.innerHTML = `📊 ${I18N.t('guardar_analisis_granulometrico')}`;
+  } else {
+    btn.innerHTML = `📊 Guardar Análisis Granulométrico`;
+  }
   });
   
 </script>

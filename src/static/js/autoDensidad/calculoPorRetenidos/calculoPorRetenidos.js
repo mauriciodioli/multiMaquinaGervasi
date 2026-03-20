@@ -59,6 +59,9 @@ function abrirModalProporciones(onOk){
     form.appendChild(row);
   });
 
+  // Helper para traducción segura
+  const t = (key, fallback) => typeof I18N !== 'undefined' ? I18N.t(key) : fallback;
+
   function recalcular(){
     const inputs = form.querySelectorAll('.prop-input');
     let total = 0;
@@ -76,7 +79,7 @@ function abrirModalProporciones(onOk){
     if (Math.abs(total - 100) < 0.01){
       btn.disabled = false;
     } else {
-      msg.textContent = I18N.t('sim.prop_error_suma_100');
+      msg.textContent = t('sim.prop_error_suma_100', 'Las proporciones deben sumar 100%');
     }
     // guardado en caliente (opcional)
     guardarProporciones(map);
@@ -286,10 +289,14 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
 
   // 🌍 Obtener etiquetas traducidas para el gráfico
   const getLabel = (key, fallback) => {
-    if (typeof I18N === 'undefined') return fallback;
-    const val = I18N.t(key);
-    // Si devuelve [key], significa que no existe, retorna fallback
-    return val.startsWith('[') ? fallback : val;
+    if (typeof I18N === 'undefined' || !I18N || typeof I18N.t !== 'function') return fallback;
+    try {
+      const val = I18N.t(key);
+      // Si devuelve [key], significa que no existe, retorna fallback
+      return val.startsWith('[') ? fallback : val;
+    } catch (e) {
+      return fallback;
+    }
   };
   
   const labelBlocoMin = getLabel('sim.retido_bloco_min', 'Limites para Blocos (min)');
@@ -509,6 +516,9 @@ function renderRetidoTablitas(tamices, mix_acum, faixas){
   const host = document.getElementById('retidoTables');
   if (!host) return;
 
+  // Helper para i18n seguro
+  const t = (key, fallback = '') => typeof I18N !== 'undefined' ? I18N.t(key) : fallback;
+
   // Normalizamos filas (ignoramos valores sin banda si no existen)
   const rows = tamices.map((t, i) => {
     const label = String(t); // puede ser "Fundo"
@@ -527,9 +537,9 @@ function renderRetidoTablitas(tamices, mix_acum, faixas){
   });
 
   // Tabla 1: Granulometría ponderada
-  const tbl1Title = I18N.t('sim.retido_tabla1_titulo');
-  const col1Title = I18N.t('sim.retido_tabla1_col1');
-  const col2Title = I18N.t('sim.retido_tabla1_col2');
+  const tbl1Title = t('sim.retido_tabla1_titulo');
+  const col1Title = t('sim.retido_tabla1_col1');
+  const col2Title = t('sim.retido_tabla1_col2');
   const tbl1 = `
     <div class="mini-card">
       <div class="mini-title">${tbl1Title}</div>
@@ -546,13 +556,13 @@ function renderRetidoTablitas(tamices, mix_acum, faixas){
     </div>`;
 
   // Tabla 2: Faixas recomendadas (Bloco / Paver)
-  const tbl2Title = I18N.t('sim.retido_tabla2_titulo');
-  const tbl2Nota = I18N.t('sim.retido_tabla2_nota');
-  const col1 = I18N.t('sim.retido_tabla2_col1');
-  const col2 = I18N.t('sim.retido_tabla2_col2');
-  const col3 = I18N.t('sim.retido_tabla2_col3');
-  const col4 = I18N.t('sim.retido_tabla2_col4');
-  const col5 = I18N.t('sim.retido_tabla2_col5');
+  const tbl2Title = t('sim.retido_tabla2_titulo');
+  const tbl2Nota = t('sim.retido_tabla2_nota');
+  const col1 = t('sim.retido_tabla2_col1');
+  const col2 = t('sim.retido_tabla2_col2');
+  const col3 = t('sim.retido_tabla2_col3');
+  const col4 = t('sim.retido_tabla2_col4');
+  const col5 = t('sim.retido_tabla2_col5');
   const tbl2 = `
     <div class="mini-card">
       <div class="mini-title">${tbl2Title}</div>
@@ -589,31 +599,34 @@ function renderSugerenciaDivision(sugerencia_division){
   const host = document.getElementById('retidoTables');
   if (!host) return;
 
+  // Helper para i18n seguro con fallbacks en español
+  const t = (key, fallback = '') => typeof I18N !== 'undefined' ? I18N.t(key) : fallback;
+
   const { grupos, reconstruccion_check, debug } = sugerencia_division;
   if (grupos.length < 2) return;
 
-  // Traduciones
-  const titulo = I18N.t('sim.division_titulo');
-  const desc = I18N.t('sim.division_desc_base');
-  const grupo = I18N.t('sim.division_grupo_n');
-  const proporcion = I18N.t('sim.division_proporcion');
-  const pesoOriginal = I18N.t('sim.division_peso_original');
-  const debugBtn = I18N.t('sim.division_debug_btn');
-  const debugBtnClose = I18N.t('sim.division_debug_btn_close');
-  const debugCutpoint = I18N.t('sim.division_debug_cutpoint');
-  const debugIndice = I18N.t('sim.division_debug_indice');
-  const debugTamiz = I18N.t('sim.division_debug_tamiz');
-  const debugSalto = I18N.t('sim.division_debug_salto');
-  const debugAcum = I18N.t('sim.division_debug_acum');
-  const debugCriterios = I18N.t('sim.division_debug_criterios');
-  const debugFiltro = I18N.t('sim.division_debug_filtro_ruido');
-  const debugZona = I18N.t('sim.division_debug_zona_valida');
-  const debugZonaEntre = I18N.t('sim.division_debug_zona_entre');
-  const debugAnalisis = I18N.t('sim.division_debug_analisis');
-  const debugTablaIndice = I18N.t('sim.division_debug_tabla_indice');
-  const debugTablaAcum = I18N.t('sim.division_debug_tabla_acum');
-  const debugTablaSalto = I18N.t('sim.division_debug_tabla_salto');
-  const debugTablaNota = I18N.t('sim.division_debug_tabla_nota');
+  // Traduciones (con fallbacks en español)
+  const titulo = t('sim.division_titulo', 'División de Mezcla');
+  const desc = t('sim.division_desc_base', 'Análisis de división granulométrica');
+  const grupo = t('sim.division_grupo_n', 'Grupo');
+  const proporcion = t('sim.division_proporcion', 'Proporción');
+  const pesoOriginal = t('sim.division_peso_original', 'Peso Original');
+  const debugBtn = t('sim.division_debug_btn', 'Mostrar Detalles');
+  const debugBtnClose = t('sim.division_debug_btn_close', 'Ocultar Detalles');
+  const debugCutpoint = t('sim.division_debug_cutpoint', 'Punto de corte seleccionado:');
+  const debugIndice = t('sim.division_debug_indice', 'Índice:');
+  const debugTamiz = t('sim.division_debug_tamiz', 'Tamiz:');
+  const debugSalto = t('sim.division_debug_salto', 'Salto detectable:');
+  const debugAcum = t('sim.division_debug_acum', 'Acumulado en corte:');
+  const debugCriterios = t('sim.division_debug_criterios', 'Criterios de detección aplicados:');
+  const debugFiltro = t('sim.division_debug_filtro_ruido', 'Filtro mínimo de ruido:');
+  const debugZona = t('sim.division_debug_zona_valida', 'Rango válido acumulado:');
+  const debugZonaEntre = t('sim.division_debug_zona_entre', '-');
+  const debugAnalisis = t('sim.division_debug_analisis', 'Análisis granulométrico por tamiz:');
+  const debugTablaIndice = t('sim.division_debug_tabla_indice', 'Índice');
+  const debugTablaAcum = t('sim.division_debug_tabla_acum', 'Acum %');
+  const debugTablaSalto = t('sim.division_debug_tabla_salto', 'Salto %');
+  const debugTablaNota = t('sim.division_debug_tabla_nota', 'Amarillo = Punto de corte seleccionado');
 
   // Determinar grid dinámicamente basado en # de grupos
   const numGrupos = grupos.length;
@@ -779,11 +792,11 @@ function toggleDebugInfo(debugId) {
     const isOpen = elem.style.display !== 'none';
     if (isOpen) {
       elem.style.display = 'none';
-      const closedText = I18N.t('sim.division_debug_btn');
+      const closedText = typeof I18N !== 'undefined' ? I18N.t('sim.division_debug_btn') : 'Mostrar Detalles';
       btn.textContent = closedText;
     } else {
       elem.style.display = 'block';
-      const openText = I18N.t('sim.division_debug_btn_close');
+      const openText = typeof I18N !== 'undefined' ? I18N.t('sim.division_debug_btn_close') : 'Ocultar Detalles';
       btn.textContent = openText;
     }
   }
@@ -1044,11 +1057,11 @@ function renderCurvaConsumo(pts, a, b){
     ys.push(a*Math.log(x) + b);
   }
 
-  // Obtener labels traducidos
-  const labelEnsayos = I18N.t('sim.chart_label_ensayos');
-  const labelAjuste = I18N.t('sim.chart_label_ajuste');
-  const axisX = I18N.t('sim.chart_axis_x');
-  const axisY = I18N.t('sim.chart_axis_y');
+  // Obtener labels traducidos (con fallbacks)
+  const labelEnsayos = typeof I18N !== 'undefined' ? I18N.t('sim.chart_label_ensayos') : 'Ensayos';
+  const labelAjuste = typeof I18N !== 'undefined' ? I18N.t('sim.chart_label_ajuste') : 'Ajuste';
+  const axisX = typeof I18N !== 'undefined' ? I18N.t('sim.chart_axis_x') : 'Tamiz (mm)';
+  const axisY = typeof I18N !== 'undefined' ? I18N.t('sim.chart_axis_y') : 'Pasante %';
 
   if (chartConsumo) chartConsumo.destroy();
   chartConsumo = new Chart(ctx, {
@@ -1098,10 +1111,10 @@ document.getElementById('btnCalcularConsumo')?.addEventListener('click', ()=>{
   const props = obtenerProporcionesMix();
   const lote = dimensionarLote(kgAgg, props, xreq);
 
-  const trazoLabel = I18N.t('sim.consumo_trazo_label');
-  const cementoLabel = I18N.t('sim.consumo_cemento_label');
-  const porLabel = I18N.t('sim.consumo_por_label');
-  const kgAgLabel = I18N.t('sim.consumo_kg_agregados');
+  const trazoLabel = typeof I18N !== 'undefined' ? I18N.t('sim.consumo_trazo_label') : 'Trazo';
+  const cementoLabel = typeof I18N !== 'undefined' ? I18N.t('sim.consumo_cemento_label') : 'Cemento';
+  const porLabel = typeof I18N !== 'undefined' ? I18N.t('sim.consumo_por_label') : 'para';
+  const kgAgLabel = typeof I18N !== 'undefined' ? I18N.t('sim.consumo_kg_agregados') : 'kg agregados';
 
   document.getElementById('resultadoTrazo').innerHTML =
     `${trazoLabel} <b>${xreq.toFixed(2)}</b>  →  ${cementoLabel} <b>${lote.kgCemento} kg</b> ${porLabel} ${kgAgg} ${kgAgLabel}.`;
