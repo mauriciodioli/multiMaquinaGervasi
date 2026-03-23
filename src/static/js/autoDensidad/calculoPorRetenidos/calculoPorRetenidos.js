@@ -1123,6 +1123,95 @@ document.getElementById('btnCalcularConsumo')?.addEventListener('click', ()=>{
   document.getElementById('resultadoDesglose').innerHTML = rows;
 });
 
+// ============================================================================
+// FUNCIÓN: Abrir Auditoría desde Modal Retido
+// ============================================================================
+function abrirAuditoriaDesdeModal() {
+  try {
+    // 1. Obtener la tabla visible en el modal
+    const tituloWeighted = Array.from(document.querySelectorAll('.mini-title'))
+      .find(el => el.textContent.includes('Weighted granulometry'));
+    
+    if (!tituloWeighted) {
+      alert('No se encontró la tabla de granulometría ponderada. Asegúrate de haber calculado los retenidos primero.');
+      return;
+    }
+    
+    const tablaWeighted = tituloWeighted.closest('.mini-card').querySelector('table');
+    const filas = Array.from(tablaWeighted.querySelectorAll('tbody tr'));
+    
+    if (filas.length === 0) {
+      alert('La tabla está vacía. Calcula los valores primero.');
+      return;
+    }
+    
+    // 2. Extraer tamices y pasantes (YA SON PASANTES, NO RETENIDOS)
+    const tamices = [];
+    const pasante_real = [];
+    
+    filas.forEach(fila => {
+      const celdas = fila.querySelectorAll('td');
+      if (celdas.length >= 2) {
+        tamices.push(parseFloat(celdas[0].textContent));
+        pasante_real.push(parseFloat(celdas[1].textContent)); // Ya es pasante acumulado
+      }
+    });
+    
+    if (tamices.length === 0) {
+      alert('No se pudieron extraer los datos de la tabla.');
+      return;
+    }
+    
+    // 3. Definir bandas por defecto (valores estándar para agregados finos)
+    const banda_min = [85, 70, 50, 35, 15, 5, 0].slice(0, tamices.length);
+    const banda_max = [100, 90, 75, 60, 30, 15, 10].slice(0, tamices.length);
+    
+    // 4. Preparar datos para el endpoint
+    const datos = {
+      pasante_real: pasante_real,
+      banda_min: banda_min,
+      banda_max: banda_max,
+      tamices: tamices
+    };
+    
+    console.log('📊 Enviando datos a auditoría:', datos);
+    
+    // 5. Llamar al endpoint
+    fetch('/calculoPorRetenidos/auditoria', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(datos)
+    })
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    })
+    .then(result => {
+      if (result.exito) {
+        // 6. Abrir nueva ventana con la auditoría
+        const ventana = window.open('/calculoPorRetenidos/auditoria', 'auditoria');
+        // Guardar datos en sessionStorage para que la ventana nueva los use
+        sessionStorage.setItem('datosAuditoriaRecientes', JSON.stringify({
+          datos: result.data,
+          entrada: datos
+        }));
+      } else {
+        alert('❌ Error en auditoría: ' + (result.error || 'Error desconocido'));
+      }
+    })
+    .catch(error => {
+      alert('❌ Error de conexión: ' + error.message);
+      console.error('Error:', error);
+    });
+    
+  } catch (e) {
+    alert('❌ Error: ' + e.message);
+    console.error('Error en abrirAuditoriaDesdeModal:', e);
+  }
+}
+
 
 
 

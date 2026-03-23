@@ -390,8 +390,8 @@ def validar_tabla_virtual(
     media_distancia = np.mean(distancia_a_mezcla)
     reporte["checks"]["proximidad_a_mezcla_media"] = float(media_distancia)
     
-    # Conclusión
-    reporte["es_valida"] = check1 and check2 and check3 and check4 and check5
+    # Conclusión (convertir a bool Python para JSON serialization)
+    reporte["es_valida"] = bool(check1 and check2 and check3 and check4 and check5)
     
     if verbose:
         print(f"\n📋 VALIDACIÓN TABLA VIRTUAL")

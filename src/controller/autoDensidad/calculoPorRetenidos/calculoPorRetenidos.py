@@ -24,6 +24,7 @@ from .core.api_integracion import (
     exportar_resultado
 )
 from .core import crear_material
+from .core.auditoria_decision import generar_auditoria_completa
 
 
 
@@ -1427,7 +1428,7 @@ def comparar_divisiones(tamices, retido_ind_pct, limites, opciones=None, log=Non
 # ENDPOINTS DE OPTIMIZACIÓN GRANULOMÉTRICA (NÚCLEO PYTHON)
 # ============================================================================
 
-@calculoPorRetenidos.route('/optimizar', methods=['POST'])
+@calculoPorRetenidos.route('/calculoPorRetenidos/optimizar', methods=['POST'])
 def api_optimizar_mezcla():
     """
     API para optimizar mezcla granulométrica
@@ -1504,7 +1505,7 @@ def api_optimizar_mezcla():
         }), 500
 
 
-@calculoPorRetenidos.route('/analizar', methods=['POST'])
+@calculoPorRetenidos.route('/calculoPorRetenidos/analizar', methods=['POST'])
 def api_analizar_mezcla():
     """
     API para analizar mezcla actual sin optimizar
@@ -1560,7 +1561,99 @@ def api_analizar_mezcla():
         }), 500
 
 
-@calculoPorRetenidos.route('/status', methods=['GET'])
+@calculoPorRetenidos.route('/calculoPorRetenidos/auditoria', methods=['GET'])
+def auditoria_view():
+    """
+    Vista HTML de auditoría granulométrica
+    
+    GET /calculoPorRetenidos/auditoria
+    """
+    return render_template('autoDensidad/calculoPorRetenidos/auditoria.html')
+
+
+@calculoPorRetenidos.route('/calculoPorRetenidos/auditoria', methods=['POST'])
+def api_auditoria():
+    """
+    Auditoría completa de mezcla granulométrica con decisión de tabla virtual
+    
+    POST /calculoPorRetenidos/auditoria
+    
+    Payload JSON:
+    {
+        "pasante_real": [99.20, 76.60, 35.20, 12.40, 6.50, 4.70, 1.40],
+        "banda_min": [85, 65, 35, 15, 5, 2, 0],
+        "banda_max": [100, 90, 65, 45, 20, 10, 5],
+        "tamices": [8, 5, 3.15, 2, 1, 0.5, 0.1]
+    }
+    
+    Returns:
+    {
+        "fase_1": {...},
+        "fase_2_4_criterios": {
+            "cumplimiento_banda_pct": 85.7,
+            "cumple_banda": false,
+            "desviacion_media_centro": 6.91,
+            "es_buena_calidad": false,
+            "decision": "GENERAR tabla virtual",
+            "razon": "La solución actual NO satisface la especificación."
+        },
+        "fase_5_virtual": {...},
+        "fase_6_receta": {
+            "proporciones": {...},
+            "semaforo": "🟡 OK CON ADVERTENCIA",
+            "instruction": "...",
+            "tabla_real_pasante": [...],
+            "tabla_virtual_pasante": [...]
+        },
+        "para_grafico": {...}
+    }
+    """
+    try:
+        config = request.get_json(force=True)
+        
+        # Extraer datos del payload
+        pasante_real = config.get('pasante_real', [])
+        banda_min = config.get('banda_min', [])
+        banda_max = config.get('banda_max', [])
+        tamices = config.get('tamices', [])
+        
+        # Validar entrada
+        if not all([pasante_real, banda_min, banda_max, tamices]):
+            return jsonify({
+                'exito': False,
+                'error': 'Faltan datos requeridos',
+                'campos_requeridos': ['pasante_real', 'banda_min', 'banda_max', 'tamices']
+            }), 400
+        
+        if not (len(pasante_real) == len(banda_min) == len(banda_max) == len(tamices)):
+            return jsonify({
+                'exito': False,
+                'error': 'Las listas deben tener la misma longitud'
+            }), 400
+        
+        # Generar auditoría completa
+        resultado = generar_auditoria_completa(
+            pasante_real=pasante_real,
+            banda_min=banda_min,
+            banda_max=banda_max,
+            tamices=tamices
+        )
+        
+        return jsonify({
+            'exito': True,
+            'data': resultado
+        }), 200
+    
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'exito': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
+
+
+@calculoPorRetenidos.route('/calculoPorRetenidos/status', methods=['GET'])
 def api_status():
     """
     Verifica estado del sistema de optimización
@@ -1581,6 +1674,7 @@ def api_status():
         'endpoints': [
             'POST /calculoPorRetenidos/optimizar - Optimizar mezcla completa',
             'POST /calculoPorRetenidos/analizar - Analizar mezcla actual',
+            'POST /calculoPorRetenidos/auditoria - Auditoría con decisión de tabla virtual',
             'GET /calculoPorRetenidos/status - Estado del sistema'
         ],
         'modulos': [
@@ -1589,6 +1683,7 @@ def api_status():
             'nucleo_decision - Lógica de decisión (4 niveles, 4 paradas)',
             'nucleo_optimizacion - Optimización por gradiente',
             'nucleo_iteracion - Control de iteraciones',
+            'auditoria_decision - Auditoría y decisión de tabla virtual',
             'api_integracion - API principal'
         ]
     }), 200
