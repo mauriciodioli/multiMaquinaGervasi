@@ -250,7 +250,10 @@ function restaurarTablasDesdeLocalStorage() {
 
         // 3) setear tabla
         const tbody = mezclaEl.querySelector("table.tabla tbody");
-        if (!tbody) return;
+        if (!tbody) {
+            console.warn(`⚠️ No tiene tbody mezcla ${tab.mezclaId}, salto`);
+            return; // salir del forEach, NO de la función
+        }
         tbody.innerHTML = "";
 
         (tab.filas || []).forEach(f => {

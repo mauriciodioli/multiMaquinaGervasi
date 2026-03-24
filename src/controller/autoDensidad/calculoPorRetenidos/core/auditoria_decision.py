@@ -9,6 +9,21 @@ from typing import Dict, List, Tuple
 from .nucleo_tabla_virtual import generar_tabla_virtual, validar_tabla_virtual
 
 
+TOLERANCIA_BANDA = 1e-6
+
+
+def _limpiar_pasantes(pasante: np.ndarray) -> np.ndarray:
+    pasante = np.array(pasante, dtype=float)
+    pasante = np.clip(pasante, 0.0, 100.0)
+    pasante[np.abs(pasante) < TOLERANCIA_BANDA] = 0.0
+    pasante[np.abs(pasante - 100.0) < TOLERANCIA_BANDA] = 100.0
+    return pasante
+
+
+def _esta_dentro_banda(pasante: float, banda_min: float, banda_max: float) -> bool:
+    return (banda_min - TOLERANCIA_BANDA) <= pasante <= (banda_max + TOLERANCIA_BANDA)
+
+
 def evaluar_criterios_decision(
     pasante: np.ndarray,
     banda_min: np.ndarray,
@@ -35,7 +50,11 @@ def evaluar_criterios_decision(
     """
     
     # Cálculo 1: Cumplimiento de banda
-    cumpl_inicial = sum([1 for p, min_b, max_b in zip(pasante, banda_min, banda_max) if min_b <= p <= max_b])
+    pasante = _limpiar_pasantes(pasante)
+    banda_min = np.array(banda_min, dtype=float)
+    banda_max = np.array(banda_max, dtype=float)
+
+    cumpl_inicial = sum([1 for p, min_b, max_b in zip(pasante, banda_min, banda_max) if _esta_dentro_banda(p, min_b, max_b)])
     cumplimiento_banda_pct = (cumpl_inicial / len(tamices)) * 100
     
     # Cálculo 2: Desviación del centro
@@ -94,17 +113,21 @@ def generar_auditoria_completa(
     """
     
     # Convertir a numpy
-    pasante_real = np.array(pasante_real)
+    pasante_real = _limpiar_pasantes(np.array(pasante_real))
     banda_min = np.array(banda_min)
     banda_max = np.array(banda_max)
     tamices = np.array(tamices)
     
     # ===== FASE 1: EVALUACIÓN INICIAL =====
-    cumpl_inicial = sum([1 for p, min_b, max_b in zip(pasante_real, banda_min, banda_max) if min_b <= p <= max_b])
+    cumpl_inicial = sum([1 for p, min_b, max_b in zip(pasante_real, banda_min, banda_max) if _esta_dentro_banda(p, min_b, max_b)])
     cumpl_inicial_pct = (cumpl_inicial / len(tamices)) * 100
     
     # Error total
-    error_real = sum([max(0, banda_min[i] - pasante_real[i], pasante_real[i] - banda_max[i]) for i in range(len(tamices))])
+    error_real = sum([
+        max(0, banda_min[i] - pasante_real[i], pasante_real[i] - banda_max[i])
+        if not _esta_dentro_banda(pasante_real[i], banda_min[i], banda_max[i]) else 0
+        for i in range(len(tamices))
+    ])
     
     # ===== FASE 2-4: EVALUACIÓN DE CRITERIOS Y DECISIÓN =====
     criterios = evaluar_criterios_decision(
@@ -131,7 +154,7 @@ def generar_auditoria_completa(
                 metodo="principal",
                 factor_suavizado=0.5,
             )
-            pasante_virtual = np.array(pasante_virtual)[::-1]
+            pasante_virtual = _limpiar_pasantes(np.array(pasante_virtual)[::-1])
             
             # Validar
             es_valida, reporte_validacion = validar_tabla_virtual(
@@ -143,11 +166,15 @@ def generar_auditoria_completa(
             es_valida = bool(es_valida)  # Convertir a bool Python para JSON
             
             # Calcular mejora
-            cumpl_virtual = sum([1 for p, min_b, max_b in zip(pasante_virtual, banda_min, banda_max) if min_b <= p <= max_b])
+            cumpl_virtual = sum([1 for p, min_b, max_b in zip(pasante_virtual, banda_min, banda_max) if _esta_dentro_banda(p, min_b, max_b)])
             cumpl_virtual_pct = (cumpl_virtual / len(tamices)) * 100
             mejora_cumplimiento = cumpl_virtual - cumpl_inicial
             
-            error_virtual = sum([max(0, banda_min[i] - pasante_virtual[i], pasante_virtual[i] - banda_max[i]) for i in range(len(tamices))])
+            error_virtual = sum([
+                max(0, banda_min[i] - pasante_virtual[i], pasante_virtual[i] - banda_max[i])
+                if not _esta_dentro_banda(pasante_virtual[i], banda_min[i], banda_max[i]) else 0
+                for i in range(len(tamices))
+            ])
             mejora_error = error_real - error_virtual
             
         except Exception as e:

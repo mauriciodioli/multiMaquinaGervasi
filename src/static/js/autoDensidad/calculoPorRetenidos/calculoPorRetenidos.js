@@ -1149,11 +1149,15 @@ function abrirAuditoriaDesdeModal() {
     const tamices = [];
     const pasante_real = [];
     
-    filas.forEach(fila => {
+    filas.forEach((fila, idx) => {
       const celdas = fila.querySelectorAll('td');
+      console.log(`Fila ${idx}: ${celdas.length} celdas`);
       if (celdas.length >= 2) {
-        tamices.push(parseFloat(celdas[0].textContent));
-        pasante_real.push(parseFloat(celdas[1].textContent)); // Ya es pasante acumulado
+        const tVal = parseFloat(celdas[0].textContent.trim());
+        const pVal = parseFloat(celdas[1].textContent.trim());
+        console.log(`  Tamiz=${tVal}, Pasante=${pVal}`);
+        tamices.push(tVal);
+        pasante_real.push(pVal); // Ya es pasante acumulado
       }
     });
     
@@ -1163,16 +1167,30 @@ function abrirAuditoriaDesdeModal() {
     }
     
     // 3. Definir bandas por defecto (valores estándar para agregados finos)
-    const banda_min = [85, 70, 50, 35, 15, 5, 0].slice(0, tamices.length);
-    const banda_max = [100, 90, 75, 60, 30, 15, 10].slice(0, tamices.length);
+    // NOTA: Deben tener la MISMA longitud que tamices y pasante_real
+    const banda_min = [100, 95, 85, 70, 50, 35, 15, 5].slice(0, tamices.length);
+    const banda_max = [100, 100, 100, 90, 75, 60, 30, 15].slice(0, tamices.length);
     
     // 4. Preparar datos para el endpoint
+    // VALIDACIÓN DEFENSIVA: Asegurar que TODOS tienen la misma longitud
+    const longitud_maxima = Math.max(tamices.length, pasante_real.length, banda_min.length, banda_max.length);
+    
+    // Si faltan elementos, rellenarlos
+    while (tamices.length < longitud_maxima) tamices.push(0);
+    while (pasante_real.length < longitud_maxima) pasante_real.push(0);
+    while (banda_min.length < longitud_maxima) banda_min.push(0);
+    while (banda_max.length < longitud_maxima) banda_max.push(100);
+    
+    // Truncar si alguno tiene más
     const datos = {
-      pasante_real: pasante_real,
-      banda_min: banda_min,
-      banda_max: banda_max,
-      tamices: tamices
+      pasante_real: pasante_real.slice(0, longitud_maxima),
+      banda_min: banda_min.slice(0, longitud_maxima),
+      banda_max: banda_max.slice(0, longitud_maxima),
+      tamices: tamices.slice(0, longitud_maxima)
     };
+    
+    console.log('✓ Validación defensiva completada');
+    console.log(`  - Longitud final: ${longitud_maxima} elementos en cada array`);
     
     console.log('📊 Enviando datos a auditoría:', datos);
     

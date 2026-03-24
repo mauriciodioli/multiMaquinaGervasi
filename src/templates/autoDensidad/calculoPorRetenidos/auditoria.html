@@ -262,6 +262,144 @@
             border-radius: 4px;
             margin: 15px 0;
         }
+
+        .operator-panel {
+            margin: 30px 0;
+            padding: 24px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f7fbff 0%, #eef6f1 100%);
+            border: 1px solid #d8e8db;
+        }
+
+        .operator-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .operator-title h2 {
+            color: #184e77;
+            margin: 0;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 140px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            background: #e7f6ea;
+            color: #1f6f43;
+        }
+
+        .status-pill.warning {
+            background: #fff4dd;
+            color: #9a6700;
+        }
+
+        .status-pill.error {
+            background: #fdeaea;
+            color: #b42318;
+        }
+
+        .ops-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 18px;
+        }
+
+        .ops-card {
+            background: white;
+            border: 1px solid #dce7ef;
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .ops-card h3 {
+            margin: 0 0 10px;
+            color: #184e77;
+            font-size: 15px;
+        }
+
+        .ops-main-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f4c5c;
+            margin-bottom: 8px;
+        }
+
+        .ops-card p,
+        .ops-card li {
+            color: #44515c;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .ops-card ul {
+            margin: 8px 0 0 18px;
+        }
+
+        .recipe-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .recipe-item {
+            background: white;
+            border: 2px solid #d6e6f2;
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .recipe-item .material {
+            color: #4d5b67;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .recipe-item .percent {
+            color: #184e77;
+            font-size: 30px;
+            font-weight: 800;
+        }
+
+        .detail-toggle {
+            margin-top: 22px;
+            border: 1px solid #d8dde3;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .detail-toggle button {
+            width: 100%;
+            padding: 16px 18px;
+            border: none;
+            background: #f8fafc;
+            text-align: left;
+            cursor: pointer;
+            font-weight: 700;
+            color: #234;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-body {
+            display: none;
+            padding: 0 18px 18px;
+            background: #fff;
+        }
         
         .success-box {
             background: #f0fff4;
@@ -306,6 +444,145 @@
     </div>
     
     <script>
+        // ============ VARIABLES GLOBALES ============
+        let instanciaChart = null; // Rastrear instancia de Chart.js para destruir antes de recrear
+        let instanciaErrorChart = null; // Gráfico de error por tamiz
+        let instanciaDesviacionChart = null; // Gráfico de desviación
+        
+        // ============ FUNCIONES DE SOPORTE PARA CONVERSIÓN ============
+        
+        /**
+         * Detecta si un array es retidos individuales (suma ≈ 100) o pasantes (decrece monotónicamente)
+         * @param {number[]} valores - Array de porcentajes
+         * @returns {string} 'retidos' | 'pasantes'
+         */
+        function detectarFormatoPortcentajes(valores) {
+            if (!Array.isArray(valores) || valores.length < 2) return 'desconocido';
+            
+            const suma = valores.reduce((a, b) => a + b, 0);
+            const esRetidos = Math.abs(suma - 100) < 5; // suma ≈ 100
+            
+            // Los pasantes SIEMPRE son decrecientes (monotónicamente)
+            let esDecreciente = true;
+            for (let i = 1; i < valores.length; i++) {
+                if (valores[i] > valores[i-1]) {
+                    esDecreciente = false;
+                    break;
+                }
+            }
+            
+            if (esRetidos) {
+                console.log(`🔍 Formato detectado: RETIDOS INDIVIDUALES (suma=${suma.toFixed(1)})`);
+                return 'retidos';
+            } else if (esDecreciente) {
+                console.log(`🔍 Formato detectado: PASANTES ACUMULADOS (decrece monotónicamente)`);
+                return 'pasantes';
+            } else {
+                console.warn(`⚠️ Formato AMBIGUO (suma=${suma.toFixed(1)}, decreciente=${esDecreciente})`);
+                return 'ambiguo';
+            }
+        }
+        
+        /**
+         * Convierte retidos individuales a pasantes acumulados
+         * @param {number[]} retidos - Retidos individuales: [r1, r2, r3, ...]
+         * @returns {number[]} Pasantes acumulados (empezando desde 100)
+         */
+        function retidosAPassantes(retidos) {
+            const pasantes = [];
+            let acum = 0;
+            
+            // Sumar desde atrás hacia adelante
+            for (let i = retidos.length - 1; i >= 0; i--) {
+                acum += retidos[i];
+                pasantes[i] = 100 - acum;
+            }
+            
+            console.log(`✅ Conversión retidos→pasantes:`, {
+                retidos_entrada: retidos.map(r => r.toFixed(2)),
+                pasantes_salida: pasantes.map(p => p.toFixed(2))
+            });
+            
+            return pasantes;
+        }
+        
+        /**
+         * Construye mezcla ponderada a partir de múltiples tablas con retidos
+         * @param {Array} tablas - Array de {nombre, filas: [{tamiz, porcentaje}]}
+         * @returns {Object} {pasante_real, tamices, nombre, materiales: [{nombre, pasantes}, ...]}
+         */
+        function construirMezclaDesdeMultiples(tablas) {
+            if (!Array.isArray(tablas) || tablas.length === 0) return null;
+            
+            console.log(`📊 Construyendo mezcla ponderada de ${tablas.length} materiales...`);
+            
+            // Extraer tamices (deben ser iguales en todas)
+            const tamices = tablas[0].filas.map(f => parseFloat(f.tamiz));
+            console.log(`   Tamices: [${tamices.join(', ')}]`);
+            
+            // PASO 1: Procesar cada material (normalizar retidos, convertir a pasantes)
+            const materialesProcesados = [];
+            tablas.forEach((tabla, idx) => {
+                const filas = tabla.filas || [];
+                const valores = filas.map(f => parseFloat(f.porcentaje));
+                const formato = detectarFormatoPortcentajes(valores);
+                
+                console.log(`   Material ${idx+1} (${tabla.nombre}): formato=${formato}, suma=${valores.reduce((a, b) => a + b, 0).toFixed(1)}%`);
+                
+                let retidos = valores;
+                
+                // Si detectó pasantes, revertir a retidos
+                if (formato === 'pasantes') {
+                    console.log(`     → Revirtiendo pasantes a retidos`);
+                    retidos = [];
+                    for (let i = 0; i < valores.length - 1; i++) {
+                        retidos[i] = valores[i] - valores[i + 1];
+                    }
+                    retidos[valores.length - 1] = valores[valores.length - 1];
+                }
+                
+                // NORMALIZAR retidos a suma = 100
+                const sumaRetidos = retidos.reduce((a, b) => a + b, 0);
+                const retidosNormalizados = retidos.map(r => (r / sumaRetidos) * 100);
+                console.log(`     Retidos normalizados (suma=${sumaRetidos.toFixed(1)}%): [${retidosNormalizados.map(r => r.toFixed(2)).join(', ')}]`);
+                
+                // Convertir retidos normalizados a pasantes
+                const pasantes = [];
+                let acum = 0;
+                for (let i = retidosNormalizados.length - 1; i >= 0; i--) {
+                    acum += retidosNormalizados[i];
+                    pasantes[i] = 100 - acum;
+                }
+                console.log(`     Pasantes: [${pasantes.map(p => p.toFixed(1)).join(', ')}]`);
+                
+                materialesProcesados.push({
+                    nombre: tabla.nombre,
+                    pasantes: pasantes,
+                    peso: 1.0 / tablas.length
+                });
+            });
+            
+            // PASO 2: Promediar los PASANTES
+            const mezcla_pasantes = new Array(tamices.length).fill(0);
+            materialesProcesados.forEach(mat => {
+                console.log(`   Ponderando ${mat.nombre} (peso=${mat.peso.toFixed(3)})`);
+                for (let i = 0; i < mat.pasantes.length; i++) {
+                    mezcla_pasantes[i] += mat.pasantes[i] * mat.peso;
+                }
+            });
+            
+            console.log(`   Mezcla pasantes ponderada: [${mezcla_pasantes.map(p => p.toFixed(1)).join(', ')}]`);
+            
+            return {
+                pasante_real: mezcla_pasantes,
+                tamices: tamices,
+                nombre: `Mezcla ${tablas.map(t => t.nombre).join(' + ')}`,
+                materiales: materialesProcesados  // ← NUEVO: retornar materiales originales
+            };
+        }
+        
+        // ============ FUNCIÓN PRINCIPAL: CARGAR DESDE STORAGE ============
+        
         // Cargar datos desde localStorage.tablasCargadas y convertir a formato de auditoría
         function cargarDatosDelStorage() {
             // Primero intentar cargar desde sessionStorage (vienen del modal)
@@ -337,38 +614,99 @@
                     return null;
                 }
                 
-                // Usar la primera tabla cargada
-                const tabla = tablas[0];
-                const filas = tabla.filas || [];
+                // Validar que todas las tablas tengan filas
+                const tablasValidas = tablas.filter(t => {
+                    const filas = t.filas || [];
+                    return filas.length > 0;
+                });
                 
-                if (filas.length === 0) {
-                    console.warn('La tabla no tiene filas');
+                if (tablasValidas.length === 0) {
+                    console.warn('No hay tablas válidas en localStorage');
                     return null;
                 }
                 
-                // Extraer tamices y PASANTES ACUMULADOS (ya están en el formato correcto)
-                const tamices = filas.map(f => parseFloat(f.tamiz));
-                const pasante_real = filas.map(f => parseFloat(f.porcentaje));
+                console.log(`📚 Cargadas ${tablasValidas.length} tabla(s) de localStorage`);
                 
-                // Los porcentajes en localStorage YA SON PASANTES ACUMULADOS
-                // No necesitan conversión, se usan directamente
+                // LÓGICA INTELIGENTE:
+                // - Si hay 1 tabla: usar directamente (CASO 1)
+                // - Si hay >1 tabla: construir mezcla ponderada (CASO 2)
                 
-                // Definir bandas por defecto (norma típica)
-                // Estos son valores estándar para agregados finos
-                const banda_min = [85, 70, 50, 35, 15, 5, 0].slice(0, tamices.length);
-                const banda_max = [100, 90, 75, 60, 30, 15, 10].slice(0, tamices.length);
+                let resultado = null;
                 
-                console.log('Pasante cargado desde localStorage:', pasante_real);
+                if (tablasValidas.length === 1) {
+                    // CASO 1: Una sola tabla (compatibilidad con flujo anterior)
+                    const tabla = tablasValidas[0];
+                    const filas = tabla.filas;
+                    const tamices = filas.map(f => parseFloat(f.tamiz));
+                    const valores = filas.map(f => parseFloat(f.porcentaje));
+                    
+                    // Detectar si son retidos o pasantes
+                    const formato = detectarFormatoPortcentajes(valores);
+                    const pasante_real = (formato === 'retidos') 
+                        ? retidosAPassantes(valores)
+                        : valores;
+                    
+                    resultado = {
+                        pasante_real: pasante_real,
+                        tamices: tamices,
+                        nombre: tabla.nombre || 'Tabla cargada'
+                    };
+                    
+                    console.log(`✅ CASO 1 (tabla única):`, resultado);
+                    
+                } else {
+                    // CASO 2: Múltiples tablas → construir mezcla ponderada
+                    resultado = construirMezclaDesdeMultiples(tablasValidas);
+                    if (!resultado) {
+                        console.error('Error al construir mezcla de múltiples tablas');
+                        return null;
+                    }
+                    console.log(`✅ CASO 2 (múltiples tablas):`, resultado);
+                }
                 
-                return {
-                    pasante_real: pasante_real,
+                // Definir bandas por defecto (Paver para Brasil)
+                // Especificación estándar ABNT para pavimentos
+                const bandas_paver = {
+                    '9.5': [0, 0],
+                    '6.3': [0, 10],
+                    '4.8': [0, 22],
+                    '2.4': [19, 40],
+                    '1.2': [37, 61],
+                    '0.6': [54, 78],
+                    '0.3': [72, 92],
+                    '0.15': [85, 100]
+                };
+                
+                // Extraer banda_min y banda_max según tamices
+                const banda_min = resultado.tamices.map(t => {
+                    const key = t.toString();
+                    return bandas_paver[key] ? bandas_paver[key][0] : 0;
+                });
+                const banda_max = resultado.tamices.map(t => {
+                    const key = t.toString();
+                    return bandas_paver[key] ? bandas_paver[key][1] : 100;
+                });
+                
+                console.log(`📏 Bandas Paver aplicadas:`, {tamices: resultado.tamices, banda_min, banda_max});
+                
+                const retorno = {
+                    pasante_real: resultado.pasante_real,
                     banda_min: banda_min,
                     banda_max: banda_max,
-                    tamices: tamices,
-                    nombre: tabla.nombre || 'Tabla cargada'
+                    tamices: resultado.tamices,
+                    nombre: resultado.nombre
                 };
+                
+                // En CASO 2, agregar materiales para optimización
+                if (resultado.materiales) {
+                    retorno.materiales = resultado.materiales;
+                    console.log(`📦 Materiales disponibles para optimización:`, resultado.materiales.map(m => m.nombre));
+                }
+                
+                return retorno;
+                
             } catch (e) {
-                console.error('Error al cargar datos de localStorage:', e);
+                console.error('❌ Error al cargar datos de localStorage:', e);
                 return null;
             }
         }
@@ -434,10 +772,112 @@
             const fase5 = datos.fase_5_virtual;
             const fase6 = datos.fase_6_receta;
             const grafico = datos.para_grafico;
+            const proporciones = fase6.proporciones;
+            const esModoMateriales = !proporciones.hasOwnProperty('tabla_real_pct') && 
+                                     proporciones.total_pct === 100.0;
+
+            const materialesOrdenados = esModoMateriales
+                ? Object.entries(proporciones)
+                    .filter(([nombre]) => nombre !== 'total_pct')
+                    .sort((a, b) => b[1] - a[1])
+                : [];
+
+            const estadoOperacion = criterios.cumple_banda ? 'RECETA LIBERADA' : 'REVISAR EN LABORATORIO';
+            const accionOperacion = criterios.cumple_banda
+                ? 'Trabajar con la receta indicada y mantener la relación de carga durante la producción.'
+                : 'No liberar esta mezcla a planta. Ajustar la combinación en laboratorio antes de producir.';
+            const calidadOperacion = criterios.es_buena_calidad
+                ? 'Calidad granulométrica estable.'
+                : 'La mezcla cumple banda, pero conviene vigilar estabilidad y repetir control.';
+            const semaforoClase = criterios.cumple_banda
+                ? (criterios.es_buena_calidad ? '' : 'warning')
+                : 'error';
             
             let html = '';
+
+            html += `
+                <div class="operator-panel">
+                    <div class="operator-title">
+                        <h2>Operación de Planta</h2>
+                        <div class="status-pill ${semaforoClase}">${estadoOperacion}</div>
+                    </div>
+                    <div class="instruccion">${fase6.instruction}</div>
+                    <div class="ops-grid">
+                        <div class="ops-card">
+                            <h3>Acción</h3>
+                            <div class="ops-main-value">${criterios.cumple_banda ? 'PRODUCIR' : 'DETENER'}</div>
+                            <p>${accionOperacion}</p>
+                        </div>
+                        <div class="ops-card">
+                            <h3>Cumplimiento</h3>
+                            <div class="ops-main-value">${fase1.cumplimiento_pct}%</div>
+                            <p>${fase1.cumpl_count} de ${fase1.n_tamices} puntos de control dentro de banda.</p>
+                        </div>
+                        <div class="ops-card">
+                            <h3>Calidad</h3>
+                            <div class="ops-main-value">${criterios.desviacion_media_centro.toFixed(2)}%</div>
+                            <p>${calidadOperacion}</p>
+                        </div>
+                    </div>
+            `;
+
+            if (esModoMateriales) {
+                html += `
+                    <h3 style="margin-top: 22px; color: #184e77;">Receta de carga</h3>
+                    <div class="recipe-strip">
+                `;
+
+                materialesOrdenados.forEach(([nombre, pct]) => {
+                    html += `
+                        <div class="recipe-item">
+                            <div class="material">${nombre}</div>
+                            <div class="percent">${pct.toFixed(2)}%</div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                    </div>
+                    <div class="ops-grid">
+                        <div class="ops-card">
+                            <h3>Base operativa</h3>
+                            <p>Tomar la receta sobre una base de 100 partes de carga. Mantener la misma relación entre materiales durante todo el turno.</p>
+                        </div>
+                        <div class="ops-card">
+                            <h3>Orden sugerido</h3>
+                            <ul>${materialesOrdenados.map(([nombre, pct]) => `<li>${nombre}: ${pct.toFixed(2)}%</li>`).join('')}</ul>
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <h3 style="margin-top: 22px; color: #184e77;">Configuración de mezcla</h3>
+                    <div class="recipe-strip">
+                        <div class="recipe-item">
+                            <div class="material">Tabla Real</div>
+                            <div class="percent">${proporciones.tabla_real_pct.toFixed(1)}%</div>
+                        </div>
+                        <div class="recipe-item">
+                            <div class="material">Tabla Virtual</div>
+                            <div class="percent">${proporciones.tabla_virtual_pct.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `
+                    <div class="detail-toggle">
+                        <button onclick="toggleAccordion(this)">
+                            <span>Ver detalle técnico de laboratorio</span>
+                            <span>▼</span>
+                        </button>
+                        <div class="detail-body">
+            `;
+
+            // Criterios de Decisión
+            const cumpleEstilo = criterios.cumple_banda ? 'ok' : 'error';
+            const calidadEstilo = criterios.es_buena_calidad ? 'ok' : 'warning';
             
-            // Fase 1
             html += `
                 <div class="section">
                     <h2>Fase 1️⃣ Evaluación Inicial</h2>
@@ -454,13 +894,7 @@
                         <span class="value">${fase1.estado}</span>
                     </div>
                 </div>
-            `;
-            
-            // Criterios de Decisión
-            const cumpleEstilo = criterios.cumple_banda ? 'ok' : 'error';
-            const calidadEstilo = criterios.es_buena_calidad ? 'ok' : 'warning';
-            
-            html += `
+
                 <div class="section">
                     <h2>Fase 2-4️⃣ Criterios de Decisión</h2>
                     <div class="criterio ${cumpleEstilo}">
@@ -498,7 +932,7 @@
                         <h2>Fase 5️⃣ Tabla Virtual Generada</h2>
                         <div class="criterio ${fase5.valida ? 'ok' : 'warning'}">
                             <label>Cumplimiento con TV</label>
-                            <div><strong>${fase5.cumpl_count}/7 tamices (${fase5.cumplimiento_pct}%)</strong></div>
+                            <div><strong>${fase5.cumpl_count}/${fase1.n_tamices} tamices (${fase5.cumplimiento_pct}%)</strong></div>
                         </div>
                         <div class="criterio">
                             <label>Mejoras Conseguidas</label>
@@ -508,59 +942,18 @@
                     </div>
                 `;
             }
-            
-            // Fase 6 - Receta
-            const proporciones = fase6.proporciones;
+
             html += `
                 <div class="section">
-                    <h2>Fase 6️⃣ Receta Final para Producción</h2>
-                    
-                    <h3 style="margin-top: 20px; color: #0066cc;">Proporciones Finales</h3>
-                    <div class="proporciones">
-                        <div class="proporcion-item">
-                            <div class="nombre">Tabla Real</div>
-                            <div class="valor">${proporciones.tabla_real_pct.toFixed(1)}%</div>
-                        </div>
-            `;
-            
-            if (proporciones.tabla_virtual_pct > 0) {
-                html += `
-                        <div class="proporcion-item">
-                            <div class="nombre">Tabla Virtual</div>
-                            <div class="valor">${proporciones.tabla_virtual_pct.toFixed(1)}%</div>
-                        </div>
-                `;
-            }
-            
-            html += `
-                        <div class="proporcion-item" style="background: #fffbf0; border-color: #ff9800;">
-                            <div class="nombre">TOTAL</div>
-                            <div class="valor" style="color: #ff9800;">${proporciones.total_pct.toFixed(1)}%</div>
-                        </div>
-                    </div>
-                    
-                    <h3 style="margin-top: 20px; color: #0066cc;">Semáforo</h3>
-                    <div class="semaforo">${fase6.semaforo}</div>
-                    
-                    <h3 style="margin-top: 20px; color: #0066cc;">Instrucción Operativa</h3>
-                    <div class="instruccion">${fase6.instruction}</div>
-                </div>
-            `;
-            
-            // Gráfico comparativo
-            html += `
-                <div class="section">
-                    <h2>Comparação: Real vs Virtual</h2>
+                    <h2>Curva de Referencia</h2>
                     <div class="grafico-container">
                         <canvas id="graficoComparacion"></canvas>
                     </div>
                 </div>
-            `;
-            
-            // Tabla detallada
-            html += `
+
                 <div class="section">
                     <h2>Tabla Detallada</h2>
+                    
                     <table class="tabla-receta">
                         <thead>
                             <tr>
@@ -575,12 +968,12 @@
                         <tbody>
             `;
             
-            for (let i = 0; i < entrada.tamices.length; i++) {
-                const tamiz = entrada.tamices[i];
-                const pasanteReal = entrada.pasante_real[i];
+            for (let i = 0; i < grafico.tamices.length; i++) {
+                const tamiz = grafico.tamices[i];
+                const pasanteReal = grafico.pasante_real[i];
                 const pasanteVirt = fase6.tabla_virtual_pasante[i];
-                const bandaMin = entrada.banda_min[i];
-                const bandaMax = entrada.banda_max[i];
+                const bandaMin = grafico.banda_min[i];
+                const bandaMax = grafico.banda_max[i];
                 
                 const estadoReal1 = (pasanteReal >= bandaMin && pasanteReal <= bandaMax) ? '✓' : '✗';
                 const estadoVirt = (pasanteVirt >= bandaMin && pasanteVirt <= bandaMax) ? '✓' : '✗';
@@ -601,29 +994,243 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- ACORDEÓN: ANÁLISIS DETALLADO DE ERRORES Y DESVIACIONES -->
+                <div class="section" style="margin-top: 30px;">
+                    <h2>📊 Análisis Detallado</h2>
+                    
+                    <!-- Acordeón 1: Error por Tamiz -->
+                    <div class="accordion-item" style="border: 1px solid #ddd; border-radius: 6px; overflow: hidden; margin-bottom: 15px;">
+                        <button class="accordion-header" onclick="toggleAccordion(this)" style="width: 100%; padding: 15px; background: #f8f9fa; border: none; text-align: left; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: #333;">
+                            <span>📈 Error por Tamiz</span>
+                            <span style="font-size: 1.2em;">▼</span>
+                        </button>
+                        <div class="accordion-body" style="display: none; padding: 20px; background: white; border-top: 1px solid #ddd;">
+                            <div id="graficoErrorTamiz" style="height: 300px;">
+                                <canvas id="errorTamizChart" height="150"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Acordeón 2: Desviación vs Centro de Banda -->
+                    <div class="accordion-item" style="border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
+                        <button class="accordion-header" onclick="toggleAccordion(this)" style="width: 100%; padding: 15px; background: #f8f9fa; border: none; text-align: left; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: #333;">
+                            <span>📊 Desviación vs Centro de Banda</span>
+                            <span style="font-size: 1.2em;">▼</span>
+                        </button>
+                        <div class="accordion-body" style="display: none; padding: 20px; background: white; border-top: 1px solid #ddd;">
+                            <div id="graficoDesviacion" style="height: 300px;">
+                                <canvas id="desviacionChart" height="150"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                        </div>
+                    </div>
+                </div>
             `;
             
             document.getElementById('resultado').innerHTML = html;
             
-            // Dibujar gráfico
+            // Dibujar gráficos (esperar a que el DOM se actualice)
             setTimeout(() => {
                 dibujarGrafico(grafico, entrada);
+                dibujarGraficosAnalisis(grafico, entrada);
             }, 100);
+        }
+        
+        // Función para toggle acordeón
+        function toggleAccordion(button) {
+            const body = button.nextElementSibling;
+            const chevron = button.querySelector('span:last-child');
+            
+            const isOpen = body.style.display !== 'none';
+            body.style.display = isOpen ? 'none' : 'block';
+            chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+            chevron.style.transition = 'transform 0.3s ease';
+        }
+        
+        // Función para dibujar gráficos de análisis (Error y Desviación)
+        function dibujarGraficosAnalisis(datos, entrada) {
+            // Destruir instancias previas de charts
+            if (instanciaErrorChart) {
+                instanciaErrorChart.destroy();
+                instanciaErrorChart = null;
+            }
+            if (instanciaDesviacionChart) {
+                instanciaDesviacionChart.destroy();
+                instanciaDesviacionChart = null;
+            }
+            
+            // === GRÁFICO 1: ERROR POR TAMIZ ===
+            const ctxError = document.getElementById('errorTamizChart');
+            if (ctxError) {
+                const errors_real = [];
+                const errors_virtual = [];
+                
+                for (let i = 0; i < datos.tamices.length; i++) {
+                    const minB = datos.banda_min[i];
+                    const maxB = datos.banda_max[i];
+                    const real = datos.pasante_real[i];
+                    const virt = datos.pasante_virtual[i];
+                    
+                    const errorReal = Math.max(0, 
+                        minB - real, 
+                        real - maxB
+                    );
+                    const errorVirt = Math.max(0, 
+                        minB - virt, 
+                        virt - maxB
+                    );
+                    
+                    errors_real.push(parseFloat(errorReal.toFixed(2)));
+                    errors_virtual.push(parseFloat(errorVirt.toFixed(2)));
+                }
+                
+                instanciaErrorChart = new Chart(ctxError, {
+                    type: 'bar',
+                    data: {
+                        labels: datos.tamices.slice().reverse().map(t => t + ' mm'),
+                        datasets: [
+                            {
+                                label: 'Error Real',
+                                data: errors_real.slice().reverse(),
+                                backgroundColor: '#0066cc',
+                                borderColor: '#003d99',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Error Virtual',
+                                data: errors_virtual.slice().reverse(),
+                                backgroundColor: '#dc3545',
+                                borderColor: '#a02830',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Error (%)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            title: {
+                                display: true,
+                                text: 'ERROR por Tamiz'
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // === GRÁFICO 2: DESVIACIÓN vs CENTRO DE BANDA ===
+            const ctxDesviacion = document.getElementById('desviacionChart');
+            if (ctxDesviacion) {
+                const desv_real = [];
+                const desv_virtual = [];
+                const limite_ideal = [];
+                
+                for (let i = 0; i < datos.tamices.length; i++) {
+                    const minB = datos.banda_min[i];
+                    const maxB = datos.banda_max[i];
+                    const center = (minB + maxB) / 2;
+                    const real = datos.pasante_real[i];
+                    const virt = datos.pasante_virtual[i];
+                    
+                    desv_real.push(parseFloat(Math.abs(real - center).toFixed(2)));
+                    desv_virtual.push(parseFloat(Math.abs(virt - center).toFixed(2)));
+                    limite_ideal.push(5.5); // Límite de calidad
+                }
+                
+                instanciaDesviacionChart = new Chart(ctxDesviacion, {
+                    type: 'bar',
+                    data: {
+                        labels: datos.tamices.slice().reverse().map(t => t + ' mm'),
+                        datasets: [
+                            {
+                                label: 'Real',
+                                data: desv_real.slice().reverse(),
+                                backgroundColor: '#0066cc',
+                                borderColor: '#003d99',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Virtual',
+                                data: desv_virtual.slice().reverse(),
+                                backgroundColor: '#dc3545',
+                                borderColor: '#a02830',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Límite ideal (±5.5%)',
+                                data: limite_ideal.slice().reverse(),
+                                borderColor: '#ffc107',
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                type: 'line',
+                                fill: false,
+                                pointRadius: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Desviación (%)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            title: {
+                                display: true,
+                                text: 'DESVIACIÓN vs Centro de Banda'
+                            }
+                        }
+                    }
+                });
+            }
         }
         
         function dibujarGrafico(datos, entrada) {
             const ctx = document.getElementById('graficoComparacion').getContext('2d');
             
+            // Destruir instancia anterior de Chart.js si existe
+            if (instanciaChart) {
+                instanciaChart.destroy();
+                instanciaChart = null;
+            }
+            
             // Invertir tamices para mostrar de menor a mayor en el eje X
             const labels = datos.tamices.slice().reverse().map(t => `${t} mm`);
             
-            new Chart(ctx, {
+            instanciaChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
                         {
-                            label: 'Tabla Real',
+                            label: 'Mezcla Resultante',
                             data: datos.pasante_real.slice().reverse(),
                             borderColor: '#0066cc',
                             backgroundColor: 'rgba(0, 102, 204, 0.1)',
@@ -633,7 +1240,7 @@
                             tension: 0.3
                         },
                         {
-                            label: 'Tabla Virtual',
+                            label: 'Tabla Virtual (Salida)',
                             data: datos.pasante_virtual.slice().reverse(),
                             borderColor: '#dc3545',
                             backgroundColor: 'rgba(220, 53, 69, 0.1)',

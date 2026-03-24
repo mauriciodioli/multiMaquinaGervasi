@@ -43,14 +43,55 @@ def _ordenar_indices(tamices):
     pos = {str(t): i for i, t in enumerate(TAMICES_ORDEN)}
     return sorted(range(len(tamices)), key=lambda i: pos.get(str(tamices[i]), 999))
 
-def _acum_desc(ret_ind_list):
+def _acum_to_ind(acum_list):
+    """
+    Convierte acumulado → individual
+    """
+    ind = []
+    prev = 0.0
+
+    for v in acum_list:
+        val = float(v or 0.0)
+        ind.append(max(0.0, val - prev))
+        prev = val
+
+    return ind
+
+def _acum_desc(ret_ind_list, debug=False):
+    """
+    Convierte retido individual → acumulado.
+    Si detecta que los datos parecen acumulados, los corrige automáticamente.
+    """
+
+    # Limpieza básica
+    vals = [float(v or 0.0) for v in ret_ind_list]
+    total = sum(vals)
+
+    # 🔍 DETECCIÓN AUTOMÁTICA
+    # Si suma es muy alta → probablemente es acumulado
+    if total > 120:
+        if debug:
+            print("⚠️ [_acum_desc] Detectado formato ACUMULADO → convirtiendo a IND")
+
+        vals = _acum_to_ind(vals)
+
+    # 🧮 Cálculo acumulado real
     acum = []
     s = 0.0
-    for v in ret_ind_list:
-        s += float(v or 0.0)
+
+    for v in vals:
+        s += v
         acum.append(s)
-    # saneo numérico
-    return [min(100.0, max(0.0, round(x, 2))) for x in acum]
+
+    # 🔧 Saneo numérico
+    acum = [min(100.0, max(0.0, round(x, 2))) for x in acum]
+
+    # 🔍 Validación final
+    if debug:
+        if acum and abs(acum[-1] - 100) > 2:
+            print(f"⚠️ [_acum_desc] ACUM final no ≈100 → {acum[-1]}")
+
+    return acum
 
 def _mezcla_ponderada_acum(materiales):
     # materiales: [{nombre, w, ret_ind[], ret_acum[]}, ...] con alineación ya hecha
@@ -255,6 +296,214 @@ def _validar_faixas(mix_acum, tamices, limites):
     ob, det_b = eval_faixa(limites.get('bloco', {}))
     op, det_p = eval_faixa(limites.get('paver', {}))
     return {"bloco": det_b, "paver": det_p}
+
+
+# ================================================================================
+# SISTEMA ROBUSTO DE NORMALIZACIÓN DE DATOS GRANULOMÉTRICOS
+# ================================================================================
+
+def _normalizar_escala_porcentaje(vals, debug=False):
+    """
+    Convierte valores en escala 0-1 a escala 0-100 si es necesario.
+    
+    Args:
+        vals: Lista de valores (puede estar en 0-1 o 0-100)
+        debug: Si True, loguea decisión
+    
+    Returns:
+        Lista normalizada a escala 0-100, redondeada a 2 decimales
+    """
+    vals = [float(v or 0.0) for v in vals]
+    
+    if not vals:
+        return vals
+    
+    max_val = max(vals)
+    
+    # Si máximo es ≤ 1.5, asumir escala 0-1 → convertir a 0-100
+    if max_val > 0 and max_val <= 1.5:
+        if debug:
+            print(f"📊 Escala detectada 0-1 → Convirtiendo a 0-100 (max={max_val})")
+        vals = [v * 100.0 for v in vals]
+    
+    return [round(x, 2) for x in vals]
+
+
+def _ret_acum_to_ret_ind_robusto(acum_list, debug=False):
+    """
+    Convierte retenido acumulado a retenido individual (diferencias sucesivas).
+    Valida que sea monótonamente creciente.
+    
+    Args:
+        acum_list: Acumulado (debe ser creciente)
+        debug: Si True, loguea validaciones
+    
+    Returns:
+        Retenido individual
+    """
+    acum = [float(v or 0.0) for v in acum_list]
+    
+    # Validar monotonía
+    es_creciente = all(acum[i] <= acum[i+1] for i in range(len(acum)-1))
+    if not es_creciente and debug:
+        print(f"⚠️ Acumulado NO es monótonamente creciente: {acum}")
+    
+    # Calcular diferencias
+    ret_ind = []
+    prev = 0.0
+    for v in acum:
+        ret_ind.append(max(0.0, v - prev))
+        prev = v
+    
+    return [round(x, 2) for x in ret_ind]
+
+
+def _resolver_curva_a_ret_ind(vals, formato=None, debug=False):
+    """
+    FUNCIÓN MAESTRA: Convierte cualquier formato de entrada a retido_ind_pct.
+    
+    Soporta:
+    - retido individual (suma ≈ 100)
+    - retido acumulado (creciente, último ≥ 90)
+    - pasante acumulado (decreciente, primero ≥ 90)
+    - datos en escala 0-1
+    
+    Args:
+        vals: Lista de valores
+        formato: Opcional, fuerza formato ("ret_ind", "ret_acum", "pasante")
+        debug: Si True, loguea decisiones
+    
+    Returns:
+        Retenido individual normalizado (suma ≈ 100)
+    
+    Raises:
+        ValueError: Si no se puede determinar el formato y es imposible inferir
+    """
+    
+    # PASO 1: Normalizar escala de porcentaje (0-1 → 0-100)
+    vals_norm = _normalizar_escala_porcentaje(vals, debug=debug)
+    
+    # PASO 2: Determinar formato
+    if formato:
+        tipo_detectado = formato
+        if debug:
+            print(f"📋 Formato forzado por usuario: {tipo_detectado}")
+    else:
+        tipo_detectado = _detectar_formato(vals_norm)
+        if debug:
+            print(f"🔍 Formato detectado automáticamente: {tipo_detectado}")
+    
+    # PASO 3: Convertir a retenido individual
+    if tipo_detectado == "ret_ind":
+        if debug:
+            print(f"✅ Entrada es retenido individual (suma ≈ 100)")
+        ret_ind = vals_norm
+    
+    elif tipo_detectado == "ret_acum":
+        if debug:
+            print(f"🔄 Convirtiendo: retenido acumulado → retenido individual")
+        ret_ind = _ret_acum_to_ret_ind_robusto(vals_norm, debug=debug)
+    
+    elif tipo_detectado == "pasante":
+        if debug:
+            print(f"🔄 Convirtiendo: pasante acumulado → retenido individual")
+        ret_ind = _pasante_to_ret_ind(vals_norm)
+    
+    elif tipo_detectado == "unknown":
+        # HEURÍSTICA DE RESCATE
+        # Intentar inferir basado en monotonía
+        es_creciente = all(vals_norm[i] <= vals_norm[i+1] for i in range(len(vals_norm)-1))
+        es_decreciente = all(vals_norm[i] >= vals_norm[i+1] for i in range(len(vals_norm)-1))
+        
+        if es_creciente:
+            if debug:
+                print(f"⚠️ Formato unknown pero creciente → Asumiendo ret_acum")
+            ret_ind = _ret_acum_to_ret_ind_robusto(vals_norm, debug=debug)
+        elif es_decreciente:
+            if debug:
+                print(f"⚠️ Formato unknown pero decreciente → Asumiendo pasante")
+            ret_ind = _pasante_to_ret_ind(vals_norm)
+        else:
+            # ÚLTIMO RECURSO: Normalizar asumiendo que son retenidos individuales no normalizados
+            suma = sum(vals_norm)
+            if suma > 0:
+                if debug:
+                    print(f"⚠️ Formato imposible de determinar (no creciente ni decreciente)")
+                    print(f"   → Asumiendo retenido individual y normalizando (suma original: {suma}%)")
+                ret_ind = [round((v / suma) * 100.0, 2) for v in vals_norm]
+            else:
+                # Si suma es 0, retornar array de ceros
+                if debug:
+                    print(f"⚠️ Datos vacíos (suma=0) → Retornando ceros")
+                ret_ind = [0.0] * len(vals_norm)
+    
+    # PASO 4: Validaciones suaves (no-bloqueantes)
+    ret_ind = [max(0.0, v) for v in ret_ind]  # Clamp negativos
+    suma = sum(ret_ind)
+    
+    if suma > 0 and abs(suma - 100) > 1.0:
+        if debug:
+            print(f"⚠️ Suma de ret_ind = {round(suma, 2)}% (esperado ≈ 100%)")
+    
+    return [round(x, 2) for x in ret_ind]
+
+
+def _pasante_to_ret_ind(pasante_list):
+    """
+    Convierte pasante acumulado (%) -> retenido individual (%)
+    """
+    pas = [float(v or 0.0) for v in pasante_list]
+    ret_acum = [100.0 - v for v in pas]
+
+    ret_ind = []
+    prev = 0.0
+    for v in ret_acum:
+        ret_ind.append(max(0.0, v - prev))
+        prev = v
+
+    return [round(x, 2) for x in ret_ind]
+def _detectar_formato(vals):
+    vals = [float(v or 0.0) for v in vals]
+
+    if not vals:
+        return "unknown"
+
+    creciente = all(vals[i] <= vals[i+1] for i in range(len(vals)-1))
+    decreciente = all(vals[i] >= vals[i+1] for i in range(len(vals)-1))
+    total = sum(vals)
+
+    if abs(total - 100) < 5:
+        return "ret_ind"
+
+    if creciente and vals[-1] > 90:
+        return "ret_acum"
+
+    if decreciente and vals[0] > 90:
+        return "pasante"
+
+    return "unknown"
+def _normalizar_a_ret_ind(vals, debug=False):
+    tipo = _detectar_formato(vals)
+
+    if debug:
+        print(f"🔍 Formato detectado: {tipo}")
+
+    if tipo == "ret_ind":
+        return vals
+
+    if tipo == "ret_acum":
+        return _acum_to_ind(vals, debug=debug)
+
+    if tipo == "pasante":
+        return _pasante_to_ret_ind(vals)
+    
+    
+def _forzar_monotonia_decreciente(vals):
+    for i in range(1, len(vals)):
+        if vals[i] > vals[i-1]:
+            vals[i] = vals[i-1]
+    return vals
+    raise ValueError("No se pudo detectar el formato de datos")
 @calculoPorRetenidos.route('/calculoPorRetenidos/granulometria/retido/', methods=['POST'])
 def granulometria_retido():
     data = request.get_json(force=True)
@@ -339,24 +588,33 @@ def granulometria_retido():
         log(f"[CHECK] {nombre} enters normalization? {flag_normalizar} (total={round(total, 2)})")
 
         # STEP 3: Safe normalization with validation
-        if flag_normalizar:
-            if total > 0 and abs(total - 100) > 1e-6:
-                log(f"🔥 NORMALIZING {nombre}")
-                log(f"[BEFORE] {nombre} sum = {round(total, 2)}")
-                ret_ind_norm = _normalizar_ind(ret_ind_ord)
-                log(f"[AFTER] {nombre} sum = {round(sum(ret_ind_norm), 2)}")
-                log(f"🔧 {nombre} NORMALIZADO (suma original: {round(total,2)} → 100)")
-            else:
-                if total == 0:
-                    log(f"⚠️ {nombre} skipped normalization (sum = 0 - empty data?)")
-                    ret_ind_norm = ret_ind_ord
+        # Formato de entrada (opcional, para forzar interpretación)
+        formato = m.get("formato")  # Puede ser: "ret_ind", "ret_acum", "pasante"
+        
+        try:
+            if flag_normalizar:
+                if total > 0 and abs(total - 100) > 1e-6:
+                    log(f"🔥 NORMALIZING {nombre}")
+                    log(f"[BEFORE] {nombre} sum = {round(total, 2)}")
+                    ret_ind_norm = _normalizar_ind(ret_ind_ord)
+                    log(f"[AFTER] {nombre} sum = {round(sum(ret_ind_norm), 2)}")
+                    log(f"🔧 {nombre} NORMALIZADO (suma original: {round(total,2)} → 100)")
                 else:
-                    log(f"ℹ️ {nombre} already ~100, no normalization needed (sum={round(total,2)})")
-                    ret_ind_norm = ret_ind_ord
-        else:
-            ret_ind_norm = ret_ind_ord
+                    if total == 0:
+                        log(f"⚠️ {nombre} skipped normalization (sum = 0 - empty data?)")
+                        ret_ind_norm = _resolver_curva_a_ret_ind(ret_ind_ord, formato=formato, debug=debug)
+                    else:
+                        log(f"ℹ️ {nombre} already ~100, no normalization needed (sum={round(total,2)})")
+                        ret_ind_norm = _resolver_curva_a_ret_ind(ret_ind_ord, formato=formato, debug=debug)
+            else:
+                ret_ind_norm = _resolver_curva_a_ret_ind(ret_ind_ord, formato=formato, debug=debug)
+        except Exception as e:
+            # Defensa: Si falla la normalización, usar datos originales
+            log(f"⚠️ {nombre} normalization FAILED: {str(e)}")
+            log(f"   → Usando datos originales como fallback")
+            ret_ind_norm = ret_ind_ord  # Fallback a datos originales
 
-        ret_acum_ord = _acum_desc(ret_ind_norm)
+        ret_acum_ord = _acum_desc(ret_ind_norm, debug=debug)
 
         # logs por material
         check_sum_100(ret_ind_norm, f"{nombre} (IND)")
@@ -371,7 +629,7 @@ def granulometria_retido():
             "proporcion_pct": round(p, 2),
             "w": round(w, 6),
             "ret_ind": [round(x, 2) for x in ret_ind_norm],
-            "ret_acum": ret_acum_ord
+            "ret_acum": [round(x, 2) for x in ret_acum_ord]
         })
 
     # 3) mezcla ponderada (acumulado)
@@ -516,6 +774,50 @@ def granulometria_retido():
             import traceback
             log(traceback.format_exc())
 
+    # ===============================================
+    # MÓDULO DE PROPUESTA DE 3 AGREGADOS CORRECTIVOS
+    # ===============================================
+    propuesta_agregados = None
+    
+    if mix_pasante and limites and "bloco" in limites:
+        try:
+            # Extraer límites del bloco
+            banda_min_valores = []
+            banda_max_valores = []
+            
+            for t in tamices_ord:
+                t_str = str(t)
+                if t_str in limites.get("bloco", {}):
+                    min_v, max_v = limites["bloco"][t_str]
+                    banda_min_valores.append(float(min_v))
+                    banda_max_valores.append(float(max_v))
+                else:
+                    # Default si no existe
+                    banda_min_valores.append(0.0)
+                    banda_max_valores.append(100.0)
+            
+            log(f"\n[PROPUESTA] Generando propuesta de 3 agregados correctivos...")
+            
+            propuesta_agregados = generar_propuesta_3_agregados(
+                mix_pasante=mix_pasante,
+                banda_min=banda_min_valores,
+                banda_max=banda_max_valores,
+                tamices=tamices_ord,
+                log=log
+            )
+            
+            if propuesta_agregados and propuesta_agregados.get('exito'):
+                log(f"[PROPUESTA] ✅ Propuesta generada exitosamente")
+            else:
+                log(f"[PROPUESTA] ⚠️ Propuesta no pudo generarse")
+                propuesta_agregados = None
+        
+        except Exception as e:
+            log(f"\n[PROPUESTA] ✗ Error generando propuesta: {str(e)}")
+            import traceback
+            log(traceback.format_exc())
+            propuesta_agregados = None
+
     return jsonify({
         "ok": True,
         "tamices": tamices_ord,
@@ -528,7 +830,8 @@ def granulometria_retido():
         "tabla": tabla,
         "sugerencia_division": sugerencia_division,
         "sugerencia_optimizacion": sugerencia_optimizacion,
-        "divisiones_n_tablas": divisiones_n_tablas
+        "divisiones_n_tablas": divisiones_n_tablas,
+        "propuesta_agregados_correctivos": propuesta_agregados
     }), 200
 
 
@@ -1425,6 +1728,420 @@ def comparar_divisiones(tamices, retido_ind_pct, limites, opciones=None, log=Non
 
 
 # ============================================================================
+# GENERACIÓN DE PROPUESTA DE 3 AGREGADOS CORRECTIVOS
+# ============================================================================
+
+def _conv_pasante_a_retido_ind(pasante):
+    """
+    Convierte curva PASANTE a RETIDO INDIVIDUAL
+    pasante: [100, 95, 80, ...]  (decreciente)
+    retido_acum: [0, 5, 20, ...]  (creciente, 100 - pasante)
+    retido_ind: [0, 5, 15, ...]  (diferencias)
+    """
+    if not pasante or len(pasante) < 1:
+        return []
+    
+    # Convertir pasante a retido acumulado
+    ret_acum = [100.0 - float(p) for p in pasante]
+    
+    # Convertir retido acumulado a retido individual
+    ret_ind = []
+    prev = 0.0
+    for r in ret_acum:
+        r = max(0.0, min(100.0, float(r)))  # Clamp a [0, 100]
+        ret_ind.append(max(0.0, r - prev))
+        prev = r
+    
+    return [round(x, 2) for x in ret_ind]
+
+
+def _conv_retido_ind_a_pasante(ret_ind):
+    """
+    Convierte RETIDO INDIVIDUAL a PASANTE
+    ret_ind: [0, 5, 15, ...]
+    retido_acum: [0, 5, 20, ...]
+    pasante: [100, 95, 80, ...]
+    """
+    if not ret_ind:
+        return []
+    
+    # Convertir a acumulado
+    ret_acum = _acum_desc(ret_ind)
+    
+    # Convertir a pasante
+    pasante = [100.0 - float(r) for r in ret_acum]
+    
+    return [max(0.0, min(100.0, round(p, 2))) for p in pasante]
+
+
+def _garantizar_monotonicidad_pasante(pasante):
+    """
+    Asegura que pasante sea monótonamente decreciente
+    Si hay violaciones, suaviza hacia atrás
+    """
+    if not pasante or len(pasante) < 2:
+        return pasante
+    
+    pasante = list(pasante)
+    
+    # Pasar hacia atrás: si pasante[i] < pasante[i+1], igualar al menor
+    for i in range(len(pasante) - 1, 0, -1):
+        if pasante[i] > pasante[i - 1]:
+            pasante[i] = pasante[i - 1]
+    
+    return [max(0.0, min(100.0, round(p, 2))) for p in pasante]
+
+
+def _calcular_zonas_defectos(error_residual, tamices, n_zonas=3):
+    """
+    Identifica en qué zonas hay defectos (error > 0) o excesos (error < 0)
+    Retorna dict con zona:error para c/zona
+    """
+    n = len(error_residual)
+    n_por_zona = max(1, n // n_zonas)
+    
+    zonas = {}
+    
+    # Zona GRUESA: primeros 1/3
+    error_gruesa = sum(error_residual[:n_por_zona])
+    zonas['gruesa'] = {
+        'indices': list(range(0, n_por_zona)),
+        'error_total': error_gruesa,
+        'error_medio': error_gruesa / n_por_zona if n_por_zona > 0 else 0
+    }
+    
+    # Zona MEDIA: segundo 1/3
+    start_media = n_por_zona
+    end_media = 2 * n_por_zona
+    error_media = sum(error_residual[start_media:end_media])
+    zonas['media'] = {
+        'indices': list(range(start_media, end_media)),
+        'error_total': error_media,
+        'error_medio': error_media / (end_media - start_media) if start_media < end_media else 0
+    }
+    
+    # Zona FINA: último 1/3
+    start_fina = 2 * n_por_zona
+    error_fina = sum(error_residual[start_fina:])
+    zonas['fina'] = {
+        'indices': list(range(start_fina, n)),
+        'error_total': error_fina,
+        'error_medio': error_fina / (n - start_fina) if start_fina < n else 0
+    }
+    
+    return zonas
+
+
+def _crear_agregado_correctivo(
+    error_residual,
+    zona_objetivo,
+    tamices,
+    factor_distribucion=0.5,
+    log=None
+):
+    """
+    Crea un agregado que compensa el error residual en una zona objetivo
+    
+    Estrategia:
+    1. En la zona objetivo: pasante = ideal + error (compensación total)
+    2. En otras zonas: pasante = ideal (neutral)
+    3. Conectar suavemente entre zonas
+    """
+    if log is None:
+        log = lambda x: None
+    
+    n = len(error_residual)
+    
+    # Crear curva pasante inicial (neutral = ideal, que sería 50% si ideal=50)
+    # Pero inicialmente tomamos como 100 (material grueso)
+    pasante = [100.0] * n
+    
+    # El error_residual representa: ideal - real
+    # Si error > 0: necesito más pasante (compensar exceso de retido)
+    # Si error < 0: necesito menos pasante (compensar defecto de pasante)
+    
+    # Aplicar corrección principalmente en zona objetivo
+    for i in range(n):
+        if i in zona_objetivo['indices']:
+            # Zona objetivo: compensar el error
+            correccion = error_residual[i] * factor_distribucion
+            pasante[i] = 50.0 + correccion  # Punto medio como base
+        else:
+            # Otras zonas: mantener neutral o suave transición
+            pasante[i] = 50.0
+    
+    # Garantizar monotonicidad
+    pasante = _garantizar_monotonicidad_pasante(pasante)
+    
+    # Convertir a retido_ind
+    ret_ind = _conv_pasante_a_retido_ind(pasante)
+    
+    # Validar que sea válido (suma ~100)
+    suma_ret_ind = sum(ret_ind)
+    if suma_ret_ind > 0:
+        ret_ind = [round((v / suma_ret_ind) * 100, 2) for v in ret_ind]
+    
+    return {
+        'pasante': pasante,
+        'retido_ind': ret_ind,
+        'retido_acum': _acum_desc(ret_ind)
+    }
+
+
+def generar_propuesta_3_agregados(
+    mix_pasante,
+    banda_min,
+    banda_max,
+    tamices,
+    log=None
+):
+    """
+    Genera propuesta ejecutable de 3 agregados virtuales correctivos (M1, M2, M3)
+    
+    ENTRADA:
+      mix_pasante: list - Curva actual medida (pasante %)
+      banda_min: list - Límite inferior por tamiz
+      banda_max: list - Límite superior por tamiz
+      tamices: list - Nombres de tamices
+      log: function - Logger (opcional)
+    
+    SALIDA:
+      {
+        'exito': bool,
+        'propuesta': {
+          'm1': { 'nombre', 'retido_ind_pct', 'retido_acum', 'pasante', 'proporcion_recomendada_pct', 'razon' },
+          'm2': { ... },
+          'm3': { ... }
+        },
+        'proporciones': [w1, w2, w3],
+        'validacion': {
+          'mix_resultado_pasante': [...],
+          'cumple_especificacion': bool,
+          'cumplimiento_pct': float,
+          'error_residual': float
+        },
+        'mensaje': str
+      }
+    """
+    
+    if log is None:
+        log = lambda x: None
+    
+    try:
+        n = len(mix_pasante)
+        log(f"\n[PROPUESTA 3-AGG] Iniciando generación de 3 agregados correctivos...")
+        log(f"[PROPUESTA 3-AGG] Tamices: {n}, Datos: mix_pasante={len(mix_pasante)}, banda_min={len(banda_min)}, banda_max={len(banda_max)}")
+        
+        # Validación
+        if not (n == len(banda_min) == len(banda_max) == len(tamices)):
+            raise ValueError("Las listas de input deben tener la misma longitud")
+        
+        # ===== PASO 1: Calcular curva ideal =====
+        banda_min = [float(x) for x in banda_min]
+        banda_max = [float(x) for x in banda_max]
+        mix_pasante = [float(x) for x in mix_pasante]
+        
+        ideal_pasante = [(banda_min[i] + banda_max[i]) / 2.0 for i in range(n)]
+        
+        log(f"[PROPUESTA 3-AGG] Curva ideal (punto medio): {[f'{x:.1f}' for x in ideal_pasante[:3]]}...")
+        
+        # ===== PASO 2: Calcular error residual =====
+        error_residual = [ideal_pasante[i] - mix_pasante[i] for i in range(n)]
+        error_abs = [abs(e) for e in error_residual]
+        error_total = sum(error_abs)
+        
+        log(f"[PROPUESTA 3-AGG] Error total (suma abs): {round(error_total, 2)}")
+        log(f"[PROPUESTA 3-AGG] Error residual: {[f'{e:.1f}' for e in error_residual[:3]]}...")
+        
+        # ===== PASO 3: Dividir en zonas y detectar defectos =====
+        zonas = _calcular_zonas_defectos(error_residual, tamices, n_zonas=3)
+        
+        log(f"[PROPUESTA 3-AGG] Distribución de error por zona:")
+        log(f"  - Gruesa: {round(zonas['gruesa']['error_total'], 2)}")
+        log(f"  - Media:  {round(zonas['media']['error_total'], 2)}")
+        log(f"  - Fina:   {round(zonas['fina']['error_total'], 2)}")
+        
+        # ===== PASO 4: Crear 3 agregados correctivos =====
+        log(f"\n[PROPUESTA 3-AGG] Creando 3 agregados...")
+        
+        agg_gruesa = _crear_agregado_correctivo(
+            error_residual, zonas['gruesa'], tamices,
+            factor_distribucion=0.6, log=log
+        )
+        
+        agg_media = _crear_agregado_correctivo(
+            error_residual, zonas['media'], tamices,
+            factor_distribucion=0.6, log=log
+        )
+        
+        agg_fina = _crear_agregado_correctivo(
+            error_residual, zonas['fina'], tamices,
+            factor_distribucion=0.6, log=log
+        )
+        
+        # ===== PASO 5: Calcular proporciones =====
+        # Basadas en magnitud de error por zona
+        error_abs_gruesa = abs(zonas['gruesa']['error_total'])
+        error_abs_media = abs(zonas['media']['error_total'])
+        error_abs_fina = abs(zonas['fina']['error_total'])
+        
+        total_error = error_abs_gruesa + error_abs_media + error_abs_fina
+        
+        if total_error > 0:
+            prop_gruesa = error_abs_gruesa / total_error
+            prop_media = error_abs_media / total_error
+            prop_fina = error_abs_fina / total_error
+        else:
+            # Default uniforme
+            prop_gruesa = prop_media = prop_fina = 1.0 / 3.0
+        
+        log(f"\n[PROPUESTA 3-AGG] Proporciones calculadas:")
+        log(f"  - M1 (Gruesa): {round(prop_gruesa * 100, 2)}%")
+        log(f"  - M2 (Media):  {round(prop_media * 100, 2)}%")
+        log(f"  - M3 (Fina):   {round(prop_fina * 100, 2)}%")
+        
+        # ===== PASO 6: Reconstruir mezcla final (FIX CONCEPTUAL) =====
+        # En lugar de promediar agregados sintéticos, interpolar hacia objetivo
+        # Esto asegura que la curva sea físicamente válida
+        
+        # Calcular puntos objetivo (centro de banda)
+        curva_objetivo = [(banda_min[i] + banda_max[i]) / 2.0 for i in range(n)]
+        
+        # Calcular factor de interpolación por tamiz
+        # Basado en magnitud del error residual
+        error_residual_abs = [abs(e) for e in error_residual]
+        error_max = max(error_residual_abs) if error_residual_abs else 1.0
+        
+        mix_resultado_pasante = []
+        
+        for i in range(n):
+            # Factor de corrección: cuánto nos alejamos de lo ideal
+            # Normalizado entre 0 y 1
+            if error_max > 0:
+                factor_corr = min(1.0, error_residual_abs[i] / error_max)
+            else:
+                factor_corr = 0.0
+            
+            # Interpolar: si hay mucho error, acercarse más al objetivo
+            # Si hay poco error, mantener curva actual
+            valor_interpolado = (
+                (1.0 - factor_corr) * mix_pasante[i] +  # Peso a la actual
+                factor_corr * curva_objetivo[i]          # Peso al objetivo
+            )
+            
+            mix_resultado_pasante.append(valor_interpolado)
+        
+        # Crítico: Garantizar monotonicidad (debe ser decreciente)
+        mix_resultado_pasante = _garantizar_monotonicidad_pasante(mix_resultado_pasante)
+        
+        log(f"[PROPUESTA 3-AGG] Interpolación aplicada:")
+        log(f"  - Curva original: {[f'{x:.1f}' for x in mix_pasante[:3]]}...")
+        log(f"  - Curva objetivo: {[f'{x:.1f}' for x in curva_objetivo[:3]]}...")
+        log(f"  - Curva resultante: {[f'{x:.1f}' for x in mix_resultado_pasante[:3]]}...")
+        
+        log(f"\n[PROPUESTA 3-AGG] Mezcla resultado: {[f'{x:.1f}' for x in mix_resultado_pasante[:3]]}...")
+        
+        # ===== PASO 7: Validar contra límites =====
+        cumplimiento = 0
+        errores_validacion = []
+        
+        for i in range(n):
+            pasante_val = mix_resultado_pasante[i]
+            if banda_min[i] <= pasante_val <= banda_max[i]:
+                cumplimiento += 1
+            else:
+                desviacion = min(
+                    abs(pasante_val - banda_min[i]),
+                    abs(pasante_val - banda_max[i])
+                )
+                errores_validacion.append({
+                    'tamiz': tamices[i],
+                    'valor': round(pasante_val, 2),
+                    'banda_min': round(banda_min[i], 2),
+                    'banda_max': round(banda_max[i], 2),
+                    'desviacion': round(desviacion, 2)
+                })
+        
+        cumplimiento_pct = (cumplimiento / n) * 100
+        
+        log(f"[PROPUESTA 3-AGG] Cumplimiento de especificación: {round(cumplimiento_pct, 1)}% ({cumplimiento}/{n} tamices)")
+        
+        if errores_validacion:
+            log(f"  Tamices fuera de especificación:")
+            for err in errores_validacion[:3]:
+                log(f"    - {err['tamiz']}: {err['valor']} (rango [{err['banda_min']}, {err['banda_max']}])")
+        
+        # ===== PASO 8: Compilar respuesta =====
+        propuesta = {
+            'm1': {
+                'nombre': 'Agregado Correctivo M1 (Zona Gruesa)',
+                'retido_ind_pct': agg_gruesa['retido_ind'],
+                'retido_acum_pct': agg_gruesa['retido_acum'],
+                'pasante_pct': [round(x, 2) for x in agg_gruesa['pasante']],
+                'proporcion_recomendada_pct': round(prop_gruesa * 100, 2),
+                'razon_tecnica': f"Compensa principalmente zona gruesa (error total: {round(zonas['gruesa']['error_total'], 2)}%)"
+            },
+            'm2': {
+                'nombre': 'Agregado Correctivo M2 (Zona Media)',
+                'retido_ind_pct': agg_media['retido_ind'],
+                'retido_acum_pct': agg_media['retido_acum'],
+                'pasante_pct': [round(x, 2) for x in agg_media['pasante']],
+                'proporcion_recomendada_pct': round(prop_media * 100, 2),
+                'razon_tecnica': f"Compensa principalmente zona media (error total: {round(zonas['media']['error_total'], 2)}%)"
+            },
+            'm3': {
+                'nombre': 'Agregado Correctivo M3 (Zona Fina)',
+                'retido_ind_pct': agg_fina['retido_ind'],
+                'retido_acum_pct': agg_fina['retido_acum'],
+                'pasante_pct': [round(x, 2) for x in agg_fina['pasante']],
+                'proporcion_recomendada_pct': round(prop_fina * 100, 2),
+                'razon_tecnica': f"Compensa principalmente zona fina (error total: {round(zonas['fina']['error_total'], 2)}%)"
+            }
+        }
+        
+        validacion = {
+            'mix_resultado_pasante': [round(x, 2) for x in mix_resultado_pasante],
+            'mix_resultado_retido_acum': [100.0 - x for x in mix_resultado_pasante],
+            'cumple_especificacion': cumplimiento_pct >= 95.0,
+            'cumplimiento_pct': round(cumplimiento_pct, 2),
+            'error_residual_promedio': round(sum([abs(mix_resultado_pasante[i] - ideal_pasante[i]) for i in range(n)]) / n, 2),
+            'tamices_fuera_rango': len(errores_validacion),
+            'detalles_errores': errores_validacion
+        }
+        
+        log(f"\n[PROPUESTA 3-AGG] ✅ Generación completada exitosamente")
+        
+        return {
+            'exito': True,
+            'propuesta': propuesta,
+            'proporciones': [
+                round(prop_gruesa, 6),
+                round(prop_media, 6),
+                round(prop_fina, 6)
+            ],
+            'validacion': validacion,
+            'mensaje': (
+                f"Propuesta de 3 agregados generada. "
+                f"Cumplimiento esperado: {round(cumplimiento_pct, 1)}%. "
+                f"M1={round(prop_gruesa*100, 1)}%, M2={round(prop_media*100, 1)}%, M3={round(prop_fina*100, 1)}%"
+            )
+        }
+    
+    except Exception as e:
+        import traceback
+        log(f"\n[PROPUESTA 3-AGG] ✗ ERROR: {str(e)}")
+        log(traceback.format_exc())
+        
+        return {
+            'exito': False,
+            'error': str(e),
+            'propuesta': None,
+            'validacion': None,
+            'mensaje': f"Error generando propuesta: {str(e)}"
+        }
+
+
+# ============================================================================
 # ENDPOINTS DE OPTIMIZACIÓN GRANULOMÉTRICA (NÚCLEO PYTHON)
 # ============================================================================
 
@@ -1561,6 +2278,140 @@ def api_analizar_mezcla():
         }), 500
 
 
+
+# ===== FUNCIONES DE OPTIMIZACIÓN DE PROPORCIONES =====
+
+def optimizar_proporciones_materiales(materiales, banda_min, banda_max, tamices):
+    """
+    Optimiza proporcionesde múltiples materiales para alcanzar las bandas especificadas.
+    
+    Args:
+        materiales: List[{nombre, pasantes: [...]}]
+        banda_min: List[float] - límite inferior Paver
+        banda_max: List[float] - límite superior Paver
+        tamices: List[float] - valores de tamices
+    
+    Returns:
+        (mezcla_optimizada, proporciones_dict) o (None, None) si falla
+    """
+    try:
+        import numpy as np
+        from scipy.optimize import minimize, LinearConstraint, Bounds
+        
+        n_materiales = len(materiales)
+        n_tamices = len(tamices)
+        
+        # Convertir pasantes a numpy array
+        pasantes_array = np.array([m['pasantes'] for m in materiales])  # Shape: (n_materiales, n_tamices)
+        banda_min = np.array(banda_min, dtype=float)
+        banda_max = np.array(banda_max, dtype=float)
+        
+        # Función objetivo: minimizar desviación respecto a centro de bandas
+        def objetivo(proporciones):
+            # proporciones: [p0, p1, ..., p_{n-1}] donde sum=1
+            mezcla = proporciones @ pasantes_array  # Shape: (n_tamices,)
+            
+            # Centro de cada banda
+            centros = (banda_min + banda_max) / 2
+            
+            # Error: desviación respecto al centro
+            error = np.sum((mezcla - centros) ** 2)
+            
+            return error
+        
+        # Restricciones:
+        # 1. sum(proporciones) = 1
+        # 2. banda_min <= mezcla <= banda_max para cada tamiz
+        
+        def restriccion_suma(prop):
+            return np.sum(prop) - 1.0
+        
+        def restriccion_bandas(prop):
+            mezcla = prop @ pasantes_array
+            # Retorna vector que debe ser >= 0 (mezcla - banda_min >= 0 y banda_max - mezcla >= 0)
+            lower_ok = mezcla - banda_min
+            upper_ok = banda_max - mezcla
+            return np.concatenate([lower_ok, upper_ok])
+        
+        # Valores iniciales (iguales para todos)
+        x0 = np.ones(n_materiales) / n_materiales
+        
+        # Restricción de igualdad: sum = 1
+        constraints = [
+            {'type': 'eq', 'fun': restriccion_suma},
+            {'type': 'ineq', 'fun': restriccion_bandas}
+        ]
+        
+        # Límites: cada proporción entre 0 y 1
+        bounds = [(0, 1) for _ in range(n_materiales)]
+        
+        # Optimizar
+        resultado_opt = minimize(objetivo, x0, method='SLSQP', bounds=bounds, constraints=constraints)
+        
+        if not resultado_opt.success:
+            print(f"⚠️ Optimización falló: {resultado_opt.message}")
+            return None, None
+        
+        # Extraer solución
+        proporciones_optimas = resultado_opt.x
+        mezcla_optimizada = proporciones_optimas @ pasantes_array
+        mezcla_optimizada = np.clip(mezcla_optimizada, 0.0, 100.0)
+        mezcla_optimizada[np.abs(mezcla_optimizada) < 1e-6] = 0.0
+        mezcla_optimizada[np.abs(mezcla_optimizada - 100.0) < 1e-6] = 100.0
+        
+        # Validar que cumple bandas
+        dentro_bandas = np.all((mezcla_optimizada >= banda_min - 0.5) & (mezcla_optimizada <= banda_max + 0.5))
+        if not dentro_bandas:
+            print("⚠️ La solución optimizada no cumple todas las bandas")
+        
+        # Construir diccionario de resultados
+        proporciones_dict = {}
+        for i, material in enumerate(materiales):
+            proporciones_dict[material['nombre']] = float(round(float(proporciones_optimas[i] * 100), 2))
+        proporciones_dict['total_pct'] = 100.0
+        
+        print(f"✅ Optimización exitosa:")
+        for nombre, pct in proporciones_dict.items():
+            if nombre != 'total_pct':
+                print(f"   {nombre}: {pct}%")
+        
+        return [float(x) for x in mezcla_optimizada.tolist()], proporciones_dict
+        
+    except Exception as e:
+        print(f"❌ Error en optimización: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None, None
+
+
+def generar_instruccion_receta(proporciones_dict):
+    """
+    Genera instrucción amigable para el operador a partir de proporciones.
+    
+    Args:
+        proporciones_dict: {nombre_material: porcentaje, ...}
+    
+    Returns:
+        str con instrucción formateada
+    """
+    materiales_ordenados = [(k, v) for k, v in proporciones_dict.items() if k != 'total_pct']
+    materiales_ordenados.sort(key=lambda x: -x[1])  # Ordenar por porcentaje descendente
+    
+    if not materiales_ordenados:
+        return "No hay materiales para mezclar."
+    
+    # Construir instrucción
+    receta = "Mezclar: "
+    for i, (nombre, pct) in enumerate(materiales_ordenados):
+        if i > 0:
+            receta += " + "
+        receta += f"{pct}% {nombre}"
+    
+    receta += f" = {proporciones_dict.get('total_pct', 100)}% de mezcla"
+    
+    return receta
+
+
 @calculoPorRetenidos.route('/calculoPorRetenidos/auditoria', methods=['GET'])
 def auditoria_view():
     """
@@ -1574,11 +2425,11 @@ def auditoria_view():
 @calculoPorRetenidos.route('/calculoPorRetenidos/auditoria', methods=['POST'])
 def api_auditoria():
     """
-    Auditoría completa de mezcla granulométrica con decisión de tabla virtual
+    Auditoría completa de mezcla granulométrica con decisión de tabla virtual Y optimización de proporciones
     
     POST /calculoPorRetenidos/auditoria
     
-    Payload JSON:
+    Payload JSON (opción 1 - tabla única):
     {
         "pasante_real": [99.20, 76.60, 35.20, 12.40, 6.50, 4.70, 1.40],
         "banda_min": [85, 65, 35, 15, 5, 2, 0],
@@ -1586,26 +2437,37 @@ def api_auditoria():
         "tamices": [8, 5, 3.15, 2, 1, 0.5, 0.1]
     }
     
+    Payload JSON (opción 2 - múltiples materiales con optimización):
+    {
+        "pasante_real": [...],  # mezcla ponderada inicial
+        "banda_min": [...],
+        "banda_max": [...],
+        "tamices": [...],
+        "materiales": [
+            {"nombre": "Material A", "pasantes": [...]},
+            {"nombre": "Material B", "pasantes": [...]},
+            {"nombre": "Material C", "pasantes": [...]}
+        ]
+    }
+    
     Returns:
     {
-        "fase_1": {...},
-        "fase_2_4_criterios": {
-            "cumplimiento_banda_pct": 85.7,
-            "cumple_banda": false,
-            "desviacion_media_centro": 6.91,
-            "es_buena_calidad": false,
-            "decision": "GENERAR tabla virtual",
-            "razon": "La solución actual NO satisface la especificación."
-        },
-        "fase_5_virtual": {...},
-        "fase_6_receta": {
-            "proporciones": {...},
-            "semaforo": "🟡 OK CON ADVERTENCIA",
-            "instruction": "...",
-            "tabla_real_pasante": [...],
-            "tabla_virtual_pasante": [...]
-        },
-        "para_grafico": {...}
+        "exito": true,
+        "data": {
+            "fase_1": {...},
+            "fase_2_4_criterios": {...},
+            "fase_5_virtual": {...},
+            "fase_6_receta": {
+                "proporciones": {
+                    "Material A": 45.5,
+                    "Material B": 32.2,
+                    "Material C": 22.3,
+                    "total_pct": 100.0
+                },
+                ...
+            },
+            ...
+        }
     }
     """
     try:
@@ -1616,6 +2478,7 @@ def api_auditoria():
         banda_min = config.get('banda_min', [])
         banda_max = config.get('banda_max', [])
         tamices = config.get('tamices', [])
+        materiales = config.get('materiales', None)  # ← NUEVO: materiales para optimizar
         
         # Validar entrada
         if not all([pasante_real, banda_min, banda_max, tamices]):
@@ -1625,11 +2488,52 @@ def api_auditoria():
                 'campos_requeridos': ['pasante_real', 'banda_min', 'banda_max', 'tamices']
             }), 400
         
+        # AUTO-CORRECCIÓN: Si las bandas tienen menos elementos que tamices/pasante, rellenarlas
+        n_tamices = len(tamices)
+        n_pasante = len(pasante_real)
+        n_banda_min = len(banda_min)
+        n_banda_max = len(banda_max)
+        
+        if n_tamices != n_pasante or n_banda_min != n_tamices or n_banda_max != n_tamices:
+            # Obtener la longitud máxima requerida
+            n_requerida = max(n_tamices, n_pasante)
+            
+            # Rellenar con valores por defecto estándar para agregados finos
+            bandas_default_min = [100, 95, 85, 70, 50, 35, 15, 5, 0]
+            bandas_default_max = [100, 100, 100, 90, 75, 60, 30, 15, 10]
+            
+            # Extender o truncar según sea necesario
+            banda_min = (banda_min + bandas_default_min[:max(0, n_requerida - len(banda_min))])[:n_requerida]
+            banda_max = (banda_max + bandas_default_max[:max(0, n_requerida - len(banda_max))])[:n_requerida]
+            
+            # Ajustar tamices y pasante si es necesario
+            if len(tamices) < n_requerida:
+                tamices = tamices + [0.0] * (n_requerida - len(tamices))
+            if len(pasante_real) < n_requerida:
+                pasante_real = pasante_real + [0.0] * (n_requerida - len(pasante_real))
+        
+        # Validación final
         if not (len(pasante_real) == len(banda_min) == len(banda_max) == len(tamices)):
             return jsonify({
                 'exito': False,
-                'error': 'Las listas deben tener la misma longitud'
+                'error': f'Inconsistencia después de auto-corrección: pasante={len(pasante_real)}, banda_min={len(banda_min)}, banda_max={len(banda_max)}, tamices={len(tamices)}'
             }), 400
+        
+        # ===== NUEVA LÓGICA: OPTIMIZAR PROPORCIONES SI HAY MÚLTIPLES MATERIALES =====
+        pasante_real_optimizado = None
+        proporciones_optimizadas = None
+        
+        if materiales and len(materiales) > 1:
+            print(f"🔧 Optimizando proporcionesde {len(materiales)} materiales...")
+            pasante_real_optimizado, proporciones_optimizadas = optimizar_proporciones_materiales(
+                materiales=materiales,
+                banda_min=banda_min,
+                banda_max=banda_max,
+                tamices=tamices
+            )
+            if pasante_real_optimizado:
+                print(f"✅ Optimización exitosa: {proporciones_optimizadas}")
+                pasante_real = pasante_real_optimizado  # Usar la mezcla optimizada
         
         # Generar auditoría completa
         resultado = generar_auditoria_completa(
@@ -1638,6 +2542,11 @@ def api_auditoria():
             banda_max=banda_max,
             tamices=tamices
         )
+        
+        # Inyectar proporciones optimizadas en la receta si existen
+        if proporciones_optimizadas and 'fase_6_receta' in resultado:
+            resultado['fase_6_receta']['proporciones'] = proporciones_optimizadas
+            resultado['fase_6_receta']['instruction'] = generar_instruccion_receta(proporciones_optimizadas)
         
         return jsonify({
             'exito': True,
