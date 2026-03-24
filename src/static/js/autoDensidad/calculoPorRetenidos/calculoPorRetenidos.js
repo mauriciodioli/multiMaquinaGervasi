@@ -1129,8 +1129,21 @@ document.getElementById('btnCalcularConsumo')?.addEventListener('click', ()=>{
 function abrirAuditoriaDesdeModal() {
   try {
     // 1. Obtener la tabla visible en el modal
-    const tituloWeighted = Array.from(document.querySelectorAll('.mini-title'))
-      .find(el => el.textContent.includes('Weighted granulometry'));
+    const weightedTitles = new Set([
+      typeof I18N !== 'undefined' ? I18N.t('sim.retido_tabla1_titulo') : '',
+      'Weighted granulometry two aggregates',
+      'Granulometría ponderada dos agregados',
+      'Granulometria ponderata due aggregati',
+      'Granulometria ponderada dois agregados',
+      'Granulometria ważona dwa agregaty'
+    ].filter(Boolean).map(text => text.trim()));
+
+    let tituloWeighted = Array.from(document.querySelectorAll('.mini-title'))
+      .find(el => weightedTitles.has((el.textContent || '').trim()));
+
+    if (!tituloWeighted) {
+      tituloWeighted = document.querySelector('.mini-card .mini-title');
+    }
     
     if (!tituloWeighted) {
       alert('No se encontró la tabla de granulometría ponderada. Asegúrate de haber calculado los retenidos primero.');

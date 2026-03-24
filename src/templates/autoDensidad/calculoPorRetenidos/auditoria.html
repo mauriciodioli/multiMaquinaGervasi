@@ -537,23 +537,35 @@
             
             return pasantes;
         }
+
+        function pasantesARetidos(pasantes) {
+            const retidos = [];
+
+            for (let i = 0; i < pasantes.length - 1; i++) {
+                retidos[i] = pasantes[i] - pasantes[i + 1];
+            }
+            retidos[pasantes.length - 1] = pasantes[pasantes.length - 1];
+
+            return retidos;
+        }
         
         /**
-         * Construye mezcla ponderada a partir de múltiples tablas con retidos
+         * Construye curva inicial desde datos crudos y conserva materiales para optimización
          * @param {Array} tablas - Array de {nombre, filas: [{tamiz, porcentaje}]}
          * @returns {Object} {pasante_real, tamices, nombre, materiales: [{nombre, pasantes}, ...]}
          */
         function construirMezclaDesdeMultiples(tablas) {
             if (!Array.isArray(tablas) || tablas.length === 0) return null;
             
-            console.log(`📊 Construyendo mezcla ponderada de ${tablas.length} materiales...`);
+            console.log(`📊 Construyendo curva inicial cruda de ${tablas.length} materiales...`);
             
             // Extraer tamices (deben ser iguales en todas)
             const tamices = tablas[0].filas.map(f => parseFloat(f.tamiz));
             console.log(`   Tamices: [${tamices.join(', ')}]`);
             
-            // PASO 1: Procesar cada material (normalizar retidos, convertir a pasantes)
+            // PASO 1: Procesar cada material y reconstruir la resultante cruda
             const materialesProcesados = [];
+            const retidosCrudosResultantes = new Array(tamices.length).fill(0);
             tablas.forEach((tabla, idx) => {
                 const filas = tabla.filas || [];
                 const valores = filas.map(f => parseFloat(f.porcentaje));
@@ -566,25 +578,22 @@
                 // Si detectó pasantes, revertir a retidos
                 if (formato === 'pasantes') {
                     console.log(`     → Revirtiendo pasantes a retidos`);
-                    retidos = [];
-                    for (let i = 0; i < valores.length - 1; i++) {
-                        retidos[i] = valores[i] - valores[i + 1];
-                    }
-                    retidos[valores.length - 1] = valores[valores.length - 1];
+                    retidos = pasantesARetidos(valores);
+                }
+
+                for (let i = 0; i < retidos.length; i++) {
+                    retidosCrudosResultantes[i] += retidos[i] || 0;
                 }
                 
-                // NORMALIZAR retidos a suma = 100
+                // Mantener materiales normalizados para la optimización posterior
                 const sumaRetidos = retidos.reduce((a, b) => a + b, 0);
-                const retidosNormalizados = retidos.map(r => (r / sumaRetidos) * 100);
+                const retidosNormalizados = sumaRetidos > 0
+                    ? retidos.map(r => (r / sumaRetidos) * 100)
+                    : retidos.map(() => 0);
                 console.log(`     Retidos normalizados (suma=${sumaRetidos.toFixed(1)}%): [${retidosNormalizados.map(r => r.toFixed(2)).join(', ')}]`);
                 
                 // Convertir retidos normalizados a pasantes
-                const pasantes = [];
-                let acum = 0;
-                for (let i = retidosNormalizados.length - 1; i >= 0; i--) {
-                    acum += retidosNormalizados[i];
-                    pasantes[i] = 100 - acum;
-                }
+                const pasantes = retidosAPassantes(retidosNormalizados);
                 console.log(`     Pasantes: [${pasantes.map(p => p.toFixed(1)).join(', ')}]`);
                 
                 materialesProcesados.push({
@@ -593,20 +602,18 @@
                     peso: 1.0 / tablas.length
                 });
             });
-            
-            // PASO 2: Promediar los PASANTES
-            const mezcla_pasantes = new Array(tamices.length).fill(0);
-            materialesProcesados.forEach(mat => {
-                console.log(`   Ponderando ${mat.nombre} (peso=${mat.peso.toFixed(3)})`);
-                for (let i = 0; i < mat.pasantes.length; i++) {
-                    mezcla_pasantes[i] += mat.pasantes[i] * mat.peso;
-                }
-            });
-            
-            console.log(`   Mezcla pasantes ponderada: [${mezcla_pasantes.map(p => p.toFixed(1)).join(', ')}]`);
+
+            const sumaRetidosCrudos = retidosCrudosResultantes.reduce((a, b) => a + b, 0);
+            const retidosResultantesNormalizados = sumaRetidosCrudos > 0
+                ? retidosCrudosResultantes.map(r => (r / sumaRetidosCrudos) * 100)
+                : retidosCrudosResultantes.map(() => 0);
+            const pasantesCrudosResultantes = retidosAPassantes(retidosResultantesNormalizados);
+
+            console.log(`   Retidos crudos resultantes: [${retidosCrudosResultantes.map(r => r.toFixed(1)).join(', ')}]`);
+            console.log(`   Resultante cruda normalizada localStorage: [${pasantesCrudosResultantes.map(p => p.toFixed(1)).join(', ')}]`);
             
             return {
-                pasante_real: mezcla_pasantes,
+                pasante_real: pasantesCrudosResultantes,
                 tamices: tamices,
                 nombre: `Mezcla ${tablas.map(t => t.nombre).join(' + ')}`,
                 materiales: materialesProcesados  // ← NUEVO: retornar materiales originales
@@ -804,7 +811,12 @@
             const fase5 = datos.fase_5_virtual;
             const fase6 = datos.fase_6_receta;
             const grafico = datos.para_grafico;
+            const meta = datos.meta || {};
             const proporciones = fase6.proporciones;
+            const optimizacionAplicada = Boolean(meta.optimizacion_aplicada);
+            const pasanteEntradaOriginal = Array.isArray(grafico.pasante_entrada_original)
+                ? grafico.pasante_entrada_original
+                : (entrada && Array.isArray(entrada.pasante_real) ? entrada.pasante_real : null);
             const esModoMateriales = !proporciones.hasOwnProperty('tabla_real_pct') && 
                                      proporciones.total_pct === 100.0;
 
@@ -849,6 +861,31 @@
                     fase6.instruction
                 )
                 : fase6.instruction;
+            const resumenEntradaOriginal = (() => {
+                if (!optimizacionAplicada || !Array.isArray(pasanteEntradaOriginal) || pasanteEntradaOriginal.length !== grafico.tamices.length) {
+                    return '';
+                }
+
+                const cumplEntrada = pasanteEntradaOriginal.reduce((acc, valor, index) => {
+                    const dentro = valor >= grafico.banda_min[index] && valor <= grafico.banda_max[index];
+                    return acc + (dentro ? 1 : 0);
+                }, 0);
+
+                return `
+                    <div style="margin-top: 16px; padding: 14px 16px; border: 1px solid #d6dee6; border-radius: 10px; background: #f4f7fa; color: #274c77;">
+                        <strong>${tAuditoria('optimization_applied_title', 'Lectura correcta del resultado')}</strong><br>
+                        ${fmtAuditoria(
+                            'optimization_applied_body',
+                            {
+                                inputCount: cumplEntrada,
+                                total: grafico.tamices.length,
+                                optimizedCount: fase1.cumpl_count
+                            },
+                            `La entrada original estaba en ${cumplEntrada}/${grafico.tamices.length} tamices dentro de banda. El estado mostrado arriba corresponde a la receta optimizada, que queda en ${fase1.cumpl_count}/${grafico.tamices.length}.`
+                        )}
+                    </div>
+                `;
+            })();
             
             let html = '';
 
@@ -878,6 +915,8 @@
                         </div>
                     </div>
             `;
+
+                    html += resumenEntradaOriginal;
 
             if (esModoMateriales) {
                 html += `
@@ -1284,51 +1323,72 @@
             
             // Invertir tamices para mostrar de menor a mayor en el eje X
             const labels = datos.tamices.slice().reverse().map(t => `${t} mm`);
+            const datasets = [];
+            const pasanteEntradaOriginal = Array.isArray(datos.pasante_entrada_original)
+                ? datos.pasante_entrada_original
+                : (entrada && Array.isArray(entrada.pasante_real) ? entrada.pasante_real : null);
+
+            if (Array.isArray(pasanteEntradaOriginal) && pasanteEntradaOriginal.length === datos.tamices.length) {
+                datasets.push({
+                    label: tAuditoria('chart_initial_input', 'ANTES · Datos crudos desde localStorage'),
+                    data: pasanteEntradaOriginal.slice().reverse(),
+                    borderColor: '#d97706',
+                    backgroundColor: 'rgba(217, 119, 6, 0.12)',
+                    borderWidth: 4,
+                    borderDash: [10, 5],
+                    pointRadius: 5,
+                    pointBackgroundColor: '#d97706',
+                    fill: false,
+                    tension: 0.2
+                });
+            }
+
+            datasets.push(
+                {
+                    label: tAuditoria('chart_mix_result', 'DESPUÉS · Resultado calculado'),
+                    data: datos.pasante_real.slice().reverse(),
+                    borderColor: '#0066cc',
+                    backgroundColor: 'rgba(0, 102, 204, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#0066cc',
+                    tension: 0.3
+                },
+                {
+                    label: tAuditoria('chart_virtual_output', 'Tabla Virtual (Salida)'),
+                    data: datos.pasante_virtual.slice().reverse(),
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#dc3545',
+                    tension: 0.3
+                },
+                {
+                    label: tAuditoria('chart_band_min', 'Banda Min'),
+                    data: datos.banda_min.slice().reverse(),
+                    borderColor: '#28a745',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.3
+                },
+                {
+                    label: tAuditoria('chart_band_max', 'Banda Max'),
+                    data: datos.banda_max.slice().reverse(),
+                    borderColor: '#ffc107',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.3
+                }
+            );
             
             instanciaChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [
-                        {
-                            label: tAuditoria('chart_mix_result', 'Mezcla Resultante'),
-                            data: datos.pasante_real.slice().reverse(),
-                            borderColor: '#0066cc',
-                            backgroundColor: 'rgba(0, 102, 204, 0.1)',
-                            borderWidth: 2,
-                            pointRadius: 5,
-                            pointBackgroundColor: '#0066cc',
-                            tension: 0.3
-                        },
-                        {
-                            label: tAuditoria('chart_virtual_output', 'Tabla Virtual (Salida)'),
-                            data: datos.pasante_virtual.slice().reverse(),
-                            borderColor: '#dc3545',
-                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                            borderWidth: 2,
-                            pointRadius: 5,
-                            pointBackgroundColor: '#dc3545',
-                            tension: 0.3
-                        },
-                        {
-                            label: tAuditoria('chart_band_min', 'Banda Min'),
-                            data: datos.banda_min.slice().reverse(),
-                            borderColor: '#28a745',
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            fill: false,
-                            tension: 0.3
-                        },
-                        {
-                            label: tAuditoria('chart_band_max', 'Banda Max'),
-                            data: datos.banda_max.slice().reverse(),
-                            borderColor: '#ffc107',
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            fill: false,
-                            tension: 0.3
-                        }
-                    ]
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,

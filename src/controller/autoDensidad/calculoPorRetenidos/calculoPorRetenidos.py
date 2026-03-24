@@ -2520,6 +2520,8 @@ def api_auditoria():
             }), 400
         
         # ===== NUEVA LÓGICA: OPTIMIZAR PROPORCIONES SI HAY MÚLTIPLES MATERIALES =====
+        pasante_entrada_original = [float(x) for x in pasante_real]
+        pasante_auditado = [float(x) for x in pasante_real]
         pasante_real_optimizado = None
         proporciones_optimizadas = None
         
@@ -2533,20 +2535,30 @@ def api_auditoria():
             )
             if pasante_real_optimizado:
                 print(f"✅ Optimización exitosa: {proporciones_optimizadas}")
-                pasante_real = pasante_real_optimizado  # Usar la mezcla optimizada
+                pasante_auditado = [float(x) for x in pasante_real_optimizado]
         
         # Generar auditoría completa
         resultado = generar_auditoria_completa(
-            pasante_real=pasante_real,
+            pasante_real=pasante_auditado,
             banda_min=banda_min,
             banda_max=banda_max,
             tamices=tamices
         )
+
+        resultado['meta'] = {
+            'optimizacion_aplicada': bool(pasante_real_optimizado),
+            'pasante_entrada_original': pasante_entrada_original,
+            'pasante_auditado': pasante_auditado,
+        }
+        if 'para_grafico' in resultado:
+            resultado['para_grafico']['pasante_entrada_original'] = pasante_entrada_original
+            resultado['para_grafico']['pasante_auditado'] = pasante_auditado
         
         # Inyectar proporciones optimizadas en la receta si existen
         if proporciones_optimizadas and 'fase_6_receta' in resultado:
             resultado['fase_6_receta']['proporciones'] = proporciones_optimizadas
             resultado['fase_6_receta']['instruction'] = generar_instruccion_receta(proporciones_optimizadas)
+            resultado['fase_6_receta']['tabla_entrada_pasante'] = pasante_entrada_original
         
         return jsonify({
             'exito': True,
