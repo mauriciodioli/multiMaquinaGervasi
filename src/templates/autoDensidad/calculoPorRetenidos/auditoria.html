@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auditoría de Mezcla Granulométrica</title>
+    <script src="/static/js/i18n.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -428,15 +429,15 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔬 Auditoría de Mezcla Granulométrica</h1>
-        <p class="subtitle">Evaluación de cumplimiento de banda y decisión de tabla virtual dirigida</p>
+        <h1 data-i18n="auditoria.page_header">🔬 Auditoría de Mezcla Granulométrica</h1>
+        <p class="subtitle" data-i18n="auditoria.page_subtitle">Evaluación de cumplimiento de banda y decisión de tabla virtual dirigida</p>
         
         <!-- Sección de carga de datos -->
         <div class="carga-datos">
-            <h3>Cargar datos desde archivo JSON o ingreso manual</h3>
+            <h3 data-i18n="auditoria.load_section_title">Cargar datos desde archivo JSON o ingreso manual</h3>
             <textarea id="jsonInput" style="width:100%; height:100px; margin: 10px 0; padding: 10px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px;" placeholder='{"pasante_real": [...], "banda_min": [...], "banda_max": [...], "tamices": [...]}'></textarea>
-            <button onclick="cargarDatos()">📤 Cargar JSON</button>
-            <button onclick="usarEjemplo()">📋 Usar ejemplo</button>
+            <button onclick="cargarDatos()" data-i18n="auditoria.load_json_btn">📤 Cargar JSON</button>
+            <button onclick="usarEjemplo()" data-i18n="auditoria.use_example_btn">📋 Usar ejemplo</button>
         </div>
         
         <!-- Resultado -->
@@ -448,6 +449,37 @@
         let instanciaChart = null; // Rastrear instancia de Chart.js para destruir antes de recrear
         let instanciaErrorChart = null; // Gráfico de error por tamiz
         let instanciaDesviacionChart = null; // Gráfico de desviación
+
+        function tAuditoria(key, fallback = '') {
+            if (typeof I18N !== 'undefined' && I18N && typeof I18N.t === 'function') {
+                const value = I18N.t(`auditoria.${key}`);
+                if (value && value !== `[auditoria.${key}]`) return value;
+            }
+            return fallback || key;
+        }
+
+        function fmtAuditoria(key, replacements = {}, fallback = '') {
+            let text = tAuditoria(key, fallback);
+            Object.entries(replacements).forEach(([name, value]) => {
+                text = text.replaceAll(`{${name}}`, value);
+            });
+            return text;
+        }
+
+        function applyAuditoriaTranslations() {
+            const lang = (typeof I18N !== 'undefined' && I18N && typeof I18N.getLang === 'function')
+                ? I18N.getLang()
+                : (localStorage.getItem('lang') || 'es');
+            document.documentElement.lang = lang;
+            document.title = tAuditoria('page_title', 'Auditoría de Mezcla Granulométrica');
+            const input = document.getElementById('jsonInput');
+            if (input) {
+                input.placeholder = tAuditoria('json_placeholder', '{"pasante_real": [...], "banda_min": [...], "banda_max": [...], "tamices": [...]}');
+            }
+            if (typeof I18N !== 'undefined' && I18N && typeof I18N.applyTranslations === 'function') {
+                I18N.applyTranslations(document);
+            }
+        }
         
         // ============ FUNCIONES DE SOPORTE PARA CONVERSIÓN ============
         
@@ -733,13 +765,13 @@
                 const datos = JSON.parse(jsonText);
                 ejecutarAuditoria(datos);
             } catch (e) {
-                mostrarError('Error al parsear JSON: ' + e.message);
+                mostrarError(`${tAuditoria('parse_json_error', 'Error al parsear JSON')}: ${e.message}`);
             }
         }
         
         function ejecutarAuditoria(datos) {
             const resultadoDiv = document.getElementById('resultado');
-            resultadoDiv.innerHTML = '<div class="loading">⏳ Ejecutando auditoría...</div>';
+            resultadoDiv.innerHTML = `<div class="loading">⏳ ${tAuditoria('loading', 'Ejecutando auditoría...')}</div>`;
             
             fetch('/calculoPorRetenidos/auditoria', {
                 method: 'POST',
@@ -757,13 +789,13 @@
                 }
             })
             .catch(error => {
-                mostrarError('Error de conexión: ' + error.message);
+                mostrarError(`${tAuditoria('connection_error', 'Error de conexión')}: ${error.message}`);
             });
         }
         
         function mostrarError(mensaje) {
             document.getElementById('resultado').innerHTML = 
-                `<div class="error-box"><strong>❌ Error:</strong> ${mensaje}</div>`;
+                `<div class="error-box"><strong>${tAuditoria('generic_error', '❌ Error:')}</strong> ${mensaje}</div>`;
         }
         
         function mostrarResultado(datos, entrada) {
@@ -782,48 +814,74 @@
                     .sort((a, b) => b[1] - a[1])
                 : [];
 
-            const estadoOperacion = criterios.cumple_banda ? 'RECETA LIBERADA' : 'REVISAR EN LABORATORIO';
+            const estadoOperacion = criterios.cumple_banda
+                ? tAuditoria('operator_status_released', 'RECETA LIBERADA')
+                : tAuditoria('operator_status_lab', 'REVISAR EN LABORATORIO');
             const accionOperacion = criterios.cumple_banda
-                ? 'Trabajar con la receta indicada y mantener la relación de carga durante la producción.'
-                : 'No liberar esta mezcla a planta. Ajustar la combinación en laboratorio antes de producir.';
+                ? tAuditoria('operator_action_produce_desc', 'Trabajar con la receta indicada y mantener la relación de carga durante la producción.')
+                : tAuditoria('operator_action_stop_desc', 'No liberar esta mezcla a planta. Ajustar la combinación en laboratorio antes de producir.');
             const calidadOperacion = criterios.es_buena_calidad
-                ? 'Calidad granulométrica estable.'
-                : 'La mezcla cumple banda, pero conviene vigilar estabilidad y repetir control.';
+                ? tAuditoria('quality_text_stable', 'Calidad granulométrica estable.')
+                : tAuditoria('quality_text_watch', 'La mezcla cumple banda, pero conviene vigilar estabilidad y repetir control.');
+            const calidadPorcentaje = Math.max(0, 100 - criterios.desviacion_media_centro);
+            const calidadPorcentajeTexto = `${calidadPorcentaje.toFixed(2)}%`;
+            const calidadDetalle = fmtAuditoria(
+                'quality_inverted_explanation',
+                { value: criterios.desviacion_media_centro.toFixed(2) },
+                `Desvío medio al centro: ${criterios.desviacion_media_centro.toFixed(2)}%. Mientras más cerca de 100%, mejor.`
+            );
             const semaforoClase = criterios.cumple_banda
                 ? (criterios.es_buena_calidad ? '' : 'warning')
                 : 'error';
+            const estadoFase1 = fase1.cumplimiento_pct >= 100
+                ? tAuditoria('phase1_state_perfect', 'PERFECTO')
+                : tAuditoria('phase1_state_partial', 'PARCIAL');
+            const textoDecision = criterios.cumple_banda
+                ? tAuditoria('decision_no_virtual', 'NO GENERAR tabla virtual')
+                : tAuditoria('decision_generate_virtual', 'GENERAR tabla virtual');
+            const razonDecision = criterios.cumple_banda
+                ? tAuditoria('decision_reason_ok', 'La solución actual ya satisface la especificación.')
+                : tAuditoria('decision_reason_fail', 'La solución actual NO satisface la especificación.');
+            const instruccionOperador = esModoMateriales
+                ? fmtAuditoria(
+                    'operator_instruction_recipe',
+                    { recipe: materialesOrdenados.map(([nombre, pct]) => `${pct.toFixed(2)}% ${nombre}`).join(' + ') },
+                    fase6.instruction
+                )
+                : fase6.instruction;
             
             let html = '';
 
             html += `
                 <div class="operator-panel">
                     <div class="operator-title">
-                        <h2>Operación de Planta</h2>
+                        <h2>${tAuditoria('operator_title', 'Operación de Planta')}</h2>
                         <div class="status-pill ${semaforoClase}">${estadoOperacion}</div>
                     </div>
-                    <div class="instruccion">${fase6.instruction}</div>
+                    <div class="instruccion">${instruccionOperador}</div>
                     <div class="ops-grid">
                         <div class="ops-card">
-                            <h3>Acción</h3>
-                            <div class="ops-main-value">${criterios.cumple_banda ? 'PRODUCIR' : 'DETENER'}</div>
+                            <h3>${tAuditoria('action_label', 'Acción')}</h3>
+                            <div class="ops-main-value">${criterios.cumple_banda ? tAuditoria('action_produce', 'PRODUCIR') : tAuditoria('action_stop', 'DETENER')}</div>
                             <p>${accionOperacion}</p>
                         </div>
                         <div class="ops-card">
-                            <h3>Cumplimiento</h3>
+                            <h3>${tAuditoria('compliance_label', 'Cumplimiento')}</h3>
                             <div class="ops-main-value">${fase1.cumplimiento_pct}%</div>
-                            <p>${fase1.cumpl_count} de ${fase1.n_tamices} puntos de control dentro de banda.</p>
+                            <p>${fmtAuditoria('compliance_points_text', { count: fase1.cumpl_count, total: fase1.n_tamices }, `${fase1.cumpl_count} de ${fase1.n_tamices} puntos de control dentro de banda.`)}</p>
                         </div>
                         <div class="ops-card">
-                            <h3>Calidad</h3>
-                            <div class="ops-main-value">${criterios.desviacion_media_centro.toFixed(2)}%</div>
+                            <h3>${tAuditoria('quality_label', 'Calidad')}</h3>
+                            <div class="ops-main-value">${calidadPorcentajeTexto}</div>
                             <p>${calidadOperacion}</p>
+                            <p>${calidadDetalle}</p>
                         </div>
                     </div>
             `;
 
             if (esModoMateriales) {
                 html += `
-                    <h3 style="margin-top: 22px; color: #184e77;">Receta de carga</h3>
+                    <h3 style="margin-top: 22px; color: #184e77;">${tAuditoria('recipe_title', 'Receta de carga')}</h3>
                     <div class="recipe-strip">
                 `;
 
@@ -840,25 +898,25 @@
                     </div>
                     <div class="ops-grid">
                         <div class="ops-card">
-                            <h3>Base operativa</h3>
-                            <p>Tomar la receta sobre una base de 100 partes de carga. Mantener la misma relación entre materiales durante todo el turno.</p>
+                            <h3>${tAuditoria('operational_base_title', 'Base operativa')}</h3>
+                            <p>${tAuditoria('operational_base_text', 'Tomar la receta sobre una base de 100 partes de carga. Mantener la misma relación entre materiales durante todo el turno.')}</p>
                         </div>
                         <div class="ops-card">
-                            <h3>Orden sugerido</h3>
+                            <h3>${tAuditoria('suggested_order_title', 'Orden sugerido')}</h3>
                             <ul>${materialesOrdenados.map(([nombre, pct]) => `<li>${nombre}: ${pct.toFixed(2)}%</li>`).join('')}</ul>
                         </div>
                     </div>
                 `;
             } else {
                 html += `
-                    <h3 style="margin-top: 22px; color: #184e77;">Configuración de mezcla</h3>
+                    <h3 style="margin-top: 22px; color: #184e77;">${tAuditoria('mix_configuration_title', 'Configuración de mezcla')}</h3>
                     <div class="recipe-strip">
                         <div class="recipe-item">
-                            <div class="material">Tabla Real</div>
+                            <div class="material">${tAuditoria('real_table', 'Tabla Real')}</div>
                             <div class="percent">${proporciones.tabla_real_pct.toFixed(1)}%</div>
                         </div>
                         <div class="recipe-item">
-                            <div class="material">Tabla Virtual</div>
+                            <div class="material">${tAuditoria('virtual_table', 'Tabla Virtual')}</div>
                             <div class="percent">${proporciones.tabla_virtual_pct.toFixed(1)}%</div>
                         </div>
                     </div>
@@ -868,7 +926,7 @@
             html += `
                     <div class="detail-toggle">
                         <button onclick="toggleAccordion(this)">
-                            <span>Ver detalle técnico de laboratorio</span>
+                            <span>${tAuditoria('technical_detail_toggle', 'Ver detalle técnico de laboratorio')}</span>
                             <span>▼</span>
                         </button>
                         <div class="detail-body">
@@ -880,48 +938,47 @@
             
             html += `
                 <div class="section">
-                    <h2>Fase 1️⃣ Evaluación Inicial</h2>
+                    <h2>${tAuditoria('phase1_title', 'Fase 1️⃣ Evaluación Inicial')}</h2>
                     <div class="criterio ok">
-                        <label>Cumplimiento de Banda</label>
-                        <span class="value">${fase1.cumpl_count}/${fase1.n_tamices} tamices (${fase1.cumplimiento_pct}%)</span>
+                        <label>${tAuditoria('band_compliance_label', 'Cumplimiento de Banda')}</label>
+                        <span class="value">${fase1.cumpl_count}/${fase1.n_tamices} ${tAuditoria('sieves_label', 'tamices')} (${fase1.cumplimiento_pct}%)</span>
                     </div>
                     <div class="criterio">
-                        <label>Error Total</label>
+                        <label>${tAuditoria('error_total_label', 'Error Total')}</label>
                         <span class="value">${fase1.error_total}%</span>
                     </div>
                     <div class="criterio">
-                        <label>Estado</label>
-                        <span class="value">${fase1.estado}</span>
+                        <label>${tAuditoria('state_label', 'Estado')}</label>
+                        <span class="value">${estadoFase1}</span>
                     </div>
                 </div>
 
                 <div class="section">
-                    <h2>Fase 2-4️⃣ Criterios de Decisión</h2>
+                    <h2>${tAuditoria('phase24_title', 'Fase 2-4️⃣ Criterios de Decisión')}</h2>
                     <div class="criterio ${cumpleEstilo}">
-                        <label>Criterio 1 - Cumplimiento de Banda (OBLIGATORIO)</label>
-                        <div><strong>${criterios.cumplimiento_banda_pct.toFixed(1)}%</strong> / 95.0% requerido</div>
+                        <label>${tAuditoria('criteria1_label', 'Criterio 1 - Cumplimiento de Banda (OBLIGATORIO)')}</label>
+                        <div><strong>${criterios.cumplimiento_banda_pct.toFixed(1)}%</strong> / ${tAuditoria('criteria1_required', '95.0% requerido')}</div>
                         <div style="margin-top: 5px; color: ${criterios.cumple_banda ? '#28a745' : '#dc3545'}; font-weight: bold;">
-                            ${criterios.cumple_banda ? '✓ CUMPLE' : '✗ NO CUMPLE'}
+                            ${criterios.cumple_banda ? tAuditoria('criteria_band_ok', '✓ CUMPLE') : tAuditoria('criteria_band_fail', '✗ NO CUMPLE')}
                         </div>
                     </div>
                     <div class="criterio ${calidadEstilo}">
-                        <label>Criterio 2 - Desviación del Centro (Calidad Opcional)</label>
-                        <div><strong>${criterios.desviacion_media_centro.toFixed(2)}%</strong> / ±5.5% ideal</div>
+                        <label>${tAuditoria('criteria2_label', 'Criterio 2 - Desviación del Centro (Calidad Opcional)')}</label>
+                        <div><strong>${criterios.desviacion_media_centro.toFixed(2)}%</strong> / ${tAuditoria('criteria2_ideal', '±5.5% ideal')}</div>
                         <div style="margin-top: 5px; color: ${criterios.es_buena_calidad ? '#28a745' : '#ff9800'}; font-weight: bold;">
-                            ${criterios.es_buena_calidad ? '✓ BUENA CALIDAD' : '⚠ CALIDAD MEJORA'}
+                            ${criterios.es_buena_calidad ? tAuditoria('criteria_quality_ok', '✓ BUENA CALIDAD') : tAuditoria('criteria_quality_warn', '⚠ CALIDAD MEJORA')}
                         </div>
                     </div>
                 </div>
             `;
             
             // Decisión
-            const decisionColor = criterios.cumple_banda ? '#28a745' : '#0066cc';
             const decisionEmoji = criterios.cumple_banda ? '✓' : '⚠';
             
             html += `
                 <div class="decision-box">
-                    <h3>${decisionEmoji} ${criterios.decision}</h3>
-                    <p>${criterios.razon}</p>
+                    <h3>${decisionEmoji} ${textoDecision}</h3>
+                    <p>${razonDecision}</p>
                 </div>
             `;
             
@@ -929,15 +986,15 @@
             if (fase5.generada) {
                 html += `
                     <div class="section">
-                        <h2>Fase 5️⃣ Tabla Virtual Generada</h2>
+                        <h2>${tAuditoria('phase5_title', 'Fase 5️⃣ Tabla Virtual Generada')}</h2>
                         <div class="criterio ${fase5.valida ? 'ok' : 'warning'}">
-                            <label>Cumplimiento con TV</label>
-                            <div><strong>${fase5.cumpl_count}/${fase1.n_tamices} tamices (${fase5.cumplimiento_pct}%)</strong></div>
+                            <label>${tAuditoria('phase5_compliance_label', 'Cumplimiento con TV')}</label>
+                            <div><strong>${fase5.cumpl_count}/${fase1.n_tamices} ${tAuditoria('sieves_label', 'tamices')} (${fase5.cumplimiento_pct}%)</strong></div>
                         </div>
                         <div class="criterio">
-                            <label>Mejoras Conseguidas</label>
-                            <div><strong>Cumplimiento: +${fase5.mejora_cumplimiento} tamiz${fase5.mejora_cumplimiento !== 1 ? 'es' : ''}</strong></div>
-                            <div><strong>Error reducido: ${fase5.mejora_error}%</strong></div>
+                            <label>${tAuditoria('phase5_improvements_label', 'Mejoras Conseguidas')}</label>
+                            <div><strong>${fmtAuditoria('phase5_improvement_compliance', { count: fase5.mejora_cumplimiento, unit: fase5.mejora_cumplimiento !== 1 ? tAuditoria('sieves_label', 'tamices') : tAuditoria('sieve_label', 'tamiz') }, `Cumplimiento: +${fase5.mejora_cumplimiento} tamices`)}</strong></div>
+                            <div><strong>${fmtAuditoria('phase5_improvement_error', { value: fase5.mejora_error }, `Error reducido: ${fase5.mejora_error}%`)}</strong></div>
                         </div>
                     </div>
                 `;
@@ -945,24 +1002,24 @@
 
             html += `
                 <div class="section">
-                    <h2>Curva de Referencia</h2>
+                    <h2>${tAuditoria('curve_reference_title', 'Curva de Referencia')}</h2>
                     <div class="grafico-container">
                         <canvas id="graficoComparacion"></canvas>
                     </div>
                 </div>
 
                 <div class="section">
-                    <h2>Tabla Detallada</h2>
+                    <h2>${tAuditoria('detailed_table_title', 'Tabla Detallada')}</h2>
                     
                     <table class="tabla-receta">
                         <thead>
                             <tr>
-                                <th>Tamiz (mm)</th>
-                                <th>Pasante Real</th>
-                                <th style="border-right: 2px solid #999;">Banda Min-Max</th>
-                                <th>Pasante Virtual</th>
-                                <th>Estado Real</th>
-                                <th>Estado Virtual</th>
+                                <th>${tAuditoria('sieve_mm', 'Tamiz (mm)')}</th>
+                                <th>${tAuditoria('passing_real', 'Pasante Real')}</th>
+                                <th style="border-right: 2px solid #999;">${tAuditoria('band_min_max', 'Banda Min-Max')}</th>
+                                <th>${tAuditoria('passing_virtual', 'Pasante Virtual')}</th>
+                                <th>${tAuditoria('state_real', 'Estado Real')}</th>
+                                <th>${tAuditoria('state_virtual', 'Estado Virtual')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -997,12 +1054,12 @@
                 
                 <!-- ACORDEÓN: ANÁLISIS DETALLADO DE ERRORES Y DESVIACIONES -->
                 <div class="section" style="margin-top: 30px;">
-                    <h2>📊 Análisis Detallado</h2>
+                    <h2>${tAuditoria('detailed_analysis_title', '📊 Análisis Detallado')}</h2>
                     
                     <!-- Acordeón 1: Error por Tamiz -->
                     <div class="accordion-item" style="border: 1px solid #ddd; border-radius: 6px; overflow: hidden; margin-bottom: 15px;">
                         <button class="accordion-header" onclick="toggleAccordion(this)" style="width: 100%; padding: 15px; background: #f8f9fa; border: none; text-align: left; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: #333;">
-                            <span>📈 Error por Tamiz</span>
+                            <span>${tAuditoria('error_by_sieve', '📈 Error por Tamiz')}</span>
                             <span style="font-size: 1.2em;">▼</span>
                         </button>
                         <div class="accordion-body" style="display: none; padding: 20px; background: white; border-top: 1px solid #ddd;">
@@ -1015,7 +1072,7 @@
                     <!-- Acordeón 2: Desviación vs Centro de Banda -->
                     <div class="accordion-item" style="border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
                         <button class="accordion-header" onclick="toggleAccordion(this)" style="width: 100%; padding: 15px; background: #f8f9fa; border: none; text-align: left; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: #333;">
-                            <span>📊 Desviación vs Centro de Banda</span>
+                            <span>${tAuditoria('deviation_vs_center', '📊 Desviación vs Centro de Banda')}</span>
                             <span style="font-size: 1.2em;">▼</span>
                         </button>
                         <div class="accordion-body" style="display: none; padding: 20px; background: white; border-top: 1px solid #ddd;">
@@ -1031,6 +1088,10 @@
             `;
             
             document.getElementById('resultado').innerHTML = html;
+
+            if (typeof I18N !== 'undefined' && I18N && typeof I18N.applyTranslations === 'function') {
+                I18N.applyTranslations(document.getElementById('resultado'));
+            }
             
             // Dibujar gráficos (esperar a que el DOM se actualice)
             setTimeout(() => {
@@ -1093,14 +1154,14 @@
                         labels: datos.tamices.slice().reverse().map(t => t + ' mm'),
                         datasets: [
                             {
-                                label: 'Error Real',
+                                label: tAuditoria('chart_error_real', 'Error Real'),
                                 data: errors_real.slice().reverse(),
                                 backgroundColor: '#0066cc',
                                 borderColor: '#003d99',
                                 borderWidth: 1
                             },
                             {
-                                label: 'Error Virtual',
+                                label: tAuditoria('chart_error_virtual', 'Error Virtual'),
                                 data: errors_virtual.slice().reverse(),
                                 backgroundColor: '#dc3545',
                                 borderColor: '#a02830',
@@ -1116,7 +1177,7 @@
                                 beginAtZero: true,
                                 title: {
                                     display: true,
-                                    text: 'Error (%)'
+                                    text: tAuditoria('chart_axis_error', 'Error (%)')
                                 }
                             }
                         },
@@ -1127,7 +1188,7 @@
                             },
                             title: {
                                 display: true,
-                                text: 'ERROR por Tamiz'
+                                text: tAuditoria('chart_title_error', 'ERROR por Tamiz')
                             }
                         }
                     }
@@ -1159,21 +1220,21 @@
                         labels: datos.tamices.slice().reverse().map(t => t + ' mm'),
                         datasets: [
                             {
-                                label: 'Real',
+                                label: tAuditoria('chart_deviation_real', 'Real'),
                                 data: desv_real.slice().reverse(),
                                 backgroundColor: '#0066cc',
                                 borderColor: '#003d99',
                                 borderWidth: 1
                             },
                             {
-                                label: 'Virtual',
+                                label: tAuditoria('chart_deviation_virtual', 'Virtual'),
                                 data: desv_virtual.slice().reverse(),
                                 backgroundColor: '#dc3545',
                                 borderColor: '#a02830',
                                 borderWidth: 1
                             },
                             {
-                                label: 'Límite ideal (±5.5%)',
+                                label: tAuditoria('chart_ideal_limit', 'Límite ideal (±5.5%)'),
                                 data: limite_ideal.slice().reverse(),
                                 borderColor: '#ffc107',
                                 backgroundColor: 'transparent',
@@ -1193,7 +1254,7 @@
                                 beginAtZero: true,
                                 title: {
                                     display: true,
-                                    text: 'Desviación (%)'
+                                    text: tAuditoria('chart_axis_deviation', 'Desviación (%)')
                                 }
                             }
                         },
@@ -1204,7 +1265,7 @@
                             },
                             title: {
                                 display: true,
-                                text: 'DESVIACIÓN vs Centro de Banda'
+                                text: tAuditoria('chart_title_deviation', 'DESVIACIÓN vs Centro de Banda')
                             }
                         }
                     }
@@ -1230,7 +1291,7 @@
                     labels: labels,
                     datasets: [
                         {
-                            label: 'Mezcla Resultante',
+                            label: tAuditoria('chart_mix_result', 'Mezcla Resultante'),
                             data: datos.pasante_real.slice().reverse(),
                             borderColor: '#0066cc',
                             backgroundColor: 'rgba(0, 102, 204, 0.1)',
@@ -1240,7 +1301,7 @@
                             tension: 0.3
                         },
                         {
-                            label: 'Tabla Virtual (Salida)',
+                            label: tAuditoria('chart_virtual_output', 'Tabla Virtual (Salida)'),
                             data: datos.pasante_virtual.slice().reverse(),
                             borderColor: '#dc3545',
                             backgroundColor: 'rgba(220, 53, 69, 0.1)',
@@ -1250,7 +1311,7 @@
                             tension: 0.3
                         },
                         {
-                            label: 'Banda Min',
+                            label: tAuditoria('chart_band_min', 'Banda Min'),
                             data: datos.banda_min.slice().reverse(),
                             borderColor: '#28a745',
                             borderWidth: 1,
@@ -1259,7 +1320,7 @@
                             tension: 0.3
                         },
                         {
-                            label: 'Banda Max',
+                            label: tAuditoria('chart_band_max', 'Banda Max'),
                             data: datos.banda_max.slice().reverse(),
                             borderColor: '#ffc107',
                             borderWidth: 1,
@@ -1279,7 +1340,7 @@
                         },
                         title: {
                             display: true,
-                            text: 'Comparación de Curvas Granulométricas'
+                            text: tAuditoria('chart_title_curves', 'Comparación de Curvas Granulométricas')
                         }
                     },
                     scales: {
@@ -1288,13 +1349,13 @@
                             max: 105,
                             title: {
                                 display: true,
-                                text: 'Pasante Acumulado (%)'
+                                text: tAuditoria('chart_axis_passing', 'Pasante Acumulado (%)')
                             }
                         },
                         x: {
                             title: {
                                 display: true,
-                                text: 'Tamiz (mm)'
+                                text: tAuditoria('chart_axis_sieve', 'Tamiz (mm)')
                             }
                         }
                     }
@@ -1304,6 +1365,7 @@
         
         // Cargar ejemplo al abrir la página
         window.addEventListener('load', () => {
+            applyAuditoriaTranslations();
             usarEjemplo();
         });
     </script>
