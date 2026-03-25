@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify, render_template,make_response, redirect
+from werkzeug.security import generate_password_hash
 
 from src.model.entidad_contexto import EntidadContexto, EntidadContextoSchema
 from src.model.mixFamiliari.usuario_entidad import UsuarioEntidad
@@ -66,7 +67,7 @@ def administracion_crud_usuario_crear_usuario():
         with get_db_session() as session:
             nuevo = Usuario(
                 correo_electronico=data.get('correo_electronico'),
-                password=data.get('password').encode('utf-8'),
+                password=generate_password_hash(data.get('password')),
                 roll=data.get('roll', 'regular'),
                 token=token,
                 refresh_token=refresh_token,

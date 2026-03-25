@@ -703,6 +703,9 @@ def get_textos_login(lang="es"):
             "recuperacion": "Recibimos una solicitud para restablecer tu contraseña.",
             "firma": "Si no fuiste vos, ignorá este mensaje. Si fuiste vos, continuá en",
             "entrar": "Iniciar sesión",
+            "no_encontrado": "El correo electrónico no está registrado.",
+            "inactivo": "Tu cuenta está inactiva. Verifica tu correo para activarla.",
+            "incorrecta": "La contraseña es incorrecta.",
             "criterios": {
                 "min": "Mínimo 8 caracteres",
                 "mayus": "Una letra mayúscula",
@@ -728,6 +731,9 @@ def get_textos_login(lang="es"):
             "recuperacion": "We received a request to reset your password.",
             "firma": "If it wasn't you, ignore this. If it was, continue on",
             "entrar": "Login",
+            "no_encontrado": "The email is not registered.",
+            "inactivo": "Your account is inactive. Check your email to activate it.",
+            "incorrecta": "The password is incorrect.",
             "criterios": {
                 "min": "At least 8 characters",
                 "mayus": "An uppercase letter",
@@ -754,6 +760,9 @@ def get_textos_login(lang="es"):
             "recuperacion": "Abbiamo ricevuto una richiesta per reimpostare la tua password.",
             "firma": "Se non sei stato tu, ignora questo messaggio. Altrimenti continua su",
             "entrar": "Accedi",
+            "no_encontrado": "L'email non è registrata.",
+            "inactivo": "Il tuo account è inattivo. Controlla la tua email per attivarlo.",
+            "incorrecta": "La password è errata.",
             "criterios": {
                 "min": "Almeno 8 caratteri",
                 "mayus": "Una lettera maiuscola",
@@ -779,6 +788,9 @@ def get_textos_login(lang="es"):
             "recuperacion": "Recebemos uma solicitação para redefinir sua senha.",
             "firma": "Se não foi você, ignore esta mensagem. Se foi, continue em",
             "entrar": "Entrar",
+            "no_encontrado": "O email não está registrado.",
+            "inactivo": "Sua conta está inativa. Verifique seu email para ativá-la.",
+            "incorrecta": "A senha está incorreta.",
             "criterios": {
                 "min": "Mínimo de 8 caracteres",
                 "mayus": "Uma letra maiúscula",
