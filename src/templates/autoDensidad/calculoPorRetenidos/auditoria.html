@@ -247,6 +247,36 @@
         .carga-datos button:hover {
             background: #0052a3;
         }
+
+        .report-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin: 0 0 18px;
+            flex-wrap: wrap;
+        }
+
+        .report-actions button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            background: #184e77;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .report-actions button:hover {
+            background: #123a59;
+        }
+
+        .report-actions .report-hint {
+            display: flex;
+            align-items: center;
+            color: #5b6670;
+            font-size: 13px;
+        }
         
         .loading {
             text-align: center;
@@ -416,6 +446,15 @@
             .container {
                 padding: 15px;
             }
+
+            .report-actions {
+                justify-content: stretch;
+            }
+
+            .report-actions button,
+            .report-actions .report-hint {
+                width: 100%;
+            }
             
             .proporciones {
                 grid-template-columns: 1fr;
@@ -423,6 +462,66 @@
             
             .grafico-container {
                 height: 300px;
+            }
+        }
+
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                max-width: none;
+                box-shadow: none;
+                border-radius: 0;
+                padding: 0;
+            }
+
+            .carga-datos,
+            .report-actions,
+            .detail-toggle button,
+            .accordion-header {
+                display: none !important;
+            }
+
+            .detail-body,
+            .accordion-body {
+                display: block !important;
+                padding-top: 16px;
+            }
+
+            .operator-panel,
+            .section,
+            .ops-card,
+            .recipe-item,
+            .criterio,
+            .grafico-container,
+            .accordion-item,
+            .detail-toggle,
+            .tabla-receta {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .grafico-container,
+            #graficoErrorTamiz,
+            #graficoDesviacion {
+                height: 280px !important;
+            }
+
+            h1 {
+                font-size: 20pt;
             }
         }
     </style>
@@ -890,6 +989,10 @@
             let html = '';
 
             html += `
+                <div class="report-actions">
+                    <div class="report-hint">${tAuditoria('export_pdf_helper', 'Genera un PDF desde el navegador con el informe visible y sus gráficos.')}</div>
+                    <button type="button" onclick="exportarReportePDF()">${tAuditoria('export_pdf_btn', '🖨️ Exportar PDF')}</button>
+                </div>
                 <div class="operator-panel">
                     <div class="operator-title">
                         <h2>${tAuditoria('operator_title', 'Operación de Planta')}</h2>
@@ -1148,6 +1251,77 @@
             body.style.display = isOpen ? 'none' : 'block';
             chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
             chevron.style.transition = 'transform 0.3s ease';
+        }
+
+        function expandirSeccionesParaImpresion() {
+            const cambios = [];
+            const selectors = ['#resultado .detail-toggle button', '#resultado .accordion-header'];
+
+            selectors.forEach((selector) => {
+                document.querySelectorAll(selector).forEach((button) => {
+                    const body = button.nextElementSibling;
+                    const chevron = button.querySelector('span:last-child');
+                    const estabaVisible = window.getComputedStyle(body).display !== 'none';
+
+                    cambios.push({
+                        body,
+                        chevron,
+                        estabaVisible,
+                        display: body.style.display,
+                        transform: chevron ? chevron.style.transform : ''
+                    });
+
+                    if (!estabaVisible) {
+                        body.style.display = 'block';
+                        if (chevron) {
+                            chevron.style.transform = 'rotate(180deg)';
+                        }
+                    }
+                });
+            });
+
+            return cambios;
+        }
+
+        function restaurarSeccionesDespuesDeImpresion(cambios) {
+            cambios.forEach(({ body, chevron, estabaVisible, display, transform }) => {
+                if (!estabaVisible) {
+                    body.style.display = display || 'none';
+                    if (chevron) {
+                        chevron.style.transform = transform || 'rotate(0deg)';
+                    }
+                }
+            });
+        }
+
+        function resizeChartsParaImpresion() {
+            [instanciaChart, instanciaErrorChart, instanciaDesviacionChart].forEach((chart) => {
+                if (chart && typeof chart.resize === 'function') {
+                    chart.resize();
+                    chart.update('none');
+                }
+            });
+        }
+
+        function exportarReportePDF() {
+            const resultado = document.getElementById('resultado');
+            if (!resultado || !resultado.innerHTML.trim()) {
+                mostrarError(tAuditoria('export_pdf_missing_report', 'Primero genera el informe de auditoría antes de exportarlo.'));
+                return;
+            }
+
+            const cambios = expandirSeccionesParaImpresion();
+            const onAfterPrint = () => {
+                restaurarSeccionesDespuesDeImpresion(cambios);
+                window.removeEventListener('afterprint', onAfterPrint);
+            };
+
+            window.addEventListener('afterprint', onAfterPrint);
+
+            window.setTimeout(() => {
+                resizeChartsParaImpresion();
+                window.print();
+            }, 250);
         }
         
         // Función para dibujar gráficos de análisis (Error y Desviación)
