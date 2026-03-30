@@ -257,7 +257,11 @@ function validarDatosCompletos(){
       // Si fue detectado como pasantes y falta poco (< 10%), probablemente sea el Fundo
       if (formato === 'pasantes' && faltanteValue < 10 && faltanteValue > 0) {
         const ultimoTamiz = filas.length > 0 ? filas[filas.length - 1].tRaw : '0.075';
-        sugerencia = `\n💡 SUGERENCIA: Parece que falta la fila del "Fundo" (últimas partículas).\nAgrege una fila con:\n  • Tamiz: "Fundo" (o < ${ultimoTamiz})\n  • Porcentaje: ${faltanteValue}%`;
+        sugerencia = {
+          tipo: 'fundo_missing',
+          ultimoTamiz: ultimoTamiz,
+          faltanteValue: faltanteValue
+        };
       }
       
       errores.push({
@@ -326,35 +330,28 @@ function validarDatosCompletos(){
  * 📢 MOSTRAR ERRORES DE VALIDACIÓN AL USUARIO
  */
 function mostrarErroresValidacion(errores){
-  const t = (key, fallback) => {
-    if (typeof I18N !== 'undefined') {
-      const translation = I18N.t(key);
-      // Si la traducción no se encuentra, retorna [key], entonces usar fallback
-      if (translation && !translation.startsWith('[')) {
-        return translation;
-      }
-    }
-    return fallback;
-  };
+  // Read translations from global DPIA_I18N (defined in dpia_i18n.js)
+  const lang = localStorage.getItem("lang") || "es";
+  const T = window.DPIA_I18N?.[lang] || window.DPIA_I18N?.["es"] || {};
   
-  const titulo = t('sim.val_titulo', '⚠️ Errores de Validación Detectados');
-  const descripcion = t('sim.val_descripcion', 'No se puede continuar con el cálculo. Corrija los errores indicados:');
-  const lblTabla = t('sim.val_retidos_incompletos', 'Tabla');
-  const lblRetidosSuma = t('sim.val_retidos_suma', 'Retidos suman');
-  const lblFalta = t('sim.val_retidos_falta', 'Falta');
-  const lblDatosIncompletos = t('sim.val_datos_incompletos', 'Datos incompletos');
-  const lblTamizIncorrecto = t('sim.val_tamiz_incorrecto', 'Tamiz Incorrecto');
-  const lblValorIngresado = t('sim.val_valor_ingresado', 'Valor ingresado');
-  const lblQuisoDecir = t('sim.val_quiso_decir', '¿Quiso decir');
-  const lblMm = t('sim.val_mm', 'mm?');
-  const lblTamicesDuplicados = t('sim.val_tamices_duplicados', 'Tamices Duplicados');
-  const lblValoresRepetidos = t('sim.val_valores_repetidos', 'Valores repetidos encontrados');
-  const lblPorcentajesFueraRango = t('sim.val_porcentajes_fuera_rango', 'Porcentajes fuera de rango');
-  const lblRangoInvalido = t('sim.val_rango_invalido', 'Los porcentajes deben estar entre 0% y 100%');
-  const lblValorNegativo = t('sim.val_valor_negativo', 'valor negativo');
-  const lblMayor100 = t('sim.val_mayor_100', 'mayor que 100%');
-  const lblSugerencia = t('sim.val_sugerencia', 'Corrija estos errores antes de continuar.');
-  const btnEntendido = t('sim.val_btn_entendido', 'Entendido, voy a corregir');
+  const titulo = T.validation_title || "⚠️ Errores de Validación Detectados";
+  const descripcion = T.validation_subtitle || "No se puede continuar con el cálculo. Corrija los errores indicados:";
+  const lblTabla = T.tabla || "Tabla";
+  const lblRetidosSuma = T.retidos_suman || "Retidos suman";
+  const lblFalta = T.falta || "Falta";
+  const lblDatosIncompletos = T.datos_incompletos || "Datos incompletos";
+  const lblTamizIncorrecto = T.tamiz_incorrecto || "Tamiz Incorrecto";
+  const lblValorIngresado = T.valor_ingresado || "Valor ingresado";
+  const lblQuisoDecir = T.quiso_decir || "¿Quiso decir";
+  const lblMm = T.mm || "mm?";
+  const lblTamicesDuplicados = T.tamices_duplicados || "Tamices Duplicados";
+  const lblValoresRepetidos = T.valores_repetidos || "Valores repetidos encontrados";
+  const lblPorcentajesFueraRango = T.porcentajes_fuera_rango || "Porcentajes fuera de rango";
+  const lblRangoInvalido = T.rango_invalido || "Los porcentajes deben estar entre 0% y 100%";
+  const lblValorNegativo = T.valor_negativo || "valor negativo";
+  const lblMayor100 = T.mayor_100 || "mayor que 100%";
+  const lblSugerencia = T.fix_errors || "Corrija estos errores antes de continuar.";
+  const btnEntendido = T.btn_entendido || "Entendido, voy a corregir";
   
   let html = `
     <div style="background:#ffebee; border:2px solid #c62828; border-radius:8px; padding:16px; margin:16px 0;">
@@ -385,9 +382,21 @@ function mostrarErroresValidacion(errores){
     } else if (error.tipo === 'RETIDOS_INCOMPLETOS') {
       let sugerenciaHtml = '';
       if (error.sugerencia) {
-        sugerenciaHtml = `<div style="margin-top:8px; padding:8px; background:#e8f5e9; border-radius:3px; border-left:3px solid #4caf50; font-size:0.9em; line-height:1.5;">
-          ${error.sugerencia.split('\n').map(line => `<div>${line}</div>`).join('')}
-        </div>`;
+        // If sugerencia is an object (structured data)
+        if (typeof error.sugerencia === 'object' && error.sugerencia.tipo === 'fundo_missing') {
+          const fundo_alt = T.fundo_alt ? T.fundo_alt.replace('{{mm}}', error.sugerencia.ultimoTamiz) : `(o < ${error.sugerencia.ultimoTamiz})`;
+          sugerenciaHtml = `<div style="margin-top:8px; padding:8px; background:#e8f5e9; border-radius:3px; border-left:3px solid #4caf50; font-size:0.9em; line-height:1.5;">
+            <div><strong>${T.sugerencia_fundo || '💡 SUGERENCIA: Parece que falta la fila del "Fundo" (últimas partículas).'}</strong></div>
+            <div>${T.agregar_fila || 'Agrege una fila con:'}</div>
+            <div>• ${T.tamiz_label || 'Tamiz'}: "Fundo" ${fundo_alt}</div>
+            <div>• ${T.porcentaje_label || 'Porcentaje'}: ${error.sugerencia.faltanteValue}%</div>
+          </div>`;
+        } else if (typeof error.sugerencia === 'string') {
+          // Backward compatibility: if sugerencia is a string, render as before
+          sugerenciaHtml = `<div style="margin-top:8px; padding:8px; background:#e8f5e9; border-radius:3px; border-left:3px solid #4caf50; font-size:0.9em; line-height:1.5;">
+            ${error.sugerencia.split('\n').map(line => `<div>${line}</div>`).join('')}
+          </div>`;
+        }
       }
       html += `
         <li style="background:#fff9c4; border-left:4px solid #fbc02d; padding:8px; margin:8px 0; border-radius:4px;">
