@@ -147,14 +147,24 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Completa ambos campos con números válidos.");
         return;
       }
+      
+      // ✅ VALIDACIÓN: Porcentajes entre 0 y 100%
+      if (porcentaje < 0 || porcentaje > 100) {
+        alert(`❌ El porcentaje debe estar entre 0% y 100%.\nValor ingresado: ${porcentaje}%`);
+        return;
+      }
+      
+      if (tamiz < 0) {
+        alert(`❌ El tamiz no puede ser negativo.\nValor ingresado: ${tamiz}`);
+        return;
+      }
 
       const tabla = document.getElementById("tabla").getElementsByTagName('tbody')[0];
       const fila = tabla.insertRow();
-      const btnLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
       fila.innerHTML = `
         <td contenteditable="true">${tamiz}</td>
         <td contenteditable="true">${porcentaje}</td>
-        <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnLabel}</button></td>
+        <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
         `;
 
 
@@ -227,14 +237,12 @@ function agregarMezcla() {
     mezclaDiv.setAttribute("data-mezcla-id", `mezcla-${mezclaId}`);
 
     const tamices = [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15];
-    const btnEliminarLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
-    const nuevoProductoLabel = typeof I18N !== 'undefined' ? I18N.t('sim.nuevo_producto') : 'Nuevo Producto';
 
     const filasHTML = tamices.map(t => `
         <tr>
             <td contenteditable="true">${t}</td>
             <td contenteditable="true"></td>
-            <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnEliminarLabel}</button></td>
+            <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
         </tr>
     `).join("");
 
@@ -244,8 +252,8 @@ function agregarMezcla() {
                 <h3>Aggregato</h3>
                 <button class="btn btn-outline-danger btn-sm" onclick="eliminarMezcla(this)">🗑 Rimuovere il aggregato</button>
             </div>
-            <h3>${nuevoProductoLabel}</h3>
-            <input type="text" value="${nuevoProductoLabel}" class="nombreProducto" data-original="${nuevoProductoLabel}">
+            <h3>Nuevo Producto</h3>
+            <input type="text" value="Nuevo Producto" class="nombreProducto" data-original="Nuevo Producto">
             <button class="btn btn-danger" onclick="agregarFilaMultiple(this)">Aggiungi Riga</button>
             <button class="btn btn-danger" onclick="agregarAgredadosPreCardados(this)">select precargados</button>
             <button class="btn btn-danger" onclick="agregarTablaAlocalStorage(this)">save</button>
@@ -262,11 +270,17 @@ function agregarMezcla() {
     `;
 
     container.appendChild(mezclaDiv);
+    
+    // Agregar validadores a las filas iniciales
+    mezclaDiv.querySelectorAll('tbody tr').forEach(fila => {
+      agregarValidadoresACeldas(fila);
+    });
 
     // 👇 lo incrementás al final para la próxima mezcla
     mezclaId++;
 }
 function agregarTablaAlocalStorage(btn) {
+    
     const mezclaEl = btn.closest(".mezcla");
     if (!mezclaEl) {
         console.error("❌ No encontré la mezcla del botón save");
@@ -439,9 +453,8 @@ function eliminarMezcla(boton) {
 
     document.cookie = `mezclas_guardadas=${encodeURIComponent(JSON.stringify(mezclas))}; path=/`;
 
-    // Mostrar notificación internacionalizada
-    const mensaje = typeof I18N !== 'undefined' ? I18N.t('sim.mezcla_eliminada').replace('{nombre}', nombre) : `🗑 Mezcla "${nombre}" eliminada completamente.`;
-    showToast(mensaje);
+    // Mostrar notificación
+    showToast(`🗑 Mezcla "${nombre}" eliminada completamente.`);
 }
 
 
@@ -471,14 +484,57 @@ function agregarFilaMultiple(btn) {
 
     // 3. crear la fila
     const fila = document.createElement("tr");
-    const btnLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
     fila.innerHTML = `
         <td contenteditable="true">0</td>
         <td contenteditable="true">0</td>
-        <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnLabel}</button></td>
+        <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
     `;
     tbody.appendChild(fila);
+    
+    // 4️⃣ AGREGAR VALIDACIÓN A LAS CELDAS CONTENTEDITABLE
+    agregarValidadoresACeldas(fila);
+    
     console.log("✅ Fila agregada a ESTA tabla");
+}
+
+// ✅ FUNCIÓN PARA VALIDAR CELDAS CON CONTENTEDITABLE
+function agregarValidadoresACeldas(fila) {
+  const celdas = fila.querySelectorAll('td[contenteditable="true"]');
+  
+  celdas.forEach((celda, idx) => {
+    celda.addEventListener('blur', function() {
+      const valor = parseFloat(this.textContent.trim());
+      
+      // Celda 0: Tamiz (debe ser positivo)
+      if (idx === 0) {
+        if (isNaN(valor) || valor < 0) {
+          this.style.backgroundColor = '#ffcccc';
+          this.title = idx === 0 ? '❌ Tamiz no puede ser negativo' : '';
+          console.warn('⚠️ Tamiz inválido:', valor);
+        } else {
+          this.style.backgroundColor = '';
+          this.title = '';
+        }
+      }
+      
+      // Celda 1: Porcentaje (debe estar entre 0-100%)
+      if (idx === 1) {
+        if (isNaN(valor) || valor < 0 || valor > 100) {
+          this.style.backgroundColor = '#ffcccc';
+          this.title = '❌ Porcentaje debe estar entre 0% y 100%';
+          console.warn('⚠️ Porcentaje inválido:', valor);
+        } else {
+          this.style.backgroundColor = '';
+          this.title = '';
+        }
+      }
+    });
+    
+    // Trigger inicial
+    celda.addEventListener('blur', function() {
+      this.dispatchEvent(new Event('blur', { bubbles: true }));
+    });
+  });
 }
 
 
@@ -960,8 +1016,7 @@ function generarGraficoProporciones(pesos, nombres) {
 
 
 function generarMezclaCorregida() {
-   // Helper única para i18n
-   const t = (key, fallback) => typeof I18N !== 'undefined' ? I18N.t(key) : fallback;
+
    
    // Prompt con traducciones
    const promptMsg = t('sim.factor_prompt_title', "Ingresar un número entre 0 y 1 (dejar vacío para usar 1):\n\n") + 
@@ -1307,7 +1362,6 @@ function cargarDatosPorDefecto() {
     const mezclaDiv = document.createElement("div");
     mezclaDiv.className = "mezcla";
 
-    const btnLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
     mezclaDiv.innerHTML = `
     <div class="contenedor-producto">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1326,7 +1380,7 @@ function cargarDatosPorDefecto() {
                 <tr>
                   <td contenteditable="true">${t}</td>
                   <td contenteditable="true">${m.porcentajes[i]}</td>
-                  <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnLabel}</button></td>
+                  <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
                 </tr>
               `).join("")}
             </tbody>
@@ -1684,12 +1738,11 @@ function getCookie(nombre) {
     const mezclaDiv = document.createElement("div");
     mezclaDiv.className = "mezcla";
 
-    const btnLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
     const filas = datos.tamices.map((t, i) => `
       <tr>
         <td contenteditable="true">${t}</td>
         <td contenteditable="true">${datos.reales[i]}</td>
-        <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnLabel}</button></td>
+        <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
       </tr>`).join("");
 
     const nombreVisible = nombres.find(n => n.toLowerCase().replace(/\s/g, "") === clave.toLowerCase()) || clave;

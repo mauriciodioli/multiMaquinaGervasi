@@ -55,6 +55,14 @@ formLogin.addEventListener("submit", async (e) => {
   const correo = document.getElementById("correo").value;
   const password = document.getElementById("password").value;
   const lang = document.getElementById("lang-select").value;
+  
+  // Mostrar spinner
+  const spinnerLogin = document.getElementById("spinner-login");
+  const spinnerText = document.getElementById("spinner-text");
+  spinnerLogin.style.display = "flex";
+  const t = I18N.dict.login[lang] || I18N.dict.login["es"];
+  spinnerText.textContent = t.iniciando_sesion || "Iniciando sesión...";
+  btnSubmit.disabled = true;
 
   try {
     const res = await fetch("/login_usuario/", {
@@ -70,8 +78,9 @@ formLogin.addEventListener("submit", async (e) => {
       localStorage.removeItem("bloqueo_hasta");
       localStorage.setItem("user_id", data.user_id);
       window.location.href = data.redireccion;
-    } else {
-      let intentos = parseInt(localStorage.getItem("intentos_fallidos") || "0") + 1;
+    } else {      // Ocultar spinner si hay error
+      spinnerLogin.style.display = "none";
+      btnSubmit.disabled = false;      let intentos = parseInt(localStorage.getItem("intentos_fallidos") || "0") + 1;
       localStorage.setItem("intentos_fallidos", intentos);
 
       if (intentos >= 5) {
@@ -94,6 +103,9 @@ formLogin.addEventListener("submit", async (e) => {
       }
     }
   } catch (error) {
+    // Ocultar spinner si hay error de conexión
+    spinnerLogin.style.display = "none";
+    btnSubmit.disabled = false;
     const lang = localStorage.getItem("lang") || "es";
     const t = I18N.dict.login[lang] || I18N.dict.login["es"];
     errorLogin.textContent = t.error_conexion || "Error de conexión. Intenta más tarde.";

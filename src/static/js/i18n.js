@@ -686,6 +686,7 @@ const I18N = (() => {
         segundos: "segundos.",
         error_conexion: "Error de conexión. Intenta más tarde.",
         bloqueo: "Demasiados intentos. Espera",
+        iniciando_sesion: "Iniciando sesión...",
         guardar_analisis_granulometrico: "Guardar análisis granulométrico"
       },
       en: {
@@ -704,6 +705,7 @@ const I18N = (() => {
         segundos: "seconds.",
         error_conexion: "Connection error. Try again later.",
         bloqueo: "Too many attempts. Wait",
+        iniciando_sesion: "Signing in...",
         guardar_analisis_granulometrico: "Save granulometric analysis"
       },
       it: {
@@ -722,6 +724,7 @@ const I18N = (() => {
         segundos: "secondi.",
         error_conexion: "Errore di connessione. Riprova più tardi.",
         bloqueo: "Troppi tentativi. Aspetta",
+        iniciando_sesion: "Accesso in corso...",
         guardar_analisis_granulometrico: "Salva analisi granulometrica"
       },
       pt: {
@@ -740,6 +743,7 @@ const I18N = (() => {
         segundos: "segundos.",
         error_conexion: "Erro de conexão. Tente novamente mais tarde.",
         bloqueo: "Muitas tentativas. Aguarde",
+        iniciando_sesion: "Entrando...",
         guardar_analisis_granulometrico: "Salvar análise granulométrica"
       },
       pl: {
@@ -758,6 +762,7 @@ const I18N = (() => {
         segundos: "sekund.",
         error_conexion: "Błąd połączenia. Spróbuj ponownie później.",
         bloqueo: "Za dużo prób. Poczekaj",
+        iniciando_sesion: "Logowanie w toku...",
         guardar_analisis_granulometrico: "Zapisz analizę granulometryczną"
       }
     },
@@ -1377,12 +1382,30 @@ const I18N = (() => {
   const SUP_LANGS = new Set(["es", "en", "it", "pt", "pl"]);
 
   function getLang() {
-    // El idioma de la app se toma desde localStorage.lang
+    // 1️⃣ Primero intenta leer desde localStorage
     let v = localStorage.getItem("lang") || "";
     if (SUP_LANGS.has(v)) return v;
 
-    // Default a español
+    // 2️⃣ Si no hay en localStorage, intenta leer desde cookies
+    const langFromCookie = getCookieValue("lang");
+    if (langFromCookie && SUP_LANGS.has(langFromCookie)) {
+      // Guardar en localStorage para futuras lecturas
+      localStorage.setItem("lang", langFromCookie);
+      return langFromCookie;
+    }
+
+    // 3️⃣ Default a español
     return "es";
+  }
+
+  // Función auxiliar para leer cookies
+  function getCookieValue(name) {
+    const cookies = document.cookie.split(";").map(c => c.trim());
+    for (const cookie of cookies) {
+      const [key, value] = cookie.split("=");
+      if (key === name) return decodeURIComponent(value);
+    }
+    return null;
   }
 
   // t("login.titulo") / t("registrarse.errores.correo") / t("sim.header") / t("verificar.titulo")

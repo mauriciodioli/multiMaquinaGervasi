@@ -120,6 +120,13 @@ function abrirProporcionesYCalcular(){
   // el modal llama a este callback y recién ahí disparamos el cálculo.
   abrirModalProporciones(() => {
     try {
+      // 🔍 VALIDACIONES ANTES DE CALCULAR
+      const errores = validarDatosCompletos();
+      if (errores.length > 0) {
+        mostrarErroresValidacion(errores);
+        return;  // No continuar si hay errores
+      }
+      
       calcularRetenidoBR();  // tu flujo actual (fetch + gráfico + modal resultado)
     } catch (e){
       console.error(e);
@@ -128,10 +135,340 @@ function abrirProporcionesYCalcular(){
   });
 }
 
+/**
+ * 🔍 VALIDAR INTEGRIDAD DE DATOS
+ * Verifica:
+ * 1. Que cada tabla tenga retidos que sumen 100%
+ * 2. Que los tamices sean consistentes (sin duplicados, valores correctos)
+ */
+function validarDatosCompletos(){
+  const errores = [];
+  const t = (key, fallback) => typeof I18N !== 'undefined' ? I18N.t(key) : fallback;
+  
+  // Función para detectar si los valores son pasantes o retidos
+  function detectarFormatoValores(valores) {
+    // Si la suma es cercana a 100 y los valores decrecen: probablemente pasantes
+    // Si la suma es cercana a 100 y los valores crecen: probablemente retidos
+    const suma = valores.reduce((a, b) => a + b, 0);
+    
+    // Si suma está cercana a 100, probablemente sean valores individuales correctos
+    if (Math.abs(suma - 100) < 2) {
+      // Verificar si decrecen (pasantes) o crecen inconsistentemente (retidos)
+      let decrece = true;
+      for (let i = 1; i < valores.length; i++) {
+        if (valores[i] > valores[i-1]) {
+          decrece = false;
+          break;
+        }
+      }
+      return decrece ? 'pasantes' : 'retidos';
+    }
+    
+    // Si suma es grande (como 343), son claramente pasantes
+    return suma > 100 ? 'pasantes' : 'retidos';
+  }
+  
+  // Función para convertir pasantes acumulados a retidos individuales
+  function pasantesARetidos(pasantes) {
+    const retidos = [];
+    retidos.push(100 - pasantes[0]); // Primer retido = 100 - pasante 1
+    for (let i = 1; i < pasantes.length; i++) {
+      retidos.push(pasantes[i-1] - pasantes[i]);
+    }
+    return retidos;
+  }
+  
+  // 1️⃣ VALIDAR RETIDOS POR TABLA
+  const mezclas = document.querySelectorAll('.mezcla');
+  
+  mezclas.forEach((mezcla, idx) => {
+    const nombre = (mezcla.querySelector('.nombreProducto')?.value || 'Sin nombre').trim();
+    
+    let sumaRetidos = 0;
+    const tamicesDetectados = [];
+    const porcentajesFueraDeRango = [];
+    
+    // Leer todos los valores primero para detectar formato
+    const valoresLei= [];
+    const filas = [];
+    
+    mezcla.querySelectorAll('tbody tr').forEach(tr => {
+      const tRaw = tr.cells[0]?.textContent?.trim();
+      const rRaw = tr.cells[1]?.textContent?.trim();
+      const tNum = parseFloat(tRaw);
+      const rNum = parseFloat(rRaw);
+      
+      if (!isNaN(tNum) && !isNaN(rNum)) {
+        valoresLei.push(rNum);
+        filas.push({ tRaw, rRaw, tNum, rNum });
+      }
+    });
+    
+    // Detectar si son pasantes o retidos
+    const formato = detectarFormatoValores(valoresLei);
+    let retidosConvertidos = valoresLei;
+    
+    if (formato === 'pasantes') {
+      console.log(`📊 Tabla "${nombre}": Detectado formato PASANTES. Convirtiendo a retidos...`);
+      retidosConvertidos = pasantesARetidos(valoresLei);
+      console.log(`   Retidos convertidos: [${retidosConvertidos.map(r => r.toFixed(2)).join(', ')}]`);
+    } else {
+      console.log(`📊 Tabla "${nombre}": Detectado formato RETIDOS.`);
+    }
+    
+    // Ahora validar los retidos
+    filas.forEach((fila, i) => {
+      let r = retidosConvertidos[i];
+      const tRaw = fila.tRaw;
+      const t = fila.tNum;
+      
+      if (!isNaN(r)) {
+        // ✅ VALIDACIÓN: Rango 0-100%
+        if (r < 0 || r > 100) {
+          porcentajesFueraDeRango.push({
+            tamiz: tRaw,
+            valor: r,
+            problema: r < 0 ? 'negativo' : 'mayor_100'
+          });
+        }
+        
+        if (r > 0) {
+          sumaRetidos += r;
+          tamicesDetectados.push({ valor: t, texto: tRaw });
+        }
+      }
+    });
+    
+    // Validar que no haya porcentajes fuera de rango
+    if (porcentajesFueraDeRango.length > 0) {
+      errores.push({
+        tabla: nombre,
+        tipo: 'PORCENTAJES_FUERA_RANGO',
+        valores: porcentajesFueraDeRango,
+        severidad: 'CRÍTICA'
+      });
+    }
+    
+    // Validar suma de retidos
+    if (Math.abs(sumaRetidos - 100) > 1.0) {
+      const faltanteValue = (100 - sumaRetidos).toFixed(2);
+      let sugerencia = '';
+      
+      // Si fue detectado como pasantes y falta poco (< 10%), probablemente sea el Fundo
+      if (formato === 'pasantes' && faltanteValue < 10 && faltanteValue > 0) {
+        const ultimoTamiz = filas.length > 0 ? filas[filas.length - 1].tRaw : '0.075';
+        sugerencia = `\n💡 SUGERENCIA: Parece que falta la fila del "Fundo" (últimas partículas).\nAgrege una fila con:\n  • Tamiz: "Fundo" (o < ${ultimoTamiz})\n  • Porcentaje: ${faltanteValue}%`;
+      }
+      
+      errores.push({
+        tabla: nombre,
+        tipo: 'RETIDOS_INCOMPLETOS',
+        suma: sumaRetidos.toFixed(2),
+        falta: faltanteValue,
+        sugerencia: sugerencia,
+        severidad: 'CRÍTICA'
+      });
+    }
+  });
+  
+  // 2️⃣ VALIDAR TAMICES Y DUPLICADOS POR TABLA
+  const TAMICES_VALIDOS = [12.5, 9.5, 6.3, 4.8, 2.4, 1.2, 0.6, 0.3, 0.15, 0.075];
+  
+  mezclas.forEach((mezcla, idx) => {
+    const nombre = (mezcla.querySelector('.nombreProducto')?.value || 'Sin nombre').trim();
+    const tamicesDeMezcla = [];
+    
+    mezcla.querySelectorAll('tbody tr').forEach(tr => {
+      const tRaw = tr.cells[0]?.textContent?.trim();
+      const t = parseFloat(tRaw);
+      
+      if (!isNaN(t)) {
+        tamicesDeMezcla.push({ valor: t, texto: tRaw });
+        
+        // Buscar valores sospechosos (e.g., 0.75 cuando debería ser 0.075)
+        if (!TAMICES_VALIDOS.includes(t)) {
+          const similares = TAMICES_VALIDOS.filter(v => 
+            Math.abs(v - t) < 0.5  // Diferencia <= 0.5 mm
+          );
+          
+          if (similares.length > 0) {
+            errores.push({
+              tipo: 'TAMIZ_INCONSISTENTE',
+              tabla: nombre,
+              valor: tRaw,
+              sugerencia: similares[0],
+              severidad: 'CRÍTICA'
+            });
+          }
+        }
+      }
+    });
+    
+    // Detectar duplicados DENTRO de esta mezcla
+    const tamicesDuplicados = tamicesDeMezcla
+      .map(t => t.valor)
+      .filter((v, i, arr) => arr.indexOf(v) !== i);
+    
+    if (tamicesDuplicados.length > 0) {
+      errores.push({
+        tipo: 'TAMICES_DUPLICADOS',
+        tabla: nombre,
+        valores: [...new Set(tamicesDuplicados)],
+        severidad: 'CRÍTICA'
+      });
+    }
+  });
+  
+  return errores;
+}
 
-
-
-
+/**
+ * 📢 MOSTRAR ERRORES DE VALIDACIÓN AL USUARIO
+ */
+function mostrarErroresValidacion(errores){
+  const t = (key, fallback) => {
+    if (typeof I18N !== 'undefined') {
+      const translation = I18N.t(key);
+      // Si la traducción no se encuentra, retorna [key], entonces usar fallback
+      if (translation && !translation.startsWith('[')) {
+        return translation;
+      }
+    }
+    return fallback;
+  };
+  
+  const titulo = t('sim.val_titulo', '⚠️ Errores de Validación Detectados');
+  const descripcion = t('sim.val_descripcion', 'No se puede continuar con el cálculo. Corrija los errores indicados:');
+  const lblTabla = t('sim.val_retidos_incompletos', 'Tabla');
+  const lblRetidosSuma = t('sim.val_retidos_suma', 'Retidos suman');
+  const lblFalta = t('sim.val_retidos_falta', 'Falta');
+  const lblDatosIncompletos = t('sim.val_datos_incompletos', 'Datos incompletos');
+  const lblTamizIncorrecto = t('sim.val_tamiz_incorrecto', 'Tamiz Incorrecto');
+  const lblValorIngresado = t('sim.val_valor_ingresado', 'Valor ingresado');
+  const lblQuisoDecir = t('sim.val_quiso_decir', '¿Quiso decir');
+  const lblMm = t('sim.val_mm', 'mm?');
+  const lblTamicesDuplicados = t('sim.val_tamices_duplicados', 'Tamices Duplicados');
+  const lblValoresRepetidos = t('sim.val_valores_repetidos', 'Valores repetidos encontrados');
+  const lblPorcentajesFueraRango = t('sim.val_porcentajes_fuera_rango', 'Porcentajes fuera de rango');
+  const lblRangoInvalido = t('sim.val_rango_invalido', 'Los porcentajes deben estar entre 0% y 100%');
+  const lblValorNegativo = t('sim.val_valor_negativo', 'valor negativo');
+  const lblMayor100 = t('sim.val_mayor_100', 'mayor que 100%');
+  const lblSugerencia = t('sim.val_sugerencia', 'Corrija estos errores antes de continuar.');
+  const btnEntendido = t('sim.val_btn_entendido', 'Entendido, voy a corregir');
+  
+  let html = `
+    <div style="background:#ffebee; border:2px solid #c62828; border-radius:8px; padding:16px; margin:16px 0;">
+      <h3 style="color:#c62828; margin-top:0;">
+        ${titulo}
+      </h3>
+      <p style="color:#666; font-size:14px;">
+        ${descripcion}
+      </p>
+      
+      <ul style="list-style:none; padding:0;">
+  `;
+  
+  errores.forEach(error => {
+    if (error.tipo === 'PORCENTAJES_FUERA_RANGO') {
+      const detalles = error.valores.map(v => 
+        `${v.problema === 'negativo' 
+          ? `❌ ${v.tamiz}mm: ${v.valor}% (${lblValorNegativo})` 
+          : `❌ ${v.tamiz}mm: ${v.valor}% (${lblMayor100})`}`
+      ).join('<br>');
+      html += `
+        <li style="background:#ffccbc; border-left:4px solid #d84315; padding:8px; margin:8px 0; border-radius:4px;">
+          <strong>🔴 ${error.tabla}: ${lblPorcentajesFueraRango}</strong><br>
+          ${detalles}<br>
+          <span style="color:#d32f2f; font-weight:bold;">${lblRangoInvalido}</span>
+        </li>
+      `;
+    } else if (error.tipo === 'RETIDOS_INCOMPLETOS') {
+      let sugerenciaHtml = '';
+      if (error.sugerencia) {
+        sugerenciaHtml = `<div style="margin-top:8px; padding:8px; background:#e8f5e9; border-radius:3px; border-left:3px solid #4caf50; font-size:0.9em; line-height:1.5;">
+          ${error.sugerencia.split('\n').map(line => `<div>${line}</div>`).join('')}
+        </div>`;
+      }
+      html += `
+        <li style="background:#fff9c4; border-left:4px solid #fbc02d; padding:8px; margin:8px 0; border-radius:4px;">
+          <strong>📊 ${lblTabla}: ${error.tabla}</strong><br>
+          ${lblRetidosSuma}: <strong>${error.suma}%</strong> (${lblFalta} ${error.falta}%)<br>
+          <span style="color:#d32f2f; font-weight:bold;">${lblDatosIncompletos}</span>
+          ${sugerenciaHtml}
+        </li>
+      `;
+    } else if (error.tipo === 'TAMIZ_INCONSISTENTE') {
+      html += `
+        <li style="background:#ffccbc; border-left:4px solid #d84315; padding:8px; margin:8px 0; border-radius:4px;">
+          <strong>🔍 ${error.tabla ? `${error.tabla} - ` : ''}${lblTamizIncorrecto}</strong><br>
+          ${lblValorIngresado}: <strong>${error.valor}</strong><br>
+          ${lblQuisoDecir}: <strong style="color:#1976d2;">${error.sugerencia} ${lblMm}</strong>?
+        </li>
+      `;
+    } else if (error.tipo === 'TAMICES_DUPLICADOS') {
+      html += `
+        <li style="background:#f3e5f5; border-left:4px solid #7b1fa2; padding:8px; margin:8px 0; border-radius:4px;">
+          <strong>🔄 ${error.tabla ? `${error.tabla} - ` : ''}${lblTamicesDuplicados}</strong><br>
+          ${lblValoresRepetidos}: <strong>${error.valores.join(', ')} ${lblMm}</strong>
+        </li>
+      `;
+    }
+  });
+  
+  html += `
+      </ul>
+      
+      <div style="background:#e3f2fd; padding:12px; border-radius:4px; margin-top:12px; border-left:4px solid #1976d2;">
+        <p style="color:#1976d2; margin:0; font-size:13px;">
+          💡 ${lblSugerencia}
+        </p>
+      </div>
+    </div>
+  `;
+  
+  // Mostrar modal
+  const modal = document.createElement('div');
+  modal.id = 'modalErroresValidacion';
+  modal.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    z-index: 10000;
+    padding: 24px;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+  `;
+  
+  modal.innerHTML = html + `
+    <div style="margin-top:16px;">
+      <button onclick="document.getElementById('modalErroresValidacion').remove(); document.getElementById('modalErroresOverlay').remove();" 
+              style="width:100%; padding:10px; background:#d32f2f; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">
+        ${btnEntendido}
+      </button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'modalErroresOverlay';
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+  `;
+  document.body.appendChild(overlay);
+}
 
 
 
