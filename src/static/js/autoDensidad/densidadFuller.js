@@ -203,7 +203,6 @@ function enviarDatos() {
     })
     .then(res => res.json())
     .then(data => {
-      debugger;
     document.getElementById("resultado").innerHTML = `
         <h3>Risultato</h3>
         <img src="${data.grafico}" alt="Grafico della curva di Fuller">
@@ -1016,11 +1015,9 @@ function generarGraficoProporciones(pesos, nombres) {
 
 
 function generarMezclaCorregida() {
-
-   
    // Prompt con traducciones
-   const promptMsg = t('sim.factor_prompt_title', "Ingresar un número entre 0 y 1 (dejar vacío para usar 1):\n\n") + 
-                     t('sim.factor_prompt_desc', "📌 factor controla la intensidad del ajuste hacia la curva objetivo.\n• factor = 0 → no aplicás corrección (curva = promedio)\n• factor = 1 → corrección completa (curva = Fuller)\n• 0 < factor < 1 → corrección parcial\n• factor > 1 → sobreajuste (te pasás de Fuller)\n• factor < 0 → te alejás de Fuller");
+   const promptMsg = I18N.t('sim.factor_prompt_title', "Ingresar un número entre 0 y 1 (dejar vacío para usar 1):\n\n") + 
+                     I18N.t('sim.factor_prompt_desc', "📌 factor controla la intensidad del ajuste hacia la curva objetivo.\n• factor = 0 → no aplicás corrección (curva = promedio)\n• factor = 1 → corrección completa (curva = Fuller)\n• 0 < factor < 1 → corrección parcial\n• factor > 1 → sobreajuste (te pasás de Fuller)\n• factor < 0 → te alejás de Fuller");
    
    let input = prompt(promptMsg, "1");
    let tipo_objetivo = localStorage.getItem('tipo_objetivo');
@@ -1033,7 +1030,7 @@ function generarMezclaCorregida() {
     const factor = parseFloat(input);
 
     if (isNaN(factor) || factor < 0 || factor > 1) {
-        alert(t('sim.factor_invalid', "❌ Número inválido. Ingresá un valor entre 0 y 1."));
+        alert(I18N.t('sim.factor_invalid', "❌ Número inválido. Ingresá un valor entre 0 y 1."));
         return;
     }
 
@@ -1054,14 +1051,14 @@ function generarMezclaCorregida() {
         if (data.grafico_base64) {
               // Todas las traducciones juntas
               const labels = {
-                  weightsHeader: t('sim.weights_header', "⚖️ Pesos proporcionales por zona y mezcla:"),
-                  mixLabel: t('sim.mix_label', "Mezcla"),
-                  coarseLabel: t('sim.coarse_label', "Gruesos (%)"),
-                  mediumLabel: t('sim.medium_label', "Medios (%)"),
-                  fineLabel: t('sim.fine_label', "Finos (%)"),
-                  recsHeader: t('sim.recommendations_header', "🛠️ Recomendaciones automáticas:"),
-                  numLabel: t('sim.number_label', "#"),
-                  recLabel: t('sim.recommendation_label', "Recomendación")
+                  weightsHeader: I18N.t('sim.weights_header', "⚖️ Pesos proporcionales por zona y mezcla:"),
+                  mixLabel: I18N.t('sim.mix_label', "Mezcla"),
+                  coarseLabel: I18N.t('sim.coarse_label', "Gruesos (%)"),
+                  mediumLabel: I18N.t('sim.medium_label', "Medios (%)"),
+                  fineLabel: I18N.t('sim.fine_label', "Finos (%)"),
+                  recsHeader: I18N.t('sim.recommendations_header', "🛠️ Recomendaciones automáticas:"),
+                  numLabel: I18N.t('sim.number_label', "#"),
+                  recLabel: I18N.t('sim.recommendation_label', "Recomendación")
               };
 
               // Construir tabla de pesos
@@ -1097,7 +1094,7 @@ function generarMezclaCorregida() {
 
               abrirModalGraficoCorreccion();
         } else if (data.error) {
-            alert(t('sim.error_response', "❌ Error al procesar la curva corregida:") + " " + data.error);
+            alert(I18N.t('sim.error_response', "❌ Error al procesar la curva corregida:") + " " + data.error);
         }
     })
     .catch(err => {
@@ -1544,7 +1541,6 @@ function guardarTipoCurva() {
 document.addEventListener("keydown", function(event) {
   if (event.target.classList.contains("nombreProducto") && event.key === "Enter") {
     event.preventDefault();
-debugger; // 👈 Pausa para inspección manual
     const input = event.target;
     const nuevoNombre = input.value.trim();
     const original = input.dataset.original;
@@ -1600,8 +1596,6 @@ debugger; // 👈 Pausa para inspección manual
       const tamices = [];
       const reales = [];
 
-      debugger; // 👈 Pausa para inspección manual
-
       if (tabla) {
         tabla.querySelectorAll("tbody tr").forEach((fila, i) => {
           const celdas = fila.querySelectorAll("td");
@@ -1646,7 +1640,6 @@ debugger; // 👈 Pausa para inspección manual
 
 function guardarMezclaEnCookie(nombreProducto, tamices, porcentajesReales) {
   if (!nombreProducto || tamices.length !== porcentajesReales.length) return;
-  debugger;
   const normalizedKey = nombreProducto.trim().toLowerCase().replace(/\s+/g, "_");
 
   let datosGuardados = {};
