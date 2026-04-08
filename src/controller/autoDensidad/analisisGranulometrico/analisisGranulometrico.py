@@ -274,7 +274,7 @@ def autoDensidad_analisis_granulometrico_guardar():
 
             # 5) Recomendaciones
             # Construí el mapa de deltas (si tenés tabla_dom, mejor)
-            dif_por_tamiz = _build_dif_map(tabla, curva)  # si ya tenés la versión que acepta fallback a 'curva'
+            dif_por_tamiz = _build_dif_map(tabla)  # tabla ya tiene diferencia
 
             # Lee lo que envía el front
             recs_text = p.get("recomendaciones_dom", [])           # lista de strings (texto)

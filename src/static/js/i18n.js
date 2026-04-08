@@ -1409,7 +1409,8 @@ const I18N = (() => {
   }
 
   // t("login.titulo") / t("registrarse.errores.correo") / t("sim.header") / t("verificar.titulo")
-  function t(key) {
+  // Opcionalmente: t("sim.header", "fallback text")
+  function t(key, fallback) {
     const lang = getLang();
     const parts = key.split(".");
     const ns = parts.shift() || "login";  // default a login
@@ -1420,10 +1421,13 @@ const I18N = (() => {
     for (const p of path) node = node?.[p];
     if (node !== undefined) return node;
 
-    // Fallback a español
+    // Fallback a español si existe
     node = dict?.[ns]?.["es"];
     for (const p of path) node = node?.[p];
-    return node !== undefined ? node : `[${key}]`;
+    if (node !== undefined) return node;
+
+    // Si aún no hay traducción, usa el fallback proporcionado o retorna la clave
+    return fallback !== undefined ? fallback : `[${key}]`;
   }
 
   // Función auxiliar para traducir elementos con data-i18n
