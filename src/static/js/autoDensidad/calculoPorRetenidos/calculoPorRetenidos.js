@@ -589,11 +589,30 @@ async function calcularRetenidoBR() {
     }
 
     window.granRetidoResultado = data;
+    
+    // 💾 Guardar límites en localStorage para que auditoría los pueda usar
+    if (data.faixas && data.faixas.bloco) {
+      try {
+        const banda_min = data.faixas.bloco.map(spec => spec.min);
+        const banda_max = data.faixas.bloco.map(spec => spec.max);
+        localStorage.setItem('limitesGranulometria', JSON.stringify({
+          banda_min: banda_min,
+          banda_max: banda_max,
+          tamices: data.tamices,
+          timestamp: new Date().toISOString()
+        }));
+        console.log('💾 Límites guardados en localStorage para auditoría');
+      } catch (e) {
+        console.warn('No se pudieron guardar los límites:', e);
+      }
+    }
+    
     renderRetidoGrafico(
       data.tamices,
       data.mix_acum,
       data.mix_pasante,
-      data.faixas
+      data.faixas,
+      data.fuller_ideal
     );
     //renderRetidoGrafico( data.tamices, data.mix_pasante, data.faixas, { faixa: 'bloco' } );
     renderRetidoTablitas(data.tamices, data.mix_acum, data.faixas);
@@ -615,9 +634,17 @@ async function calcularRetenidoBR() {
 let retidoChart;
 
 //function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' }) {
-function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { faixa: 'bloco' }) {
+function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas, fuller_ideal, opts = { faixa: 'bloco' }) {
   // Mapear a puntos X,Y en eje log y preparar etiquetas exactas (incluye FUNDO)
- const FUNDO_X = 0.01;
+  const FUNDO_X = 0.01;
+
+  // 🔨 Agregar 12.5 mm (agregado máximo estándar) si no está presente
+  if (tamices.length > 0 && parseFloat(tamices[0]) !== 12.5) {
+    tamices = [12.5, ...tamices];
+    mix_acum = [100, ...mix_acum];  // 12.5 mm: todo pasa (100%)
+    mix_pasante = [100, ...mix_pasante];  // todo pasa
+    fuller_ideal = fuller_ideal ? [100, ...fuller_ideal] : [];  // Fuller(12.5) = 100%
+  }
 
   const dataOrdenada = tamices.map((t, i) => ({
     x: String(t).toLowerCase() === 'fundo' ? FUNDO_X : parseFloat(t),
@@ -649,6 +676,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
   const labelBlocoMax = getLabel('sim.retido_bloco_max', 'Limites para Blocos (max)');
   const labelPaverMin = getLabel('sim.retido_paver_min', 'Limites para Pavers (min)');
   const labelPaverMax = getLabel('sim.retido_paver_max', 'Limites para Pavers (max)');
+  const labelFullerIdeal = getLabel('sim.retido_fuller_ideal', 'Curva Fuller Ideal');
   const labelRetidoAcum = getLabel('sim.retido_acumulado', 'Retido acumulado');
   const labelPasante = getLabel('sim.retido_pasante', 'Pasante');
   const axisXTitle = getLabel('sim.retido_axis_x', 'Peneira (mm)');
@@ -672,6 +700,14 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
   const blocoMax = reorder(detBloco, 'max');
   const paverMin = reorder(detPaver, 'min');
   const paverMax = reorder(detPaver, 'max');
+
+  // Reordenar fuller_ideal según dataOrdenada
+  const fullerIdealReordenada = !fuller_ideal ? [] : dataOrdenada.map(p => {
+    const key = p.label;
+    const idx = tamices.findIndex(t => String(t) === key);
+    const val = fuller_ideal[idx];
+    return val != null ? val : null;
+  });
 
   // Helper to convert array of y-values to {x, y} dataset format (filter out nulls)
   const toDataset = (yArr) => dataOrdenada.map((p, i) => {
@@ -723,6 +759,19 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas,  opts = { f
           pointRadius: 0,
           borderWidth: 2,
           fill: false
+        },
+
+        // === Curva Fuller Ideal (amarilla sólida, referencia teórica) ===
+        {
+          label: labelFullerIdeal,
+          data: toDataset(fullerIdealReordenada),
+          borderColor: '#FFD700',
+          backgroundColor: '#FFD700',
+          pointRadius: 2,
+          tension: 0.25,
+          borderWidth: 3,
+          fill: false,
+          yAxisID: 'y'
         },
 
         // === Curva en estudio (roja sólida con puntos) ===

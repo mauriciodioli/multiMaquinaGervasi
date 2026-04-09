@@ -712,11 +712,27 @@
             console.log(`   Retidos crudos resultantes: [${retidosCrudosResultantes.map(r => r.toFixed(1)).join(', ')}]`);
             console.log(`   Resultante cruda normalizada localStorage: [${pasantesCrudosResultantes.map(p => p.toFixed(1)).join(', ')}]`);
             
+            // Intentar recuperar limites del localStorage si existen
+            let limite_min = [];
+            let limite_max = [];
+            const limitesGuardados = localStorage.getItem('limitesGranulometria');
+            if (limitesGuardados) {
+                try {
+                    const limites = JSON.parse(limitesGuardados);
+                    limite_min = limites.banda_min || [];
+                    limite_max = limites.banda_max || [];
+                } catch (e) {
+                    console.warn('Error al cargar límites guardados:', e);
+                }
+            }
+            
             return {
                 pasante_real: pasantesCrudosResultantes,
                 tamices: tamices,
                 nombre: `Mezcla ${tablas.map(t => t.nombre).join(' + ')}`,
-                materiales: materialesProcesados  // ← NUEVO: retornar materiales originales
+                materiales: materialesProcesados,  // ← NUEVO: retornar materiales originales
+                banda_min: limite_min.length === tamices.length ? limite_min : [],
+                banda_max: limite_max.length === tamices.length ? limite_max : []
             };
         }
         
@@ -785,10 +801,26 @@
                         ? retidosAPassantes(valores)
                         : valores;
                     
+                    // Intentar recuperar limites del localStorage si existen
+                    let limite_min = [];
+                    let limite_max = [];
+                    const limitesGuardados = localStorage.getItem('limitesGranulometria');
+                    if (limitesGuardados) {
+                        try {
+                            const limites = JSON.parse(limitesGuardados);
+                            limite_min = limites.banda_min || [];
+                            limite_max = limites.banda_max || [];
+                        } catch (e) {
+                            console.warn('Error al cargar límites guardados:', e);
+                        }
+                    }
+                    
                     resultado = {
                         pasante_real: pasante_real,
                         tamices: tamices,
-                        nombre: tabla.nombre || 'Tabla cargada'
+                        nombre: tabla.nombre || 'Tabla cargada',
+                        banda_min: limite_min.length === tamices.length ? limite_min : [],
+                        banda_max: limite_max.length === tamices.length ? limite_max : []
                     };
                     
                     console.log(`✅ CASO 1 (tabla única):`, resultado);
@@ -1496,6 +1528,16 @@
                 instanciaChart = null;
             }
             
+            // 🔨 Agregar 12.5 mm (agregado máximo estándar) si no está presente
+            if (datos.tamices.length > 0 && parseFloat(datos.tamices[0]) !== 12.5) {
+                datos.tamices = [12.5, ...datos.tamices];
+                datos.banda_min = [0, ...datos.banda_min];  // 12.5 mm: no retenido
+                datos.banda_max = [0, ...datos.banda_max];  // no retenido
+                datos.pasante_real = [100, ...datos.pasante_real];  // todo pasa
+                datos.pasante_virtual = [100, ...datos.pasante_virtual];  // todo pasa
+                datos.fuller_ideal = datos.fuller_ideal ? [100, ...datos.fuller_ideal] : [];  // Fuller(12.5) = 100%
+            }
+            
             // Invertir tamices para mostrar de menor a mayor en el eje X
             const labels = datos.tamices.slice().reverse().map(t => `${t} mm`);
             const datasets = [];
@@ -1556,6 +1598,16 @@
                     borderDash: [5, 5],
                     fill: false,
                     tension: 0.3
+                },
+                {
+                    label: tAuditoria('chart_fuller_ideal', 'Curva Fuller Ideal'),
+                    data: datos.fuller_ideal ? datos.fuller_ideal : [],
+                    borderColor: '#FFD700',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    pointBackgroundColor: '#FFD700'
                 }
             );
             

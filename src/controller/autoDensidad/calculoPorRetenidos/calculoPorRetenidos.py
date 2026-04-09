@@ -818,6 +818,18 @@ def granulometria_retido():
             log(traceback.format_exc())
             propuesta_agregados = None
 
+    # Calcular curva Fuller teórica real (fórmula universal, independiente del usuario)
+    # P = 100 * (d / D_max)^0.45, donde D_max = 12.5 mm (agregado máximo estándar)
+    D_max = 12.5
+    fuller_ideal = []
+    for tamiz in tamices_ord:
+        if tamiz > 0:
+            P = 100.0 * (float(tamiz) / D_max) ** 0.45
+            fuller_ideal.append(round(P, 2))
+        else:
+            # En el fundo (tamiz 0), el pasante es 100%
+            fuller_ideal.append(100.0)
+    
     return jsonify({
         "ok": True,
         "tamices": tamices_ord,
@@ -831,7 +843,8 @@ def granulometria_retido():
         "sugerencia_division": sugerencia_division,
         "sugerencia_optimizacion": sugerencia_optimizacion,
         "divisiones_n_tablas": divisiones_n_tablas,
-        "propuesta_agregados_correctivos": propuesta_agregados
+        "propuesta_agregados_correctivos": propuesta_agregados,
+        "fuller_ideal": fuller_ideal
     }), 200
 
 

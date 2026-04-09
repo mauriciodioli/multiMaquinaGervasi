@@ -1015,12 +1015,26 @@ function generarGraficoProporciones(pesos, nombres) {
 
 
 function generarMezclaCorregida() {
+   // Validar que exista tipo_objetivo antes de continuar
+   let tipo_objetivo = localStorage.getItem('tipo_objetivo');
+   
+   if (!tipo_objetivo) {
+       // Si no está establecido, mostrar modal para que el usuario lo seleccione
+       document.getElementById("modalCurvaObjetivo").style.display = "block";
+       // Guardar callback para continuar después de seleccionar
+       window.continuarConMezclaCorregida = true;
+       return;
+   }
+   
+   _pedirFactorYGenerarMezcla(tipo_objetivo);
+}
+
+function _pedirFactorYGenerarMezcla(tipo_objetivo) {
    // Prompt con traducciones
    const promptMsg = I18N.t('sim.factor_prompt_title', "Ingresar un número entre 0 y 1 (dejar vacío para usar 1):\n\n") + 
                      I18N.t('sim.factor_prompt_desc', "📌 factor controla la intensidad del ajuste hacia la curva objetivo.\n• factor = 0 → no aplicás corrección (curva = promedio)\n• factor = 1 → corrección completa (curva = Fuller)\n• 0 < factor < 1 → corrección parcial\n• factor > 1 → sobreajuste (te pasás de Fuller)\n• factor < 0 → te alejás de Fuller");
    
    let input = prompt(promptMsg, "1");
-   let tipo_objetivo = localStorage.getItem('tipo_objetivo');
    
    // Si el usuario aprieta "Cancelar" o deja vacío, se usa 1
    if (input === null || input.trim() === "") {
@@ -1522,6 +1536,12 @@ function guardarTipoCurva() {
   localStorage.setItem("tipo_objetivo", seleccion);
   console.log("✅ Tipo de curva objetivo guardado en localStorage:", seleccion);
   cerrarModalCurvaObjetivo();
+  
+  // Si venía desde generarMezclaCorregida, continuar con el flujo
+  if (window.continuarConMezclaCorregida) {
+      window.continuarConMezclaCorregida = false;
+      _pedirFactorYGenerarMezcla(seleccion);
+  }
 }
 
 

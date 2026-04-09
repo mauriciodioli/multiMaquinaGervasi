@@ -248,6 +248,7 @@ def generar_auditoria_completa(
             "tamices": [float(t) for t in tamices],
             "banda_min": [float(b) for b in banda_min],
             "banda_max": [float(b) for b in banda_max],
+            "fuller_ideal": [float(round(100.0 * (float(tamiz) / 12.5) ** 0.45, 2)) if tamiz > 0 else 100.0 for tamiz in tamices],
             "pasante_real": [float(p) for p in pasante_real],
             "pasante_virtual": [float(p) for p in pasante_virtual],
         }
