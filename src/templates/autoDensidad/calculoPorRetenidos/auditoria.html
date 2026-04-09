@@ -1601,7 +1601,7 @@
                 },
                 {
                     label: tAuditoria('chart_fuller_ideal', 'Curva Fuller Ideal'),
-                    data: datos.fuller_ideal ? datos.fuller_ideal : [],
+                    data: datos.fuller_ideal ? datos.fuller_ideal.slice().reverse() : [],
                     borderColor: '#FFD700',
                     borderWidth: 3,
                     fill: false,
