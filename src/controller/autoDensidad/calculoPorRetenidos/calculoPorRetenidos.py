@@ -2716,7 +2716,12 @@ def api_auditoria():
         tamices = config.get('tamices', [])
         materiales = config.get('materiales', None)  # ← NUEVO: materiales para optimizar
         
-        print(f"\n🔍 [AUDITORIA API] Recibidos {len(materiales) if materiales else 0} materiales en payload")
+        # 🎯 LOG CON CONTEXTO: Distinguir entre background y user execution
+        num_materiales = len(materiales) if materiales else 0
+        if num_materiales == 0:
+            print(f"\n🔍 [AUDITORIA API - BACKGROUND] materiales=0 (ignored - invalid/background call)")
+        else:
+            print(f"\n🔍 [AUDITORIA API - USER] Recibidos {num_materiales} materiales en payload")
         if materiales:
             for i, m in enumerate(materiales):
                 tiene_retido = 'retido_ind_pct' in m and m.get('retido_ind_pct')
