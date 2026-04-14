@@ -1309,8 +1309,13 @@
                 const acciones = datos.propuesta_agregados_correctivos.acciones_zaranda;
                 console.log('✅ Acciones zaranda encontradas:', acciones);
                 
+                // ========================================
+                // BLOCK HIDDEN FOR CLIENT VIEW (GERVASI)
+                // Reason: Heuristic/virtual data not validated for production
+                // DO NOT DELETE - Used for internal debugging / future improvements
+                // ========================================
                 html += `
-                    <div class="section" style="border-left-color: #d97706; background: #fff7ed; margin-top: 20px;">
+                    <div class="section" style="display: none; border-left-color: #d97706; background: #fff7ed; margin-top: 20px;">
                         <h2 style="color: #d97706;">⚙️ Acciones de Operación en Zaranda</h2>
                         <p style="font-size: 14px; color: #65615e; margin-bottom: 15px;">Recomendaciones para el ajuste de mallas y proporciones según el análisis granulométrico:</p>
                         <ul style="list-style-type: none; padding-left: 0;">
@@ -1357,8 +1362,14 @@
             if (datos.orden_operativa && Array.isArray(datos.orden_operativa) && datos.orden_operativa.length > 0) {
                 console.log('✅ Orden operativa encontrada:', datos.orden_operativa);
                 
+                // ========================================
+                // BLOCK HIDDEN FOR CLIENT VIEW (GERVASI)
+                // Reason: Uses heuristic/virtual data with M1, M2, M3
+                // Not validated for production deployment
+                // DO NOT DELETE - Used for internal debugging / future improvements
+                // ========================================
                 html += `
-                    <div class="section" style="border-left-color: #2563eb; background: #eff6ff; margin-top: 20px;">
+                    <div class="section" style="display: none; border-left-color: #2563eb; background: #eff6ff; margin-top: 20px;">
                         <h2 style="color: #2563eb;">📋 Orden Operativa en Planta</h2>
                         <p style="font-size: 14px; color: #65615e; margin-bottom: 15px;">Instrucciones paso-a-paso para el operario en planta:</p>
                         <div style="display: flex; flex-direction: column; gap: 12px;">
