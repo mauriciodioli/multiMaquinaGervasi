@@ -1606,43 +1606,21 @@ function abrirAuditoriaDesdeModal() {
     console.warn('   - Estructura esperada: {pasante_real, banda_min, banda_max, tamices}');
     console.log('[DEBUG] Enviando datos a auditoría:', datos);
     
-    // ========================================
-    // FETCH DUPLICADA DESHABILITADA
-    // Reason: Esta fetch envía 0 materiales (incompleto)
-    // La única fetch válida es desde auditoria.html (ejecutarAuditoria)
-    // Descomentar si se necesita restaurar
-    // ========================================
-    if (false) {
-      // 5. Llamar al endpoint
-      fetch('/calculoPorRetenidos/auditoria', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(datos)
-      })
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
-      })
-      .then(result => {
-        if (result.exito) {
-          // 6. Abrir nueva ventana con la auditoría
-          const ventana = window.open('/calculoPorRetenidos/auditoria', 'auditoria');
-          // Guardar datos en sessionStorage para que la ventana nueva los use
-          sessionStorage.setItem('datosAuditoriaRecientes', JSON.stringify({
-            datos: result.data,
-            entrada: datos
-          }));
-        } else {
-          alert('❌ Error en auditoría: ' + (result.error || 'Error desconocido'));
-        }
-      })
-      .catch(error => {
-        alert('❌ Error de conexión: ' + error.message);
-        console.error('Error:', error);
-      });
-    }  // ← FIN: if (false) - FETCH DUPLICADA DESHABILITADA
+    // 5. Guardar datos en sessionStorage y sessionStorage para que auditoria.html los use
+    sessionStorage.setItem('datosAuditoriaRecientes', JSON.stringify({
+      entrada: datos
+    }));
+    console.log('💾 Datos guardados en sessionStorage para auditoría');
+    
+    // 6. Abrir nueva ventana con la auditoría
+    console.log('🔓 Abriendo ventana de auditoría...');
+    const ventana = window.open('/calculoPorRetenidos/auditoria', 'auditoria');
+    
+    if (!ventana) {
+      alert('⚠️ No se pudo abrir la ventana de auditoría. Verifica si los popups están bloqueados.');
+    } else {
+      console.log('✅ Ventana de auditoría abierta correctamente');
+    }
     
   } catch (e) {
     alert('❌ Error: ' + e.message);

@@ -1958,6 +1958,13 @@
                 ? datos.pasante_entrada_original
                 : (entrada && Array.isArray(entrada.pasante_real) ? entrada.pasante_real : null);
 
+            // ✅ Invertir bandas VERTICALMENTE (en Y, no en X)
+            // Esto significa: 100 - valor para cada elemento
+            const bandaMinInvertida = datos.banda_min.map(v => 100 - v);
+            const bandaMaxInvertida = datos.banda_max.map(v => 100 - v);
+            console.log('[GRAFICO] Banda Min invertida verticalmente:', bandaMinInvertida.map(v => v.toFixed(1)));
+            console.log('[GRAFICO] Banda Max invertida verticalmente:', bandaMaxInvertida.map(v => v.toFixed(1)));
+
             if (Array.isArray(pasanteEntradaOriginal) && pasanteEntradaOriginal.length === datos.tamices.length) {
                 datasets.push({
                     label: tAuditoria('chart_initial_input', 'ANTES · Datos crudos desde localStorage'),
@@ -1996,21 +2003,25 @@
                 },
                 {
                     label: tAuditoria('chart_band_min', 'Banda Min'),
-                    data: datos.banda_min.slice().reverse(),
+                    data: bandaMinInvertida.slice(),
                     borderColor: '#28a745',
-                    borderWidth: 1,
+                    borderWidth: 2,
                     borderDash: [5, 5],
                     fill: false,
-                    tension: 0.3
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#28a745'
                 },
                 {
                     label: tAuditoria('chart_band_max', 'Banda Max'),
-                    data: datos.banda_max.slice().reverse(),
+                    data: bandaMaxInvertida.slice(),
                     borderColor: '#ffc107',
-                    borderWidth: 1,
+                    borderWidth: 2,
                     borderDash: [5, 5],
                     fill: false,
-                    tension: 0.3
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#ffc107'
                 },
                 {
                     label: tAuditoria('chart_fuller_ideal', 'Curva Fuller Ideal'),
