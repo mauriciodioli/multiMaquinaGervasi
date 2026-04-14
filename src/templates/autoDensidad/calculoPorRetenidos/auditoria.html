@@ -745,10 +745,40 @@
             if (datosSession) {
                 try {
                     const { datos, entrada } = JSON.parse(datosSession);
-                    console.log('✅ Datos cargados desde sessionStorage (modal)');
+                    console.log('✅ Datos cacheados mostrados desde sessionStorage (UX rápida)');
                     sessionStorage.removeItem('datosAuditoriaRecientes');
-                    // Mostrar directo sin esperar
+                    // Mostrar datos cacheados inmediatamente (REFACTOR: SIN fetch automático)
+                    // Los datos locales son suficientes para visualización inicial
+                    console.log('📊 Mostrando curva original desde datos locales (SIN fetch posterior)');
                     setTimeout(() => mostrarResultado(datos, entrada), 100);
+                    
+                    // 🔄 REFACTOR: Fetch automático DESHABILITADO
+                    // RAZÓN: La visualización inicial NO necesita backend
+                    // CUANDO se ejecuta: Solo cuando usuario clickea botón en ejecutarAuditoria()
+                    // BENEFICIO: Reduce carga de servidor, evita 0 materiales en Fetch #1
+                    /*
+                    console.log('⏳ Ejecutando auditoría en background para actualizar con datos frescos...');
+                    setTimeout(() => {
+                        fetch('/calculoPorRetenidos/auditoria', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(entrada)
+                        })
+                        .then(r => r.json())
+                        .then(result => {
+                            if (result.exito) {
+                                console.log('✅ Datos frescos recibidos del backend, actualizando UI...');
+                                sessionStorage.setItem('datosAuditoriaRecientes', JSON.stringify({
+                                    datos: result.data,
+                                    entrada: entrada
+                                }));
+                                console.log('💾 Datos actualizados guardados en sessionStorage');
+                                mostrarResultado(result.data, entrada);
+                            }
+                        })
+                        .catch(e => console.warn('⚠️ Error fetching datos frescos:', e));
+                    }, 500);
+                    */
                     return null;
                 } catch (e) {
                     console.warn('Error al cargar de sessionStorage:', e);
@@ -898,6 +928,63 @@
             cargarDatos();
         }
         
+        // 🛡️ FUNCIÓN VALIDADORA CENTRALIZADA
+        function validarDatosParaBackend(datos) {
+            // Validación defensiva sin modificar datos
+            let warnings = [];
+            
+            // Verificar estructura mínima
+            if (!datos.pasante_real || !Array.isArray(datos.pasante_real)) {
+                warnings.push('❌ pasante_real inválido o faltante');
+            }
+            
+            if (!datos.tamices || !Array.isArray(datos.tamices)) {
+                warnings.push('❌ tamices inválido o faltante');
+            }
+            
+            // Verificar materiales
+            if (datos.materiales === undefined) {
+                warnings.push('⚠️ NO hay materiales en payload - backend no generará orden_operativa_real');
+            } else if (!Array.isArray(datos.materiales)) {
+                warnings.push('❌ materiales no es array');
+            } else if (datos.materiales.length === 0) {
+                warnings.push('⚠️ materiales array está vacío');
+            } else {
+                // Validar cada material
+                datos.materiales.forEach((mat, idx) => {
+                    if (!mat.nombre) warnings.push(`❌ Material ${idx}: nombre faltante`);
+                    if (mat.pasantes && Array.isArray(mat.pasantes)) {
+                        const negatives = mat.pasantes.filter(v => v < 0);
+                        if (negatives.length > 0) {
+                            warnings.push(`⚠️ Material "${mat.nombre}": detectados valores negativos`);
+                        }
+                    }
+                });
+            }
+            
+            // Detectar valores negativos en pasante_real
+            if (datos.pasante_real) {
+                const negatives = datos.pasante_real.filter(v => v < 0);
+                if (negatives.length > 0) {
+                    warnings.push(`⚠️ pasante_real contiene negativos`);
+                }
+            }
+            
+            // Log de validación
+            if (warnings.length > 0) {
+                console.warn('🚨 ADVERTENCIAS DE VALIDACIÓN:');
+                warnings.forEach(w => console.warn(`   ${w}`));
+            } else {
+                console.log('✅ Validación: todos los datos son consistentes');
+            }
+            
+            return {
+                isValid: warnings.length === 0,
+                warnings: warnings,
+                hasBasicStructure: !!datos.pasante_real && !!datos.tamices
+            };
+        }
+        
         function cargarDatos() {
             const jsonText = document.getElementById('jsonInput').value;
             try {
@@ -908,21 +995,132 @@
             }
         }
         
+        // 🔧 FUNCIÓN ADAPTER - Transforma datos para compatibilidad backend
+        function adaptarDatosParaBackend(datos) {
+            // Clona profundamente para NO modificar datos originales
+            const datosClonados = JSON.parse(JSON.stringify(datos));
+            
+            // Si no hay materiales, devolver como está
+            if (!datosClonados.materiales || !Array.isArray(datosClonados.materiales)) {
+                console.log('[ADAPTER] No hay materiales para adaptar, enviando datos as-is');
+                return datosClonados;
+            }
+            
+            // Transformar cada material
+            datosClonados.materiales = datosClonados.materiales.map((material, idx) => {
+                try {
+                    // PASO 1: Convertir peso → proporcion_pct
+                    const proporcion_pct = (material.peso || 0) * 100;
+                    
+                    // PASO 2: Convertir pasantes (acumulados) → retido_ind_pct (individuales)
+                    let retido_ind_pct = [];
+                    
+                    if (material.pasantes && Array.isArray(material.pasantes)) {
+                        // Formula correcta:
+                        // retido[0] = 100 - pasantes[0]
+                        // retido[i] = pasantes[i] - pasantes[i-1]
+                        
+                        for (let i = 0; i < material.pasantes.length; i++) {
+                            let valor;
+                            if (i === 0) {
+                                // Primer elemento
+                                valor = 100 - material.pasantes[0];
+                            } else {
+                                // Resto: diferencia entre acumulados consecutivos
+                                valor = material.pasantes[i] - material.pasantes[i - 1];
+                            }
+                            
+                            // Protección contra negativos
+                            valor = Math.max(0, valor);
+                            
+                            retido_ind_pct.push(valor);
+                        }
+                        
+                        // Log si hay negativos detectados
+                        const negativosOriginales = retido_ind_pct.filter(v => v < 0);
+                        if (negativosOriginales.length > 0) {
+                            console.warn(`[ADAPTER] Material "${material.nombre}": Negativos corregidos con Math.max(0)`);
+                        }
+                    }
+                    
+                    // PASO 3: Agregar nuevos campos sin remover los originales
+                    return {
+                        ...material,
+                        retido_ind_pct: retido_ind_pct,
+                        proporcion_pct: proporcion_pct
+                        // Nota: Se mantienen pasantes y peso originales
+                    };
+                    
+                } catch (error) {
+                    console.error(`[ADAPTER] Error transformando material ${idx}:`, error);
+                    return material; // Devolver sin cambios si hay error
+                }
+            });
+            
+            return datosClonados;
+        }
+        
         function ejecutarAuditoria(datos) {
+            // 🔄 REFACTOR: Este es el ÚNICO punto de entrada al backend (POST /calculoPorRetenidos/auditoria)
+            // RAZÓN: Garantiza que datos con materiales completos llegan al backend
+            // El fetch automático fue deshabilitado para evitar envío de datos incompletos
+            // RESULTADO: 
+            //   ✅ datos locales se muestran SIN latencia
+            //   ✅ backend se llama SOLO cuando usuario lo requiere
+            //   ✅ backend recibe SIEMPRE datos completos con materiales
+            
+            // 🛡️ NUEVA: Validar datos ANTES de adaptar
+            const validacion = validarDatosParaBackend(datos);
+            
+            // 🔧 NUEVA: Adaptar datos para compatibilidad con backend
+            const datosAdaptados = adaptarDatosParaBackend(datos);
+            
+            // 📊 Log completo para debugging - ANTES/DESPUÉS
+            console.log('[DEBUG] Enviando payload a /calculoPorRetenidos/auditoria');
+            console.log('[ADAPTER] Materiales originales:', datos.materiales);
+            console.log('[ADAPTER] Materiales adaptados:', datosAdaptados.materiales);
+            console.log('[DEBUG] Estructura:', {
+                tienePassante: !!datosAdaptados.pasante_real,
+                tieneTamices: !!datosAdaptados.tamices,
+                tieneMateriales: !!datosAdaptados.materiales,
+                longitudMateriales: datosAdaptados.materiales?.length,
+                primerMaterial: datosAdaptados.materiales?.[0] ? {
+                    nombre: datosAdaptados.materiales[0].nombre,
+                    tieneRetido_ind_pct: !!datosAdaptados.materiales[0].retido_ind_pct,
+                    tieneProporcion_pct: !!datosAdaptados.materiales[0].proporcion_pct,
+                    tienePassantes: !!datosAdaptados.materiales[0].pasantes,
+                    tienePeso: !!datosAdaptados.materiales[0].peso
+                } : null
+            });
+            
             const resultadoDiv = document.getElementById('resultado');
             resultadoDiv.innerHTML = `<div class="loading">⏳ ${tAuditoria('loading', 'Ejecutando auditoría...')}</div>`;
             
+            // 🔧 CAMBIO CRÍTICO: Usar datosAdaptados en lugar de datos
             fetch('/calculoPorRetenidos/auditoria', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(datos)
+                body: JSON.stringify(datosAdaptados)
             })
             .then(response => response.json())
             .then(result => {
                 if (result.exito) {
-                    mostrarResultado(result.data, datos);
+                    // Guardar datos frescos en sessionStorage para próximas cargas
+                    // (ahora incluye propuesta_agregados_correctivos con acciones_zaranda)
+                    try {
+                        sessionStorage.setItem('datosAuditoriaRecientes', JSON.stringify({
+                            datos: result.data,
+                            entrada: datosAdaptados  // 🔧 Usar datos adaptados para consistencia
+                        }));
+                        console.log('💾 Datos frescos guardados en sessionStorage (incluye propuesta_agregados_correctivos)');
+                    } catch (e) {
+                        console.warn('⚠️ No se pudo guardar en sessionStorage:', e);
+                    }
+                    // Mostrar datos frescos (ACTUALIZACIÓN de UI)
+                    mostrarResultado(result.data, datosAdaptados);  // 🔧 Usar datos adaptados
+                    console.log('✅ UI actualizada con datos frescos del backend (con acciones zaranda)');
                 } else {
                     mostrarError(result.error);
                 }
@@ -1098,6 +1296,138 @@
                 `;
             }
 
+            // ===== NUEVO: Mostrar acciones de zaranda si existen =====
+            console.log('🔍 DEBUG: verificando propuesta_agregados_correctivos...');
+            console.log('   datos:', datos);
+            console.log('   datos.propuesta_agregados_correctivos:', datos?.propuesta_agregados_correctivos);
+            console.log('   acciones_zaranda:', datos?.propuesta_agregados_correctivos?.acciones_zaranda);
+            
+            if (datos && datos.propuesta_agregados_correctivos && 
+                datos.propuesta_agregados_correctivos.acciones_zaranda &&
+                Array.isArray(datos.propuesta_agregados_correctivos.acciones_zaranda)) {
+                
+                const acciones = datos.propuesta_agregados_correctivos.acciones_zaranda;
+                console.log('✅ Acciones zaranda encontradas:', acciones);
+                
+                html += `
+                    <div class="section" style="border-left-color: #d97706; background: #fff7ed; margin-top: 20px;">
+                        <h2 style="color: #d97706;">⚙️ Acciones de Operación en Zaranda</h2>
+                        <p style="font-size: 14px; color: #65615e; margin-bottom: 15px;">Recomendaciones para el ajuste de mallas y proporciones según el análisis granulométrico:</p>
+                        <ul style="list-style-type: none; padding-left: 0;">
+                `;
+                
+                acciones.forEach(accion => {
+                    // Extraer tipo (GRUESO, MEDIO, FINO) e icono
+                    let icono = '📦';
+                    let colorBorde = '#d97706';
+                    if (accion.includes('GRUESO')) {
+                        icono = '🔴';
+                        colorBorde = '#7c2d12';
+                    } else if (accion.includes('MEDIO')) {
+                        icono = '🟡';
+                        colorBorde = '#a16207';
+                    } else if (accion.includes('FINO')) {
+                        icono = '🟢';
+                        colorBorde = '#166534';
+                    }
+                    
+                    html += `
+                        <li style="padding: 12px 14px; margin: 8px 0; 
+                                   border-left: 4px solid ${colorBorde}; 
+                                   background: white; border-radius: 4px;
+                                   display: flex; align-items: center; gap: 12px;">
+                            <span style="font-size: 20px;">${icono}</span>
+                            <span style="color: #44515c; font-size: 15px; line-height: 1.4;">
+                                <strong>${accion.split(':')[0]}:</strong> ${accion.split(':').slice(1).join(':').trim()}
+                            </span>
+                        </li>
+                    `;
+                });
+                
+                html += `
+                        </ul>
+                        <p style="font-size: 13px; color: #7c7c7c; margin-top: 12px; font-style: italic;">
+                            💡 Estas acciones se basan en el análisis de errores por zona granulométrica (gruesa, media, fina).
+                        </p>
+                    </div>
+                `;
+            }
+
+            // ===== NUEVO: Orden Operativa en Planta =====
+            if (datos.orden_operativa && Array.isArray(datos.orden_operativa) && datos.orden_operativa.length > 0) {
+                console.log('✅ Orden operativa encontrada:', datos.orden_operativa);
+                
+                html += `
+                    <div class="section" style="border-left-color: #2563eb; background: #eff6ff; margin-top: 20px;">
+                        <h2 style="color: #2563eb;">📋 Orden Operativa en Planta</h2>
+                        <p style="font-size: 14px; color: #65615e; margin-bottom: 15px;">Instrucciones paso-a-paso para el operario en planta:</p>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                `;
+                
+                datos.orden_operativa.forEach((paso) => {
+                    let iconoPaso = 'ℹ️';
+                    let colorFondo = '#e0e7ff';
+                    let colorBorde = '#2563eb';
+                    
+                    if (paso.tipo === 'grueso') {
+                        iconoPaso = '🔴';
+                        colorBorde = '#7c2d12';
+                        colorFondo = '#fff7ed';
+                    } else if (paso.tipo === 'medio') {
+                        iconoPaso = '🟡';
+                        colorBorde = '#a16207';
+                        colorFondo = '#fffbeb';
+                    } else if (paso.tipo === 'fino') {
+                        iconoPaso = '🟢';
+                        colorBorde = '#166534';
+                        colorFondo = '#f0fdf4';
+                    }
+                    
+                    let mallaHtml = '';
+                    if (paso.malla) {
+                        mallaHtml = `<div style="margin-top: 8px;"><strong>Malla:</strong> ${paso.malla}</div>`;
+                    }
+                    
+                    html += `
+                        <div style="padding: 14px; border-left: 4px solid ${colorBorde}; 
+                                    background: ${colorFondo}; border-radius: 4px;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                                <span style="font-size: 24px;">${iconoPaso}</span>
+                                <div>
+                                    <div style="font-size: 14px; font-weight: bold; color: #1f2937;">
+                                        Paso ${paso.paso}: ${paso.material}
+                                    </div>
+                                    <div style="font-size: 13px; color: #6b7280;">
+                                        Tipo: <strong>${paso.tipo.toUpperCase()}</strong> | 
+                                        Proporción: <strong>${paso.proporcion_pct}%</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-left: 36px;">
+                                <div style="margin-bottom: 8px;">
+                                    <strong>Acción:</strong> ${paso.accion === 'rezarandear' ? '🔄 Rezarandear' : '⏸️ No tocar'}
+                                </div>
+                                ${mallaHtml}
+                                <div style="margin-top: 8px;">
+                                    <strong>Resultado esperado:</strong> ${paso.resultado}
+                                </div>
+                                <div style="margin-top: 8px; padding: 10px; background: white; border-radius: 3px; border-left: 3px solid ${colorBorde};">
+                                    <strong>Uso en mezcla:</strong> ${paso.uso}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                        <p style="font-size: 13px; color: #7c7c7c; margin-top: 12px; font-style: italic;">
+                            📌 Seguir los pasos en orden. Cada operación modifica la composición granulométrica del material.
+                        </p>
+                    </div>
+                `;
+            }
+
             html += `
                     <div class="detail-toggle">
                         <button onclick="toggleAccordion(this)">
@@ -1106,6 +1436,78 @@
                         </button>
                         <div class="detail-body">
             `;
+
+            // ===== NUEVA SECCIÓN: Orden Operativa Real (basada en materiales originales) =====
+            if (datos.orden_operativa_real && Array.isArray(datos.orden_operativa_real) && datos.orden_operativa_real.length > 0) {
+                let ordenHTML = `
+                    <div class="section" style="border-left-color: #059669; background: #ecfdf5; margin-top: 20px;">
+                        <h2 style="color: #059669;">🧾 Orden Operativa Real (Materiales Originales)</h2>
+                        <p style="font-size: 14px; color: #65615e; margin-bottom: 15px;">Instrucciones operativas basadas en los materiales originales (difusion 1, 2, 3):</p>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                `;
+                
+                datos.orden_operativa_real.forEach((paso) => {
+                    let iconoPaso = 'ℹ️';
+                    let colorFondo = '#e0f2fe';
+                    let colorBorde = '#0284c7';
+                    
+                    if (paso.tipo === 'grueso') {
+                        iconoPaso = '🔴';
+                        colorBorde = '#7c2d12';
+                        colorFondo = '#fff7ed';
+                    } else if (paso.tipo === 'medio') {
+                        iconoPaso = '🟡';
+                        colorBorde = '#a16207';
+                        colorFondo = '#fffbeb';
+                    } else if (paso.tipo === 'fino') {
+                        iconoPaso = '🟢';
+                        colorBorde = '#166534';
+                        colorFondo = '#f0fdf4';
+                    }
+                    
+                    const mallaHtml = paso.malla 
+                        ? `<div style="margin-top: 8px;"><strong>Malla:</strong> ${paso.malla}</div>` 
+                        : '';
+                    
+                    ordenHTML += `
+                        <div style="padding: 14px; border-radius: 6px; border-left: 4px solid ${colorBorde}; background: ${colorFondo}; position: relative;">
+                            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                <div style="font-size: 24px; flex-shrink: 0;">${iconoPaso}</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 15px; margin-bottom: 8px;">
+                                        <strong>Paso ${paso.paso}:</strong> ${paso.material}
+                                    </div>
+                                    <div style="font-size: 13px; color: #6b7280;">
+                                        Tipo: <strong>${paso.tipo.toUpperCase()}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-left: 36px;">
+                                <div style="margin-bottom: 8px;">
+                                    <strong>Acción:</strong> ${paso.accion === 'rezarandear' ? '🔄 Rezarandear' : '⏸️ No tocar'}
+                                </div>
+                                ${mallaHtml}
+                                <div style="margin-top: 8px;">
+                                    <strong>Resultado esperado:</strong> ${paso.resultado}
+                                </div>
+                                <div style="margin-top: 8px; padding: 10px; background: white; border-radius: 3px; border-left: 3px solid ${colorBorde};">
+                                    <strong>Uso en planta:</strong> ${paso.uso}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                ordenHTML += `
+                        </div>
+                        <p style="font-size: 13px; color: #7c7c7c; margin-top: 12px; font-style: italic;">
+                            📌 Esta orden se basa en los materiales originales. Seguir los pasos en secuencia.
+                        </p>
+                    </div>
+                `;
+                
+                html += ordenHTML;
+            }
 
             // Criterios de Decisión
             const cumpleEstilo = criterios.cumple_banda ? 'ok' : 'error';

@@ -1901,6 +1901,50 @@ def _crear_agregado_correctivo(
     }
 
 
+def generar_acciones_zaranda(error_gruesa, error_media, error_fina):
+    """
+    Genera lista de acciones recomendadas para operación de zaranda
+    
+    Toma los errores residuales por zona (gruesa, media, fina)
+    y retorna recomendaciones de acción para el operador de planta
+    
+    Args:
+        error_gruesa: Error residual zona gruesa (float)
+        error_media: Error residual zona media (float)
+        error_fina: Error residual zona fina (float)
+    
+    Returns:
+        list: Strings con acciones en español
+    """
+    acciones = []
+
+    # GRUESO
+    if error_gruesa < -20:
+        acciones.append("GRUESO: Re-zarandear por malla media (2.4–1.2 mm) y reducir uso")
+    elif error_gruesa > 20:
+        acciones.append("GRUESO: Mantener y aumentar proporción")
+    else:
+        acciones.append("GRUESO: Mantener")
+
+    # MEDIO
+    if error_media < -20:
+        acciones.append("MEDIO: Re-zarandear por malla fina (0.6–0.3 mm)")
+    elif error_media > 20:
+        acciones.append("MEDIO: Mantener y aumentar proporción")
+    else:
+        acciones.append("MEDIO: Mantener")
+
+    # FINO
+    if error_fina > 20:
+        acciones.append("FINO: Aumentar proporción (generar desde medio si es necesario)")
+    elif error_fina < -20:
+        acciones.append("FINO: Reducir proporción")
+    else:
+        acciones.append("FINO: Mantener")
+
+    return acciones
+
+
 def generar_propuesta_3_agregados(
     mix_pasante,
     banda_min,
@@ -2012,6 +2056,16 @@ def generar_propuesta_3_agregados(
         log(f"  - M1 (Gruesa): {round(prop_gruesa * 100, 2)}%")
         log(f"  - M2 (Media):  {round(prop_media * 100, 2)}%")
         log(f"  - M3 (Fina):   {round(prop_fina * 100, 2)}%")
+        
+        # ===== NUEVO: Generar recomendaciones de operación en zaranda =====
+        acciones_zaranda = generar_acciones_zaranda(
+            error_gruesa=zonas['gruesa']['error_total'],
+            error_media=zonas['media']['error_total'],
+            error_fina=zonas['fina']['error_total']
+        )
+        log(f"\n[PROPUESTA 3-AGG] Acciones zaranda generadas: {len(acciones_zaranda)} recomendaciones")
+        for accion in acciones_zaranda:
+            log(f"  ✓ {accion}")
         
         # ===== PASO 6: Reconstruir mezcla final (FIX CONCEPTUAL) =====
         # En lugar de promediar agregados sintéticos, interpolar hacia objetivo
@@ -2137,7 +2191,8 @@ def generar_propuesta_3_agregados(
                 f"Propuesta de 3 agregados generada. "
                 f"Cumplimiento esperado: {round(cumplimiento_pct, 1)}%. "
                 f"M1={round(prop_gruesa*100, 1)}%, M2={round(prop_media*100, 1)}%, M3={round(prop_fina*100, 1)}%"
-            )
+            ),
+            'acciones_zaranda': acciones_zaranda
         }
     
     except Exception as e:
@@ -2425,6 +2480,174 @@ def generar_instruccion_receta(proporciones_dict):
     return receta
 
 
+def generar_orden_operativa(materiales):
+    """
+    Transforma materiales de propuesta en orden operativa para planta.
+    Generación de instrucciones paso a paso para el operador.
+    
+    Args:
+        materiales: List[Dict] con propuesta_agregados que contiene
+                   material, retido_ind_pct, proporcion_pct
+    
+    Returns:
+        List[Dict] con estructura:
+        {
+            "material": nombre,
+            "tipo": "grueso"|"medio"|"fino",
+            "accion": "rezarandear"|"no_tocar",
+            "malla": "...|None",
+            "resultado": "...",
+            "uso": "..."
+        }
+    """
+    if not materiales or not isinstance(materiales, list):
+        return []
+    
+    orden = []
+    paso = 0
+    
+    for mat in materiales:
+        # Ignorar materiales con proporción 0
+        proporcion = mat.get('proporcion_pct', 0)
+        if proporcion == 0 or proporcion is None:
+            continue
+        
+        nombre = mat.get('nombre', 'Material desconocido')
+        retido_ind_pct = mat.get('retido_ind_pct', [])
+        
+        if not retido_ind_pct or len(retido_ind_pct) == 0:
+            continue
+        
+        # Detectar tipo basado en índice del valor máximo
+        # Con 8 tamices [9.5, 4.8, 2.4, 1.2, 0.6, 0.3, 0.15, 0.075]:
+        # Índices: 0-2=grueso, 3-4=medio, 5+=fino
+        # ⚠️ Estrategia robusta para datos corruptos: buscar máximo entre retidos razonables (0-100)
+        retido_razonables = [(i, v) for i, v in enumerate(retido_ind_pct) if 0 < v < 100]
+        
+        if retido_razonables:
+            # Hay valores razonables: tomar el índice del máximo
+            max_index = max(retido_razonables, key=lambda x: x[1])[0]
+        else:
+            # Sin valores razonables: buscar el primero positivo (aunque sea > 100)
+            retido_positivos = [(i, v) for i, v in enumerate(retido_ind_pct) if v > 0]
+            if retido_positivos:
+                max_index = retido_positivos[0][0]
+            else:
+                max_index = 0
+        
+        if max_index <= 2:
+            tipo = "grueso"
+            accion = "rezarandear"
+            malla = "2.4–1.2 mm"
+            resultado = "genera material medio"
+            uso = "reducir grueso y reutilizar pasante"
+        elif 3 <= max_index <= 4:
+            tipo = "medio"
+            accion = "rezarandear"
+            malla = "0.6–0.3 mm"
+            resultado = "genera material fino"
+            uso = "aumentar finos manteniendo equilibrio"
+        else:  # max_index >= 5
+            tipo = "fino"
+            accion = "no_tocar"
+            malla = None
+            resultado = "ya es fino"
+            uso = "aumentar proporción en mezcla"
+        
+        paso += 1
+        
+        orden.append({
+            "paso": paso,
+            "material": nombre,
+            "tipo": tipo,
+            "accion": accion,
+            "malla": malla,
+            "resultado": resultado,
+            "uso": uso,
+            "proporcion_pct": round(proporcion, 2)
+        })
+    
+    return orden
+
+
+def generar_orden_operativa_real(materiales_originales):
+    """
+    NUEVA: Genera orden operativa REAL para planta basada en materiales ORIGINALES (difusion 1,2,3)
+    NO depende de propuesta_agregados_correctivos
+    
+    Args:
+        materiales_originales: List[Dict] con estructura original del payload
+                              {nombre, retido_ind_pct, ...}
+    
+    Returns:
+        List[Dict] con instrucciones operativas
+    """
+    if not materiales_originales or not isinstance(materiales_originales, list):
+        return []
+    
+    orden = []
+    paso = 0
+    
+    for mat in materiales_originales:
+        nombre = mat.get('nombre', 'Material desconocido')
+        retido_ind_pct = mat.get('retido_ind_pct', [])
+        
+        if not retido_ind_pct or len(retido_ind_pct) == 0:
+            continue
+        
+        # Detectar tipo basado en índice del valor máximo
+        # Con 8 tamices [9.5, 4.8, 2.4, 1.2, 0.6, 0.3, 0.15, 0.075]:
+        # Índices: 0-2=grueso, 3-4=medio, 5+=fino
+        # ⚠️ Estrategia robusta para datos corruptos: buscar máximo entre retidos razonables (0-100)
+        retido_razonables = [(i, v) for i, v in enumerate(retido_ind_pct) if 0 < v < 100]
+        
+        if retido_razonables:
+            # Hay valores razonables: tomar el índice del máximo
+            max_index = max(retido_razonables, key=lambda x: x[1])[0]
+        else:
+            # Sin valores razonables: buscar el primero positivo (aunque sea > 100)
+            retido_positivos = [(i, v) for i, v in enumerate(retido_ind_pct) if v > 0]
+            if retido_positivos:
+                max_index = retido_positivos[0][0]
+            else:
+                max_index = 0
+        
+        if max_index <= 2:
+            tipo = "grueso"
+            accion = "rezarandear"
+            malla = "2.4–1.2 mm"
+            resultado = "genera material medio"
+            uso = "reducir grueso y reutilizar pasante"
+        elif 3 <= max_index <= 4:
+            tipo = "medio"
+            accion = "rezarandear"
+            malla = "0.6–0.3 mm"
+            resultado = "genera material fino"
+            uso = "aumentar finos manteniendo equilibrio"
+        else:  # max_index >= 5
+            tipo = "fino"
+            accion = "no_tocar"
+            malla = None
+            resultado = "ya es fino"
+            uso = "aumentar proporción en mezcla"
+        
+        paso += 1
+        
+        orden.append({
+            "paso": paso,
+            "material": nombre,
+            "tipo": tipo,
+            "accion": accion,
+            "malla": malla,
+            "resultado": resultado,
+            "uso": uso
+        })
+    
+    print(f"[DEBUG orden_real] ✅ Retornando {len(orden)} órdenes")
+    return orden
+
+
+
 @calculoPorRetenidos.route('/calculoPorRetenidos/auditoria', methods=['GET'])
 def auditoria_view():
     """
@@ -2492,6 +2715,39 @@ def api_auditoria():
         banda_max = config.get('banda_max', [])
         tamices = config.get('tamices', [])
         materiales = config.get('materiales', None)  # ← NUEVO: materiales para optimizar
+        
+        print(f"\n🔍 [AUDITORIA API] Recibidos {len(materiales) if materiales else 0} materiales en payload")
+        if materiales:
+            for i, m in enumerate(materiales):
+                tiene_retido = 'retido_ind_pct' in m and m.get('retido_ind_pct')
+                tiene_pasantes = 'pasantes' in m and m.get('pasantes')
+                print(f"   Material {i}: {m.get('nombre', 'unknown')} - retido_ind_pct={tiene_retido}, pasantes={tiene_pasantes}")
+        
+        # ✅ GUARDAR MATERIALES ORIGINALES ANTES DE PROCESAR
+        import copy
+        materiales_originales_para_orden = copy.deepcopy(materiales) if materiales else None
+        
+        # Si los materiales NO tienen retido_ind_pct pero sí tienen pasantes, convertir
+        if materiales_originales_para_orden:
+            print(f"✅ Intentando convertir pasantes a retido_ind_pct...")
+            for mat in materiales_originales_para_orden:
+                if not mat.get('retido_ind_pct'):
+                    pasantes = mat.get('pasantes', [])
+                    if pasantes and len(pasantes) > 0:
+                        # Convertir pasantes a retido_ind_pct
+                        retido_ind_pct = []
+                        anterior = 100.0
+                        for pasante in pasantes:
+                            retido = anterior - pasante
+                            retido_ind_pct.append(retido)
+                            anterior = pasante
+                        retido_ind_pct.append(anterior)
+                        mat['retido_ind_pct'] = retido_ind_pct
+                        print(f"   ✅ Convertido {mat['nombre']}: pasantes → retido_ind_pct = {retido_ind_pct[:3]}...")
+                else:
+                    print(f"   ✓ {mat['nombre']} ya tiene retido_ind_pct")
+        
+        print(f"📦 Guardados {len(materiales_originales_para_orden) if materiales_originales_para_orden else 0} materiales para orden_operativa_real")
         
         # Validar entrada
         if not all([pasante_real, banda_min, banda_max, tamices]):
@@ -2572,6 +2828,86 @@ def api_auditoria():
             resultado['fase_6_receta']['proporciones'] = proporciones_optimizadas
             resultado['fase_6_receta']['instruction'] = generar_instruccion_receta(proporciones_optimizadas)
             resultado['fase_6_receta']['tabla_entrada_pasante'] = pasante_entrada_original
+        
+        # ===== NUEVO: Generar propuesta de agregados correctivos =====
+        try:
+            propuesta_agregados = generar_propuesta_3_agregados(
+                mix_pasante=pasante_auditado,
+                banda_min=banda_min,
+                banda_max=banda_max,
+                tamices=tamices,
+                log=None
+            )
+            if propuesta_agregados and propuesta_agregados.get('exito'):
+                resultado['propuesta_agregados_correctivos'] = propuesta_agregados
+        except Exception as e:
+            print(f"⚠️ Error generando propuesta de agregados en auditoría: {str(e)}")
+        
+        # ===== NUEVO: Generar orden operativa para planta =====
+        # IMPORTANTE: Generar SIEMPRE si tenemos propuesta_agregados_correctivos, sin depender de parámetros
+        try:
+            if 'propuesta_agregados_correctivos' in resultado and resultado['propuesta_agregados_correctivos'].get('exito'):
+                propuesta_dict = resultado['propuesta_agregados_correctivos'].get('propuesta', {})
+                if propuesta_dict:
+                    materiales_con_retido = []
+                    
+                    for key in ['m1', 'm2', 'm3']:
+                        if key in propuesta_dict:
+                            mat_info = propuesta_dict[key]
+                            proporciones = resultado['propuesta_agregados_correctivos'].get('proporciones', [])
+                            if proporciones:
+                                idx = ['m1', 'm2', 'm3'].index(key)
+                                proporcion = proporciones[idx] * 100 if idx < len(proporciones) else 0
+                                materiales_con_retido.append({
+                                    'nombre': mat_info.get('nombre', key.upper()),
+                                    'retido_ind_pct': mat_info.get('retido_ind_pct', []),
+                                    'proporcion_pct': proporcion
+                                })
+                    
+                    if materiales_con_retido:
+                        orden = generar_orden_operativa(materiales_con_retido)
+                        if orden:
+                            resultado['orden_operativa'] = orden
+                            import json
+                            print("\n" + "="*80)
+                            print("[✅ ORDEN OPERATIVA GENERADA]")
+                            print("="*80)
+                            print(json.dumps(orden, indent=2, ensure_ascii=False))
+                            print("="*80 + "\n")
+        except Exception as e:
+            import traceback
+            print(f"⚠️ Error generando orden_operativa: {str(e)}")
+            print(traceback.format_exc())
+        
+        # ===== NUEVO: Generar orden operativa REAL basada en materiales ORIGINALES (PLANTA) =====
+        try:
+            print(f"\n[DEBUG] Verificando materiales para orden_operativa_real...")
+            print(f"[DEBUG] materiales_originales_para_orden exists? {materiales_originales_para_orden is not None}")
+            print(f"[DEBUG] materiales_originales_para_orden is list? {isinstance(materiales_originales_para_orden, list) if materiales_originales_para_orden else False}")
+            print(f"[DEBUG] materiales_originales_para_orden length? {len(materiales_originales_para_orden) if materiales_originales_para_orden else 0}")
+            
+            if materiales_originales_para_orden and isinstance(materiales_originales_para_orden, list) and len(materiales_originales_para_orden) > 0:
+                print(f"[DEBUG] Llamando generar_orden_operativa_real()...")
+                orden_real = generar_orden_operativa_real(materiales_originales_para_orden)
+                print(f"[DEBUG] orden_real result: {orden_real}")
+                print(f"[DEBUG] orden_real length: {len(orden_real)}")
+                
+                if orden_real:
+                    resultado['orden_operativa_real'] = orden_real
+                    import json
+                    print("\n" + "="*80)
+                    print("[✅ ORDEN OPERATIVA REAL (PLANTA) GENERADA]")
+                    print("="*80)
+                    print(json.dumps(orden_real, indent=2, ensure_ascii=False))
+                    print("="*80 + "\n")
+                else:
+                    print("[DEBUG] orden_real es vacío o False")
+            else:
+                print(f"[DEBUG] Condiciones no cumplidas para orden_operativa_real")
+        except Exception as e:
+            import traceback
+            print(f"⚠️ Error generando orden_operativa_real: {str(e)}")
+            print(traceback.format_exc())
         
         return jsonify({
             'exito': True,

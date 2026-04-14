@@ -1600,7 +1600,11 @@ function abrirAuditoriaDesdeModal() {
     console.log('✓ Validación defensiva completada');
     console.log(`  - Longitud final: ${longitud_maxima} elementos en cada array`);
     
-    console.log('📊 Enviando datos a auditoría:', datos);
+    // 🛡️ NUEVA: Advertencia sobre contexto de origen
+    console.warn('⚠️ ADVERTENCIA: Enviando desde Modal (SIN materiales)');
+    console.warn('   - Backend NO generará orden_operativa_real');
+    console.warn('   - Estructura esperada: {pasante_real, banda_min, banda_max, tamices}');
+    console.log('[DEBUG] Enviando datos a auditoría:', datos);
     
     // 5. Llamar al endpoint
     fetch('/calculoPorRetenidos/auditoria', {
