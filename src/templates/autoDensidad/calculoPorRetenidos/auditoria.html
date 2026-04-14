@@ -912,20 +912,22 @@
             }
         }
         
-        // Intentar cargar desde localStorage, si no, usar ejemplo por defecto
-        let datosEjemplo = cargarDatosDelStorage() || {
-            pasante_real: [99.20, 76.60, 35.20, 12.40, 6.50, 4.70, 1.40],
-            banda_min: [85, 65, 35, 15, 5, 2, 0],
-            banda_max: [100, 90, 65, 45, 20, 10, 5],
-            tamices: [8, 5, 3.15, 2, 1, 0.5, 0.1],
-            nombre: 'Ejemplo por defecto'
-        };
+        // ✅ SOLO DATOS REALES - SIN MOCKS HARDCODEADOS
+        let datosEjemplo = null;
         
         function usarEjemplo() {
-            // Actualizar por si cambiaron los datos en localStorage
-            const datosActuales = cargarDatosDelStorage() || datosEjemplo;
-            document.getElementById('jsonInput').value = JSON.stringify(datosActuales, null, 2);
-            cargarDatos();
+            // 🔄 PRIMERO: intentar cargar datos REALES del localStorage
+            const datosRealesDelStorage = cargarDatosDelStorage();
+            if (datosRealesDelStorage) {
+                // ✅ Si hay datos reales → ejecutar auditoría directamente
+                console.log('📋 Usando datos REALES del localStorage.tablasCargadas:', datosRealesDelStorage);
+                ejecutarAuditoria(datosRealesDelStorage);
+                return;
+            }
+            
+            // ❌ Si NO hay datos reales → mostrar error
+            console.error('❌ No se encontraron datos en localStorage.tablasCargadas');
+            mostrarError('❌ No hay datos en localStorage. Carga las tablas en calculoPorRetenidos primero.');
         }
         
         // 🛡️ FUNCIÓN VALIDADORA CENTRALIZADA
