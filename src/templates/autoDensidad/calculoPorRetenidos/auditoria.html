@@ -745,12 +745,21 @@
             if (datosSession) {
                 try {
                     const { datos, entrada } = JSON.parse(datosSession);
-                    console.log('✅ Datos cacheados mostrados desde sessionStorage (UX rápida)');
-                    sessionStorage.removeItem('datosAuditoriaRecientes');
-                    // Mostrar datos cacheados inmediatamente (REFACTOR: SIN fetch automático)
-                    // Los datos locales son suficientes para visualización inicial
-                    console.log('📊 Mostrando curva original desde datos locales (SIN fetch posterior)');
-                    setTimeout(() => mostrarResultado(datos, entrada), 100);
+                    
+                    // 🛡️ Validar que datos tenga la estructura correcta
+                    if (!datos || !datos.fase_1 || !datos.fase_2_4_criterios) {
+                        console.warn('⚠️ Datos en sessionStorage incompletos, ignorando cache');
+                        sessionStorage.removeItem('datosAuditoriaRecientes');
+                        // Continuar cargando desde localStorage
+                    } else {
+                        console.log('✅ Datos cacheados mostrados desde sessionStorage (UX rápida)');
+                        sessionStorage.removeItem('datosAuditoriaRecientes');
+                        // Mostrar datos cacheados inmediatamente (REFACTOR: SIN fetch automático)
+                        // Los datos locales son suficientes para visualización inicial
+                        console.log('📊 Mostrando curva original desde datos locales (SIN fetch posterior)');
+                        setTimeout(() => mostrarResultado(datos, entrada), 100);
+                        return null;
+                    }
                     
                     // 🔄 REFACTOR: Fetch automático DESHABILITADO
                     // RAZÓN: La visualización inicial NO necesita backend
@@ -779,7 +788,6 @@
                         .catch(e => console.warn('⚠️ Error fetching datos frescos:', e));
                     }, 500);
                     */
-                    return null;
                 } catch (e) {
                     console.warn('Error al cargar de sessionStorage:', e);
                 }
@@ -2076,9 +2084,24 @@
             });
         }
         
+        // 📋 Cargar JSON del localStorage en el textarea
+        function cargarJSONEnTextarea() {
+            const tablasCargadas = localStorage.getItem('tablasCargadas');
+            if (tablasCargadas) {
+                try {
+                    const datos = JSON.parse(tablasCargadas);
+                    document.getElementById('jsonInput').value = JSON.stringify(datos, null, 2);
+                    console.log('✅ JSON cargado en textarea desde localStorage.tablasCargadas');
+                } catch (e) {
+                    console.error('❌ Error al cargar JSON en textarea:', e);
+                }
+            }
+        }
+        
         // Cargar ejemplo al abrir la página
         window.addEventListener('load', () => {
             applyAuditoriaTranslations();
+            cargarJSONEnTextarea();
             usarEjemplo();
         });
     </script>

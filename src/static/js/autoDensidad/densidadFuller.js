@@ -25,12 +25,12 @@
     // 🔽 Agregá límites personalizados si vas a manejarlos
     const limites_personalizados = {
       grueso: {
-        umbral_min: 4.75,
+        umbral_min: 4.8,
         limites: { ok: 40 }
       },
       medio: {
         umbral_min: 0.6,
-        umbral_max: 4.75,
+        umbral_max: 4.8,
         limites: {
           exceso_grave: 70,
           limite_superior: 50,
@@ -235,7 +235,7 @@ function agregarMezcla() {
     // 🔴 ESTE es el ID que después vamos a usar para guardar y restaurar
     mezclaDiv.setAttribute("data-mezcla-id", `mezcla-${mezclaId}`);
 
-    const tamices = [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15];
+    const tamices = [9.5, 4.8, 2.4, 1.2, 0.6, 0.3, 0.15, 0.075];
 
     const filasHTML = tamices.map(t => `
         <tr>
@@ -1352,17 +1352,17 @@ function cargarDatosPorDefecto() {
   const mezclas = [
     {
       nombre: "Telares 2",
-      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15, 0.074],
+      tamices: [9.5, 4.8, 2.4, 1.2, 0.6, 0.3, 0.15, 0.075],
       porcentajes: [99.67,94.22,67.18,42.86,23.88,11.78,3.6,0.65]
     },
     {
       nombre: "Piedra Negra",
-      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15, 0.074],
+      tamices: [9.5, 4.8, 2.4, 1.2, 0.6, 0.3, 0.15, 0.075],
       porcentajes: [100,89.36,54,31.13,18.73,12.49,6.24,0.88]
     },
     {
       nombre: "Telares 1",
-      tamices: [9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15, 0.074],
+      tamices: [9.5, 4.8, 2.4, 1.2, 0.6, 0.3, 0.15, 0.075],
       porcentajes: [100,98.76,67.02,41.33,24.62,14.58,6.31,1.6]
     }
   ];
