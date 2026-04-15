@@ -2480,26 +2480,102 @@ def generar_instruccion_receta(proporciones_dict):
     return receta
 
 
-def generar_orden_operativa(materiales):
+def generar_orden_operativa(materiales, lang="es"):
     """
     Transforma materiales de propuesta en orden operativa para planta.
     Generación de instrucciones paso a paso para el operador.
+    CON INTERNACIONALIZACIÓN desde backend
     
     Args:
         materiales: List[Dict] con propuesta_agregados que contiene
                    material, retido_ind_pct, proporcion_pct
+        lang: Idioma ('es', 'en', 'it', 'pt', 'pl') - se obtiene de cookies
     
     Returns:
         List[Dict] con estructura:
         {
             "material": nombre,
-            "tipo": "grueso"|"medio"|"fino",
-            "accion": "rezarandear"|"no_tocar",
+            "tipo": "GRUESO|MEDIUM|..." (traducido),
+            "tipo_interno": "grueso|medio|fino" (SIN TRADUCIR para frontend),
+            "accion": "Rezarandear|Resieve|..." (traducido),
             "malla": "...|None",
             "resultado": "...",
             "uso": "..."
         }
     """
+    
+    # 🌐 DICCIONARIO DE TRADUCCIONES (igual que en generar_orden_operativa_real)
+    traducciones = {
+        "es": {
+            "tipo_grueso": "GRUESO",
+            "tipo_medio": "MEDIO",
+            "tipo_fino": "FINO",
+            "accion_rezarandear": "Rezarandear",
+            "accion_no_tocar": "No tocar",
+            "resultado_grueso": "genera material medio",
+            "resultado_medio": "genera material fino",
+            "resultado_fino": "ya es fino",
+            "uso_grueso": "reducir grueso y reutilizar pasante",
+            "uso_medio": "aumentar finos manteniendo equilibrio",
+            "uso_fino": "aumentar proporción en mezcla"
+        },
+        "en": {
+            "tipo_grueso": "COARSE",
+            "tipo_medio": "MEDIUM",
+            "tipo_fino": "FINE",
+            "accion_rezarandear": "Resieve",
+            "accion_no_tocar": "Do not touch",
+            "resultado_grueso": "generates medium material",
+            "resultado_medio": "generates fine material",
+            "resultado_fino": "already fine",
+            "uso_grueso": "reduce coarse and reuse passing",
+            "uso_medio": "increase fines while maintaining balance",
+            "uso_fino": "increase proportion in mix"
+        },
+        "it": {
+            "tipo_grueso": "GROSSOLANO",
+            "tipo_medio": "MEDIO",
+            "tipo_fino": "FINE",
+            "accion_rezarandear": "Ricribrare",
+            "accion_no_tocar": "Non toccare",
+            "resultado_grueso": "genera materiale medio",
+            "resultado_medio": "genera materiale fine",
+            "resultado_fino": "già fine",
+            "uso_grueso": "ridurre grossolano e riutilizzare passante",
+            "uso_medio": "aumentare fini mantenendo equilibrio",
+            "uso_fino": "aumentare proporzione nella miscela"
+        },
+        "pt": {
+            "tipo_grueso": "GROSSO",
+            "tipo_medio": "MÉDIO",
+            "tipo_fino": "FINO",
+            "accion_rezarandear": "Peneirar",
+            "accion_no_tocar": "Não tocar",
+            "resultado_grueso": "gera material médio",
+            "resultado_medio": "gera material fino",
+            "resultado_fino": "já é fino",
+            "uso_grueso": "reduzir grosso e reutilizar passante",
+            "uso_medio": "aumentar finos mantendo equilibrio",
+            "uso_fino": "aumentar proporção na mistura"
+        },
+        "pl": {
+            "tipo_grueso": "GRUBY",
+            "tipo_medio": "ŚREDNI",
+            "tipo_fino": "DROBNY",
+            "accion_rezarandear": "Przesiać",
+            "accion_no_tocar": "Nie dotykać",
+            "resultado_grueso": "generuje materiał średni",
+            "resultado_medio": "generuje materiał drobny",
+            "resultado_fino": "już drobny",
+            "uso_grueso": "zmniejsz grube i ponownie użyj przechodzenia",
+            "uso_medio": "zwiększ drobne zachowując równowagę",
+            "uso_fino": "zwiększ proporcję w mieszaninie"
+        }
+    }
+    
+    # Obtener diccionario de idioma, fallback a español
+    msgs = traducciones.get(lang, traducciones["es"])
+    
     if not materiales or not isinstance(materiales, list):
         return []
     
@@ -2536,30 +2612,34 @@ def generar_orden_operativa(materiales):
                 max_index = 0
         
         if max_index <= 2:
-            tipo = "grueso"
-            accion = "rezarandear"
+            tipo = msgs["tipo_grueso"]
+            tipo_interno = "grueso"  # ← Para frontend (colores, estilos)
+            accion = msgs["accion_rezarandear"]
             malla = "2.4–1.2 mm"
-            resultado = "genera material medio"
-            uso = "reducir grueso y reutilizar pasante"
+            resultado = msgs["resultado_grueso"]
+            uso = msgs["uso_grueso"]
         elif 3 <= max_index <= 4:
-            tipo = "medio"
-            accion = "rezarandear"
+            tipo = msgs["tipo_medio"]
+            tipo_interno = "medio"  # ← Para frontend (colores, estilos)
+            accion = msgs["accion_rezarandear"]
             malla = "0.6–0.3 mm"
-            resultado = "genera material fino"
-            uso = "aumentar finos manteniendo equilibrio"
+            resultado = msgs["resultado_medio"]
+            uso = msgs["uso_medio"]
         else:  # max_index >= 5
-            tipo = "fino"
-            accion = "no_tocar"
+            tipo = msgs["tipo_fino"]
+            tipo_interno = "fino"  # ← Para frontend (colores, estilos)
+            accion = msgs["accion_no_tocar"]
             malla = None
-            resultado = "ya es fino"
-            uso = "aumentar proporción en mezcla"
+            resultado = msgs["resultado_fino"]
+            uso = msgs["uso_fino"]
         
         paso += 1
         
         orden.append({
             "paso": paso,
             "material": nombre,
-            "tipo": tipo,
+            "tipo": tipo,               # ← TRADUCIDO para mostrar al usuario
+            "tipo_interno": tipo_interno,  # ← SIN TRADUCIR para frontend (colores)
             "accion": accion,
             "malla": malla,
             "resultado": resultado,
@@ -2570,18 +2650,92 @@ def generar_orden_operativa(materiales):
     return orden
 
 
-def generar_orden_operativa_real(materiales_originales):
+def generar_orden_operativa_real(materiales_originales, lang="es"):
     """
     NUEVA: Genera orden operativa REAL para planta basada en materiales ORIGINALES (difusion 1,2,3)
-    NO depende de propuesta_agregados_correctivos
+    CON INTERNACIONALIZACIÓN desde backend
     
     Args:
         materiales_originales: List[Dict] con estructura original del payload
                               {nombre, retido_ind_pct, ...}
+        lang: Idioma ('es', 'en', 'it', 'pt', 'pl') - se obtiene de cookies
     
     Returns:
-        List[Dict] con instrucciones operativas
+        List[Dict] con instrucciones operativas internacionalizadas
     """
+    
+    # 🌐 DICCIONARIO DE TRADUCCIONES
+    traducciones = {
+        "es": {
+            "tipo_grueso": "GRUESO",
+            "tipo_medio": "MEDIO",
+            "tipo_fino": "FINO",
+            "accion_rezarandear": "Rezarandear",
+            "accion_no_tocar": "No tocar",
+            "resultado_grueso": "genera material medio",
+            "resultado_medio": "genera material fino",
+            "resultado_fino": "ya es fino",
+            "uso_grueso": "reducir grueso y reutilizar pasante",
+            "uso_medio": "aumentar finos manteniendo equilibrio",
+            "uso_fino": "aumentar proporción en mezcla"
+        },
+        "en": {
+            "tipo_grueso": "COARSE",
+            "tipo_medio": "MEDIUM",
+            "tipo_fino": "FINE",
+            "accion_rezarandear": "Resieve",
+            "accion_no_tocar": "Do not touch",
+            "resultado_grueso": "generates medium material",
+            "resultado_medio": "generates fine material",
+            "resultado_fino": "already fine",
+            "uso_grueso": "reduce coarse and reuse passing",
+            "uso_medio": "increase fines while maintaining balance",
+            "uso_fino": "increase proportion in mix"
+        },
+        "it": {
+            "tipo_grueso": "GROSSOLANO",
+            "tipo_medio": "MEDIO",
+            "tipo_fino": "FINE",
+            "accion_rezarandear": "Ricribrare",
+            "accion_no_tocar": "Non toccare",
+            "resultado_grueso": "genera materiale medio",
+            "resultado_medio": "genera materiale fine",
+            "resultado_fino": "già fine",
+            "uso_grueso": "ridurre grossolano e riutilizzare passante",
+            "uso_medio": "aumentare fini mantenendo equilibrio",
+            "uso_fino": "aumentare proporzione nella miscela"
+        },
+        "pt": {
+            "tipo_grueso": "GROSSO",
+            "tipo_medio": "MÉDIO",
+            "tipo_fino": "FINO",
+            "accion_rezarandear": "Peneirar",
+            "accion_no_tocar": "Não tocar",
+            "resultado_grueso": "gera material médio",
+            "resultado_medio": "gera material fino",
+            "resultado_fino": "já é fino",
+            "uso_grueso": "reduzir grosso e reutilizar passante",
+            "uso_medio": "aumentar finos mantendo equilibrio",
+            "uso_fino": "aumentar proporção na mistura"
+        },
+        "pl": {
+            "tipo_grueso": "GRUBY",
+            "tipo_medio": "ŚREDNI",
+            "tipo_fino": "DROBNY",
+            "accion_rezarandear": "Przesiać",
+            "accion_no_tocar": "Nie dotykać",
+            "resultado_grueso": "generuje materiał średni",
+            "resultado_medio": "generuje materiał drobny",
+            "resultado_fino": "już drobny",
+            "uso_grueso": "zmniejsz grube i ponownie użyj przechodzenia",
+            "uso_medio": "zwiększ drobne zachowując równowagę",
+            "uso_fino": "zwiększ proporcję w mieszaninie"
+        }
+    }
+    
+    # Obtener diccionario de idioma, fallback a español
+    msgs = traducciones.get(lang, traducciones["es"])
+    
     if not materiales_originales or not isinstance(materiales_originales, list):
         return []
     
@@ -2613,37 +2767,41 @@ def generar_orden_operativa_real(materiales_originales):
                 max_index = 0
         
         if max_index <= 2:
-            tipo = "grueso"
-            accion = "rezarandear"
+            tipo = msgs["tipo_grueso"]
+            tipo_interno = "grueso"  # ← Para frontend (colores, estilos)
+            accion = msgs["accion_rezarandear"]
             malla = "2.4–1.2 mm"
-            resultado = "genera material medio"
-            uso = "reducir grueso y reutilizar pasante"
+            resultado = msgs["resultado_grueso"]
+            uso = msgs["uso_grueso"]
         elif 3 <= max_index <= 4:
-            tipo = "medio"
-            accion = "rezarandear"
+            tipo = msgs["tipo_medio"]
+            tipo_interno = "medio"  # ← Para frontend (colores, estilos)
+            accion = msgs["accion_rezarandear"]
             malla = "0.6–0.3 mm"
-            resultado = "genera material fino"
-            uso = "aumentar finos manteniendo equilibrio"
+            resultado = msgs["resultado_medio"]
+            uso = msgs["uso_medio"]
         else:  # max_index >= 5
-            tipo = "fino"
-            accion = "no_tocar"
+            tipo = msgs["tipo_fino"]
+            tipo_interno = "fino"  # ← Para frontend (colores, estilos)
+            accion = msgs["accion_no_tocar"]
             malla = None
-            resultado = "ya es fino"
-            uso = "aumentar proporción en mezcla"
+            resultado = msgs["resultado_fino"]
+            uso = msgs["uso_fino"]
         
         paso += 1
         
         orden.append({
             "paso": paso,
             "material": nombre,
-            "tipo": tipo,
+            "tipo": tipo,               # ← TRADUCIDO para mostrar al usuario
+            "tipo_interno": tipo_interno,  # ← SIN TRADUCIR para frontend (colores)
             "accion": accion,
             "malla": malla,
             "resultado": resultado,
             "uso": uso
         })
     
-    print(f"[DEBUG orden_real] ✅ Retornando {len(orden)} órdenes")
+    print(f"[DEBUG orden_real] ✅ Retornando {len(orden)} órdenes (lang={lang})")
     return orden
 
 
@@ -2870,7 +3028,9 @@ def api_auditoria():
                                 })
                     
                     if materiales_con_retido:
-                        orden = generar_orden_operativa(materiales_con_retido)
+                        # 🌐 Obtener idioma desde cookies
+                        lang = request.cookies.get('lang', 'es')
+                        orden = generar_orden_operativa(materiales_con_retido, lang=lang)
                         if orden:
                             resultado['orden_operativa'] = orden
                             import json
@@ -2892,8 +3052,12 @@ def api_auditoria():
             print(f"[DEBUG] materiales_originales_para_orden length? {len(materiales_originales_para_orden) if materiales_originales_para_orden else 0}")
             
             if materiales_originales_para_orden and isinstance(materiales_originales_para_orden, list) and len(materiales_originales_para_orden) > 0:
+                # 🌐 Obtener idioma desde cookies
+                lang = request.cookies.get('lang', 'es')
+                print(f"[DEBUG] Idioma obtenido desde cookies: {lang}")
+                
                 print(f"[DEBUG] Llamando generar_orden_operativa_real()...")
-                orden_real = generar_orden_operativa_real(materiales_originales_para_orden)
+                orden_real = generar_orden_operativa_real(materiales_originales_para_orden, lang=lang)
                 print(f"[DEBUG] orden_real result: {orden_real}")
                 print(f"[DEBUG] orden_real length: {len(orden_real)}")
                 

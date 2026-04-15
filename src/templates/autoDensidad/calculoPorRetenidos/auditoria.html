@@ -1152,6 +1152,22 @@
             const fase6 = datos.fase_6_receta;
             const grafico = datos.para_grafico;
             const meta = datos.meta || {};
+            
+            // 🔍 DEBUG: Verificar si pasante_virtual está presente
+            console.log('📊 [DEBUG] Datos de gráfico recibidos:');
+            console.log('   ✓ tamices:', grafico.tamices?.length, 'elementos');
+            console.log('   ✓ pasante_real:', grafico.pasante_real?.length, 'elementos');
+            console.log('   ✓ pasante_virtual:', grafico.pasante_virtual?.length, 'elementos', 
+                        grafico.pasante_virtual ? '✅ PRESENTE' : '❌ FALTANTE');
+            console.log('   ✓ banda_min:', grafico.banda_min?.length, 'elementos');
+            console.log('   ✓ banda_max:', grafico.banda_max?.length, 'elementos');
+            console.log('   ✓ fuller_ideal:', grafico.fuller_ideal?.length, 'elementos',
+                        grafico.fuller_ideal ? '✅ PRESENTE' : '❌ FALTANTE');
+            
+            if (!grafico.pasante_virtual || grafico.pasante_virtual.length === 0) {
+                console.warn('⚠️ ADVERTENCIA: pasante_virtual está vacío. La curva roja no se dibujará.');
+            }
+            
             const proporciones = fase6.proporciones;
             const optimizacionAplicada = Boolean(meta.optimizacion_aplicada);
             const pasanteEntradaOriginal = Array.isArray(grafico.pasante_entrada_original)
@@ -1380,8 +1396,8 @@
                 // ========================================
                 html += `
                     <div class="section" style="display: none; border-left-color: #2563eb; background: #eff6ff; margin-top: 20px;">
-                        <h2 style="color: #2563eb;">📋 Orden Operativa en Planta</h2>
-                        <p style="font-size: 14px; color: #65615e; margin-bottom: 15px;">Instrucciones paso-a-paso para el operario en planta:</p>
+                        <h2 style="color: #2563eb;">📋 ${tAuditoria('non_real_order_title', 'Orden Operativa en Planta')}</h2>
+                        <p style="font-size: 14px; color: #65615e; margin-bottom: 15px;">${tAuditoria('non_real_order_description', 'Instrucciones paso-a-paso para el operario en planta:')}</p>
                         <div style="display: flex; flex-direction: column; gap: 12px;">
                 `;
                 
@@ -1390,15 +1406,16 @@
                     let colorFondo = '#e0e7ff';
                     let colorBorde = '#2563eb';
                     
-                    if (paso.tipo === 'grueso') {
+                    // 🎨 Usar tipo_interno (sin traducir) para colores, no tipo (traducido)
+                    if (paso.tipo_interno === 'grueso') {
                         iconoPaso = '🔴';
                         colorBorde = '#7c2d12';
                         colorFondo = '#fff7ed';
-                    } else if (paso.tipo === 'medio') {
+                    } else if (paso.tipo_interno === 'medio') {
                         iconoPaso = '🟡';
                         colorBorde = '#a16207';
                         colorFondo = '#fffbeb';
-                    } else if (paso.tipo === 'fino') {
+                    } else if (paso.tipo_interno === 'fino') {
                         iconoPaso = '🟢';
                         colorBorde = '#166534';
                         colorFondo = '#f0fdf4';
@@ -1406,7 +1423,7 @@
                     
                     let mallaHtml = '';
                     if (paso.malla) {
-                        mallaHtml = `<div style="margin-top: 8px;"><strong>Malla:</strong> ${paso.malla}</div>`;
+                        mallaHtml = `<div style="margin-top: 8px;"><strong>${tAuditoria('label_mesh', 'Malla:')}</strong> ${paso.malla}</div>`;
                     }
                     
                     html += `
@@ -1419,21 +1436,21 @@
                                         Paso ${paso.paso}: ${paso.material}
                                     </div>
                                     <div style="font-size: 13px; color: #6b7280;">
-                                        Tipo: <strong>${paso.tipo.toUpperCase()}</strong> | 
+                                        ${tAuditoria('label_type', 'Tipo:')} <strong>${paso.tipo}</strong> | 
                                         Proporción: <strong>${paso.proporcion_pct}%</strong>
                                     </div>
                                 </div>
                             </div>
                             <div style="margin-left: 36px;">
                                 <div style="margin-bottom: 8px;">
-                                    <strong>Acción:</strong> ${paso.accion === 'rezarandear' ? '🔄 Rezarandear' : '⏸️ No tocar'}
+                                    <strong>${tAuditoria('label_action', 'Acción:')}</strong> ${(paso.tipo_interno === 'grueso' || paso.tipo_interno === 'medio') ? '🔄 ' + paso.accion : '⏸️ ' + paso.accion}
                                 </div>
                                 ${mallaHtml}
                                 <div style="margin-top: 8px;">
-                                    <strong>Resultado esperado:</strong> ${paso.resultado}
+                                    <strong>${tAuditoria('label_expected_result', 'Resultado esperado:')}</strong> ${paso.resultado}
                                 </div>
                                 <div style="margin-top: 8px; padding: 10px; background: white; border-radius: 3px; border-left: 3px solid ${colorBorde};">
-                                    <strong>Uso en mezcla:</strong> ${paso.uso}
+                                    <strong>${tAuditoria('label_use_mix', 'Uso en mezcla:')}</strong> ${paso.uso}
                                 </div>
                             </div>
                         </div>
@@ -1443,7 +1460,7 @@
                 html += `
                         </div>
                         <p style="font-size: 13px; color: #7c7c7c; margin-top: 12px; font-style: italic;">
-                            📌 Seguir los pasos en orden. Cada operación modifica la composición granulométrica del material.
+                            📌 ${tAuditoria('non_real_order_footer', 'Seguir los pasos en orden. Cada operación modifica la composición granulométrica del material.')}
                         </p>
                     </div>
                 `;
@@ -1462,8 +1479,8 @@
             if (datos.orden_operativa_real && Array.isArray(datos.orden_operativa_real) && datos.orden_operativa_real.length > 0) {
                 let ordenHTML = `
                     <div class="section" style="border-left-color: #059669; background: #ecfdf5; margin-top: 20px;">
-                        <h2 style="color: #059669;">🧾 Orden Operativa Real (Materiales Originales)</h2>
-                        <p style="font-size: 14px; color: #65615e; margin-bottom: 15px;">Instrucciones operativas basadas en los materiales originales (difusion 1, 2, 3):</p>
+                        <h2 style="color: #059669;">🧾 ${tAuditoria('real_order_title', 'Orden Operativa Real (Materiales Originales)')}</h2>
+                        <p style="font-size: 14px; color: #65615e; margin-bottom: 15px;">${tAuditoria('real_order_description', 'Instrucciones operativas basadas en los materiales originales (difusion 1, 2, 3):')}</p>
                         <div style="display: flex; flex-direction: column; gap: 12px;">
                 `;
                 
@@ -1472,22 +1489,23 @@
                     let colorFondo = '#e0f2fe';
                     let colorBorde = '#0284c7';
                     
-                    if (paso.tipo === 'grueso') {
+                    // 🎨 Usar tipo_interno (sin traducir) para colores, no tipo (traducido)
+                    if (paso.tipo_interno === 'grueso') {
                         iconoPaso = '🔴';
                         colorBorde = '#7c2d12';
                         colorFondo = '#fff7ed';
-                    } else if (paso.tipo === 'medio') {
+                    } else if (paso.tipo_interno === 'medio') {
                         iconoPaso = '🟡';
                         colorBorde = '#a16207';
                         colorFondo = '#fffbeb';
-                    } else if (paso.tipo === 'fino') {
+                    } else if (paso.tipo_interno === 'fino') {
                         iconoPaso = '🟢';
                         colorBorde = '#166534';
                         colorFondo = '#f0fdf4';
                     }
                     
                     const mallaHtml = paso.malla 
-                        ? `<div style="margin-top: 8px;"><strong>Malla:</strong> ${paso.malla}</div>` 
+                        ? `<div style="margin-top: 8px;"><strong>${tAuditoria('label_mesh', 'Malla:')} </strong> ${paso.malla}</div>` 
                         : '';
                     
                     ordenHTML += `
@@ -1499,20 +1517,20 @@
                                         <strong>Paso ${paso.paso}:</strong> ${paso.material}
                                     </div>
                                     <div style="font-size: 13px; color: #6b7280;">
-                                        Tipo: <strong>${paso.tipo.toUpperCase()}</strong>
+                                        ${tAuditoria('label_type', 'Tipo:')} <strong>${paso.tipo}</strong>
                                     </div>
                                 </div>
                             </div>
                             <div style="margin-left: 36px;">
                                 <div style="margin-bottom: 8px;">
-                                    <strong>Acción:</strong> ${paso.accion === 'rezarandear' ? '🔄 Rezarandear' : '⏸️ No tocar'}
+                                    <strong>${tAuditoria('label_action', 'Acción:')}</strong> ${(paso.tipo_interno === 'grueso' || paso.tipo_interno === 'medio') ? '🔄 ' + paso.accion : '⏸️ ' + paso.accion}
                                 </div>
                                 ${mallaHtml}
                                 <div style="margin-top: 8px;">
-                                    <strong>Resultado esperado:</strong> ${paso.resultado}
+                                    <strong>${tAuditoria('label_expected_result', 'Resultado esperado:')}</strong> ${paso.resultado}
                                 </div>
                                 <div style="margin-top: 8px; padding: 10px; background: white; border-radius: 3px; border-left: 3px solid ${colorBorde};">
-                                    <strong>Uso en planta:</strong> ${paso.uso}
+                                    <strong>${tAuditoria('label_use_plant', 'Uso en planta:')}</strong> ${paso.uso}
                                 </div>
                             </div>
                         </div>
@@ -1522,7 +1540,7 @@
                 ordenHTML += `
                         </div>
                         <p style="font-size: 13px; color: #7c7c7c; margin-top: 12px; font-style: italic;">
-                            📌 Esta orden se basa en los materiales originales. Seguir los pasos en secuencia.
+                            📌 ${tAuditoria('real_order_footer', 'Esta orden se basa en los materiales originales. Seguir los pasos en secuencia.')}
                         </p>
                     </div>
                 `;
@@ -1953,12 +1971,23 @@
             
             // 🔨 Agregar 12.5 mm (agregado máximo estándar) si no está presente
             if (datos.tamices.length > 0 && parseFloat(datos.tamices[0]) !== 12.5) {
+                console.log('🔨 Agregando 12.5mm al inicio');
                 datos.tamices = [12.5, ...datos.tamices];
                 datos.banda_min = [0, ...datos.banda_min];  // 12.5 mm: no retenido
                 datos.banda_max = [0, ...datos.banda_max];  // no retenido
                 datos.pasante_real = [100, ...datos.pasante_real];  // todo pasa
-                datos.pasante_virtual = [100, ...datos.pasante_virtual];  // todo pasa
-                datos.fuller_ideal = datos.fuller_ideal ? [100, ...datos.fuller_ideal] : [];  // Fuller(12.5) = 100%
+                
+                // ✅ Validar que pasante_virtual exista antes de agregar
+                if (datos.pasante_virtual && Array.isArray(datos.pasante_virtual)) {
+                    datos.pasante_virtual = [100, ...datos.pasante_virtual];
+                    console.log('   ✅ pasante_virtual actualizado, nuevo largo:', datos.pasante_virtual.length);
+                } else {
+                    console.warn('   ⚠️ pasante_virtual NO estaba disponible, NO se agregó 12.5mm');
+                }
+                
+                datos.fuller_ideal = datos.fuller_ideal ? [100, ...datos.fuller_ideal] : [];
+                
+                console.log('   Resultado: tamices=' + datos.tamices.length + ', pasante_virtual=' + (datos.pasante_virtual?.length ?? 'undefined'));
             }
             
             // Invertir tamices para mostrar de menor a mayor en el eje X
@@ -2000,17 +2029,11 @@
                     pointRadius: 5,
                     pointBackgroundColor: '#0066cc',
                     tension: 0.3
-                },
-                {
-                    label: tAuditoria('chart_virtual_output', 'Tabla Virtual (Salida)'),
-                    data: datos.pasante_virtual.slice().reverse(),
-                    borderColor: '#dc3545',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    borderWidth: 2,
-                    pointRadius: 5,
-                    pointBackgroundColor: '#dc3545',
-                    tension: 0.3
-                },
+                }
+            );
+            
+            // Agregar bandas
+            datasets.push(
                 {
                     label: tAuditoria('chart_band_min', 'Banda Min'),
                     data: bandaMinInvertida.slice(),
@@ -2044,6 +2067,41 @@
                     pointBackgroundColor: '#FFD700'
                 }
             );
+            
+            // ✅ Agregar curva VIRTUAL AL FINAL (se dibuja al último, quedando visible sobre azul)
+            if (datos.pasante_virtual && Array.isArray(datos.pasante_virtual) && datos.pasante_virtual.length === datos.tamices.length) {
+                console.log('✅ Curva virtual detectada, agregando al FINAL (para dibujarse sobre la azul)...');
+                console.log('   Datos:', {
+                    largo_tamices: datos.tamices.length,
+                    largo_pasante_virtual: datos.pasante_virtual.length,
+                    valores: datos.pasante_virtual.slice(0, 3).map(v => v.toFixed(2)).join(', ') + '...'
+                });
+                datasets.push({
+                    label: tAuditoria('chart_virtual_output', 'Tabla Virtual (Salida)'),
+                    data: datos.pasante_virtual.slice().reverse(),
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                    borderWidth: 3.5,  // ← MÁS GRUESA para que se vea
+                    pointRadius: 6,     // ← PUNTOS MÁS GRANDES
+                    pointBackgroundColor: '#dc3545',
+                    borderDash: [2, 3], // ← PUNTILLADA SUTIL para diferenciar
+                    tension: 0.3
+                });
+            } else {
+                console.warn('❌ Curva virtual NO disponible o incompleta', {
+                    existente: !!datos.pasante_virtual,
+                    esArray: Array.isArray(datos.pasante_virtual),
+                    largo: datos.pasante_virtual?.length,
+                    largo_esperado: datos.tamices.length
+                });
+            }
+            
+            // 🔍 DEBUG: Listar todos los datasets
+            console.log('📈 [CHART] Datasets creados:', datasets.length);
+            datasets.slice(0, 3).forEach((ds, i) => {
+                const dataMuestra = ds.data?.slice(0, 3).map(v => (typeof v === 'number' ? v.toFixed(1) : v)).join(', ') || 'N/A';
+                console.log(`   ${i+1}. ${ds.label}: ${ds.data?.length ?? 0} puntos, color=${ds.borderColor}, primeros 3 valores=[${dataMuestra}]`);
+            });
             
             instanciaChart = new Chart(ctx, {
                 type: 'line',

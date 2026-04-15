@@ -990,7 +990,19 @@ const I18N = (() => {
         chart_fuller_ideal: "Curva Fuller Ideal",
         chart_title_curves: "Comparación de Curvas Granulométricas",
         chart_axis_passing: "Pasante Acumulado (%)",
-        chart_axis_sieve: "Tamiz (mm)"
+        chart_axis_sieve: "Tamiz (mm)",
+        real_order_title: "Orden Operativa Real (Materiales Originales)",
+        real_order_description: "Instrucciones operativas basadas en los materiales originales (difusion 1, 2, 3):",
+        label_type: "Tipo:",
+        label_action: "Acción:",
+        label_mesh: "Malla:",
+        label_expected_result: "Resultado esperado:",
+        label_use_plant: "Uso en planta:",
+        label_use_mix: "Uso en mezcla:",
+        real_order_footer: "Esta orden se basa en los materiales originales. Seguir los pasos en secuencia.",
+        non_real_order_title: "Orden Operativa en Planta",
+        non_real_order_description: "Instrucciones paso-a-paso para el operario en planta:",
+        non_real_order_footer: "Seguir los pasos en orden. Cada operación modifica la composición granulométrica del material."
       },
       en: {
         page_title: "Granulometric Mix Audit",
@@ -1084,7 +1096,19 @@ const I18N = (() => {
         chart_fuller_ideal: "Ideal Fuller Curve",
         chart_title_curves: "Comparison of Granulometric Curves",
         chart_axis_passing: "Cumulative Passing (%)",
-        chart_axis_sieve: "Sieve (mm)"
+        chart_axis_sieve: "Sieve (mm)",
+        real_order_title: "Real Operational Order (Original Materials)",
+        real_order_description: "Operational instructions based on original materials (diffusion 1, 2, 3):",
+        label_type: "Type:",
+        label_action: "Action:",
+        label_mesh: "Mesh:",
+        label_expected_result: "Expected result:",
+        label_use_plant: "Use in plant:",
+        label_use_mix: "Use in mix:",
+        real_order_footer: "This order is based on the original materials. Follow the steps in sequence.",
+        non_real_order_title: "Operational Order in Plant",
+        non_real_order_description: "Step-by-step instructions for plant operator:",
+        non_real_order_footer: "Follow the steps in order. Each operation modifies the granulometric composition of the material."
       },
       it: {
         page_title: "Audit della Miscela Granulometrica",
@@ -1175,7 +1199,19 @@ const I18N = (() => {
         chart_fuller_ideal: "Curva Fuller Ideale",
         chart_title_curves: "Confronto delle Curve Granulometriche",
         chart_axis_passing: "Passante Accumulato (%)",
-        chart_axis_sieve: "Setaccio (mm)"
+        chart_axis_sieve: "Setaccio (mm)",
+        real_order_title: "Ordine Operativo Reale (Materiali Originali)",
+        real_order_description: "Istruzioni operative basate sui materiali originali (diffusione 1, 2, 3):",
+        label_type: "Tipo:",
+        label_action: "Azione:",
+        label_mesh: "Rete:",
+        label_expected_result: "Risultato atteso:",
+        label_use_plant: "Utilizzo in impianto:",
+        label_use_mix: "Utilizzo nella miscela:",
+        real_order_footer: "Questo ordine è basato sui materiali originali. Seguire i passaggi in sequenza.",
+        non_real_order_title: "Ordine Operativo in Impianto",
+        non_real_order_description: "Istruzioni passo-passo per l'operatore in impianto:",
+        non_real_order_footer: "Seguire i passaggi in ordine. Ogni operazione modifica la composizione granulometrica del materiale."
       },
       pt: {
         page_title: "Auditoria de Mistura Granulométrica",
@@ -1267,7 +1303,19 @@ const I18N = (() => {
         chart_fuller_ideal: "Curva Fuller Ideal",
         chart_title_curves: "Comparação de Curvas Granulométricas",
         chart_axis_passing: "Passante Acumulado (%)",
-        chart_axis_sieve: "Peneira (mm)"
+        chart_axis_sieve: "Peneira (mm)",
+        real_order_title: "Ordem Operativa Real (Materiais Originais)",
+        real_order_description: "Instruções operativas baseadas nos materiais originais (difusão 1, 2, 3):",
+        label_type: "Tipo:",
+        label_action: "Ação:",
+        label_mesh: "Malha:",
+        label_expected_result: "Resultado esperado:",
+        label_use_plant: "Uso na planta:",
+        label_use_mix: "Uso na mistura:",
+        real_order_footer: "Esta ordem é baseada nos materiais originais. Siga os passos em sequência.",
+        non_real_order_title: "Ordem Operativa na Planta",
+        non_real_order_description: "Instruções passo-a-passo para o operador na planta:",
+        non_real_order_footer: "Siga os passos em ordem. Cada operação modifica a composição granulométrica do material."
       },
       pl: {
         page_title: "Audyt Mieszanki Granulometrycznej",
@@ -1358,7 +1406,19 @@ const I18N = (() => {
         chart_fuller_ideal: "Idealna krzywa Fullera",
         chart_title_curves: "Porównanie Krzywych Granulometrycznych",
         chart_axis_passing: "Przesiew Skumulowany (%)",
-        chart_axis_sieve: "Sito (mm)"
+        chart_axis_sieve: "Sito (mm)",
+        real_order_title: "Realna Kolejność Operacyjna (Materiały Oryginalne)",
+        real_order_description: "Instrukcje operacyjne oparte na materiałach oryginalnych (dyfuzja 1, 2, 3):",
+        label_type: "Typ:",
+        label_action: "Działanie:",
+        label_mesh: "Sito:",
+        label_expected_result: "Oczekiwany wynik:",
+        label_use_plant: "Użycie w zakładzie:",
+        label_use_mix: "Użycie w mieszaninie:",
+        real_order_footer: "Ta kolejność oparta jest na materiałach oryginalnych. Wykonuj kroki w sekwencji.",
+        non_real_order_title: "Realna Kolejność Operacyjna w Zakładzie",
+        non_real_order_description: "Instrukcje krok po kroku dla operatora w zakładzie:",
+        non_real_order_footer: "Wykonuj kroki w kolejności. Każda operacja modyfikuje skład granulometryczny materiału."
       }
     },
 
