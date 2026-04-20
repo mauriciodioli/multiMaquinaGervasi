@@ -4,11 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auditoría de Mezcla Granulométrica</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='2' width='13' height='13' fill='%23C8102E' rx='1'/><rect x='17' y='2' width='13' height='13' fill='%23F5A800' rx='1'/><rect x='2' y='17' width='13' height='13' fill='%2300A550' rx='1'/><rect x='17' y='17' width='13' height='13' fill='%230057A8' rx='1'/></svg>">
     <script src="/static/js/i18n.js"></script>
     <script src="/static/js/dpia_i18n.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * {
+        
+
+    header{background:var(--white);padding:.9rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.18);}
+    .logo{display:flex;align-items:center;gap:.6rem;text-decoration:none;}
+    .logo-text{font-family:var(--font-display);font-size:2rem;font-weight:900;color:var(--black);letter-spacing:-.03em;}
+    .logo-icon{display:grid;grid-template-columns:1fr 1fr;gap:3px;width:28px;height:28px;}
+    .logo-icon span{border-radius:2px;}
+    .logo-icon span:nth-child(1){background:#C8102E;}
+    .logo-icon span:nth-child(2){background:#F5A800;}
+    .logo-icon span:nth-child(3){background:#00A550;}
+    .logo-icon span:nth-child(4){background:#0057A8;}
+
+       * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -528,6 +541,18 @@
     </style>
 </head>
 <body>
+    <header>
+        <a href="/" class="logo">
+            <div class="logo-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <span class="logo-text">Gervasi</span>
+        </a>
+    </header>
+    
     <div class="container">
         <h1 data-i18n="auditoria.page_header">🔬 Auditoría de Mezcla Granulométrica</h1>
         <p class="subtitle" data-i18n="auditoria.page_subtitle">Evaluación de cumplimiento de banda y decisión de tabla virtual dirigida</p>
