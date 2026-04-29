@@ -50,7 +50,19 @@
 </div>
 
 
-<div class="contenedor-flex">
+<div class="contenedor-flex pannelli-dash">
+  <!-- Fondo de video (mundo rotando) -->
+  <video
+    id="bg-video"
+    src="{{ url_for('static', filename='img/dpi_mundo.mp4') }}"
+    autoplay
+    loop
+    muted
+    playsinline
+    aria-hidden="true"
+    tabindex="-1"
+  ></video>
+
   {% if mensaje %}
     <div class="alert alert-info">{{ mensaje }}</div>
   {% endif %}
@@ -217,11 +229,14 @@ document.addEventListener('DOMContentLoaded', () => {
 <link rel="stylesheet" href="{{ url_for('static', filename='css/maquinas/maquinas.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pannelli/pannelli.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pannelli/solo_pannelli.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pannelli/dashboard_effects.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pannelli/galaxy.css') }}">
 <script src="{{ url_for('static', filename='js/maquinas/crud_front_end_maquinas.js') }}"></script>
 <script src="{{ url_for('static', filename='js/pannelli/pannelli_solar.js') }}"></script>
 <script src="{{ url_for('static', filename='js/maquinas/conexion_db.js') }}"></script>
 
 <script defer src="{{ url_for('static', filename='js/pannelli/solo_pannelli.js') }}"></script>
+<script defer src="{{ url_for('static', filename='js/pannelli/dashboard_effects.js') }}"></script>
 
 
 

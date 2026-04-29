@@ -1,0 +1,366 @@
+/*
+ * dashboard_effects.css
+ * Efectos visuales sci-fi/industrial para el dashboard de inversores.
+ * NO sobrescribe clases existentes. Sólo agrega capas nuevas.
+ * Para desactivar todos los efectos: añadir clase "effects-off" al <body>.
+ */
+
+/* ============================================================
+   VARIABLES DE TEMA
+   ============================================================ */
+:root {
+  --glow-ok:      rgba(0, 255, 120, 0.45);
+  --glow-ok-dim:  rgba(0, 255, 120, 0.18);
+  --glow-mppt:    rgba(0, 200, 255, 0.45);
+  --glow-mppt-dim:rgba(0, 200, 255, 0.18);
+  --glow-rpc:     rgba(160, 80, 255, 0.45);
+  --glow-rpc-dim: rgba(160, 80, 255, 0.18);
+  --glow-error:   rgba(255, 60, 60, 0.45);
+  --glow-error-dim:rgba(255, 60, 60, 0.18);
+  --glow-standby: rgba(255, 185, 0, 0.38);
+
+  --card-bg-dark:    #0d1117;
+  --card-border:     rgba(255,255,255,0.07);
+  --card-border-hover: rgba(255,255,255,0.18);
+  --text-muted-dark: #8b949e;
+  --kpi-bg-dark:     rgba(255,255,255,0.04);
+
+  --transition-card: 0.28s cubic-bezier(.22,.68,0,1.2);
+}
+
+/* ============================================================
+   FONDO OSCURO CON ESTRELLAS (canvas-free, CSS puro)
+   Solo afecta al contenido del dashboard pannelli
+   ============================================================ */
+body:not(.effects-off) .contenedor-flex,
+body:not(.effects-off) #sp-root {
+  position: relative;
+}
+
+/* Capa de estrellas fija detrás de todo */
+body:not(.effects-off) .pv-grid::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    /* estrellitas: radial gradients diminutos */
+    radial-gradient(1px 1px at  7%  12%, rgba(255,255,255,.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 23%  35%, rgba(255,255,255,.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 41%   8%, rgba(255,255,255,.60) 0%, transparent 100%),
+    radial-gradient(1px 1px at 58%  28%, rgba(255,255,255,.40) 0%, transparent 100%),
+    radial-gradient(1px 1px at 73%  52%, rgba(255,255,255,.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 89%  17%, rgba(255,255,255,.50) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15%  67%, rgba(255,255,255,.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 33%  81%, rgba(255,255,255,.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 51%  61%, rgba(255,255,255,.50) 0%, transparent 100%),
+    radial-gradient(1px 1px at 66%  88%, rgba(255,255,255,.40) 0%, transparent 100%),
+    radial-gradient(1px 1px at 82%  73%, rgba(255,255,255,.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 94%  42%, rgba(255,255,255,.35) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 29%  5%, rgba(255,255,255,.70) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 61%  77%, rgba(255,255,255,.65) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 47%  44%, rgba(255,255,255,.55) 0%, transparent 100%);
+  animation: starsTwinkle 8s ease-in-out infinite alternate;
+}
+
+@keyframes starsTwinkle {
+  0%   { opacity: 0.5; }
+  50%  { opacity: 0.9; }
+  100% { opacity: 0.6; }
+}
+
+
+/* ============================================================
+   TARJETAS — TEMA OSCURO + GLOW POR ESTADO
+   Se aplican sólo cuando el JS agrega las clases .card-glow-*
+   ============================================================ */
+
+/* Tarjeta base en modo dark (cuando tiene cualquier clase glow) */
+body:not(.effects-off) .pv-card.card-glow-ok,
+body:not(.effects-off) .pv-card.card-glow-mppt,
+body:not(.effects-off) .pv-card.card-glow-rpc,
+body:not(.effects-off) .pv-card.card-glow-error,
+body:not(.effects-off) .pv-card.card-glow-standby,
+body:not(.effects-off) .pv-card.card-glow-offline {
+  background: var(--card-bg-dark);
+  border-color: var(--card-border);
+  color: #e6edf3;
+  transition:
+    box-shadow var(--transition-card),
+    transform   var(--transition-card),
+    border-color var(--transition-card);
+}
+
+/* KPIs en dark */
+body:not(.effects-off) .pv-card[class*="card-glow"] .pv-kpi {
+  background: var(--kpi-bg-dark);
+  color: #e6edf3;
+}
+body:not(.effects-off) .pv-card[class*="card-glow"] .pv-kpi .lbl {
+  color: var(--text-muted-dark);
+}
+body:not(.effects-off) .pv-card[class*="card-glow"] .pv-card-meta {
+  color: var(--text-muted-dark);
+}
+
+/* --- GLOW OK (verde) --- */
+body:not(.effects-off) .pv-card.card-glow-ok {
+  border-color: rgba(0, 255, 120, 0.30);
+  box-shadow:
+    0 0 12px var(--glow-ok-dim),
+    0 0 32px var(--glow-ok-dim),
+    inset 0 0 12px rgba(0,255,120,0.04);
+}
+body:not(.effects-off) .pv-card.card-glow-ok:hover {
+  box-shadow:
+    0 0 20px var(--glow-ok),
+    0 0 50px var(--glow-ok-dim);
+  border-color: rgba(0,255,120,0.55);
+  transform: translateY(-5px);
+}
+
+/* --- GLOW MPPT (cyan) --- */
+body:not(.effects-off) .pv-card.card-glow-mppt {
+  border-color: rgba(0, 200, 255, 0.30);
+  box-shadow:
+    0 0 12px var(--glow-mppt-dim),
+    0 0 32px var(--glow-mppt-dim),
+    inset 0 0 12px rgba(0,200,255,0.04);
+}
+body:not(.effects-off) .pv-card.card-glow-mppt:hover {
+  box-shadow:
+    0 0 20px var(--glow-mppt),
+    0 0 50px var(--glow-mppt-dim);
+  border-color: rgba(0,200,255,0.55);
+  transform: translateY(-5px);
+}
+
+/* --- GLOW RPC / DLX (violeta) --- */
+body:not(.effects-off) .pv-card.card-glow-rpc {
+  border-color: rgba(160, 80, 255, 0.30);
+  box-shadow:
+    0 0 12px var(--glow-rpc-dim),
+    0 0 32px var(--glow-rpc-dim),
+    inset 0 0 12px rgba(160,80,255,0.04);
+}
+body:not(.effects-off) .pv-card.card-glow-rpc:hover {
+  box-shadow:
+    0 0 20px var(--glow-rpc),
+    0 0 50px var(--glow-rpc-dim);
+  border-color: rgba(160,80,255,0.55);
+  transform: translateY(-5px);
+}
+
+/* --- GLOW ERROR (rojo) --- */
+body:not(.effects-off) .pv-card.card-glow-error {
+  border-color: rgba(255, 60, 60, 0.30);
+  box-shadow:
+    0 0 12px var(--glow-error-dim),
+    0 0 32px var(--glow-error-dim),
+    inset 0 0 8px rgba(255,60,60,0.03);
+}
+body:not(.effects-off) .pv-card.card-glow-error:hover {
+  box-shadow:
+    0 0 20px var(--glow-error),
+    0 0 50px var(--glow-error-dim);
+  border-color: rgba(255,60,60,0.55);
+  transform: translateY(-5px);
+}
+
+/* --- GLOW STANDBY (ámbar) --- */
+body:not(.effects-off) .pv-card.card-glow-standby {
+  border-color: rgba(255,185,0,0.25);
+  box-shadow:
+    0 0 12px rgba(255,185,0,0.18),
+    0 0 28px rgba(255,185,0,0.10);
+}
+body:not(.effects-off) .pv-card.card-glow-standby:hover {
+  box-shadow:
+    0 0 18px var(--glow-standby),
+    0 0 40px rgba(255,185,0,0.20);
+  transform: translateY(-4px);
+}
+
+/* --- Offline: opacidad + blur leve --- */
+body:not(.effects-off) .pv-card.card-glow-offline {
+  opacity: 0.52;
+  filter: blur(0.4px);
+  border-color: rgba(255,255,255,0.06);
+  box-shadow: none;
+}
+body:not(.effects-off) .pv-card.card-glow-offline:hover {
+  opacity: 0.70;
+  filter: none;
+}
+
+/* Voltaje inválido (0 con potencia, o "—" con potencia) */
+body:not(.effects-off) .pv-card .pv-kpi.volt-invalid {
+  border: 1px solid rgba(255,60,60,0.35);
+  background: rgba(255,60,60,0.06);
+}
+
+
+/* ============================================================
+   INVERSOR TOP — MÁXIMA POTENCIA
+   ============================================================ */
+body:not(.effects-off) .pv-card.card-top-power {
+  /* borde dorado + glow dorado */
+  border-color: rgba(255,210,0,0.55) !important;
+  box-shadow:
+    0 0 18px rgba(255,210,0,0.40),
+    0 0 45px rgba(255,210,0,0.20),
+    inset 0 0 14px rgba(255,210,0,0.06) !important;
+  animation: goldPulse 3s ease-in-out infinite;
+}
+
+@keyframes goldPulse {
+  0%,100% { box-shadow: 0 0 18px rgba(255,210,0,.40), 0 0 45px rgba(255,210,0,.18); }
+  50%      { box-shadow: 0 0 30px rgba(255,210,0,.65), 0 0 70px rgba(255,210,0,.30); }
+}
+
+/* Badge "TOP POWER" */
+body:not(.effects-off) .badge-top-power {
+  display: inline-block;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24, #f59e0b);
+  background-size: 200% auto;
+  color: #1a1200;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  padding: .15rem .55rem;
+  border-radius: 999px;
+  animation: shineSlide 2.5s linear infinite;
+  margin-left: .5rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+@keyframes shineSlide {
+  0%   { background-position: 200% center; }
+  100% { background-position:   0% center; }
+}
+
+/* Valor de potencia en la tarjeta TOP */
+body:not(.effects-off) .pv-card.card-top-power .sp-power,
+body:not(.effects-off) .pv-card.card-top-power .val .num {
+  color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251,191,36,0.60);
+}
+
+
+/* ============================================================
+   FADE-IN ESCALONADO DE TARJETAS
+   ============================================================ */
+@keyframes cardFadeIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+body:not(.effects-off) .pv-card.card-animated {
+  opacity: 0;
+  animation: cardFadeIn 0.45s ease forwards;
+}
+/* delay escalonado: el JS asigna --card-index */
+body:not(.effects-off) .pv-card.card-animated {
+  animation-delay: calc(var(--card-index, 0) * 60ms);
+}
+
+
+/* ============================================================
+   PULSO AL ACTUALIZAR VALOR
+   ============================================================ */
+@keyframes valuePulse {
+  0%   { transform: scale(1);    }
+  30%  { transform: scale(1.06); }
+  100% { transform: scale(1);    }
+}
+body:not(.effects-off) .val-updated {
+  animation: valuePulse 0.35s ease;
+}
+
+
+/* ============================================================
+   LÍNEA DE ENERGÍA (inversor activo con potencia alta)
+   ============================================================ */
+@keyframes energyFlow {
+  0%   { background-position: 200% 0; }
+  100% { background-position:  -200% 0; }
+}
+
+body:not(.effects-off) .pv-card.card-energy-active::after {
+  content: '';
+  display: block;
+  height: 2px;
+  border-radius: 1px;
+  margin-top: 10px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0,255,180,0.0)  10%,
+    rgba(0,255,180,0.9)  50%,
+    rgba(0,255,180,0.0)  90%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: energyFlow 1.8s linear infinite;
+}
+
+/* Umbral desde JS: se agrega cuando power > ENERGY_THRESHOLD */
+
+
+/* ============================================================
+   PANEL SUPERIOR (status global + total power) DARK MODE
+   ============================================================ */
+body:not(.effects-off) #sp-root .card,
+body:not(.effects-off) #pv-root .card {
+  background: rgba(13,17,23,0.92);
+  border-color: rgba(255,255,255,0.09);
+  backdrop-filter: blur(4px);
+}
+
+body:not(.effects-off) #sp-power.big,
+body:not(.effects-off) #pv-power.big {
+  color: #58d68d;
+  text-shadow: 0 0 18px rgba(88,214,141,0.50);
+  letter-spacing: .02em;
+}
+
+body:not(.effects-off) .status-label {
+  color: var(--text-muted-dark);
+}
+
+/* Badge global pulsante si OK */
+body:not(.effects-off) #sp-status.ok,
+body:not(.effects-off) #pv-status.ok {
+  animation: badgeGlow 2.5s ease-in-out infinite;
+}
+@keyframes badgeGlow {
+  0%,100% { box-shadow: 0 0 6px rgba(4,120,87,0.35); }
+  50%      { box-shadow: 0 0 16px rgba(4,120,87,0.70); }
+}
+
+
+/* ============================================================
+   RESPONSIVE — reducir efectos en móvil
+   ============================================================ */
+@media (max-width: 600px) {
+  body:not(.effects-off) .pv-card[class*="card-glow"]:hover {
+    transform: none;
+  }
+  body:not(.effects-off) .pv-grid::before {
+    display: none;   /* sin estrellas en móvil para no gastar batería */
+  }
+  body:not(.effects-off) .pv-card.card-energy-active::after {
+    display: none;
+  }
+  body:not(.effects-off) .pv-card.card-top-power {
+    animation: none;
+    box-shadow: 0 0 12px rgba(255,210,0,0.35) !important;
+  }
+}
+
+/* ============================================================
+   MODO SIN EFECTOS — añadir class="effects-off" al <body>
+   para desactivar TODO sin borrar el archivo
+   ============================================================ */
+.effects-off .pv-card { transition: none !important; animation: none !important; }

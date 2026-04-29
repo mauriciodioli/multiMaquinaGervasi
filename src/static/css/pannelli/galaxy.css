@@ -1,0 +1,460 @@
+/*
+ * galaxy.css — Dashboard Inversores: Tema Galaxia / Sci-Fi Premium
+ *
+ * Complementa dashboard_effects.css con efectos más intensos.
+ * Requiere:
+ *   - clase .pannelli-dash en el contenedor principal del dashboard
+ *   - clase .galaxy-page en <body>  (asignada por dashboard_effects.js)
+ *
+ * Para desactivar: GALAXY_MODE = false en dashboard_effects.js
+ *                  O añadir class="effects-off" al <body>
+ */
+
+/* ============================================================
+   VARIABLES
+   ============================================================ */
+:root {
+  --gx-bg:          #050816;
+  --gx-card:        rgba(8, 18, 42, 0.68);
+  --gx-card-border: rgba(255, 255, 255, 0.08);
+  --gx-text:        #f1f5f9;
+  --gx-muted:       #64748b;
+  --gx-power:       #00ffcc;
+
+  --neon-ok:
+    0 0 6px  rgba(0,255,120,0.55),
+    0 0 18px rgba(0,255,120,0.30),
+    0 0 50px rgba(0,255,120,0.10);
+
+  --neon-mppt:
+    0 0 6px  rgba(0,200,255,0.55),
+    0 0 18px rgba(0,200,255,0.30),
+    0 0 50px rgba(0,200,255,0.10);
+
+  --neon-rpc:
+    0 0 6px  rgba(170,0,255,0.55),
+    0 0 18px rgba(170,0,255,0.30),
+    0 0 50px rgba(170,0,255,0.10);
+
+  --neon-error:
+    0 0 6px  rgba(255,50,50,0.55),
+    0 0 18px rgba(255,50,50,0.30),
+    0 0 45px rgba(255,50,50,0.10);
+
+  --neon-standby:
+    0 0 6px  rgba(255,180,0,0.45),
+    0 0 16px rgba(255,180,0,0.24),
+    0 0 40px rgba(255,180,0,0.08);
+
+  --neon-gold:
+    0 0 10px rgba(255,215,0,0.75),
+    0 0 28px rgba(255,215,0,0.40),
+    0 0 60px rgba(255,215,0,0.15);
+}
+
+
+/* ============================================================
+   VIDEO DE FONDO
+   ============================================================ */
+body.galaxy-page:not(.effects-off) #bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: -1;
+  opacity: 0.13;
+  pointer-events: none;
+}
+
+/* Sin video en móvil (ahorro de batería) */
+@media (max-width: 600px) {
+  #bg-video { display: none; }
+}
+
+
+/* ============================================================
+   FONDO ESPACIO FULL-PAGE
+   Aplicado a body.galaxy-page vía JS cuando .pannelli-dash existe
+   ============================================================ */
+body.galaxy-page:not(.effects-off) {
+  background-color: var(--gx-bg) !important;
+}
+
+/* Nebula + estrellas como capa fija detrás de todo */
+body.galaxy-page:not(.effects-off)::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  background-color: var(--gx-bg);
+  background-image:
+    /* ── Nebula layers ── */
+    radial-gradient(ellipse at 18% 28%, rgba(5,  80,200,0.20) 0%, transparent 55%),
+    radial-gradient(ellipse at 82% 65%, rgba(110, 5,200,0.17) 0%, transparent 55%),
+    radial-gradient(ellipse at 50%  0%, rgba(0, 160,220,0.10) 0%, transparent 60%),
+    radial-gradient(ellipse at 30% 90%, rgba(5,  70,180,0.12) 0%, transparent 50%),
+
+    /* ── Stars layer 1 – 1 px ── */
+    radial-gradient(1px 1px at  3% 15%, rgba(255,255,255,.88) 0%, transparent 100%),
+    radial-gradient(1px 1px at  8% 42%, rgba(255,255,255,.65) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15%  7%, rgba(255,255,255,.80) 0%, transparent 100%),
+    radial-gradient(1px 1px at 22% 63%, rgba(255,255,255,.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 28% 31%, rgba(255,255,255,.78) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 88%, rgba(255,255,255,.60) 0%, transparent 100%),
+    radial-gradient(1px 1px at 42% 19%, rgba(255,255,255,.82) 0%, transparent 100%),
+    radial-gradient(1px 1px at 48% 74%, rgba(255,255,255,.50) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 38%, rgba(255,255,255,.72) 0%, transparent 100%),
+    radial-gradient(1px 1px at 62%  5%, rgba(255,255,255,.88) 0%, transparent 100%),
+    radial-gradient(1px 1px at 68% 55%, rgba(255,255,255,.62) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 22%, rgba(255,255,255,.77) 0%, transparent 100%),
+    radial-gradient(1px 1px at 82% 79%, rgba(255,255,255,.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 44%, rgba(255,255,255,.83) 0%, transparent 100%),
+    radial-gradient(1px 1px at 95% 12%, rgba(255,255,255,.65) 0%, transparent 100%),
+    radial-gradient(1px 1px at  6% 95%, rgba(255,255,255,.50) 0%, transparent 100%),
+    radial-gradient(1px 1px at 13% 57%, rgba(255,255,255,.72) 0%, transparent 100%),
+    radial-gradient(1px 1px at 19%  3%, rgba(255,255,255,.88) 0%, transparent 100%),
+    radial-gradient(1px 1px at 27% 76%, rgba(255,255,255,.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 33% 47%, rgba(255,255,255,.78) 0%, transparent 100%),
+    radial-gradient(1px 1px at 41% 23%, rgba(255,255,255,.65) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 89%, rgba(255,255,255,.50) 0%, transparent 100%),
+    radial-gradient(1px 1px at 57% 65%, rgba(255,255,255,.82) 0%, transparent 100%),
+    radial-gradient(1px 1px at 64% 41%, rgba(255,255,255,.60) 0%, transparent 100%),
+    radial-gradient(1px 1px at 71% 17%, rgba(255,255,255,.88) 0%, transparent 100%),
+    radial-gradient(1px 1px at 79% 83%, rgba(255,255,255,.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 86% 59%, rgba(255,255,255,.72) 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 35%, rgba(255,255,255,.65) 0%, transparent 100%),
+    radial-gradient(1px 1px at 97% 71%, rgba(255,255,255,.82) 0%, transparent 100%),
+    radial-gradient(1px 1px at  4% 28%, rgba(255,255,255,.55) 0%, transparent 100%),
+
+    /* ── Stars layer 2 – 1.5 px, más brillantes ── */
+    radial-gradient(1.5px 1.5px at 11% 13%, rgba(255,255,255,.95) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 24% 68%, rgba(255,255,255,.82) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 37% 92%, rgba(255,255,255,.90) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 46% 29%, rgba(255,255,255,.75) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 59% 52%, rgba(255,255,255,.88) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 72%  8%, rgba(255,255,255,.95) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 84% 73%, rgba(255,255,255,.80) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at  2% 48%, rgba(255,255,255,.70) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 16% 84%, rgba(255,255,255,.88) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 31% 36%, rgba(255,255,255,.92) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 44% 61%, rgba(255,255,255,.78) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 67% 24%, rgba(255,255,255,.88) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 78% 47%, rgba(255,255,255,.72) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 91% 16%, rgba(255,255,255,.92) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at  9% 70%, rgba(255,255,255,.82) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 20% 94%, rgba(255,255,255,.65) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 53%  4%, rgba(255,255,255,.95) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 65% 80%, rgba(255,255,255,.78) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 87% 33%, rgba(255,255,255,.88) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 98% 55%, rgba(255,255,255,.72) 0%, transparent 100%),
+
+    /* ── Stars layer 3 – 2 px, con tinte de color ── */
+    radial-gradient(2px 2px at 17% 43%, rgba(180,220,255,.82) 0%, transparent 100%),
+    radial-gradient(2px 2px at 39% 14%, rgba(200,180,255,.77) 0%, transparent 100%),
+    radial-gradient(2px 2px at 61% 87%, rgba(180,220,255,.88) 0%, transparent 100%),
+    radial-gradient(2px 2px at 83% 38%, rgba(255,225,185,.72) 0%, transparent 100%),
+    radial-gradient(2px 2px at 26% 72%, rgba(180,255,230,.85) 0%, transparent 100%),
+    radial-gradient(2px 2px at 74% 51%, rgba(205,185,255,.78) 0%, transparent 100%),
+    radial-gradient(2px 2px at  5% 60%, rgba(180,220,255,.72) 0%, transparent 100%),
+    radial-gradient(2px 2px at 55% 25%, rgba(200,180,255,.88) 0%, transparent 100%),
+    radial-gradient(2px 2px at 93% 80%, rgba(255,225,185,.75) 0%, transparent 100%),
+    radial-gradient(2px 2px at 43% 98%, rgba(180,255,230,.80) 0%, transparent 100%);
+
+  animation: galaxyPulse 14s ease-in-out infinite alternate;
+}
+
+@keyframes galaxyPulse {
+  0%   { opacity: 0.85; }
+  100% { opacity: 1.00; }
+}
+
+/* Scan lines ultra-sutiles – efecto industrial CRT */
+body.galaxy-page:not(.effects-off)::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent            0px,
+    transparent            3px,
+    rgba(0, 0, 0, 0.035)   3px,
+    rgba(0, 0, 0, 0.035)   4px
+  );
+}
+
+
+/* ============================================================
+   CONTENEDOR PRINCIPAL
+   ============================================================ */
+body.galaxy-page:not(.effects-off) .pannelli-dash {
+  background: transparent;
+  position: relative;
+}
+
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+body.galaxy-page:not(.effects-off) .pannelli-dash #sidebar {
+  background: rgba(8, 16, 40, 0.82) !important;
+  border-right-color: rgba(255, 255, 255, 0.07) !important;
+  color: var(--gx-text);
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash #sidebar h2,
+body.galaxy-page:not(.effects-off) .pannelli-dash #sidebar small {
+  color: var(--gx-text);
+}
+
+
+/* ============================================================
+   CARDS DEL PANEL SUPERIOR (status + power)
+   ============================================================ */
+body.galaxy-page:not(.effects-off) .pannelli-dash .card {
+  background:          rgba(8, 18, 42, 0.72) !important;
+  border-color:        rgba(255, 255, 255, 0.09) !important;
+  backdrop-filter:     blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--gx-text);
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash .muted,
+body.galaxy-page:not(.effects-off) .pannelli-dash .status-label {
+  color: var(--gx-muted) !important;
+}
+
+/* Power total */
+body.galaxy-page:not(.effects-off) .pannelli-dash #sp-power.big,
+body.galaxy-page:not(.effects-off) .pannelli-dash #pv-power.big {
+  color:       var(--gx-power) !important;
+  text-shadow: 0 0 16px rgba(0, 255, 200, 0.55) !important;
+  font-size:   clamp(2.4rem, 4.5vw, 5rem) !important;
+}
+
+
+/* ============================================================
+   TARJETAS INVERSORES — GLASSMORPHISM GALAXY
+   ============================================================ */
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card {
+  background:              var(--gx-card) !important;
+  border-color:            var(--gx-card-border) !important;
+  backdrop-filter:         blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--gx-text);
+  transition:
+    transform    0.25s cubic-bezier(.22,.68,0,1.2),
+    box-shadow   0.25s ease,
+    border-color 0.25s ease;
+}
+
+/* KPIs dentro de tarjeta */
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-kpi {
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: var(--gx-text);
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-kpi .lbl {
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  font-size: clamp(.72rem, .9vw, .85rem);
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-kpi .val .num {
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.22);
+  font-weight: 800;
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card-meta {
+  color: var(--gx-muted);
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card-head {
+  color: #94a3b8;
+}
+
+
+/* ──────────────────────────────────────────────
+   GLOW por estado (sobreescribe dashboard_effects.css)
+   ────────────────────────────────────────────── */
+
+/* OK → verde */
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-glow-ok {
+  border-color: rgba(0, 255, 120, 0.38) !important;
+  box-shadow:   var(--neon-ok) !important;
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-glow-ok:hover {
+  transform:    translateY(-5px) scale(1.01);
+  border-color: rgba(0, 255, 120, 0.65) !important;
+  box-shadow:
+    0 0 10px rgba(0,255,120,0.85),
+    0 0 30px rgba(0,255,120,0.45),
+    0 0 70px rgba(0,255,120,0.18) !important;
+}
+
+/* MPPT → cyan */
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-glow-mppt {
+  border-color: rgba(0, 200, 255, 0.38) !important;
+  box-shadow:   var(--neon-mppt) !important;
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-glow-mppt:hover {
+  transform:    translateY(-5px) scale(1.01);
+  border-color: rgba(0, 200, 255, 0.65) !important;
+  box-shadow:
+    0 0 10px rgba(0,200,255,0.85),
+    0 0 30px rgba(0,200,255,0.45),
+    0 0 70px rgba(0,200,255,0.18) !important;
+}
+
+/* RPC / DLX → violeta */
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-glow-rpc {
+  border-color: rgba(170, 0, 255, 0.38) !important;
+  box-shadow:   var(--neon-rpc) !important;
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-glow-rpc:hover {
+  transform:    translateY(-5px) scale(1.01);
+  border-color: rgba(170, 0, 255, 0.65) !important;
+  box-shadow:
+    0 0 10px rgba(170,0,255,0.85),
+    0 0 30px rgba(170,0,255,0.45),
+    0 0 70px rgba(170,0,255,0.18) !important;
+}
+
+/* Error → rojo */
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-glow-error {
+  border-color: rgba(255, 50, 50, 0.38) !important;
+  box-shadow:   var(--neon-error) !important;
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-glow-error:hover {
+  transform:    translateY(-5px) scale(1.01);
+  border-color: rgba(255, 50, 50, 0.65) !important;
+  box-shadow:
+    0 0 10px rgba(255,50,50,0.85),
+    0 0 30px rgba(255,50,50,0.45),
+    0 0 65px rgba(255,50,50,0.18) !important;
+}
+
+/* Standby → ámbar */
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-glow-standby {
+  border-color: rgba(255, 180, 0, 0.30) !important;
+  box-shadow:   var(--neon-standby) !important;
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-glow-standby:hover {
+  transform:    translateY(-4px) scale(1.01);
+  border-color: rgba(255, 180, 0, 0.55) !important;
+  box-shadow:
+    0 0 8px  rgba(255,180,0,0.75),
+    0 0 26px rgba(255,180,0,0.38),
+    0 0 55px rgba(255,180,0,0.12) !important;
+}
+
+/* Offline → apagado */
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-glow-offline {
+  opacity:      0.42 !important;
+  filter:       blur(0.4px) !important;
+  box-shadow:   none !important;
+  border-color: rgba(255,255,255,0.05) !important;
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-glow-offline:hover {
+  opacity: 0.65 !important;
+  filter:  none !important;
+}
+
+
+/* ============================================================
+   TOP POWER — BORDE DORADO
+   ============================================================ */
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-top-power {
+  border-color: rgba(255, 215, 0, 0.65) !important;
+  box-shadow:   var(--neon-gold) !important;
+  animation:    galaxyGold 2.8s ease-in-out infinite !important;
+}
+
+@keyframes galaxyGold {
+  0%, 100% {
+    box-shadow:
+      0 0 10px rgba(255,215,0,0.75),
+      0 0 28px rgba(255,215,0,0.38),
+      0 0 60px rgba(255,215,0,0.14);
+  }
+  50% {
+    box-shadow:
+      0 0 18px rgba(255,215,0,1.00),
+      0 0 48px rgba(255,215,0,0.60),
+      0 0 90px rgba(255,215,0,0.22);
+  }
+}
+
+/* Valor de potencia en tarjeta top */
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-top-power .sp-power,
+body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card.card-top-power .pv-kpi:first-child .num {
+  color:       #ffd700 !important;
+  text-shadow: 0 0 14px rgba(255, 215, 0, 0.75) !important;
+}
+
+/* Badge TOP POWER (de dashboard_effects.css) en galaxy */
+body.galaxy-page:not(.effects-off) .badge-top-power {
+  background:        linear-gradient(90deg, #d97706, #fbbf24, #d97706);
+  background-size:   200% auto;
+  color:             #1a1200;
+  animation:         shineSlide 2.4s linear infinite;
+  box-shadow:        0 0 8px rgba(255,215,0,0.45);
+}
+
+
+/* ============================================================
+   TABLA (vista de lista)
+   ============================================================ */
+body.galaxy-page:not(.effects-off) .pannelli-dash #pv-table {
+  background: transparent;
+  color: var(--gx-text);
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash #pv-table th {
+  color:        var(--gx-muted);
+  border-color: rgba(255, 255, 255, 0.08);
+  background:   transparent;
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash #pv-table td {
+  color:        var(--gx-text);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+body.galaxy-page:not(.effects-off) .pannelli-dash #pv-table tbody tr:hover td {
+  background: rgba(0, 200, 255, 0.05);
+}
+
+
+/* ============================================================
+   RESPONSIVE — sin animaciones costosas en móvil
+   ============================================================ */
+@media (max-width: 600px) {
+  body.galaxy-page:not(.effects-off) .pannelli-dash .pv-card:hover {
+    transform: none !important;
+  }
+  body.galaxy-page:not(.effects-off)::before,
+  body.galaxy-page:not(.effects-off)::after {
+    display: none;
+  }
+  body.galaxy-page:not(.effects-off) .pv-card.card-top-power {
+    animation: none !important;
+    box-shadow: 0 0 12px rgba(255,215,0,0.40) !important;
+  }
+}
+
+/* ============================================================
+   MODO DESACTIVADO
+   ============================================================ */
+body.effects-off .pannelli-dash .pv-card,
+body.effects-off .pannelli-dash .card {
+  background:        revert !important;
+  box-shadow:        revert !important;
+  backdrop-filter:   none  !important;
+  border-color:      revert !important;
+  color:             revert !important;
+  animation:         none  !important;
+}
+body.effects-off::before,
+body.effects-off::after {
+  display: none !important;
+}
