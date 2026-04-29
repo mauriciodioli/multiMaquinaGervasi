@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import time
+import struct
+import math
 from pymodbus.client import ModbusTcpClient
 from math import sqrt
 import socket
@@ -8,8 +10,9 @@ from pymodbus.exceptions import ModbusIOException, ConnectionException
 IPS = [
     "192.168.1.101",
     "192.168.1.102",
-    "192.168.1.103",    
-    "192.168.1.109",
+    "192.168.1.103",
+    "192.168.1.106",  # SMA Sunny
+    "192.168.1.109",   
     "192.168.1.110",
     "192.168.1.111",
     "192.168.1.112",
@@ -318,13 +321,13 @@ def regs_to_str(regs):
         s.append(chr(lo))
     return "".join(s)
 
-def read_common(client):
+def read_common(client, unit=UNIT_ID):
     hdr_addr0 = (BASE_ADDR + 2) - 1  # 40003 (0-based)
-    hdr = read_u16s(client, UNIT_ID, hdr_addr0, 2)
+    hdr = read_u16s(client, unit, hdr_addr0, 2)
     if not hdr:
         return None
     mid, mlen = hdr
-    regs = read_u16s(client, UNIT_ID, hdr_addr0 + 2, mlen)
+    regs = read_u16s(client, unit, hdr_addr0 + 2, mlen)
     if not regs:
         return None
     mn = regs_to_str(regs[0:16])
@@ -332,11 +335,53 @@ def read_common(client):
     sn = regs_to_str(regs[48:66])
     return {"manufacturer": mn, "model": md, "serial": sn, "first_model_id": mid}
 
-def find_model_header(client, target_mid):
+
+def diagnose_ip(ip, port=PORT):
+    """
+    Diagnóstico completo para encontrar el unit ID y configuración Modbus
+    correcta de un inversor. Imprime resultados detallados.
+    Útil cuando un dispositivo conecta pero no devuelve datos.
+    """
+    UNIT_CANDIDATES = list(range(1, 11)) + [126, 3]
+    BASE_CANDIDATES = [
+        (BASE_ADDR + 2) - 1,  # SunSpec estándar 40003 (0-based)
+        1,                    # offset 0 (algunos SMA)
+        (40000 + 2) - 1,      # 40002 (0-based)
+    ]
+    print(f"\n{'='*55}")
+    print(f" DIAGNÓSTICO MODBUS: {ip}:{port}")
+    print(f"{'='*55}")
+
+    try:
+        with ModbusTcpClient(ip, port, timeout=2.0, retries=1) as client:
+            if not client.connect():
+                print(f" ❌ Sin conexión TCP")
+                return
+            print(f" ✅ TCP conectado")
+
+            for unit in UNIT_CANDIDATES:
+                for addr in BASE_CANDIDATES:
+                    # FC03 holding registers
+                    r = client.read_holding_registers(addr, 2, slave=unit)
+                    if not r.isError():
+                        regs = r.registers
+                        print(f" ✅ FC03 unit={unit} addr={addr} → {regs}")
+                        continue
+                    # FC04 input registers
+                    r2 = client.read_input_registers(addr, 2, slave=unit)
+                    if not r2.isError():
+                        regs = r2.registers
+                        print(f" ✅ FC04 unit={unit} addr={addr} → {regs}  ← USA INPUT REGISTERS")
+
+    except Exception as e:
+        print(f" ⚠️ Error: {e}")
+    print(f"{'='*55}\n")
+
+def find_model_header(client, target_mid, unit=UNIT_ID):
     """Busca el header de target_mid; devuelve (addr0, mlen) o (None, None)."""
     addr0 = (BASE_ADDR + 2) - 1
-    while True:
-        hdr = read_u16s(client, UNIT_ID, addr0, 2)
+    for _ in range(80):  # límite de seguridad
+        hdr = read_u16s(client, unit, addr0, 2)
         if not hdr:
             return None, None
         mid, mlen = hdr
@@ -345,15 +390,16 @@ def find_model_header(client, target_mid):
         if mid == target_mid:
             return addr0, mlen
         addr0 = addr0 + 2 + mlen
+    return None, None
 
-def read_first_model_payload(client):
+def read_first_model_payload(client, unit=UNIT_ID):
     """Lee el primer header (el que sea) y devuelve (mid, regs) o (None, None)."""
     addr0 = (BASE_ADDR + 2) - 1
-    hdr = read_u16s(client, UNIT_ID, addr0, 2)
+    hdr = read_u16s(client, unit, addr0, 2)
     if not hdr:
         return None, None
     mid, mlen = hdr
-    regs = read_u16s(client, UNIT_ID, addr0 + 2, mlen)
+    regs = read_u16s(client, unit, addr0 + 2, mlen)
     if not regs:
         return None, None
     return mid, regs
@@ -387,7 +433,161 @@ def decode_ac_from_101(regs):
         }
     except Exception:
         return None
-def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
+# ===== FRONIUS FLOAT MODELS (111=monofásico, 113=trifásico) =====
+# SunSpec float: cada valor ocupa 2 registros uint16 (big-endian float32)
+# Offsets en el payload (0 = primer registro tras el header del modelo)
+# SunSpec float 111/113 layout:
+#   0=A, 2=AphA, 4=AphB, 6=AphC, 8=PPVphAB, 10=PPVphBC, 12=PPVphCA,
+#  14=PhVphA(V), 16=PhVphB, 18=PhVphC, 20=W, 22=Hz, 24=VA, 26=VAr, 28=PF,
+#  30=WH(energy), 32=DCA, 34=DCV, 36=DCW, 38=TmpCab, 40=TmpSnk,
+#  42=TmpTrns, 44=TmpOt, 46=St(status uint16), 47=StVnd
+_FRONIUS_OFFSETS = {
+    111: {"V": 14, "W": 20, "Hz": 22, "St": 46},  # monofásico
+    113: {"V": 14, "W": 20, "Hz": 22, "St": 46},  # trifásico
+}
+
+# Códigos de estado Fronius (distintos de SMA)
+_FRONIUS_STATUS = {
+    1: "Off",
+    2: "Sleeping",
+    3: "Starting",
+    4: "MPPT (operando)",
+    5: "Throttled (limitado)",
+    6: "Shutting down",
+    7: "Fault",
+    8: "Standby",
+}
+
+
+def _regs_to_float32(r1, r2):
+    """Convierte dos registros uint16 a float32 big-endian (SunSpec float)."""
+    try:
+        v = struct.unpack('>f', struct.pack('>HH', r1, r2))[0]
+        return None if (math.isnan(v) or math.isinf(v)) else v
+    except Exception:
+        return None
+
+
+def decode_ac_from_float_model(regs, model_id):
+    """
+    Decodifica V, Hz, W de un modelo SunSpec float (Fronius 111/113).
+    Retorna dict con V_AC, freq_Hz, P_AC_W/kW o None si no puede.
+    """
+    offsets = _FRONIUS_OFFSETS.get(model_id)
+    if not offsets:
+        return None
+    min_needed = max(offsets["V"], offsets["W"], offsets["Hz"]) + 2
+    if len(regs) < min_needed:
+        return None
+    try:
+        V  = _regs_to_float32(regs[offsets["V"]],  regs[offsets["V"]  + 1])
+        W  = _regs_to_float32(regs[offsets["W"]],  regs[offsets["W"]  + 1])
+        Hz = _regs_to_float32(regs[offsets["Hz"]], regs[offsets["Hz"] + 1])
+        if V is None and W is None and Hz is None:
+            return None
+        return {
+            "V_AC":    round(V,  2)      if V  is not None else "—",
+            "freq_Hz": round(Hz, 2)      if Hz is not None else "—",
+            "P_AC_W":  round(W,  1)      if W  is not None else "—",
+            "P_AC_kW": round(W / 1000.0, 3) if W is not None else "—",
+        }
+    except Exception:
+        return None
+
+
+def decode_fronius_status(regs, model_id):
+    """Lee el registro de estado St (uint16 simple) de un modelo float Fronius."""
+    offsets = _FRONIUS_OFFSETS.get(model_id)
+    if not offsets or len(regs) <= offsets["St"]:
+        return "sin datos", None, model_id, None
+    code = regs[offsets["St"]]
+    text = _FRONIUS_STATUS.get(code, f"unknown ({code})")
+    return text, code, model_id, offsets["St"]
+
+
+def read_ip_fronius(ip, unit_candidates=(1, 3, 126), port=PORT):
+    """
+    Lee un inversor Fronius (SunSpec float, modelos 111/113) vía Modbus TCP.
+    Devuelve el mismo dict estándar que read_ip:
+      'ok'       - datos decodificados correctamente
+      'fail'     - conectó pero no encontró datos útiles
+      'no conect'- sin conexión TCP
+    """
+    result = {
+        "ip": ip,
+        "status": "no conect",
+        "status_text": "offline",
+        "status_code": None,
+        "status_src": None,
+        "V_AC": "—",
+        "freq_Hz": "—",
+        "P_AC_W": "—",
+        "P_AC_kW": "—",
+        "unit_used": None,
+        "vendor": "Fronius",
+    }
+    try:
+        with ModbusTcpClient(ip, port, timeout=1.5, retries=1) as client:
+            if not client.connect():
+                print(f"❌ No conecta {ip}")
+                return result
+
+            result["status"] = "fail"
+            result["status_text"] = "no data"
+
+            # Detectar unit activo
+            working_unit = None
+            for u in unit_candidates:
+                r = client.read_holding_registers((BASE_ADDR + 2) - 1, 2, slave=u)
+                if not r.isError():
+                    working_unit = u
+                    break
+            if working_unit is None:
+                print(f"⚠️ {ip}: ningún unit ID respondió")
+                return result
+
+            # Leer datos comunes (fabricante, modelo, SN)
+            info = read_common(client, unit=working_unit) or {}
+            result.update(info)
+
+            # Buscar modelo float 111 (monofásico) o 113 (trifásico)
+            for float_mid in (111, 113):
+                hdr_addr0, mlen = find_model_header(client, float_mid, unit=working_unit)
+                if hdr_addr0 is None:
+                    continue
+                regs = read_u16s(client, working_unit, hdr_addr0 + 2, mlen)
+                if not regs:
+                    continue
+
+                ac = decode_ac_from_float_model(regs, float_mid)
+                if not ac:
+                    print(f"⚠️ {ip}: MID {float_mid} encontrado pero no decodificable")
+                    continue
+
+                result.update(ac)
+                result["status"]       = "ok"
+                result["unit_used"]    = working_unit
+                result["sunspec_model"] = float_mid
+
+                st_text, st_code, st_mid, st_idx = decode_fronius_status(regs, float_mid)
+                result["status_text"]  = st_text
+                result["status_code"]  = st_code
+                result["status_src"]   = {"model": st_mid, "index": st_idx}
+                result["status_group"] = status_group_from_code(st_code)
+                return result
+
+            print(f"⚠️ {ip}: no se encontró MID 111 ni 113 (unit={working_unit})")
+            return result
+
+    except Exception as e:
+        print(f"⚠️ Error en {ip}: {e}")
+        result["status"]     = "no conect"
+        result["status_text"] = "offline"
+        result["error"]      = f"{type(e).__name__}: {e}"
+        return result
+
+
+def read_ip(ip, unit_candidates=(1, 3, 126), port=PORT):
     """
     Lee un inversor vía Modbus TCP probando múltiples unit IDs.
     Devuelve:
@@ -419,15 +619,22 @@ def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
             result["status"] = "fail"
             result["status_text"] = "no data"
 
-            info = read_common(client) or {}
+            # Detectar unit correcto probando lectura del header SunSpec
+            working_unit = None
+            for u in unit_candidates:
+                r = client.read_holding_registers((BASE_ADDR + 2) - 1, 2, slave=u)
+                if not r.isError():
+                    working_unit = u
+                    break
+            if working_unit is None:
+                working_unit = unit_candidates[0]
+
+            info = read_common(client, unit=working_unit) or {}
             result.update(info)
 
             last_error = None
             for unit in unit_candidates:
-                try:
-                    hdr_addr0, mlen = find_model_header(client, 101, unit=unit)
-                except TypeError:
-                    hdr_addr0, mlen = find_model_header(client, 101)
+                hdr_addr0, mlen = find_model_header(client, 101, unit=unit)
                 if hdr_addr0 is None:
                     continue
 
@@ -468,12 +675,20 @@ def read_ip(ip, unit_candidates=(126, 1, 3), port=PORT):
 
                 return result  # éxito con este unit (ok/raw)
 
+            # --- Modelo 101 no encontrado: intentar como Fronius float ---
+            fronius = read_ip_fronius(ip, unit_candidates=unit_candidates, port=port)
+            if fronius.get("status") == "ok":
+                return fronius
             # Si no apareció 101, intentá “primer modelo” para al menos dejar "raw"
-            try:
-                mid, regs = read_first_model_payload(client)
-            except Exception as e:
-                last_error = e
-                mid, regs = None, None
+            for unit in unit_candidates:
+                try:
+                    mid, regs = read_first_model_payload(client, unit=unit)
+                except Exception as e:
+                    last_error = e
+                    mid, regs = None, None
+                if mid is not None and regs is not None:
+                    result["unit_used"] = unit
+                    break
 
             if mid is None or regs is None:
                 print(f"⚠️ {ip} no devolvió modelos legibles. Último error: {last_error}")

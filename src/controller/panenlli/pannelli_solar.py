@@ -14,7 +14,7 @@ from src.controller.panenlli.snmp_walk_dlx import read_all_dlx,  DLX_IPS
 
 
 import time
-from flask import jsonify, request
+
 
 pannelli_solar = Blueprint('pannelli_solar', __name__)
 
@@ -31,11 +31,11 @@ pannelli_solar = Blueprint('pannelli_solar', __name__)
 def _simplify(inv: dict):
     """Compacta el dict para frontend."""
     txt = (inv.get("status_text") or "").lower()
-    if "falla" in txt:
+    if "falla" in txt or "fault" in txt or "fail" in txt:
         device_status = "Error"
-    elif "standby" in txt or "espera" in txt:
+    elif "standby" in txt or "espera" in txt or "sleeping" in txt:
         device_status = "Standby"
-    elif "ok" in txt or "operando" in txt or "marcha" in txt:
+    elif "ok" in txt or "operando" in txt or "marcha" in txt or "mppt" in txt or "throttled" in txt:
         device_status = "Ok"
     else:
         device_status = "Unknown"
