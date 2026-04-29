@@ -142,9 +142,6 @@ function applyTopPower(cards, inverters) {
   );
   if (withPower.length === 0) return;
 
-  const maxPower = Math.max(...withPower.map(i => i.power_W));
-  if (maxPower <= 0) return;
-
   // Mapa IP → tarjeta
   const cardByIp = {};
   [...cards].forEach(c => {
@@ -152,20 +149,7 @@ function applyTopPower(cards, inverters) {
     if (ipEl) cardByIp[ipEl.textContent.trim()] = c;
   });
 
-  // 1) Inversor de máxima potencia
-  const topInv = withPower.find(i => i.power_W === maxPower);
-  if (topInv && cardByIp[topInv.ip || '']) {
-    _markTopCard(cardByIp[topInv.ip]);
-  }
-
-  // 2) Todos los inversores en MPPT también reciben el badge
-  inverters.forEach(i => {
-    if (_isMppt(i) && i.ip && cardByIp[i.ip]) {
-      _markTopCard(cardByIp[i.ip]);
-    }
-  });
-
-  // 3) Cualquier inversor por encima del umbral recibe el badge
+  // Solo el umbral de potencia otorga el badge TOP POWER
   withPower.forEach(i => {
     if (i.power_W >= TOP_POWER_THRESHOLD_W && i.ip && cardByIp[i.ip]) {
       _markTopCard(cardByIp[i.ip]);
@@ -326,9 +310,6 @@ function applyEffects(inverters) {
     if (!container) return;
     const cards = container.querySelectorAll('.pv-card');
 
-    let maxPower = -Infinity;
-    let topCard  = null;
-
     cards.forEach((card, idx) => {
       // Leer badge text para determinar estado
       const badge = card.querySelector('.badge');
@@ -386,11 +367,6 @@ function applyEffects(inverters) {
       applyVoltWarning(card, inv);
       applyFadeIn(card, idx);
 
-      // Trackear top power
-      if (inv.power_W !== null && inv.power_W > maxPower) {
-        maxPower = inv.power_W;
-        topCard  = card;
-      }
     });
 
     // Quitar badge previo de top power
@@ -399,26 +375,14 @@ function applyEffects(inverters) {
       c.querySelector('.badge-top-power')?.remove();
     });
 
-    // 1) Inversor de máxima potencia
-    if (topCard && maxPower > 0) {
-      _markTopCard(topCard);
-    }
-
-    // 2) Cualquier tarjeta con status MPPT también recibe el badge
-    cards.forEach(c => {
-      const badgeTxt = (c.querySelector('.badge')?.textContent || '').toLowerCase();
-      if (/mppt|throttled|limitado|operando/.test(badgeTxt)) {
-        _markTopCard(c);
-      }
-    });
-
-    // 3) Cualquier tarjeta con potencia >= umbral recibe el badge
+    // Solo el umbral de potencia otorga el badge TOP POWER
     cards.forEach(c => {
       const numEl = c.querySelector('.pv-kpi:first-child .num');
       if (!numEl) return;
       const raw = numEl.textContent
         .replace(/[^0-9,.]/g, '')
-        .replace(/\./g, '')
+        .replace(/\.(?=.*\.)/g, '')  // quitar puntos de miles (conservar último si es decimal)
+        .replace(/\./g, '')          // quitar el punto de miles restante
         .replace(',', '.');
       const pw  = parseFloat(raw);
       if (!isNaN(pw) && pw >= TOP_POWER_THRESHOLD_W) {
