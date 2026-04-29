@@ -98,7 +98,6 @@ async function loadOnce(){
     updateTop(data);
   } catch(e){
     console.warn('[solo_pannelli] ', e);
-    debugger;
     setBadge(els.status(), 'Fail');
   } finally {
     hideSpinner();   // << siempre lo apagás
