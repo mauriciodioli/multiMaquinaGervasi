@@ -8,7 +8,7 @@ from src.model.pannelli.historial_inverter import HistorialInverter
 from src.utils.db_session import get_db_session
 from datetime import datetime,timedelta
 
-from src.controller.panenlli.modbus_sma import read_all, IPS
+from src.controller.panenlli.modbus_sma import read_all, IPS, normalize_inverter_result, clean_status_text
 # ✅ DLX (Danfoss) en el mismo formato que read_all de SMA
 from src.controller.panenlli.snmp_walk_dlx import read_all_dlx,  DLX_IPS
 
@@ -68,8 +68,8 @@ def pannelli_status():
     items_sma = [_simplify(d) for d in data_sma]
 
     # 👉 DLX (Danfoss) vía HTTP RPC, mismo formato lógico
-    data_dlx = read_all_dlx(DLX_IPS)      # lista de dicts formateados como read_ip
-    items_dlx = [_simplify(d) for d in data_dlx]
+    data_dlx = read_all_dlx(DLX_IPS)
+    items_dlx = [_simplify(clean_status_text(normalize_inverter_result(d))) for d in data_dlx]
 
     # Unimos todo para el frontend
     items = items_sma + items_dlx

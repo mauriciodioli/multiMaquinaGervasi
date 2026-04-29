@@ -22,6 +22,7 @@ PORT = 502
 UNIT_ID = 126
 BASE_ADDR = 40001  # SunSpec 1-based
 INTERVAL = 5  # segundos entre ciclos
+DEBUG_MODBUS = False  # True para imprimir detalles de lectura por IP
 
 # === OFFSETS CONFIRMADOS PARA SMA (model 101) ===
 OFF_V = 8
@@ -505,6 +506,128 @@ def decode_fronius_status(regs, model_id):
     return text, code, model_id, offsets["St"]
 
 
+# ===== HELPERS DE NORMALIZACIÓN Y LIMPIEZA =====
+
+def detect_inverter_type(result: dict) -> str:
+    """
+    Devuelve: 'fronius', 'sma', 'danfoss' o 'unknown'
+    usando manufacturer y model del result dict.
+    """
+    haystack = " ".join([
+        str(result.get("manufacturer") or ""),
+        str(result.get("model") or ""),
+        str(result.get("vendor") or ""),
+    ]).lower()
+    if "fronius" in haystack:
+        return "fronius"
+    if "sma" in haystack or "sunny" in haystack:
+        return "sma"
+    if "danfoss" in haystack or "dlx" in haystack:
+        return "danfoss"
+    return "unknown"
+
+
+def normalize_inverter_result(result: dict) -> dict:
+    """
+    Normaliza valores raros (-0, "-0", "-0 V") sin romper claves existentes.
+    Mantiene compatibilidad con el frontend actual.
+    """
+    def _is_neg_zero(v):
+        return isinstance(v, float) and v == 0.0 and math.copysign(1, v) < 0
+
+    def _fix(v):
+        if isinstance(v, str) and v.strip() in ("-0", "-0.0", "-0 V"):
+            return 0
+        if isinstance(v, float) and _is_neg_zero(v):
+            return 0.0
+        return v
+
+    P = result.get("P_AC_W")
+    has_power = isinstance(P, (int, float)) and P > 0
+
+    # Potencia: -0 → 0
+    for key in ("P_AC_W", "P_AC_kW"):
+        result[key] = _fix(result.get(key, "\u2014"))
+
+    # Voltaje: si es 0 pero hay potencia real, es inconsistente → "—"
+    v_fixed = _fix(result.get("V_AC"))
+    if isinstance(v_fixed, (int, float)) and v_fixed == 0 and has_power:
+        result["V_AC"] = "\u2014"
+    else:
+        result["V_AC"] = v_fixed
+
+    # Frecuencia: igual que voltaje
+    hz_fixed = _fix(result.get("freq_Hz"))
+    if isinstance(hz_fixed, (int, float)) and hz_fixed == 0 and has_power:
+        result["freq_Hz"] = "\u2014"
+    else:
+        result["freq_Hz"] = hz_fixed
+
+    return result
+
+
+def clean_status_text(result: dict) -> dict:
+    """
+    Evita mostrar "unknown status" cuando las métricas indican funcionamiento.
+    Asigna textos de estado coherentes por fabricante.
+    """
+    txt = (result.get("status_text") or "").lower()
+    P   = result.get("P_AC_W")
+    Hz  = result.get("freq_Hz")
+
+    has_power = isinstance(P, (int, float)) and P > 0
+    hz_ok     = (Hz == "\u2014") or (isinstance(Hz, (int, float)) and 49.0 <= Hz <= 51.0)
+
+    inv_type = detect_inverter_type(result)
+
+    # 1) Limpiar "unknown status (XXX)" cuando las métricas son válidas
+    if "unknown status" in txt and has_power and hz_ok:
+        if inv_type == "fronius":
+            result["status_text"] = "MPPT (operando)"
+        elif inv_type == "danfoss":
+            result["status_text"] = "Ok (DLX RPC)"
+        else:
+            result["status_text"] = "Ok"
+        return result
+
+    # 2) Fronius con potencia pero sin estado conocido
+    if inv_type == "fronius" and has_power:
+        _known = ("mppt", "throttled", "starting", "fault", "standby", "sleeping", "off")
+        if not any(s in txt for s in _known):
+            result["status_text"] = "MPPT (operando)"
+        return result
+
+    # 3) Danfoss con potencia pero sin estado conocido
+    if inv_type == "danfoss" and has_power:
+        if not any(s in txt for s in ("ok", "standby", "error", "fail")):
+            result["status_text"] = "Ok (DLX RPC)"
+        return result
+
+    # 4) SMA con potencia pero sin estado conocido
+    if inv_type == "sma" and has_power:
+        _known = ("operando", "marcha", "ok", "standby", "fail", "starting")
+        if not any(s in txt for s in _known):
+            result["status_text"] = "Ok"
+        return result
+
+    return result
+
+
+def _finalize(result: dict) -> dict:
+    """Normaliza y limpia cada result antes de devolverlo al caller."""
+    result = normalize_inverter_result(result)
+    result = clean_status_text(result)
+    if DEBUG_MODBUS:
+        inv_type = detect_inverter_type(result)
+        print(
+            f"[DEBUG] {result.get('ip')} | {result.get('manufacturer')} {result.get('model')}"
+            f" | type={inv_type} | unit={result.get('unit_used')}"
+            f" | status={result.get('status_text')}"
+            f" | V={result.get('V_AC')} | Hz={result.get('freq_Hz')} | W={result.get('P_AC_W')}"
+        )
+    return result
+
+
 def read_ip_fronius(ip, unit_candidates=(1, 3, 126), port=PORT):
     """
     Lee un inversor Fronius (SunSpec float, modelos 111/113) vía Modbus TCP.
@@ -530,7 +653,7 @@ def read_ip_fronius(ip, unit_candidates=(1, 3, 126), port=PORT):
         with ModbusTcpClient(ip, port, timeout=1.5, retries=1) as client:
             if not client.connect():
                 print(f"❌ No conecta {ip}")
-                return result
+                return _finalize(result)
 
             result["status"] = "fail"
             result["status_text"] = "no data"
@@ -544,7 +667,7 @@ def read_ip_fronius(ip, unit_candidates=(1, 3, 126), port=PORT):
                     break
             if working_unit is None:
                 print(f"⚠️ {ip}: ningún unit ID respondió")
-                return result
+                return _finalize(result)
 
             # Leer datos comunes (fabricante, modelo, SN)
             info = read_common(client, unit=working_unit) or {}
@@ -574,17 +697,17 @@ def read_ip_fronius(ip, unit_candidates=(1, 3, 126), port=PORT):
                 result["status_code"]  = st_code
                 result["status_src"]   = {"model": st_mid, "index": st_idx}
                 result["status_group"] = status_group_from_code(st_code)
-                return result
+                return _finalize(result)
 
             print(f"⚠️ {ip}: no se encontró MID 111 ni 113 (unit={working_unit})")
-            return result
+            return _finalize(result)
 
     except Exception as e:
         print(f"⚠️ Error en {ip}: {e}")
         result["status"]     = "no conect"
         result["status_text"] = "offline"
         result["error"]      = f"{type(e).__name__}: {e}"
-        return result
+        return _finalize(result)
 
 
 def read_ip(ip, unit_candidates=(1, 3, 126), port=PORT):
@@ -613,7 +736,7 @@ def read_ip(ip, unit_candidates=(1, 3, 126), port=PORT):
         with ModbusTcpClient(ip, port, timeout=1.5, retries=1) as client:
             if not client.connect():
                 print(f"❌ No conecta {ip}")
-                return result  # <- queda "no conect"
+                return _finalize(result)  # <- queda "no conect"
 
             # Conectó: si después no obtenemos nada, será "fail"
             result["status"] = "fail"
@@ -673,7 +796,7 @@ def read_ip(ip, unit_candidates=(1, 3, 126), port=PORT):
                         result, result.get("status_code"), result.get("status_text")
                     )
 
-                return result  # éxito con este unit (ok/raw)
+                return _finalize(result)  # éxito con este unit (ok/raw)
 
             # --- Modelo 101 no encontrado: intentar como Fronius float ---
             fronius = read_ip_fronius(ip, unit_candidates=unit_candidates, port=port)
@@ -695,7 +818,7 @@ def read_ip(ip, unit_candidates=(1, 3, 126), port=PORT):
                 # OJO: aquí conectó pero no hay datos → 'fail'
                 result["status"] = "fail"
                 result["status_text"] = "no data"
-                return result
+                return _finalize(result)
 
             result["raw_model_id"] = mid
             result["raw_regs"] = regs
@@ -705,7 +828,7 @@ def read_ip(ip, unit_candidates=(1, 3, 126), port=PORT):
             result["status_code"] = st_code
             result["status_src"] = {"model": st_mid, "index": st_idx}
             result["status_group"]= status_group_from_code(st_code) 
-            return result
+            return _finalize(result)
 
     except Exception as e:
         # Error duro de conexión: mantener "no conect"
@@ -713,7 +836,7 @@ def read_ip(ip, unit_candidates=(1, 3, 126), port=PORT):
         result["status"] = "no conect"
         result["status_text"] = "offline"
         result["error"] = f"{type(e).__name__}: {e}"
-        return result
+        return _finalize(result)
 
 
 
