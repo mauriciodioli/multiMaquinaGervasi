@@ -42,6 +42,19 @@
 
 
   .panel-filter.active { box-shadow: 0 0 0 2px #198754 inset; font-weight: 600; }
+
+    .pannelli-dash #sidebar .cabecera-maquinas {
+      background: transparent;
+      border-bottom: 0;
+      height: auto;
+      min-height: 0;
+      padding: 0 0 .75rem;
+    }
+
+    .pannelli-dash #sidebar .cabecera-maquinas h2 {
+      margin: 0;
+    }
+
   @media (max-width: 576px){
     #panel-list button { width: 100%; text-align: left; }
     .tabla-container { width: 100%; }
