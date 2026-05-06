@@ -95,6 +95,8 @@
               <button
                 class="btn btn-outline-secondary btn-sm panel-filter"
                 data-panel-id="{{ p.id if p.id is not none else 'mock-' ~ loop.index }}"
+                data-panel-brand="{{ (p.filter_brand if p.filter_brand is defined and p.filter_brand else p.marca or '')|lower }}"
+                data-panel-model="{{ (p.filter_model if p.filter_model is defined and p.filter_model else p.modelo or '')|lower }}"
                 title="{{ p.marca }} {{ p.modelo or '' }} - SN: {{ p.serial_number }}">
                 {{ p.marca|default('—') }} – {{ p.modelo|default('s/modelo') }} – SN: {{ p.serial_number|default('—') }}
               </button>

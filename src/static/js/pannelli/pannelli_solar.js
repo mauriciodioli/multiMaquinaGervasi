@@ -62,6 +62,70 @@ let prevSnapshot = {
   inv: {} // por IP: { power_W, voltage_V, frequency_Hz }
 };
 
+let activePanelFilter = { id: 'all', brand: '', model: '' };
+
+function normalizeFilterText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function rowMatchesActiveFilter(tr) {
+  if (!tr || activePanelFilter.id === 'all') return true;
+
+  const rowPanelId = normalizeFilterText(tr.dataset.panelId);
+  if (rowPanelId && rowPanelId === activePanelFilter.id) {
+    return true;
+  }
+
+  const rowText = Array.from(tr.cells || [])
+    .map((cell) => normalizeFilterText(cell.textContent))
+    .join(' ');
+
+  const searchTerms = [activePanelFilter.brand, activePanelFilter.model]
+    .map(normalizeFilterText)
+    .filter(Boolean);
+
+  if (searchTerms.length) {
+    return searchTerms.some((term) => rowText.includes(term));
+  }
+
+  return true;
+}
+
+function applyActivePanelFilter() {
+  document.querySelectorAll('#pv-table tbody tr').forEach((tr) => {
+    tr.style.display = rowMatchesActiveFilter(tr) ? '' : 'none';
+  });
+}
+
+function setActivePanelButton(buttons, activeButton) {
+  buttons.forEach((btn) => {
+    btn.classList.remove('active', 'btn-light');
+    btn.classList.add('btn-outline-secondary');
+  });
+
+  activeButton.classList.add('active');
+  activeButton.classList.remove('btn-outline-secondary');
+  activeButton.classList.add('btn-light');
+}
+
+function bindPanelFilters() {
+  const buttons = Array.from(document.querySelectorAll('.panel-filter'));
+  if (!buttons.length) return;
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      activePanelFilter = {
+        id: normalizeFilterText(btn.dataset.panelId || 'all'),
+        brand: normalizeFilterText(btn.dataset.panelBrand),
+        model: normalizeFilterText(btn.dataset.panelModel),
+      };
+
+      setActivePanelButton(buttons, btn);
+      applyActivePanelFilter();
+    });
+  });
+}
+
 /* ==== helper: formato seguro ==== */
 const fmt = (n,suf='') =>
   (typeof n==='number' && isFinite(n)) ? n.toLocaleString('es-AR')+suf : '—';
@@ -139,6 +203,9 @@ if (bodyEl) {
     const old = prevSnapshot.inv[ip] || {};
 
     const tr = document.createElement('tr');
+    tr.dataset.panelId = normalizeFilterText(i.panel_id || i.id || '');
+    tr.dataset.panelBrand = normalizeFilterText(i.manufacturer || '');
+    tr.dataset.panelModel = normalizeFilterText(i.model || '');
     tr.innerHTML = `
       <td>${ip}</td>
       <td><span class="badge">${i.status_text || '—'}</span></td>
@@ -170,6 +237,8 @@ if (bodyEl) {
 
     bodyEl.appendChild(tr);
   });
+
+  applyActivePanelFilter();
 }
 
 
@@ -202,6 +271,7 @@ document.addEventListener('visibilitychange', ()=>{
 });
 
 /* ==== arranque ==== */
+document.addEventListener('DOMContentLoaded', bindPanelFilters);
 pollOnce();
 
 

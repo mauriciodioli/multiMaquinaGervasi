@@ -115,15 +115,17 @@ def pannelli_crud_consulta():
             # --- MOCK de paneles si no hay (3 paneles) ---
             if not paneles:
                 class _MockPanel:
-                    def __init__(self, _id, marca, modelo, sn):
+                    def __init__(self, _id, marca, modelo, sn, filter_brand=None, filter_model=None):
                         self.id = _id
                         self.marca = marca
                         self.modelo = modelo
                         self.serial_number = sn
+                        self.filter_brand = filter_brand
+                        self.filter_model = filter_model
                 paneles = [
-                    _MockPanel(-1, "Danfoss", "VLT-2800", "SN-TEST-001"),
-                    _MockPanel(-2, "IME",     "Solar-Plus 5k", "SN-TEST-002"),
-                    _MockPanel(-3, "Fronius", "Symo 10.0",     "SN-TEST-003"),
+                    _MockPanel(-1, "Danfoss", "DLX", "SN-TEST-001"),
+                    _MockPanel(-2, "SMA", "Solar Inverter", "SN-TEST-002", filter_brand="SMA", filter_model="Solar Inverter"),
+                    _MockPanel(-3, "Fronius", "Primo", "SN-TEST-003"),
                 ]
 
             panel_ids = [p.id for p in paneles if getattr(p, "id", None)]
