@@ -147,24 +147,6 @@
 
 
 
-
-    <table class="table">
-      <thead>
-        <tr>
-          {% if columnas and columnas|length > 0 %}
-            {% for columna in columnas %}
-              <th>{{ columna }}</th>
-            {% endfor %}
-          {% else %}
-            <th>Sin columnas</th>
-          {% endif %}
-        </tr>
-      </thead>
-      <tbody id="tablaPedidosEntrega">
-        {# se llena por JS con data.inverters #}
-      </tbody>
-    </table>
-
   </div>
 
   <!-- Modales -->
@@ -196,35 +178,6 @@
 </div>
 
 
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const buttons = document.querySelectorAll('.panel-filter');
-  const rows = document.querySelectorAll('#tablaPedidosEntrega tr');
-
-  function setActive(btn){
-    buttons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-
-  function filterByPanel(panelId){
-    rows.forEach(tr => {
-      const rid = tr.getAttribute('data-panel-id');
-      // si la fila no tiene data-panel-id (modo lista de listas), no ocultamos
-      const show = (panelId === 'all' || !rid || rid === panelId);
-      tr.style.display = show ? '' : 'none';
-    });
-  }
-
-  buttons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-panel-id');
-      setActive(btn);
-      filterByPanel(id);
-    });
-  });
-});
-</script>
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/maquinas/maquinas.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pannelli/pannelli.css') }}">

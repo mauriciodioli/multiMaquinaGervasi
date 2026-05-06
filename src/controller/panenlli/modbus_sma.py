@@ -10,14 +10,20 @@ from pymodbus.exceptions import ModbusIOException, ConnectionException
 IPS = [
     "192.168.1.101",
     "192.168.1.102",
-    "192.168.1.103",
-    "192.168.1.106",  # SMA Sunny
-    "192.168.1.109",   
+    "192.168.1.103",  # Fronius Primo GEN24 4.6
+    "192.168.1.106",  # Fronius
+    "192.168.1.109",
     "192.168.1.110",
     "192.168.1.111",
     "192.168.1.112",
     # añadir más IPs si hace falta
 ]
+# IPs de inversores Fronius (SunSpec float, modelos 111/113 — unit ID=1)
+# Se leen directamente con read_ip_fronius sin probar modelo 101 primero.
+FRONIUS_IPS = {
+    "192.168.1.103",  # Fronius Primo GEN24 4.6
+    "192.168.1.106",  # Fronius
+}
 PORT = 502
 UNIT_ID = 126
 BASE_ADDR = 40001  # SunSpec 1-based
@@ -54,13 +60,13 @@ def find_voltage_in_regs_heur_v2(regs, window=16):
         return (180.0 <= v <= 270.0) or (380.0 <= v <= 420.0)
 
     # índices candidatos a SF
-    sf_idxs = [(j, s16(w)) for j, w in enumerate(regs) if -3 <= s16(w) <= 1]
+    sf_idxs = [(j, regs[j]) for j, w in enumerate(regs) if -3 <= s16(w) <= 1]
     for j, sf in sf_idxs:
         start = max(0, j - window)
         end   = min(len(regs)-1, j + window)
         for i in range(start, end):
-            raw = s16(regs[i])
-            if raw in (0x8000, 0x7FFF, -32768):
+            raw = regs[i]
+            if raw in (0x8000, 0x7FFF):
                 continue
             try:
                 v = sunssf(raw, sf)
@@ -144,7 +150,7 @@ def find_voltage_in_regs_heur_v2(regs, window=12):
     for j, w in enumerate(regs):
         sf = s16(w)
         if -3 <= sf <= 1:
-            sf_idxs.append((j, sf))
+            sf_idxs.append((j, w))
 
     def plausible(v):
         return (180.0 <= v <= 270.0) or (380.0 <= v <= 420.0)
@@ -153,8 +159,8 @@ def find_voltage_in_regs_heur_v2(regs, window=12):
         start = max(0, j - window)
         end   = min(len(regs)-1, j + window)
         for i in range(start, end):
-            raw = s16(regs[i])
-            if raw in (0x8000, 0x7FFF, -32768):
+            raw = regs[i]
+            if raw in (0x8000, 0x7FFF):
                 continue
             try:
                 v = sunssf(raw, sf)
@@ -213,9 +219,9 @@ def derive_ok_from_metrics(ac_dict, code, status_text):
     Hz_ok = (isinstance(Hz, (int, float)) and 49.0 <= Hz <= 51.0)
     W_ok  = (isinstance(W, (int, float))  and W >= 0)
 
-    # si el código cae en 200..299, asumimos fallo
+    # si el código cae en 200..299, asumimos fallo — pero preservamos el texto mapeado
     if isinstance(code, int) and 200 <= code < 300:
-        return f"fail (code {code})"
+        return status_text if status_text else f"fail (code {code})"
 
     # si potencia > 0 y V/Hz razonables → Ok
     if W_ok and W > 0 and (V_ok or V == "—") and Hz_ok:
@@ -255,8 +261,27 @@ def decode_status_guess(models):
                     102: "off",
                     104: "esperando",
                     201: "fail",
-                    202: "fallo de red",
-                    203: "communication failure",
+                    202: "Out of range",
+                    203: "delay inverter",
+                    207: "DC voltage too low",
+                    209: "DC overvoltage",
+                    210: "DC overcurrent",
+                    211: "Ground fault",
+                    212: "Insulation fault",
+                    213: "DC string reverse polarity",
+                    214: "Temperature too high",
+                    216: "AC overcurrent",
+                    217: "DC injection into grid",
+                    218: "RCMU fault",
+                    219: "Islanding detected",
+                    221: "Grid voltage too high (phase)",
+                    223: "Grid voltage too high",
+                    224: "Grid voltage too low",
+                    227: "Grid voltage phase imbalance",
+                    229: "Power stage fault",
+                    230: "Fan / cooling fault",
+                    233: "Hardware failure",
+                    241: "Grid frequency out of range",
                     205: "communication failure",
                     
                 }
@@ -279,8 +304,9 @@ def sunssf(raw, sf):
     if raw is None or sf is None:
         return None
 
-    # 1) NA como uint16 (algunos equipos lo ponen así)
-    if raw == 0xFFFF or sf == 0xFFFF:
+    # 1) El valor bruto puede venir como uint16 NA (0xFFFF).
+    # El scale factor 0xFFFF equivale a -1 y es valido en SunSpec.
+    if raw == 0xFFFF:
         return None
 
     # 2) Convertir a int16
@@ -411,17 +437,25 @@ def decode_ac_from_101(regs):
        Devuelve dict o None si todo es ininterpretable.
     """
     try:
-        max_needed = max(OFF_V, OFF_VSF, OFF_HZ, OFF_HZSF, OFF_W, OFF_WSF)
+        max_needed = max(OFF_V, OFF_VSF, OFF_HZ, OFF_HZSF, OFF_W, OFF_WSF, 10, 11)
         if len(regs) <= max_needed + 1:
             return None
 
-        V_raw, V_sf = s16(regs[OFF_V]), s16(regs[OFF_VSF])
-        Hz_raw, Hz_sf = s16(regs[OFF_HZ]), s16(regs[OFF_HZSF])
-        W_raw, W_sf = s16(regs[OFF_W]), s16(regs[OFF_WSF])
+        def _decode_metric(raw_idx, sf_idx):
+            return sunssf(regs[raw_idx], regs[sf_idx])
 
-        V = sunssf(V_raw, V_sf)
-        Hz = sunssf(Hz_raw, Hz_sf)
-        W = sunssf(W_raw, W_sf)
+        def _plausible_voltage(value):
+            return isinstance(value, (int, float)) and (180.0 <= value <= 270.0 or 380.0 <= value <= 420.0)
+
+        V = None
+        for raw_idx, sf_idx in ((OFF_V, OFF_VSF), (10, 11)):
+            candidate = _decode_metric(raw_idx, sf_idx)
+            if _plausible_voltage(candidate):
+                V = candidate
+                break
+
+        Hz = _decode_metric(OFF_HZ, OFF_HZSF)
+        W = _decode_metric(OFF_W, OFF_WSF)
 
         if V is None and Hz is None and W is None:
             return None
@@ -843,7 +877,7 @@ def read_ip(ip, unit_candidates=(1, 3, 126), port=PORT):
 def status_group_from_code(code: int) -> str:
     if code is None: return "unknown"
     if 100 <= code < 200: return "init"
-    if 200 <= code < 300: return "ok"
+    if 200 <= code < 300: return "error"
     if 300 <= code < 400: return "ok"
     if 400 <= code < 500: return "standby"
     if 500 <= code < 600: return "error"
@@ -879,9 +913,16 @@ def read_all(ips=None):
     """
     Lee todos los inversores y devuelve una lista de dicts (uno por IP).
     Si no se pasa 'ips', usa la lista IPS definida en este módulo.
+    Las IPs en FRONIUS_IPS van directamente a read_ip_fronius (más rápido).
     """
     targets = ips or IPS
-    return [read_ip(ip) for ip in targets]
+    results = []
+    for ip in targets:
+        if ip in FRONIUS_IPS:
+            results.append(read_ip_fronius(ip))
+        else:
+            results.append(read_ip(ip))
+    return results
 
 
 

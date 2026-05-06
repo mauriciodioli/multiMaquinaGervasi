@@ -192,9 +192,6 @@ def fetch_dlx_data(ip, debug_raw=False):
     res = js.get("result", [])
     raw = {it["path"]: it.get("value") for it in res}
 
-    # Pequeño log para ver si viene vacío
-    print(f"    [{ip}] GeteNexusData devolvió {len(res)} items")
-
     if debug_raw:
         print(f"🔎 RAW {ip}:")
         pprint(raw)

@@ -241,7 +241,7 @@ function renderCards(items){
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) stop();
-    else if (started) loadOnce().then(schedule);
+    else start();
   });
 
   return { start, stop };

@@ -174,36 +174,6 @@ if (bodyEl) {
 
 
 
-const pedidosBodyEl = document.getElementById('tablaPedidosEntrega');
-
-// === NUEVO: segunda tabla con los mismos inverters ===
-if (pedidosBodyEl) {
-  pedidosBodyEl.innerHTML = '';
-
-  (data.inverters || []).forEach(i => {
-    const tr2 = document.createElement('tr');
-
-    // ID de panel para que funcione el filtro por botón
-    // idealmente data.inverters[i] trae panel_id desde backend
-    const panelId = i.panel_id || i.id || 'all';
-    tr2.dataset.panelId = panelId;
-
-    // Ajustá el orden/cantidad de columnas a lo que tengas en "columnas" del <thead>
-    tr2.innerHTML = `
-      <td>${i.ip || '—'}</td>
-      
-      <td class="mono">${fmt(i.power_W, ' W')}</td>   
-      <td class="mono">${fmt(i.voltage_V, ' V')}</td>  
-      <td class="mono">${fmt(i.frequency_Hz, ' Hz')}</td>
-      
-      <td>${i.status_text || '—'}</td>
-      <td>${(i.manufacturer || '') + ' ' + (i.model || '')}</td>
-    `;
-
-    pedidosBodyEl.appendChild(tr2);
-  });
-}
-
 }
 
 /* ==== polling 3s sin solaparse ==== */
@@ -239,9 +209,10 @@ function setStatusBadgeByCode(el, code, text, group, status){
   // Clase por código
   let cls = 'unknown';
   if (typeof code === 'number') {
-    if (code >= 200 && code < 400) cls = 'ok';
+    if (code >= 200 && code < 300) cls = 'error';
+    else if (code >= 300 && code < 400) cls = 'ok';
     else if (code >= 400 && code < 500) cls = 'standby';
-    else if ((code >= 500 && code < 600)) cls = 'error';
+    else if (code >= 500 && code < 600) cls = 'error';
     else if (code >= 100 && code < 200) cls = 'init';
   } else if (group) {
     const g = String(group).toLowerCase();
@@ -255,12 +226,12 @@ function setStatusBadgeByCode(el, code, text, group, status){
   // Texto por defecto
   let label = text || (typeof code === 'number' ? `Código ${code}` : '—');
 
-  // Si el estado corto es "fail", forzamos “Fail (código N)” si hay N
+  // Si el estado corto es "fail", mostrar status_text si existe, sino "Fail (código N)"
   if (String(status || '').toLowerCase() === 'fail') {
-    label = (typeof code === 'number') ? `Fail (código ${code})` : 'Fail';
+    label = text || ((typeof code === 'number') ? `Fail (código ${code})` : 'Fail');
     cls = 'error';
-  }else if (typeof code === 'number') {
-    label += ` (Código ${code})`; // Agregar el código al texto
+  } else if (typeof code === 'number' && !text) {
+    label += ` (Código ${code})`;
   }
 
   el.className = `badge ${cls}`;
@@ -306,43 +277,6 @@ function formatStatusLabel(i){
 
 
 
-
-
-
-
-
-
-
-
-
-
-document.addEventListener('DOMContentLoaded', () => {
-  const buttons = document.querySelectorAll('.panel-filter');
-
-  function setActive(btn){
-    buttons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-
-  function filterByPanel(panelId){
-    const rows = document.querySelectorAll('#tablaPedidosEntrega tr');
-    rows.forEach(tr => {
-      const rid  = tr.getAttribute('data-panel-id');
-      const show = (panelId === 'all' || !rid || rid === panelId);
-      tr.style.display = show ? '' : 'none';
-    });
-  }
-
-  buttons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-panel-id') || 'all';
-      setActive(btn);
-      filterByPanel(id);
-    });
-  });
-
-  filterByPanel('all');
-});
 
 
 
