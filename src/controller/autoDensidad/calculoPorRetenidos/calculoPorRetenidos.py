@@ -2579,6 +2579,94 @@ def optimizar_proporciones_materiales(materiales, banda_min, banda_max, tamices)
         return None, None
 
 
+def _calcular_error_fuera_banda(pasante, banda_min, banda_max):
+    error_total = 0.0
+    for valor, minimo, maximo in zip(pasante, banda_min, banda_max):
+        valor_f = float(valor)
+        minimo_f = float(minimo)
+        maximo_f = float(maximo)
+        if valor_f < minimo_f:
+            error_total += minimo_f - valor_f
+        elif valor_f > maximo_f:
+            error_total += valor_f - maximo_f
+    return float(error_total)
+
+
+def _validar_resultado_optimizacion_industrial(pasante_original, pasante_optimizado, proporciones_dict):
+    if not pasante_optimizado or not proporciones_dict:
+        return {
+            'usar_resultado': False,
+            'razon': 'No se obtuvo una optimización válida.',
+            'error_original': None,
+            'error_optimizado': None,
+            'mejora_relativa_pct': 0.0,
+        }
+
+    valores = [float(v) for nombre, v in proporciones_dict.items() if nombre != 'total_pct']
+    materiales_significativos = sum(1 for v in valores if v >= 5.0)
+    max_material = max(valores) if valores else 0.0
+
+    error_original = _calcular_error_fuera_banda(
+        pasante_original['pasante'],
+        pasante_original['banda_min'],
+        pasante_original['banda_max'],
+    )
+    error_optimizado = _calcular_error_fuera_banda(
+        pasante_optimizado,
+        pasante_original['banda_min'],
+        pasante_original['banda_max'],
+    )
+
+    if max_material > 90.0:
+        return {
+            'usar_resultado': False,
+            'razon': f'La optimización concentra {max_material:.2f}% en un solo material.',
+            'error_original': error_original,
+            'error_optimizado': error_optimizado,
+            'mejora_relativa_pct': 0.0,
+        }
+
+    if materiales_significativos < min(2, len(valores)):
+        return {
+            'usar_resultado': False,
+            'razon': 'La optimización anula materiales reales y pierde mezcla representativa.',
+            'error_original': error_original,
+            'error_optimizado': error_optimizado,
+            'mejora_relativa_pct': 0.0,
+        }
+
+    if error_optimizado >= error_original - 1e-6:
+        return {
+            'usar_resultado': False,
+            'razon': 'La optimización no mejora el error real de cumplimiento.',
+            'error_original': error_original,
+            'error_optimizado': error_optimizado,
+            'mejora_relativa_pct': 0.0,
+        }
+
+    if error_original <= 1e-6:
+        mejora_relativa_pct = 100.0
+    else:
+        mejora_relativa_pct = ((error_original - error_optimizado) / error_original) * 100.0
+
+    if mejora_relativa_pct < 5.0:
+        return {
+            'usar_resultado': False,
+            'razon': f'La mejora es marginal ({mejora_relativa_pct:.2f}%) y no justifica alterar materiales reales.',
+            'error_original': error_original,
+            'error_optimizado': error_optimizado,
+            'mejora_relativa_pct': mejora_relativa_pct,
+        }
+
+    return {
+        'usar_resultado': True,
+        'razon': f'Optimización aceptada con mejora real de {mejora_relativa_pct:.2f}%.',
+        'error_original': error_original,
+        'error_optimizado': error_optimizado,
+        'mejora_relativa_pct': mejora_relativa_pct,
+    }
+
+
 def generar_instruccion_receta(proporciones_dict):
     """
     Genera instrucción amigable para el operador a partir de proporciones.
@@ -3129,17 +3217,41 @@ def api_auditoria():
             curva=pasante_auditado,
         )
         
+        validacion_optimizacion = {
+            'usar_resultado': False,
+            'razon': 'No se ejecutó optimización sobre materiales reales.',
+            'error_original': None,
+            'error_optimizado': None,
+            'mejora_relativa_pct': 0.0,
+        }
+
         if materiales and len(materiales) > 1:
             print(f"🔧 Optimizando proporcionesde {len(materiales)} materiales...")
-            pasante_real_optimizado, proporciones_optimizadas = optimizar_proporciones_materiales(
+            pasante_real_candidato, proporciones_candidatas = optimizar_proporciones_materiales(
                 materiales=materiales,
                 banda_min=banda_min,
                 banda_max=banda_max,
                 tamices=tamices
             )
-            if pasante_real_optimizado:
-                print(f"✅ Optimización exitosa: {proporciones_optimizadas}")
+            validacion_optimizacion = _validar_resultado_optimizacion_industrial(
+                pasante_original={
+                    'pasante': pasante_entrada_original,
+                    'banda_min': banda_min,
+                    'banda_max': banda_max,
+                },
+                pasante_optimizado=pasante_real_candidato,
+                proporciones_dict=proporciones_candidatas,
+            )
+
+            print(f"[OPTIM CONTROL] {validacion_optimizacion['razon']}")
+
+            if validacion_optimizacion['usar_resultado']:
+                pasante_real_optimizado = pasante_real_candidato
+                proporciones_optimizadas = proporciones_candidatas
+                print(f"✅ Optimización aceptada: {proporciones_optimizadas}")
                 pasante_auditado = [float(x) for x in pasante_real_optimizado]
+            else:
+                print("[OPTIM CONTROL] → Se preservan materiales y proporciones reales de entrada")
         
         # Generar auditoría completa
         resultado = generar_auditoria_completa(
@@ -3153,6 +3265,7 @@ def api_auditoria():
 
         resultado['meta'] = {
             'optimizacion_aplicada': bool(pasante_real_optimizado),
+            'validacion_optimizacion': validacion_optimizacion,
             'pasante_entrada_original': pasante_entrada_original,
             'pasante_auditado': pasante_auditado,
         }

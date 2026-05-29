@@ -291,6 +291,112 @@
             color: #5b6670;
             font-size: 13px;
         }
+
+        .pdf-print-title {
+            display: none;
+            margin: 0 0 22px;
+            padding: 0 0 14px;
+            border-bottom: 2px solid #d5dde5;
+        }
+
+        .pdf-print-title h2 {
+            margin: 0;
+            color: #123a59;
+            font-size: 24px;
+            line-height: 1.2;
+        }
+
+        .pdf-title-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.56);
+            z-index: 1200;
+            padding: 20px;
+        }
+
+        .pdf-title-modal.is-open {
+            display: flex;
+        }
+
+        .pdf-title-dialog {
+            width: min(100%, 460px);
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+            padding: 22px;
+        }
+
+        .pdf-title-dialog h3 {
+            margin: 0 0 10px;
+            color: #123a59;
+            font-size: 20px;
+        }
+
+        .pdf-title-dialog p {
+            margin: 0 0 14px;
+            color: #516170;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .pdf-title-dialog label {
+            display: block;
+            margin-bottom: 8px;
+            color: #22313f;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .pdf-title-dialog input {
+            width: 100%;
+            border: 1px solid #c9d6e2;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 15px;
+            color: #17212b;
+        }
+
+        .pdf-title-dialog input:focus {
+            outline: 2px solid rgba(24, 78, 119, 0.18);
+            border-color: #184e77;
+        }
+
+        .pdf-title-error {
+            min-height: 20px;
+            margin-top: 8px;
+            color: #b42318;
+            font-size: 13px;
+        }
+
+        .pdf-title-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+
+        .pdf-title-actions button {
+            border: none;
+            border-radius: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .pdf-title-actions .secondary {
+            background: #e9eef3;
+            color: #294255;
+        }
+
+        .pdf-title-actions .primary {
+            background: #184e77;
+            color: #ffffff;
+        }
         
         .loading {
             text-align: center;
@@ -469,6 +575,10 @@
             .report-actions .report-hint {
                 width: 100%;
             }
+
+            .pdf-title-actions button {
+                width: 100%;
+            }
             
             .proporciones {
                 grid-template-columns: 1fr;
@@ -505,8 +615,13 @@
             .carga-datos,
             .report-actions,
             .detail-toggle button,
-            .accordion-header {
+            .accordion-header,
+            .pdf-title-modal {
                 display: none !important;
+            }
+
+            .pdf-print-title {
+                display: block !important;
             }
 
             .detail-body,
@@ -585,6 +700,20 @@
         <!-- Resultado -->
         <div id="resultado"></div>
     </div>
+
+    <div id="pdfTitleModal" class="pdf-title-modal" aria-hidden="true">
+        <div class="pdf-title-dialog" role="dialog" aria-modal="true" aria-labelledby="pdfTitleModalHeading">
+            <h3 id="pdfTitleModalHeading"></h3>
+            <p id="pdfTitleModalDescription"></p>
+            <label for="pdfTitleInput" id="pdfTitleModalLabel"></label>
+            <input id="pdfTitleInput" type="text" maxlength="180">
+            <div id="pdfTitleError" class="pdf-title-error" aria-live="polite"></div>
+            <div class="pdf-title-actions">
+                <button type="button" id="pdfTitleCancelBtn" class="secondary"></button>
+                <button type="button" id="pdfTitleConfirmBtn" class="primary"></button>
+            </div>
+        </div>
+    </div>
     
     <script>
         // ============ VARIABLES GLOBALES ============
@@ -592,6 +721,7 @@
         let instanciaErrorChart = null; // Gráfico de error por tamiz
         let instanciaDesviacionChart = null; // Gráfico de desviación
         let snapshotGraficoComparacion = null;
+        let ultimoTituloPDF = '';
 
         function tAuditoria(key, fallback = '') {
             if (typeof I18N !== 'undefined' && I18N && typeof I18N.t === 'function') {
@@ -622,6 +752,141 @@
             if (typeof I18N !== 'undefined' && I18N && typeof I18N.applyTranslations === 'function') {
                 I18N.applyTranslations(document);
             }
+            actualizarTextosModalPDF();
+        }
+
+        function actualizarTextosModalPDF() {
+            const heading = document.getElementById('pdfTitleModalHeading');
+            const description = document.getElementById('pdfTitleModalDescription');
+            const label = document.getElementById('pdfTitleModalLabel');
+            const input = document.getElementById('pdfTitleInput');
+            const cancelBtn = document.getElementById('pdfTitleCancelBtn');
+            const confirmBtn = document.getElementById('pdfTitleConfirmBtn');
+
+            if (heading) heading.textContent = tAuditoria('pdf_title_modal_title', 'Título del PDF');
+            if (description) description.textContent = tAuditoria('pdf_title_modal_description', 'Ingresa el título que debe aparecer dentro del PDF impreso.');
+            if (label) label.textContent = tAuditoria('pdf_title_modal_label', 'Título');
+            if (input) input.placeholder = tAuditoria('pdf_title_modal_placeholder', 'Ej: Auditoría planta turno mañana');
+            if (cancelBtn) cancelBtn.textContent = tAuditoria('pdf_title_modal_cancel', 'Cancelar');
+            if (confirmBtn) confirmBtn.textContent = tAuditoria('pdf_title_modal_confirm', 'Generar PDF');
+        }
+
+        function obtenerModalPDF() {
+            return {
+                modal: document.getElementById('pdfTitleModal'),
+                input: document.getElementById('pdfTitleInput'),
+                error: document.getElementById('pdfTitleError')
+            };
+        }
+
+        function abrirModalTituloPDF() {
+            const { modal, input, error } = obtenerModalPDF();
+            if (!modal || !input || !error) {
+                return;
+            }
+
+            actualizarTextosModalPDF();
+            error.textContent = '';
+            input.value = ultimoTituloPDF || '';
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+
+            window.setTimeout(() => {
+                input.focus();
+                input.select();
+            }, 0);
+        }
+
+        function cerrarModalTituloPDF() {
+            const { modal, error } = obtenerModalPDF();
+            if (!modal || !error) {
+                return;
+            }
+
+            error.textContent = '';
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        function asegurarNodoTituloPDF() {
+            const resultado = document.getElementById('resultado');
+            if (!resultado) {
+                return null;
+            }
+
+            let wrapper = document.getElementById('pdfPrintTitle');
+            if (!wrapper) {
+                wrapper = document.createElement('div');
+                wrapper.id = 'pdfPrintTitle';
+                wrapper.className = 'pdf-print-title';
+                wrapper.innerHTML = '<h2></h2>';
+                resultado.prepend(wrapper);
+            }
+
+            return wrapper;
+        }
+
+        function actualizarTituloPDFParaImpresion(titulo) {
+            const wrapper = asegurarNodoTituloPDF();
+            if (!wrapper) {
+                return;
+            }
+
+            const heading = wrapper.querySelector('h2');
+            if (heading) {
+                heading.textContent = titulo;
+            }
+        }
+
+        function confirmarTituloPDFYExportar() {
+            const { input, error } = obtenerModalPDF();
+            if (!input || !error) {
+                return;
+            }
+
+            const titulo = input.value.trim();
+            if (!titulo) {
+                error.textContent = tAuditoria('pdf_title_required', 'Ingresa un título para el PDF.');
+                input.focus();
+                return;
+            }
+
+            ultimoTituloPDF = titulo;
+            cerrarModalTituloPDF();
+            ejecutarExportacionPDFConTitulo(titulo);
+        }
+
+        function inicializarModalTituloPDF() {
+            const modal = document.getElementById('pdfTitleModal');
+            const input = document.getElementById('pdfTitleInput');
+            const cancelBtn = document.getElementById('pdfTitleCancelBtn');
+            const confirmBtn = document.getElementById('pdfTitleConfirmBtn');
+
+            if (!modal || !input || !cancelBtn || !confirmBtn) {
+                return;
+            }
+
+            cancelBtn.addEventListener('click', cerrarModalTituloPDF);
+            confirmBtn.addEventListener('click', confirmarTituloPDFYExportar);
+
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    cerrarModalTituloPDF();
+                }
+            });
+
+            input.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    confirmarTituloPDFYExportar();
+                }
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+                    cerrarModalTituloPDF();
+                }
+            });
         }
         
         // ============ FUNCIONES DE SOPORTE PARA CONVERSIÓN ============
@@ -702,6 +967,27 @@
             // Extraer tamices (deben ser iguales en todas)
             const tamices = tablas[0].filas.map(f => parseFloat(f.tamiz));
             console.log(`   Tamices: [${tamices.join(', ')}]`);
+
+            const pesosDeclarados = tablas.map((tabla) => {
+                if (typeof tabla.proporcion_pct === 'number' && Number.isFinite(tabla.proporcion_pct)) {
+                    return Math.max(0, Number(tabla.proporcion_pct));
+                }
+                if (typeof tabla.peso === 'number' && Number.isFinite(tabla.peso)) {
+                    return Math.max(0, Number(tabla.peso) * 100);
+                }
+                return null;
+            });
+
+            const todosLosPesosDeclarados = pesosDeclarados.every((peso) => typeof peso === 'number');
+            const sumaPesosDeclarados = todosLosPesosDeclarados
+                ? pesosDeclarados.reduce((acumulado, peso) => acumulado + peso, 0)
+                : 0;
+
+            const pesosNormalizados = todosLosPesosDeclarados && sumaPesosDeclarados > 0
+                ? pesosDeclarados.map((peso) => peso / sumaPesosDeclarados)
+                : tablas.map(() => 1 / tablas.length);
+
+            console.log(`   Pesos usados para auditoría: [${pesosNormalizados.map((peso) => (peso * 100).toFixed(2)).join(', ')}]%`);
             
             // PASO 1: Procesar cada material y reconstruir la resultante cruda
             const materialesProcesados = [];
@@ -710,6 +996,8 @@
                 const filas = tabla.filas || [];
                 const valores = filas.map(f => parseFloat(f.porcentaje));
                 const formato = detectarFormatoPortcentajes(valores);
+                const pesoNormalizado = pesosNormalizados[idx] || 0;
+                const proporcionPct = pesoNormalizado * 100;
                 
                 console.log(`   Material ${idx+1} (${tabla.nombre}): formato=${formato}, suma=${valores.reduce((a, b) => a + b, 0).toFixed(1)}%`);
                 
@@ -720,10 +1008,6 @@
                     console.log(`     → Revirtiendo pasantes a retidos`);
                     retidos = pasantesARetidos(valores);
                 }
-
-                for (let i = 0; i < retidos.length; i++) {
-                    retidosCrudosResultantes[i] += retidos[i] || 0;
-                }
                 
                 // Mantener materiales normalizados para la optimización posterior
                 const sumaRetidos = retidos.reduce((a, b) => a + b, 0);
@@ -731,6 +1015,10 @@
                     ? retidos.map(r => (r / sumaRetidos) * 100)
                     : retidos.map(() => 0);
                 console.log(`     Retidos normalizados (suma=${sumaRetidos.toFixed(1)}%): [${retidosNormalizados.map(r => r.toFixed(2)).join(', ')}]`);
+
+                for (let i = 0; i < retidosNormalizados.length; i++) {
+                    retidosCrudosResultantes[i] += (retidosNormalizados[i] || 0) * pesoNormalizado;
+                }
                 
                 // Convertir retidos normalizados a pasantes
                 const pasantes = retidosAPassantes(retidosNormalizados);
@@ -739,14 +1027,12 @@
                 materialesProcesados.push({
                     nombre: tabla.nombre,
                     pasantes: pasantes,
-                    peso: 1.0 / tablas.length
+                    peso: pesoNormalizado,
+                    proporcion_pct: proporcionPct
                 });
             });
 
-            const sumaRetidosCrudos = retidosCrudosResultantes.reduce((a, b) => a + b, 0);
-            const retidosResultantesNormalizados = sumaRetidosCrudos > 0
-                ? retidosCrudosResultantes.map(r => (r / sumaRetidosCrudos) * 100)
-                : retidosCrudosResultantes.map(() => 0);
+            const retidosResultantesNormalizados = retidosCrudosResultantes.map((valor) => Number(valor || 0));
             const pasantesCrudosResultantes = retidosAPassantes(retidosResultantesNormalizados);
 
             console.log(`   Retidos crudos resultantes: [${retidosCrudosResultantes.map(r => r.toFixed(1)).join(', ')}]`);
@@ -784,52 +1070,26 @@
             const datosSession = sessionStorage.getItem('datosAuditoriaRecientes');
             if (datosSession) {
                 try {
-                    const { datos, entrada } = JSON.parse(datosSession);
-                    
-                    // 🛡️ Validar que datos tenga la estructura correcta
-                    if (!datos || !datos.fase_1 || !datos.fase_2_4_criterios) {
-                        console.warn('⚠️ Datos en sessionStorage incompletos, ignorando cache');
-                        sessionStorage.removeItem('datosAuditoriaRecientes');
-                        // Continuar cargando desde localStorage
-                    } else {
-                        console.log('✅ Datos cacheados mostrados desde sessionStorage (UX rápida)');
-                        sessionStorage.removeItem('datosAuditoriaRecientes');
-                        // Mostrar datos cacheados inmediatamente (REFACTOR: SIN fetch automático)
-                        // Los datos locales son suficientes para visualización inicial
-                        console.log('📊 Mostrando curva original desde datos locales (SIN fetch posterior)');
-                        setTimeout(() => mostrarResultado(datos, entrada), 100);
-                        return null;
+                    const payloadSession = JSON.parse(datosSession);
+                    const entrada = payloadSession && payloadSession.entrada;
+
+                    sessionStorage.removeItem('datosAuditoriaRecientes');
+
+                    if (
+                        entrada
+                        && Array.isArray(entrada.pasante_real)
+                        && Array.isArray(entrada.tamices)
+                        && entrada.pasante_real.length > 0
+                        && entrada.tamices.length > 0
+                    ) {
+                        console.log('✅ Entrada encontrada en sessionStorage; se recalculará auditoría con datos frescos.');
+                        return entrada;
                     }
-                    
-                    // 🔄 REFACTOR: Fetch automático DESHABILITADO
-                    // RAZÓN: La visualización inicial NO necesita backend
-                    // CUANDO se ejecuta: Solo cuando usuario clickea botón en ejecutarAuditoria()
-                    // BENEFICIO: Reduce carga de servidor, evita 0 materiales en Fetch #1
-                    /*
-                    console.log('⏳ Ejecutando auditoría en background para actualizar con datos frescos...');
-                    setTimeout(() => {
-                        fetch('/calculoPorRetenidos/auditoria', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify(entrada)
-                        })
-                        .then(r => r.json())
-                        .then(result => {
-                            if (result.exito) {
-                                console.log('✅ Datos frescos recibidos del backend, actualizando UI...');
-                                sessionStorage.setItem('datosAuditoriaRecientes', JSON.stringify({
-                                    datos: result.data,
-                                    entrada: entrada
-                                }));
-                                console.log('💾 Datos actualizados guardados en sessionStorage');
-                                mostrarResultado(result.data, entrada);
-                            }
-                        })
-                        .catch(e => console.warn('⚠️ Error fetching datos frescos:', e));
-                    }, 500);
-                    */
+
+                    console.warn('⚠️ SessionStorage no tenía una entrada reutilizable; se continúa con localStorage.');
                 } catch (e) {
                     console.warn('Error al cargar de sessionStorage:', e);
+                    sessionStorage.removeItem('datosAuditoriaRecientes');
                 }
             }
             
@@ -926,15 +1186,24 @@
                     '0.15': [85, 100]
                 };
                 
+                const tieneBandasReales = Array.isArray(resultado.banda_min)
+                    && Array.isArray(resultado.banda_max)
+                    && resultado.banda_min.length === resultado.tamices.length
+                    && resultado.banda_max.length === resultado.tamices.length;
+
                 // Extraer banda_min y banda_max según tamices
-                const banda_min = resultado.tamices.map(t => {
-                    const key = t.toString();
-                    return bandas_paver[key] ? bandas_paver[key][0] : 0;
-                });
-                const banda_max = resultado.tamices.map(t => {
-                    const key = t.toString();
-                    return bandas_paver[key] ? bandas_paver[key][1] : 100;
-                });
+                const banda_min = tieneBandasReales
+                    ? resultado.banda_min.map(v => Number(v || 0))
+                    : resultado.tamices.map(t => {
+                        const key = t.toString();
+                        return bandas_paver[key] ? bandas_paver[key][0] : 0;
+                    });
+                const banda_max = tieneBandasReales
+                    ? resultado.banda_max.map(v => Number(v || 100))
+                    : resultado.tamices.map(t => {
+                        const key = t.toString();
+                        return bandas_paver[key] ? bandas_paver[key][1] : 100;
+                    });
                 
                 console.log(`📏 Bandas Paver aplicadas:`, {tamices: resultado.tamices, banda_min, banda_max});
                 
@@ -1061,7 +1330,9 @@
             datosClonados.materiales = datosClonados.materiales.map((material, idx) => {
                 try {
                     // PASO 1: Convertir peso → proporcion_pct
-                    const proporcion_pct = (material.peso || 0) * 100;
+                    const proporcion_pct = Number.isFinite(Number(material.proporcion_pct))
+                        ? Number(material.proporcion_pct)
+                        : (Number(material.peso || 0) * 100);
                     
                     // PASO 2: Convertir pasantes (acumulados) → retido_ind_pct (individuales)
                     let retido_ind_pct = [];
@@ -1303,6 +1574,30 @@
             const validacionMateriales = auditoriaIndustrial.validacion_materiales || {};
             const validacionTablaVirtual = auditoriaIndustrial.validacion_tabla_virtual || {};
             const decisionIndustrial = auditoriaIndustrial.decision_final || {};
+            const controlOperacional = auditoriaIndustrial.control_operacional || {};
+
+            const materialesOriginales = Array.isArray(validacionMateriales.materiales_originales)
+                ? [...validacionMateriales.materiales_originales].sort((a, b) => (b.proporcion_pct || 0) - (a.proporcion_pct || 0))
+                : [];
+
+            const materialesOriginalesHtml = materialesOriginales.length > 0
+                ? `
+                    <div class="section" style="border-left-color: #0f766e; background: #f0fdfa; margin-top: 20px;">
+                        <h2>${tAuditoria('original_materials_priority_title', 'Materiales originales priorizados')}</h2>
+                        <p style="font-size: 14px; color: #475569; margin-bottom: 14px;">${tAuditoria('original_materials_priority_text', 'La auditoría prioriza primero la mezcla real, sus proporciones y la firma granulométrica diferencial de cada material antes de cualquier simulación matemática.')}</p>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            ${materialesOriginales.map((material) => `
+                                <div class="criterio ${material.tiene_firma_unica ? 'warning' : 'ok'}">
+                                    <label>${material.material}</label>
+                                    <div>${tAuditoria('real_proportion_label', 'Proporción real')}: <strong>${typeof material.proporcion_pct === 'number' ? `${material.proporcion_pct.toFixed(2)}%` : tAuditoria('not_available', 'No disponible')}</strong></div>
+                                    <div>${tAuditoria('dominant_zone_label', 'Zona dominante')}: <strong>${material.zona}</strong> | ${tAuditoria('dominant_sieve_label', 'Tamiz dominante')}: <strong>${material.tamiz_dominante}</strong> | ${tAuditoria('differential_contribution_label', 'Aporte diferencial máximo')}: <strong>${material.aporte_maximo_retido.toFixed(2)}%</strong></div>
+                                    ${Array.isArray(material.tamices_unicos) && material.tamices_unicos.length > 0 ? `<div>${tAuditoria('unique_signature_label', 'Firma diferencial')}: <strong>${material.tamices_unicos.join(', ')}</strong></div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `
+                : '';
 
             const materialesUnicosHtml = Array.isArray(validacionMateriales.materiales_unicos) && validacionMateriales.materiales_unicos.length > 0
                 ? `<ul>${validacionMateriales.materiales_unicos.map((material) => `<li><strong>${material.material}</strong>: ${material.tamices.join(', ')}${typeof material.proporcion_pct === 'number' ? ` | ${material.proporcion_pct.toFixed(2)}%` : ''}</li>`).join('')}</ul>`
@@ -1378,7 +1673,7 @@
                     <button type="button" onclick="exportarReportePDF()">${tAuditoria('export_pdf_btn', '🖨️ Exportar PDF')}</button>
                     <button type="button" onclick="descargarGraficoComparacionPNG()">${tAuditoria('export_chart_png_btn', '🖼️ Descargar curva PNG')}</button>
                 </div>
-                <div class="operator-panel">
+                    <div class="operator-panel">
                     <div class="operator-title">
                         <h2>${tAuditoria('operator_title', 'Operación de Planta')}</h2>
                         <div class="status-pill ${semaforoClase}">${estadoOperacion}</div>
@@ -1405,8 +1700,8 @@
             `;
 
                     html += resumenEntradaOriginal;
-
-        html += auditoriaIndustrialHtml;
+                    html += materialesOriginalesHtml;
+                    html += auditoriaIndustrialHtml;
 
             if (esModoMateriales) {
                 html += `
@@ -1437,19 +1732,31 @@
                     </div>
                 `;
             } else {
-                html += `
-                    <h3 style="margin-top: 22px; color: #184e77;">${tAuditoria('mix_configuration_title', 'Configuración de mezcla')}</h3>
-                    <div class="recipe-strip">
-                        <div class="recipe-item">
-                            <div class="material">${tAuditoria('real_table', 'Tabla Real')}</div>
-                            <div class="percent">${proporciones.tabla_real_pct.toFixed(1)}%</div>
+                if (controlOperacional.tabla_virtual_habilitada && proporciones.tabla_virtual_pct > 0) {
+                    html += `
+                        <h3 style="margin-top: 22px; color: #184e77;">${tAuditoria('mix_configuration_title', 'Configuración de mezcla')}</h3>
+                        <div class="recipe-strip">
+                            <div class="recipe-item">
+                                <div class="material">${tAuditoria('real_table', 'Tabla Real')}</div>
+                                <div class="percent">${proporciones.tabla_real_pct.toFixed(1)}%</div>
+                            </div>
+                            <div class="recipe-item">
+                                <div class="material">${tAuditoria('virtual_table', 'Tabla Virtual')}</div>
+                                <div class="percent">${proporciones.tabla_virtual_pct.toFixed(1)}%</div>
+                            </div>
                         </div>
-                        <div class="recipe-item">
-                            <div class="material">${tAuditoria('virtual_table', 'Tabla Virtual')}</div>
-                            <div class="percent">${proporciones.tabla_virtual_pct.toFixed(1)}%</div>
+                    `;
+                } else {
+                    html += `
+                        <div class="section" style="border-left-color: #b91c1c; background: #fef2f2; margin-top: 20px;">
+                            <h2>${tAuditoria('no_auto_correction_title', 'Sin corrección automática')}</h2>
+                            <div class="criterio error">
+                                <div>${decisionIndustrial.justificacion || tAuditoria('no_auto_correction_message', 'La mezcla actual no puede corregirse automáticamente sin perder coherencia física o representatividad industrial.')}</div>
+                            </div>
+                            ${Array.isArray(controlOperacional.motivos_bloqueo_tabla_virtual) && controlOperacional.motivos_bloqueo_tabla_virtual.length > 0 ? `<ul>${controlOperacional.motivos_bloqueo_tabla_virtual.map((motivo) => `<li>${motivo}</li>`).join('')}</ul>` : ''}
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }
 
             // ===== NUEVO: Mostrar acciones de zaranda si existen =====
@@ -1990,12 +2297,14 @@
             enlace.remove();
         }
 
-        function exportarReportePDF() {
+        function ejecutarExportacionPDFConTitulo(tituloPDF) {
             const resultado = document.getElementById('resultado');
             if (!resultado || !resultado.innerHTML.trim()) {
                 mostrarError(tAuditoria('export_pdf_missing_report', 'Primero genera el informe de auditoría antes de exportarlo.'));
                 return;
             }
+
+            actualizarTituloPDFParaImpresion(tituloPDF);
 
             const cambios = expandirSeccionesParaImpresion();
             const onAfterPrint = () => {
@@ -2014,12 +2323,23 @@
             }, 250);
         }
 
+        function exportarReportePDF() {
+            const resultado = document.getElementById('resultado');
+            if (!resultado || !resultado.innerHTML.trim()) {
+                mostrarError(tAuditoria('export_pdf_missing_report', 'Primero genera el informe de auditoría antes de exportarlo.'));
+                return;
+            }
+
+            abrirModalTituloPDF();
+        }
+
         window.addEventListener('beforeprint', () => {
             prepararGraficoPrincipalParaImpresion();
             resizeChartsParaImpresion();
         });
 
         window.addEventListener('afterprint', restaurarGraficoPrincipalDespuesDeImpresion);
+        inicializarModalTituloPDF();
         
         // Función para dibujar gráficos de análisis (Error y Desviación)
         function dibujarGraficosAnalisis(datos, entrada) {
