@@ -221,12 +221,14 @@ def generar_tabla_virtual(
     
     # PASO 1: Aplicar límites duros [0, 100]
     pasante_virtual = np.clip(pasante_virtual, 0.0, 100.0)
+    print(f"TV ORIGINAL: {[round(float(v), 6) for v in pasante_virtual.tolist()]}")
     
     # PASO 2: Garantizar monotonicidad decreciente
-    pasante_virtual = _aplicar_monotonicidad(pasante_virtual)
+    pasante_virtual = _aplicar_monotonicidad(pasante_virtual, tamices)
+    print(f"TV MONOTONICA: {[round(float(v), 6) for v in pasante_virtual.tolist()]}")
     
     # PASO 3: Aplicar límites de saltos
-    pasante_virtual = _limitar_saltos_entre_tamices(pasante_virtual, max_salto=20.0)
+    pasante_virtual = _limitar_saltos_entre_tamices(pasante_virtual, tamices, max_salto=20.0)
     
     # Metadatos de construcción
     metadata = {
@@ -244,26 +246,36 @@ def generar_tabla_virtual(
     return pasante_virtual.tolist(), metadata
 
 
-def _aplicar_monotonicidad(pasante_vector: np.ndarray) -> np.ndarray:
+def _tamices_descendentes(tamices: List[str]) -> bool:
+    tamices_num = np.array([float(t) for t in tamices], dtype=float)
+    if len(tamices_num) < 2:
+        return True
+    return bool(tamices_num[0] >= tamices_num[-1])
+
+
+def _aplicar_monotonicidad(pasante_vector: np.ndarray, tamices: List[str]) -> np.ndarray:
     """
     Corrige violaciones de monotonicidad.
-    La curva PASANTE debe ser decreciente (no puede aumentar).
+    La curva PASANTE debe respetar el orden físico de tamices:
+      - grueso -> fino: no creciente
+      - fino -> grueso: no decreciente
     
-    Método: Suavizado isotónico (PAVA - Pool Adjacent Violators Algorithm simplificado).
+    Método: acumulado mínimo o máximo según orientación.
     """
     
     curva = pasante_vector.copy()
-    
-    # Pasar de izq a der: si una malla tiene más pasante que la siguiente, igualar
-    for j in range(len(curva) - 1):
-        if curva[j] > curva[j + 1]:
-            curva[j] = curva[j + 1]
+
+    if _tamices_descendentes(tamices):
+        curva = np.minimum.accumulate(curva)
+    else:
+        curva = np.maximum.accumulate(curva)
     
     return curva
 
 
 def _limitar_saltos_entre_tamices(
     pasante_vector: np.ndarray,
+    tamices: List[str],
     max_salto: float = 20.0
 ) -> np.ndarray:
     """
@@ -282,7 +294,7 @@ def _limitar_saltos_entre_tamices(
             curva[j + 1] = max(curva[j + 1], promedio - max_salto / 2.0)
     
     # Re-aplicar monotonicidad después de redistribuir
-    curva = _aplicar_monotonicidad(curva)
+    curva = _aplicar_monotonicidad(curva, tamices)
     
     return curva
 
@@ -309,9 +321,20 @@ def validar_tabla_virtual(
     pasante_mezcla = np.array(pasante_mezcla, dtype=float)
     banda_min = np.array(banda_min, dtype=float)
     banda_max = np.array(banda_max, dtype=float)
+
+    print("==== ETAPA ====")
+    print("ETAPA: validar_tabla_virtual.entrada")
+    print("FUNCION: validar_tabla_virtual")
+    print("TIPO: pasante_acumulado")
+    print(f"TAMICES: {list(range(len(pasante_virtual)))}")
+    print(f"CURVA: {[float(v) for v in pasante_virtual.tolist()]}")
+    print(f"LEN TAMICES: {len(pasante_virtual)}")
+    print(f"LEN CURVA: {len(pasante_virtual)}")
+    print(f"CURVA BASE: {[float(v) for v in pasante_mezcla.tolist()]}")
     
     reporte = {
         "es_valida": True,
+        "tipo_curva_validada": "pasante_acumulado",
         "checks": {},
         "fallos": [],
     }
@@ -328,18 +351,33 @@ def validar_tabla_virtual(
     reporte["checks"]["monotonicidad"] = check2
     if not check2:
         for i in range(len(pasante_virtual)-1):
+            print(f"Comparando monotonicidad idx {i}: {pasante_virtual[i]:.2f} -> {pasante_virtual[i+1]:.2f}")
             if pasante_virtual[i] < pasante_virtual[i+1]:
                 reporte["checks"]["monotonicidad_viola"] = f"índice {i}: {pasante_virtual[i]:.2f} > {pasante_virtual[i+1]:.2f}"
         reporte["fallos"].append("Monotonicidad violada")
     
     # CHECK 3: Límites de saltos
+    # Físicamente, un material o mezcla angosta puede heredar un salto alto desde la curva real.
+    # Lo que debe invalidarse es que la tabla virtual cree saltos nuevos o agrave de forma artificial
+    # los ya existentes en la mezcla base.
     saltos = np.abs(np.diff(pasante_virtual))
-    check3 = np.all(saltos <= 20.0)
+    saltos_base = np.abs(np.diff(pasante_mezcla))
+    margen_empeoramiento = 5.0
+    limites_dinamicos = np.maximum(20.0, saltos_base + margen_empeoramiento)
+    excesos_salto = np.where(saltos > limites_dinamicos)[0]
+    check3 = len(excesos_salto) == 0
     reporte["checks"]["saltos_max_20"] = check3
+    reporte["checks"]["saltos_base"] = [round(float(x), 2) for x in saltos_base.tolist()]
+    reporte["checks"]["saltos_limite_dinamico"] = [round(float(x), 2) for x in limites_dinamicos.tolist()]
     if not check3:
-        max_salto_idx = np.argmax(saltos)
-        reporte["checks"]["saltos_detalles"] = f"Max salto {saltos[max_salto_idx]:.2f}% en posición {max_salto_idx}"
-        reporte["fallos"].append(f"Salto máximo {saltos[max_salto_idx]:.2f}% > 20%")
+        max_salto_idx = int(excesos_salto[np.argmax(saltos[excesos_salto])])
+        reporte["checks"]["saltos_detalles"] = (
+            f"Salto {saltos[max_salto_idx]:.2f}% en posición {max_salto_idx} "
+            f"supera límite dinámico {limites_dinamicos[max_salto_idx]:.2f}%"
+        )
+        reporte["fallos"].append(
+            f"Salto virtual {saltos[max_salto_idx]:.2f}% agrava la curva base ({saltos_base[max_salto_idx]:.2f}% → límite {limites_dinamicos[max_salto_idx]:.2f}%)"
+        )
     
     # CHECK 4: Coherencia dirección
     error_firmado = pasante_mezcla - (banda_min + banda_max) / 2.0

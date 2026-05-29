@@ -504,6 +504,133 @@ def _forzar_monotonia_decreciente(vals):
             vals[i] = vals[i-1]
     return vals
     raise ValueError("No se pudo detectar el formato de datos")
+
+
+def _debug_print_curva_material(nombre, tamices, curva_original, retido_ind, retido_acum, pasante_acum, contexto):
+    print(f"[CURVA DEBUG][{contexto}] Material: {nombre}")
+    print(f"   Tamices ({len(tamices)}): {tamices}")
+    print(f"   CURVA ORIGINAL ({len(curva_original)}): {curva_original}")
+    print(f"   RETENIDO INDIVIDUAL ({len(retido_ind)}): {retido_ind}")
+    print(f"   RETENIDO ACUMULADO ({len(retido_acum)}): {retido_acum}")
+    print(f"   PASANTE ACUMULADO ({len(pasante_acum)}): {pasante_acum}")
+
+
+def _es_monotona_no_decreciente(valores, tolerancia=1e-6):
+    return all(float(valores[i + 1]) + tolerancia >= float(valores[i]) for i in range(len(valores) - 1))
+
+
+def _es_monotona_no_creciente(valores, tolerancia=1e-6):
+    return all(float(valores[i + 1]) <= float(valores[i]) + tolerancia for i in range(len(valores) - 1))
+
+
+def _pasante_a_retido_ind_desde_pasante(pasantes):
+    retido_ind = []
+    anterior = 100.0
+    for pasante in pasantes:
+        retido_ind.append(max(0.0, round(anterior - float(pasante), 6)))
+        anterior = float(pasante)
+    return retido_ind
+
+
+def _ret_acum_a_retido_ind(ret_acum):
+    retido_ind = []
+    anterior = 0.0
+    for valor in ret_acum:
+        actual = float(valor)
+        retido_ind.append(max(0.0, round(actual - anterior, 6)))
+        anterior = actual
+    return retido_ind
+
+
+def _desplazamiento_fantasma_ret_acum(pasantes):
+    # Corrupción observada: el frontend genera [0] + ret_acum[:-1]
+    # Recuperación mínima: descorrer y cerrar en 100
+    if not pasantes:
+        return pasantes
+    reparada = [float(v) for v in pasantes[1:]] + [100.0]
+    return [round(v, 6) for v in reparada]
+
+
+def _reparar_curvas_material_auditoria(material, tamices):
+    nombre = material.get('nombre', 'sin_nombre')
+    n_tamices = len(tamices)
+    retido_original = [float(v) for v in material.get('retido_ind_pct', [])]
+    pasantes_original = [float(v) for v in material.get('pasantes', [])]
+
+    if retido_original:
+        assert len(retido_original) == n_tamices, f"{nombre}: retido_ind_pct len={len(retido_original)} != tamices len={n_tamices}"
+    if pasantes_original:
+        assert len(pasantes_original) == n_tamices, f"{nombre}: pasantes len={len(pasantes_original)} != tamices len={n_tamices}"
+
+    usa_retido_valido = (
+        bool(retido_original)
+        and len(retido_original) == n_tamices
+        and sum(retido_original) <= 105.0
+        and max(retido_original) < 100.0
+    )
+
+    if usa_retido_valido:
+        fuente = 'retido_individual_valido'
+        retido_ind = retido_original[:]
+    elif pasantes_original and _es_monotona_no_decreciente(pasantes_original) and pasantes_original[0] <= 5.0 and pasantes_original[-1] >= 90.0:
+        # Caso observado en producción:
+        # 1) el frontend llama "pasantes" a una curva que en realidad es retenido acumulado
+        # 2) además la desplaza una posición: [0] + ret_acum[:-1]
+        fuente = 'pasantes_corruptos_shift_retido_acumulado'
+        ret_acum_corregido = _desplazamiento_fantasma_ret_acum(pasantes_original)
+        retido_ind = _ret_acum_a_retido_ind(ret_acum_corregido)
+    elif pasantes_original and _es_monotona_no_creciente(pasantes_original) and pasantes_original[0] >= 90.0:
+        fuente = 'pasante_acumulado_valido'
+        retido_ind = _pasante_a_retido_ind_desde_pasante(pasantes_original)
+    else:
+        fuente = 'fallback_retido_original'
+        retido_ind = retido_original[:] if retido_original else [0.0] * n_tamices
+
+    assert len(retido_ind) == n_tamices, f"{nombre}: retido_ind reparado len={len(retido_ind)} != tamices len={n_tamices}"
+
+    retido_acum = [round(v, 6) for v in np.cumsum(retido_ind).tolist()]
+    pasante_acum = [round(100.0 - float(v), 6) for v in retido_acum]
+
+    assert len(retido_acum) == n_tamices, f"{nombre}: retido_acum len={len(retido_acum)} != tamices len={n_tamices}"
+    assert len(pasante_acum) == n_tamices, f"{nombre}: pasante_acum len={len(pasante_acum)} != tamices len={n_tamices}"
+
+    curva_original = retido_original if retido_original else pasantes_original
+    _debug_print_curva_material(
+        nombre=nombre,
+        tamices=tamices,
+        curva_original=curva_original,
+        retido_ind=retido_ind,
+        retido_acum=retido_acum,
+        pasante_acum=pasante_acum,
+        contexto=fuente,
+    )
+
+    material_reparado = dict(material)
+    material_reparado['retido_ind_pct'] = [round(float(v), 6) for v in retido_ind]
+    material_reparado['pasantes'] = [round(float(v), 6) for v in pasante_acum]
+    material_reparado['tipo_curva_detectado'] = fuente
+    return material_reparado
+
+
+def _reparar_materiales_auditoria(materiales, tamices):
+    if not materiales:
+        return materiales
+    return [_reparar_curvas_material_auditoria(material, tamices) for material in materiales]
+
+
+def _debug_etapa_curva(etapa, funcion, tipo_curva, tamices, curva):
+    tamices_list = list(tamices or [])
+    curva_list = list(curva or [])
+    print(f"==== ETAPA ====")
+    print(f"ETAPA: {etapa}")
+    print(f"FUNCION: {funcion}")
+    print(f"TIPO: {tipo_curva}")
+    print(f"TAMICES: {tamices_list}")
+    print(f"CURVA: {curva_list}")
+    print(f"LEN TAMICES: {len(tamices_list)}")
+    print(f"LEN CURVA: {len(curva_list)}")
+
+
 @calculoPorRetenidos.route('/calculoPorRetenidos/granulometria/retido/', methods=['POST'])
 def granulometria_retido():
     data = request.get_json(force=True)
@@ -2873,6 +3000,14 @@ def api_auditoria():
         banda_max = config.get('banda_max', [])
         tamices = config.get('tamices', [])
         materiales = config.get('materiales', None)  # ← NUEVO: materiales para optimizar
+
+        _debug_etapa_curva(
+            etapa='api_auditoria.payload_entrada',
+            funcion='api_auditoria',
+            tipo_curva='pasante_acumulado',
+            tamices=tamices,
+            curva=pasante_real,
+        )
         
         # 🎯 LOG CON CONTEXTO: Distinguir entre background y user execution
         num_materiales = len(materiales) if materiales else 0
@@ -2885,10 +3020,39 @@ def api_auditoria():
                 tiene_retido = 'retido_ind_pct' in m and m.get('retido_ind_pct')
                 tiene_pasantes = 'pasantes' in m and m.get('pasantes')
                 print(f"   Material {i}: {m.get('nombre', 'unknown')} - retido_ind_pct={tiene_retido}, pasantes={tiene_pasantes}")
+                if m.get('pasantes'):
+                    _debug_etapa_curva(
+                        etapa=f'api_auditoria.material_{i}.payload_pasantes',
+                        funcion='api_auditoria',
+                        tipo_curva='pasante_acumulado_payload',
+                        tamices=tamices,
+                        curva=m.get('pasantes', []),
+                    )
+                if m.get('retido_ind_pct'):
+                    _debug_etapa_curva(
+                        etapa=f'api_auditoria.material_{i}.payload_retido',
+                        funcion='api_auditoria',
+                        tipo_curva='retenido_individual_payload',
+                        tamices=tamices,
+                        curva=m.get('retido_ind_pct', []),
+                    )
         
         # ✅ GUARDAR MATERIALES ORIGINALES ANTES DE PROCESAR
         import copy
         materiales_originales_para_orden = copy.deepcopy(materiales) if materiales else None
+
+        if materiales_originales_para_orden:
+            print("🛠️ Reparando curvas de materiales para auditoría...")
+            materiales_originales_para_orden = _reparar_materiales_auditoria(materiales_originales_para_orden, tamices)
+            materiales = _reparar_materiales_auditoria(copy.deepcopy(materiales), tamices)
+            for i, m in enumerate(materiales_originales_para_orden):
+                _debug_etapa_curva(
+                    etapa=f'api_auditoria.material_{i}.post_reparacion_pasante',
+                    funcion='_reparar_materiales_auditoria',
+                    tipo_curva=m.get('tipo_curva_detectado', 'pasante_acumulado'),
+                    tamices=tamices,
+                    curva=m.get('pasantes', []),
+                )
         
         # Si los materiales NO tienen retido_ind_pct pero sí tienen pasantes, convertir
         if materiales_originales_para_orden:
@@ -2956,6 +3120,14 @@ def api_auditoria():
         pasante_auditado = [float(x) for x in pasante_real]
         pasante_real_optimizado = None
         proporciones_optimizadas = None
+
+        _debug_etapa_curva(
+            etapa='api_auditoria.pre_generar_auditoria',
+            funcion='api_auditoria',
+            tipo_curva='pasante_acumulado',
+            tamices=tamices,
+            curva=pasante_auditado,
+        )
         
         if materiales and len(materiales) > 1:
             print(f"🔧 Optimizando proporcionesde {len(materiales)} materiales...")
@@ -2974,7 +3146,9 @@ def api_auditoria():
             pasante_real=pasante_auditado,
             banda_min=banda_min,
             banda_max=banda_max,
-            tamices=tamices
+            tamices=tamices,
+            materiales=materiales_originales_para_orden,
+            proporciones_optimizadas=proporciones_optimizadas,
         )
 
         resultado['meta'] = {
@@ -2985,6 +3159,20 @@ def api_auditoria():
         if 'para_grafico' in resultado:
             resultado['para_grafico']['pasante_entrada_original'] = pasante_entrada_original
             resultado['para_grafico']['pasante_auditado'] = pasante_auditado
+            _debug_etapa_curva(
+                etapa='api_auditoria.salida_para_grafico.real',
+                funcion='api_auditoria',
+                tipo_curva='pasante_acumulado',
+                tamices=resultado['para_grafico'].get('tamices', []),
+                curva=resultado['para_grafico'].get('pasante_real', []),
+            )
+            _debug_etapa_curva(
+                etapa='api_auditoria.salida_para_grafico.virtual',
+                funcion='api_auditoria',
+                tipo_curva='pasante_acumulado_virtual',
+                tamices=resultado['para_grafico'].get('tamices', []),
+                curva=resultado['para_grafico'].get('pasante_virtual', []),
+            )
         
         # Inyectar proporciones optimizadas en la receta si existen
         if proporciones_optimizadas and 'fase_6_receta' in resultado:

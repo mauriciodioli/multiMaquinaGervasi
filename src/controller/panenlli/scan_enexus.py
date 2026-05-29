@@ -2,7 +2,7 @@
 import requests, hashlib, time
 from pprint import pprint
 
-IP   = "192.168.1.104"
+IP   = "192.168.1.107"
 USER = "admin"
 PASS = "admin"
 

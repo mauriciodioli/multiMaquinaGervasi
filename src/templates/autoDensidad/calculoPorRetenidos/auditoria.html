@@ -532,6 +532,23 @@
             #graficoErrorTamiz,
             #graficoDesviacion {
                 height: 280px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow: hidden !important;
+            }
+
+            .grafico-container canvas,
+            #graficoErrorTamiz canvas,
+            #graficoDesviacion canvas {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .grafico-print-snapshot {
+                display: block !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
             }
 
             h1 {
@@ -574,6 +591,7 @@
         let instanciaChart = null; // Rastrear instancia de Chart.js para destruir antes de recrear
         let instanciaErrorChart = null; // Gráfico de error por tamiz
         let instanciaDesviacionChart = null; // Gráfico de desviación
+        let snapshotGraficoComparacion = null;
 
         function tAuditoria(key, fallback = '') {
             if (typeof I18N !== 'undefined' && I18N && typeof I18N.t === 'function') {
@@ -646,14 +664,11 @@
          * @returns {number[]} Pasantes acumulados (empezando desde 100)
          */
         function retidosAPassantes(retidos) {
-            const pasantes = [];
-            let acum = 0;
-            
-            // Sumar desde atrás hacia adelante
-            for (let i = retidos.length - 1; i >= 0; i--) {
-                acum += retidos[i];
-                pasantes[i] = 100 - acum;
-            }
+            let acumulado = 0;
+            const pasantes = retidos.map((valor) => {
+                acumulado += Number(valor || 0);
+                return Math.max(0, 100 - acumulado);
+            });
             
             console.log(`✅ Conversión retidos→pasantes:`, {
                 retidos_entrada: retidos.map(r => r.toFixed(2)),
@@ -1034,6 +1049,7 @@
         function adaptarDatosParaBackend(datos) {
             // Clona profundamente para NO modificar datos originales
             const datosClonados = JSON.parse(JSON.stringify(datos));
+            const nTamices = Array.isArray(datosClonados.tamices) ? datosClonados.tamices.length : 0;
             
             // Si no hay materiales, devolver como está
             if (!datosClonados.materiales || !Array.isArray(datosClonados.materiales)) {
@@ -1049,34 +1065,28 @@
                     
                     // PASO 2: Convertir pasantes (acumulados) → retido_ind_pct (individuales)
                     let retido_ind_pct = [];
-                    
-                    if (material.pasantes && Array.isArray(material.pasantes)) {
-                        // Formula correcta:
-                        // retido[0] = 100 - pasantes[0]
-                        // retido[i] = pasantes[i] - pasantes[i-1]
-                        
+                    const retidoOriginal = Array.isArray(material.retido_ind_pct) ? material.retido_ind_pct : [];
+                    const usarRetidoOriginal = nTamices > 0 && retidoOriginal.length === nTamices;
+
+                    if (usarRetidoOriginal) {
+                        retido_ind_pct = retidoOriginal.map(v => Number(v || 0));
+                    } else if (material.pasantes && Array.isArray(material.pasantes)) {
                         for (let i = 0; i < material.pasantes.length; i++) {
                             let valor;
                             if (i === 0) {
-                                // Primer elemento
-                                valor = 100 - material.pasantes[0];
+                                valor = 100 - Number(material.pasantes[0] || 0);
                             } else {
-                                // Resto: diferencia entre acumulados consecutivos
-                                valor = material.pasantes[i] - material.pasantes[i - 1];
+                                valor = Number(material.pasantes[i - 1] || 0) - Number(material.pasantes[i] || 0);
                             }
-                            
-                            // Protección contra negativos
+
                             valor = Math.max(0, valor);
-                            
                             retido_ind_pct.push(valor);
                         }
-                        
-                        // Log si hay negativos detectados
-                        const negativosOriginales = retido_ind_pct.filter(v => v < 0);
-                        if (negativosOriginales.length > 0) {
-                            console.warn(`[ADAPTER] Material "${material.nombre}": Negativos corregidos con Math.max(0)`);
-                        }
                     }
+                    
+                    console.log('RETENIDO ORIGINAL:', retidoOriginal);
+                    console.log('PASANTE GENERADO:', material.pasantes);
+                    console.log('RECONVERSION RETENIDO:', retido_ind_pct);
                     
                     // PASO 3: Agregar nuevos campos sin remover los originales
                     return {
@@ -1177,6 +1187,7 @@
             const fase6 = datos.fase_6_receta;
             const grafico = datos.para_grafico;
             const meta = datos.meta || {};
+            const auditoriaIndustrial = datos.auditoria_industrial || {};
             
             // 🔍 DEBUG: Verificar si pasante_virtual está presente
             console.log('📊 [DEBUG] Datos de gráfico recibidos:');
@@ -1267,6 +1278,97 @@
                     </div>
                 `;
             })();
+
+            const renderAuditProblems = (items, emptyText) => {
+                if (!Array.isArray(items) || items.length === 0) {
+                    return `<div class="criterio ok"><div>${emptyText}</div></div>`;
+                }
+
+                return items.map((item) => `
+                    <div class="criterio ${item.severidad === 'ERROR CRITICO' ? 'error' : item.severidad === 'ERROR MODERADO' ? 'warning' : 'ok'}">
+                        <label>${item.severidad || 'INFO'}${item.titulo ? ` - ${item.titulo}` : ''}</label>
+                        <div>${item.detalle || ''}</div>
+                    </div>
+                `).join('');
+            };
+
+            const renderSimpleList = (items, emptyText) => {
+                if (!Array.isArray(items) || items.length === 0) {
+                    return `<div class="criterio ok"><div>${emptyText}</div></div>`;
+                }
+
+                return `<ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>`;
+            };
+
+            const validacionMateriales = auditoriaIndustrial.validacion_materiales || {};
+            const validacionTablaVirtual = auditoriaIndustrial.validacion_tabla_virtual || {};
+            const decisionIndustrial = auditoriaIndustrial.decision_final || {};
+
+            const materialesUnicosHtml = Array.isArray(validacionMateriales.materiales_unicos) && validacionMateriales.materiales_unicos.length > 0
+                ? `<ul>${validacionMateriales.materiales_unicos.map((material) => `<li><strong>${material.material}</strong>: ${material.tamices.join(', ')}${typeof material.proporcion_pct === 'number' ? ` | ${material.proporcion_pct.toFixed(2)}%` : ''}</li>`).join('')}</ul>`
+                : `<div class="criterio ok"><div>No se detectaron materiales con firma granulométrica única o no hubo datos suficientes para demostrarlo.</div></div>`;
+
+            const dominanciaMaterialesHtml = Array.isArray(validacionMateriales.dominancia) && validacionMateriales.dominancia.length > 0
+                ? `<ul>${validacionMateriales.dominancia.map((material) => `<li><strong>${material.material}</strong>: domina zona ${material.zona} en ${material.tamiz_dominante}${typeof material.proporcion_pct === 'number' ? ` | ${material.proporcion_pct.toFixed(2)}%` : ''}</li>`).join('')}</ul>`
+                : '';
+
+            const auditoriaIndustrialHtml = auditoriaIndustrial.diagnostico_general
+                ? `
+                    <div class="section" style="border-left-color: #7c3aed; background: #faf5ff; margin-top: 20px;">
+                        <h2>${tAuditoria('industrial_diagnosis_title', 'Diagnóstico general')}</h2>
+                        <div class="criterio ${decisionIndustrial.estado === 'APTO PRODUCCION' ? 'ok' : decisionIndustrial.estado === 'REVISAR LABORATORIO' ? 'warning' : 'error'}">
+                            <label>${tAuditoria('industrial_reading_label', 'Lectura industrial')}</label>
+                            <div>${auditoriaIndustrial.diagnostico_general.texto || tAuditoria('industrial_diagnosis_empty', 'Sin diagnóstico industrial disponible.')}</div>
+                        </div>
+
+                        <h2>${tAuditoria('critical_problems_title', 'Problemas críticos')}</h2>
+                        ${renderAuditProblems(auditoriaIndustrial.problemas_criticos, tAuditoria('critical_problems_empty', 'No se detectaron problemas críticos que bloqueen por sí solos la mezcla.'))}
+
+                        <h2>${tAuditoria('physical_problems_title', 'Problemas físicos')}</h2>
+                        ${renderAuditProblems(auditoriaIndustrial.problemas_fisicos, tAuditoria('physical_problems_empty', 'No se detectaron quiebres físicos relevantes en la curva auditada.'))}
+
+                        <h2>${tAuditoria('mathematical_problems_title', 'Problemas matemáticos')}</h2>
+                        ${renderAuditProblems(auditoriaIndustrial.problemas_matematicos, tAuditoria('mathematical_problems_empty', 'No aparecen inconsistencias matemáticas adicionales fuera del error residual informado.'))}
+
+                        <h2>${tAuditoria('industrial_problems_title', 'Problemas industriales')}</h2>
+                        ${renderAuditProblems(auditoriaIndustrial.problemas_industriales, tAuditoria('industrial_problems_empty', 'No se detectaron contradicciones industriales adicionales en la formulación evaluada.'))}
+
+                        <h2>${tAuditoria('materials_validation_title', 'Validación de materiales')}</h2>
+                        <div class="criterio">
+                            <label>${tAuditoria('summary_label', 'Resumen')}</label>
+                            <div>${validacionMateriales.resumen || tAuditoria('materials_validation_empty', 'Sin datos de materiales para validar representatividad.')}</div>
+                        </div>
+                        <div class="criterio">
+                            <label>${tAuditoria('unique_materials_label', 'Materiales con aporte único')}</label>
+                            <div>${materialesUnicosHtml}</div>
+                        </div>
+                        ${dominanciaMaterialesHtml ? `<div class="criterio"><label>${tAuditoria('dominance_by_material_label', 'Dominancia por material')}</label><div>${dominanciaMaterialesHtml}</div></div>` : ''}
+                        ${renderAuditProblems(validacionMateriales.problemas, tAuditoria('materials_representation_empty', 'No se detectó pérdida evidente de representatividad material.'))}
+
+                        <h2>${tAuditoria('virtual_table_validation_title', 'Validación de tabla virtual')}</h2>
+                        <div class="criterio ${validacionTablaVirtual.estado === 'VALIDA' ? 'ok' : validacionTablaVirtual.estado === 'NO APLICA' ? '' : 'warning'}">
+                            <label>${tAuditoria('state_label', 'Estado')}</label>
+                            <div>${validacionTablaVirtual.estado || tAuditoria('not_applicable', 'NO APLICA')}</div>
+                            <div>${validacionTablaVirtual.resumen || tAuditoria('virtual_table_observations_empty', 'Sin observaciones de tabla virtual.')}</div>
+                        </div>
+                        ${renderAuditProblems(validacionTablaVirtual.problemas, tAuditoria('virtual_table_industrial_empty', 'La tabla virtual no agrega observaciones industriales adicionales.'))}
+
+                        <h2>${tAuditoria('operational_risks_title', 'Riesgos operativos')}</h2>
+                        ${renderAuditProblems(auditoriaIndustrial.riesgos_operativos, tAuditoria('operational_risks_empty', 'No se identificaron riesgos operativos adicionales para el turno de planta.'))}
+
+                        <h2>${tAuditoria('real_plant_recommendations_title', 'Recomendaciones reales de planta')}</h2>
+                        ${renderSimpleList(auditoriaIndustrial.recomendaciones_reales_planta, tAuditoria('real_plant_recommendations_empty', 'No hay recomendaciones adicionales de planta.'))}
+
+                        <h2>${tAuditoria('final_decision_title', 'Decisión final')}</h2>
+                        <div class="decision-box" style="margin-top: 12px;">
+                            <h3>${decisionIndustrial.estado || tAuditoria('no_decision', 'SIN DECISIÓN')}</h3>
+                            <p>${decisionIndustrial.justificacion || tAuditoria('industrial_justification_empty', 'No hay justificación industrial disponible.')}</p>
+                            ${renderSimpleList(decisionIndustrial.riesgos_calidad, tAuditoria('quality_risks_empty', 'Sin riesgos de calidad adicionales reportados.'))}
+                            ${renderSimpleList(decisionIndustrial.riesgos_planta, tAuditoria('plant_risks_empty', 'Sin riesgos de planta adicionales reportados.'))}
+                        </div>
+                    </div>
+                `
+                : '';
             
             let html = '';
 
@@ -1274,6 +1376,7 @@
                 <div class="report-actions">
                     <div class="report-hint">${tAuditoria('export_pdf_helper', 'Genera un PDF desde el navegador con el informe visible y sus gráficos.')}</div>
                     <button type="button" onclick="exportarReportePDF()">${tAuditoria('export_pdf_btn', '🖨️ Exportar PDF')}</button>
+                    <button type="button" onclick="descargarGraficoComparacionPNG()">${tAuditoria('export_chart_png_btn', '🖼️ Descargar curva PNG')}</button>
                 </div>
                 <div class="operator-panel">
                     <div class="operator-title">
@@ -1302,6 +1405,8 @@
             `;
 
                     html += resumenEntradaOriginal;
+
+        html += auditoriaIndustrialHtml;
 
             if (esModoMateriales) {
                 html += `
@@ -1793,13 +1898,96 @@
             });
         }
 
-        function resizeChartsParaImpresion() {
-            [instanciaChart, instanciaErrorChart, instanciaDesviacionChart].forEach((chart) => {
-                if (chart && typeof chart.resize === 'function') {
-                    chart.resize();
-                    chart.update('none');
-                }
+        function prepararGraficoPrincipalParaImpresion() {
+            if (snapshotGraficoComparacion) {
+                return Promise.resolve();
+            }
+
+            if (!instanciaChart || typeof instanciaChart.toBase64Image !== 'function') {
+                return Promise.resolve();
+            }
+
+            const canvas = document.getElementById('graficoComparacion');
+            if (!canvas || !canvas.parentElement) {
+                return Promise.resolve();
+            }
+
+            const img = document.createElement('img');
+            img.src = instanciaChart.toBase64Image();
+            img.alt = tAuditoria('chart_image_alt', 'Curva de Referencia');
+            img.className = 'grafico-print-snapshot';
+
+            canvas.style.display = 'none';
+            canvas.insertAdjacentElement('afterend', img);
+
+            snapshotGraficoComparacion = { canvas, img };
+
+            if (img.complete) {
+                return Promise.resolve();
+            }
+
+            return new Promise((resolve) => {
+                img.onload = () => resolve();
+                img.onerror = () => resolve();
             });
+        }
+
+        function restaurarGraficoPrincipalDespuesDeImpresion() {
+            if (!snapshotGraficoComparacion) {
+                return;
+            }
+
+            const { canvas, img } = snapshotGraficoComparacion;
+            if (img && img.parentElement) {
+                img.remove();
+            }
+            if (canvas) {
+                canvas.style.display = '';
+            }
+
+            snapshotGraficoComparacion = null;
+        }
+
+        function resizeChartsParaImpresion() {
+            [instanciaErrorChart, instanciaDesviacionChart].forEach((chart) => {
+                if (!chart || typeof chart.resize !== 'function') {
+                    return;
+                }
+
+                const canvas = chart.canvas;
+                const contenedor = canvas && (canvas.closest('.grafico-container') || canvas.parentElement);
+                const ancho = contenedor ? Math.floor(contenedor.clientWidth) : undefined;
+                const alto = contenedor ? Math.floor(contenedor.clientHeight) : undefined;
+
+                if (ancho && alto) {
+                    chart.resize(ancho, alto);
+                } else if (ancho) {
+                    chart.resize(ancho);
+                } else {
+                    chart.resize();
+                }
+
+                chart.update('none');
+            });
+        }
+
+        function descargarGraficoComparacionPNG() {
+            const canvas = document.getElementById('graficoComparacion');
+            if (!canvas) {
+                mostrarError(tAuditoria('export_chart_missing', 'Primero genera el gráfico antes de descargarlo.'));
+                return;
+            }
+
+            const dataUrl = instanciaChart && typeof instanciaChart.toBase64Image === 'function'
+                ? instanciaChart.toBase64Image()
+                : canvas.toDataURL('image/png');
+
+            const enlace = document.createElement('a');
+            enlace.href = dataUrl;
+            enlace.download = tAuditoria('chart_png_filename', 'curva_referencia.png');
+            document.body.appendChild(enlace);
+            enlace.click();
+            enlace.remove();
         }
 
         function exportarReportePDF() {
@@ -1811,6 +1999,7 @@
 
             const cambios = expandirSeccionesParaImpresion();
             const onAfterPrint = () => {
+                restaurarGraficoPrincipalDespuesDeImpresion();
                 restaurarSeccionesDespuesDeImpresion(cambios);
                 window.removeEventListener('afterprint', onAfterPrint);
             };
@@ -1818,10 +2007,19 @@
             window.addEventListener('afterprint', onAfterPrint);
 
             window.setTimeout(() => {
-                resizeChartsParaImpresion();
-                window.print();
+                prepararGraficoPrincipalParaImpresion().finally(() => {
+                    resizeChartsParaImpresion();
+                    window.print();
+                });
             }, 250);
         }
+
+        window.addEventListener('beforeprint', () => {
+            prepararGraficoPrincipalParaImpresion();
+            resizeChartsParaImpresion();
+        });
+
+        window.addEventListener('afterprint', restaurarGraficoPrincipalDespuesDeImpresion);
         
         // Función para dibujar gráficos de análisis (Error y Desviación)
         function dibujarGraficosAnalisis(datos, entrada) {
