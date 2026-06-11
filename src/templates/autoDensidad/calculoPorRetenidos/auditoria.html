@@ -101,6 +101,34 @@
             margin-top: 16px;
         }
 
+        .curve-reference-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+
+        .icon-only-action {
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #0f172a;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        }
+
+        .icon-only-action:hover,
+        .icon-only-action:focus {
+            border-color: #0066cc;
+            color: #0066cc;
+            outline: none;
+        }
+
         .curve-editor-panel {
             display: grid;
             gap: 12px;
@@ -490,6 +518,196 @@
             background: #184e77;
             color: #ffffff;
         }
+
+        .plant-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.62);
+            z-index: 1250;
+            padding: 20px;
+        }
+
+        .plant-modal.is-open {
+            display: flex;
+        }
+
+        .plant-modal-dialog {
+            width: min(100%, 920px);
+            max-height: calc(100vh - 40px);
+            overflow: auto;
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+        }
+
+        .plant-modal-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 22px;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 2;
+        }
+
+        .plant-modal-toolbar h3 {
+            margin: 0;
+            color: #123a59;
+            font-size: 20px;
+        }
+
+        .plant-modal-toolbar-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .plant-modal-toolbar-actions button {
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 9px 14px;
+            background: #ffffff;
+            cursor: pointer;
+            font: inherit;
+            font-weight: 700;
+        }
+
+        .plant-modal-toolbar-actions .primary {
+            background: #184e77;
+            color: #ffffff;
+            border-color: #184e77;
+        }
+
+        .plant-modal-body {
+            padding: 22px;
+            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 180px);
+        }
+
+        .plant-sheet {
+            display: grid;
+            gap: 18px;
+        }
+
+        .plant-sheet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .plant-sheet-title {
+            font-size: 28px;
+            line-height: 1.1;
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .plant-sheet-subtitle {
+            color: #475569;
+            font-size: 14px;
+            margin-top: 6px;
+        }
+
+        .plant-sheet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+        }
+
+        .plant-sheet-card {
+            background: #ffffff;
+            border: 1px solid #d9e3ee;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .plant-sheet-card h4 {
+            margin: 0 0 10px;
+            font-size: 13px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #475569;
+        }
+
+        .plant-sheet-main {
+            font-size: 26px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .plant-sheet-text {
+            color: #334155;
+            line-height: 1.5;
+        }
+
+        .plant-sheet-list {
+            margin: 0;
+            padding-left: 18px;
+            color: #334155;
+            line-height: 1.5;
+        }
+
+        .plant-sheet-steps {
+            display: grid;
+            gap: 10px;
+        }
+
+        .plant-step {
+            background: #ffffff;
+            border: 1px solid #d9e3ee;
+            border-left: 4px solid #184e77;
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .plant-step-title {
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+
+        .plant-step-meta {
+            color: #475569;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .plant-sheet-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .plant-sheet-table th,
+        .plant-sheet-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .plant-sheet-table thead {
+            background: #184e77;
+            color: #ffffff;
+        }
+
+        .plant-ok {
+            color: #15803d;
+            font-weight: 800;
+        }
+
+        .plant-bad {
+            color: #b91c1c;
+            font-weight: 800;
+        }
         
         .loading {
             text-align: center;
@@ -807,6 +1025,21 @@
             </div>
         </div>
     </div>
+
+    <div id="plantOperatorModal" class="plant-modal" aria-hidden="true">
+        <div class="plant-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="plantOperatorModalHeading">
+            <div class="plant-modal-toolbar">
+                <h3 id="plantOperatorModalHeading">Vista Operativa</h3>
+                <div class="plant-modal-toolbar-actions">
+                    <button type="button" class="primary" onclick="imprimirVistaOperativa()">🖨️ Imprimir</button>
+                    <button type="button" onclick="cerrarVistaOperativa()">Cerrar</button>
+                </div>
+            </div>
+            <div class="plant-modal-body">
+                <div id="plantOperatorModalContent"></div>
+            </div>
+        </div>
+    </div>
     
     <script>
         // ============ VARIABLES GLOBALES ============
@@ -815,6 +1048,7 @@
         let instanciaDesviacionChart = null; // Gráfico de desviación
         let snapshotGraficoComparacion = null;
         let ultimoTituloPDF = '';
+        let ultimoHTMLVistaOperativa = '';
 
         function tAuditoria(key, fallback = '') {
             if (typeof I18N !== 'undefined' && I18N && typeof I18N.t === 'function') {
@@ -862,6 +1096,172 @@
             if (input) input.placeholder = tAuditoria('pdf_title_modal_placeholder', 'Ej: Auditoría planta turno mañana');
             if (cancelBtn) cancelBtn.textContent = tAuditoria('pdf_title_modal_cancel', 'Cancelar');
             if (confirmBtn) confirmBtn.textContent = tAuditoria('pdf_title_modal_confirm', 'Generar PDF');
+        }
+
+        function buildPlantOperatorHtml(state) {
+            if (!state) return '';
+
+            const statusClass = state.statusLevel === 'ok' ? 'plant-ok' : 'plant-bad';
+            const criticalTitle = state.manualAdjusted ? 'Tamices críticos (curva virtual ajustada)' : 'Tamices críticos';
+            const instructionText = state.manualAdjusted
+                ? `${state.instruction} Ajuste manual aplicado sobre la curva virtual; validar en laboratorio antes de ejecutar en planta.`
+                : state.instruction;
+            const recipeItems = Array.isArray(state.recipe) && state.recipe.length > 0
+                ? `<ul class="plant-sheet-list">${state.recipe.map((item) => `<li><strong>${item.nombre}</strong>: ${item.valor}</li>`).join('')}</ul>`
+                : `<div class="plant-sheet-text">Sin receta específica disponible.</div>`;
+            const rowsToShow = state.manualAdjusted && Array.isArray(state.virtualCriticalRows)
+                ? state.virtualCriticalRows
+                : state.criticalRows;
+            const criticalRows = Array.isArray(rowsToShow) && rowsToShow.length > 0
+                ? `
+                    <table class="plant-sheet-table">
+                        <thead>
+                            <tr>
+                                <th>Tamiz</th>
+                                <th>${state.manualAdjusted ? 'Virtual' : 'Real'}</th>
+                                <th>Banda</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsToShow.map((row) => `
+                                <tr>
+                                    <td>${row.tamiz}</td>
+                                    <td>${row.real}</td>
+                                    <td>${row.banda}</td>
+                                    <td class="${row.ok ? 'plant-ok' : 'plant-bad'}">${row.status}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `
+                : `<div class="plant-sheet-text">Todos los tamices están dentro de banda.</div>`;
+            const stepsHtml = Array.isArray(state.steps) && state.steps.length > 0
+                ? `<div class="plant-sheet-steps">${state.steps.map((step) => `
+                    <div class="plant-step">
+                        <div class="plant-step-title">Paso ${step.paso}: ${step.material}</div>
+                        <div class="plant-step-meta">${step.accion}${step.malla ? ` | ${step.malla}` : ''}</div>
+                        <div class="plant-step-meta">${step.uso}</div>
+                    </div>
+                `).join('')}</div>`
+                : `<div class="plant-sheet-text">No hay pasos operativos adicionales para este turno.</div>`;
+
+            return `
+                <div class="plant-sheet">
+                    <div class="plant-sheet-header">
+                        <div>
+                            <div class="plant-sheet-title">Hoja rápida para planta</div>
+                            <div class="plant-sheet-subtitle">Llevar esta vista a máquina para ejecutar y validar la mezcla.</div>
+                        </div>
+                        <div class="status-pill ${state.semaforoClase || ''}">${state.statusText}</div>
+                    </div>
+
+                    <div class="plant-sheet-grid">
+                        <div class="plant-sheet-card">
+                            <h4>Acción</h4>
+                            <div class="plant-sheet-main ${statusClass}">${state.actionMain}</div>
+                            <div class="plant-sheet-text">${state.actionDetail}</div>
+                        </div>
+                        <div class="plant-sheet-card">
+                            <h4>Cumplimiento</h4>
+                            <div class="plant-sheet-main">${state.compliance}</div>
+                            <div class="plant-sheet-text">${state.complianceDetail}</div>
+                        </div>
+                        <div class="plant-sheet-card">
+                            <h4>Instrucción</h4>
+                            <div class="plant-sheet-text">${instructionText}</div>
+                        </div>
+                    </div>
+
+                    <div class="plant-sheet-grid">
+                        <div class="plant-sheet-card">
+                            <h4>Receta / distribución</h4>
+                            ${recipeItems}
+                        </div>
+                        <div class="plant-sheet-card">
+                            <h4>${criticalTitle}</h4>
+                            ${criticalRows}
+                        </div>
+                    </div>
+
+                    <div class="plant-sheet-card">
+                        <h4>Pasos operativos</h4>
+                        ${stepsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function abrirVistaOperativa() {
+            const modal = document.getElementById('plantOperatorModal');
+            const content = document.getElementById('plantOperatorModalContent');
+            const state = window.__plantOperatorViewState;
+            if (!modal || !content || !state) return;
+            ultimoHTMLVistaOperativa = buildPlantOperatorHtml(state);
+            content.innerHTML = ultimoHTMLVistaOperativa;
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function cerrarVistaOperativa() {
+            const modal = document.getElementById('plantOperatorModal');
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        function imprimirVistaOperativa() {
+            const state = window.__plantOperatorViewState;
+            if (!state) return;
+            const html = ultimoHTMLVistaOperativa || buildPlantOperatorHtml(state);
+            const win = window.open('', '_blank', 'width=980,height=900');
+            if (!win) return;
+            win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vista Operativa</title><style>
+                body{font-family:Segoe UI,Tahoma,sans-serif;padding:24px;color:#0f172a} .status-pill{display:inline-flex;padding:8px 12px;border-radius:999px;background:#e2e8f0;font-weight:700} .status-pill.warning{background:#fef3c7}.status-pill.error{background:#fee2e2} .plant-sheet{display:grid;gap:18px}.plant-sheet-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.plant-sheet-title{font-size:28px;font-weight:900}.plant-sheet-subtitle{color:#475569;font-size:14px;margin-top:6px}.plant-sheet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.plant-sheet-card{background:#fff;border:1px solid #d9e3ee;border-radius:12px;padding:16px}.plant-sheet-card h4{margin:0 0 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#475569}.plant-sheet-main{font-size:26px;font-weight:800}.plant-sheet-text,.plant-step-meta{color:#334155;line-height:1.5}.plant-sheet-list{margin:0;padding-left:18px;color:#334155;line-height:1.5}.plant-sheet-steps{display:grid;gap:10px}.plant-step{background:#fff;border:1px solid #d9e3ee;border-left:4px solid #184e77;border-radius:10px;padding:14px}.plant-step-title{font-weight:800;margin-bottom:6px}.plant-sheet-table{width:100%;border-collapse:collapse;background:#fff}.plant-sheet-table th,.plant-sheet-table td{padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}.plant-sheet-table thead{background:#184e77;color:#fff}.plant-ok{color:#15803d;font-weight:800}.plant-bad{color:#b91c1c;font-weight:800}
+            </style></head><body>${html}<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}};<\/script></body></html>`);
+            win.document.close();
+        }
+
+        function recalcularVistaOperativaDesdeCurvaVirtual() {
+            const state = window.__plantOperatorViewState;
+            const editorState = window.__auditoriaCurveEditorState;
+            if (!state || !editorState || !editorState.grafico || !Array.isArray(editorState.grafico.pasante_virtual)) {
+                return;
+            }
+
+            const grafico = editorState.grafico;
+            const total = Array.isArray(grafico.tamices) ? grafico.tamices.length : 0;
+            const virtualRows = grafico.tamices.map((tamiz, index) => {
+                const virtual = Number(grafico.pasante_virtual[index] || 0);
+                const min = Number(grafico.banda_min[index] || 0);
+                const max = Number(grafico.banda_max[index] || 0);
+                const ok = virtual >= min && virtual <= max;
+                return {
+                    tamiz,
+                    real: `${virtual.toFixed(2)}%`,
+                    banda: `[${min.toFixed(0)}-${max.toFixed(0)}]%`,
+                    ok,
+                    status: ok ? 'Dentro' : (virtual < min ? 'Bajo' : 'Alto')
+                };
+            });
+
+            const insideCount = virtualRows.reduce((acc, row) => acc + (row.ok ? 1 : 0), 0);
+            state.manualAdjusted = true;
+            state.virtualCriticalRows = virtualRows.filter((row) => !row.ok);
+            state.statusText = insideCount === total ? 'AJUSTE LISTO PARA VALIDAR' : 'AJUSTE MANUAL EN CURSO';
+            state.statusLevel = insideCount === total ? 'ok' : 'error';
+            state.semaforoClase = insideCount === total ? '' : 'warning';
+            state.actionMain = insideCount === total ? 'VALIDAR' : 'SEGUIR AJUSTANDO';
+            state.actionDetail = insideCount === total
+                ? 'La curva virtual ajustada quedó dentro de banda. Validar en laboratorio antes de llevarla a planta.'
+                : 'La curva virtual editada todavía queda fuera de banda en algunos tamices. Completar el ajuste antes de liberar.';
+            state.compliance = `${((insideCount / Math.max(total, 1)) * 100).toFixed(1)}%`;
+            state.complianceDetail = `${insideCount} de ${total} tamices dentro de banda para la curva virtual ajustada.`;
+
+            const modal = document.getElementById('plantOperatorModal');
+            if (modal && modal.classList.contains('is-open')) {
+                abrirVistaOperativa();
+            }
         }
 
         function obtenerModalPDF() {
@@ -1716,6 +2116,40 @@
             const validacionTablaVirtual = auditoriaIndustrial.validacion_tabla_virtual || {};
             const decisionIndustrial = auditoriaIndustrial.decision_final || {};
             const controlOperacional = auditoriaIndustrial.control_operacional || {};
+            const criticalRows = grafico.tamices.map((tamiz, index) => {
+                const real = Number(grafico.pasante_real[index] || 0);
+                const min = Number(grafico.banda_min[index] || 0);
+                const max = Number(grafico.banda_max[index] || 0);
+                const ok = real >= min && real <= max;
+                return {
+                    tamiz,
+                    real: `${real.toFixed(2)}%`,
+                    banda: `[${min.toFixed(0)}-${max.toFixed(0)}]%`,
+                    ok,
+                    status: ok ? 'Dentro' : (real < min ? 'Bajo' : 'Alto')
+                };
+            }).filter((row) => !row.ok);
+
+            const recipe = esModoMateriales
+                ? materialesOrdenados.map(([nombre, pct]) => ({ nombre, valor: `${pct.toFixed(2)}%` }))
+                : [
+                    { nombre: 'Tabla real', valor: `${Number(proporciones.tabla_real_pct || 0).toFixed(2)}%` },
+                    { nombre: 'Tabla virtual', valor: `${Number(proporciones.tabla_virtual_pct || 0).toFixed(2)}%` }
+                ];
+
+            window.__plantOperatorViewState = {
+                statusText: estadoOperacion,
+                statusLevel: criterios.cumple_banda ? 'ok' : 'error',
+                semaforoClase,
+                actionMain: criterios.cumple_banda ? 'PRODUCIR' : 'AJUSTAR',
+                actionDetail: accionOperacion,
+                compliance: `${fase1.cumplimiento_pct}%`,
+                complianceDetail: `${fase1.cumpl_count} de ${fase1.n_tamices} tamices dentro de banda.`,
+                instruction: instruccionOperador,
+                recipe,
+                criticalRows,
+                steps: Array.isArray(datos.orden_operativa_real) ? datos.orden_operativa_real : []
+            };
 
             const materialesOriginales = Array.isArray(validacionMateriales.materiales_originales)
                 ? [...validacionMateriales.materiales_originales].sort((a, b) => (b.proporcion_pct || 0) - (a.proporcion_pct || 0))
@@ -2201,6 +2635,9 @@
                         <canvas id="graficoComparacion"></canvas>
                     </div>
                     <div id="curveEditorHost" class="curve-editor-host"></div>
+                    <div class="curve-reference-actions">
+                        <button type="button" class="icon-only-action" onclick="abrirVistaOperativa()" title="Abrir vista operativa" aria-label="Abrir vista operativa">⤢</button>
+                    </div>
                 </div>
 
                 <div class="section">

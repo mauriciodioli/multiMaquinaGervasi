@@ -51,6 +51,10 @@
         if (typeof window.dibujarGraficosAnalisis === 'function') {
             window.dibujarGraficosAnalisis(state.grafico, state.entrada);
         }
+
+        if (typeof window.recalcularVistaOperativaDesdeCurvaVirtual === 'function') {
+            window.recalcularVistaOperativaDesdeCurvaVirtual();
+        }
     }
 
     function closeEditor() {
