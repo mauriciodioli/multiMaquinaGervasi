@@ -1058,6 +1058,21 @@
             </div>
         </div>
     </div>
+
+    <div id="informeParaOperadorPlanta" class="plant-modal" aria-hidden="true">
+        <div class="plant-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="informeParaOperadorPlantaHeading">
+            <div class="plant-modal-toolbar">
+                <h3 id="informeParaOperadorPlantaHeading">Informe Para Operador Planta</h3>
+                <div class="plant-modal-toolbar-actions">
+                    <button type="button" class="primary" onclick="imprimirInformeParaOperadorPlanta()">🖨️ Imprimir</button>
+                    <button type="button" onclick="cerrarInformeParaOperadorPlanta()">Cerrar</button>
+                </div>
+            </div>
+            <div class="plant-modal-body">
+                <div id="informeParaOperadorPlantaContent"></div>
+            </div>
+        </div>
+    </div>
     
     <script>
         // ============ VARIABLES GLOBALES ============
@@ -1067,6 +1082,7 @@
         let snapshotGraficoComparacion = null;
         let ultimoTituloPDF = '';
         let ultimoHTMLVistaOperativa = '';
+        let ultimoHTMLInformeParaOperadorPlanta = '';
 
         function tAuditoria(key, fallback = '') {
             if (typeof I18N !== 'undefined' && I18N && typeof I18N.t === 'function') {
@@ -1210,6 +1226,78 @@
             `;
         }
 
+        function buildInformeParaOperadorPlantaHtml(state) {
+            if (!state) return '';
+
+            const stepsHtml = Array.isArray(state.steps) && state.steps.length > 0
+                ? state.steps.map((step) => {
+                    let iconoPaso = 'ℹ️';
+                    let colorFondo = '#e0f2fe';
+                    let colorBorde = '#0284c7';
+
+                    if (step.tipo_interno === 'grueso') {
+                        iconoPaso = '🔴';
+                        colorBorde = '#7c2d12';
+                        colorFondo = '#fff7ed';
+                    } else if (step.tipo_interno === 'medio') {
+                        iconoPaso = '🟡';
+                        colorBorde = '#a16207';
+                        colorFondo = '#fffbeb';
+                    } else if (step.tipo_interno === 'fino') {
+                        iconoPaso = '🟢';
+                        colorBorde = '#166534';
+                        colorFondo = '#f0fdf4';
+                    }
+
+                    return `
+                        <div style="padding: 14px; border-radius: 6px; border-left: 4px solid ${colorBorde}; background: ${colorFondo}; position: relative;">
+                            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                <div style="font-size: 24px; flex-shrink: 0;">${iconoPaso}</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 15px; margin-bottom: 8px;"><strong>Paso ${step.paso}:</strong> ${step.material}</div>
+                                    <div style="font-size: 13px; color: #6b7280;">Tipo: <strong>${step.tipo}</strong></div>
+                                </div>
+                            </div>
+                            <div style="margin-left: 36px; margin-top: 8px; color: #334155; line-height: 1.5;">
+                                <div><strong>Acción:</strong> ${(step.tipo_interno === 'grueso' || step.tipo_interno === 'medio') ? '🔄 ' + step.accion : step.accion}</div>
+                                ${step.malla ? `<div style="margin-top: 8px;"><strong>Malla:</strong> ${step.malla}</div>` : ''}
+                                <div style="margin-top: 8px;"><strong>Resultado esperado:</strong> ${step.resultado}</div>
+                                <div style="margin-top: 8px; padding: 10px; background: white; border-radius: 3px; border-left: 3px solid ${colorBorde};">
+                                    <strong>Uso en planta:</strong> ${step.uso}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')
+                : `<div class="plant-sheet-text">No hay una orden operativa real disponible para mostrar.</div>`;
+
+            return `
+                <div class="plant-sheet">
+                    <div class="plant-sheet-header">
+                        <div>
+                            <div class="plant-sheet-title">🧾 Orden Operativa Real (Materiales Originales)</div>
+                            <div class="plant-sheet-subtitle">Instrucciones operativas basadas en los materiales originales. Leer y seguir los pasos en secuencia.</div>
+                        </div>
+                        <div class="status-pill ${state.semaforoClase || ''}">Operador</div>
+                    </div>
+
+                    <div class="plant-sheet-card">
+                        <h4>Descripción simple</h4>
+                        <div class="plant-sheet-text">Esta hoja indica qué material tocar, qué acción hacer, qué malla usar y qué resultado buscar. Si algo no coincide con planta, detener y consultar.</div>
+                    </div>
+
+                    <div class="plant-sheet-card">
+                        <h4>Pasos operativos</h4>
+                        ${stepsHtml}
+                    </div>
+
+                    <div class="plant-sheet-card">
+                        <div class="plant-sheet-text"><strong>📌 Esta orden se basa en los materiales originales. Seguir los pasos en secuencia.</strong></div>
+                    </div>
+                </div>
+            `;
+        }
+
         function abrirVistaOperativa() {
             const modal = document.getElementById('plantOperatorModal');
             const content = document.getElementById('plantOperatorModalContent');
@@ -1221,8 +1309,26 @@
             modal.setAttribute('aria-hidden', 'false');
         }
 
+        function abrirInformeParaOperadorPlanta() {
+            const modal = document.getElementById('informeParaOperadorPlanta');
+            const content = document.getElementById('informeParaOperadorPlantaContent');
+            const state = window.__plantOperatorViewState;
+            if (!modal || !content || !state) return;
+            ultimoHTMLInformeParaOperadorPlanta = buildInformeParaOperadorPlantaHtml(state);
+            content.innerHTML = ultimoHTMLInformeParaOperadorPlanta;
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
         function cerrarVistaOperativa() {
             const modal = document.getElementById('plantOperatorModal');
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        function cerrarInformeParaOperadorPlanta() {
+            const modal = document.getElementById('informeParaOperadorPlanta');
             if (!modal) return;
             modal.classList.remove('is-open');
             modal.setAttribute('aria-hidden', 'true');
@@ -1235,6 +1341,18 @@
             const win = window.open('', '_blank', 'width=980,height=900');
             if (!win) return;
             win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vista Operativa</title><style>
+                body{font-family:Segoe UI,Tahoma,sans-serif;padding:24px;color:#0f172a} .status-pill{display:inline-flex;padding:8px 12px;border-radius:999px;background:#e2e8f0;font-weight:700} .status-pill.warning{background:#fef3c7}.status-pill.error{background:#fee2e2} .plant-sheet{display:grid;gap:18px}.plant-sheet-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.plant-sheet-title{font-size:28px;font-weight:900}.plant-sheet-subtitle{color:#475569;font-size:14px;margin-top:6px}.plant-sheet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.plant-sheet-card{background:#fff;border:1px solid #d9e3ee;border-radius:12px;padding:16px}.plant-sheet-card h4{margin:0 0 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#475569}.plant-sheet-main{font-size:26px;font-weight:800}.plant-sheet-text,.plant-step-meta{color:#334155;line-height:1.5}.plant-sheet-list{margin:0;padding-left:18px;color:#334155;line-height:1.5}.plant-sheet-steps{display:grid;gap:10px}.plant-step{background:#fff;border:1px solid #d9e3ee;border-left:4px solid #184e77;border-radius:10px;padding:14px}.plant-step-title{font-weight:800;margin-bottom:6px}.plant-sheet-table{width:100%;border-collapse:collapse;background:#fff}.plant-sheet-table th,.plant-sheet-table td{padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}.plant-sheet-table thead{background:#184e77;color:#fff}.plant-ok{color:#15803d;font-weight:800}.plant-bad{color:#b91c1c;font-weight:800}
+            </style></head><body>${html}<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}};<\/script></body></html>`);
+            win.document.close();
+        }
+
+        function imprimirInformeParaOperadorPlanta() {
+            const state = window.__plantOperatorViewState;
+            if (!state) return;
+            const html = ultimoHTMLInformeParaOperadorPlanta || buildInformeParaOperadorPlantaHtml(state);
+            const win = window.open('', '_blank', 'width=980,height=900');
+            if (!win) return;
+            win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Informe Para Operador Planta</title><style>
                 body{font-family:Segoe UI,Tahoma,sans-serif;padding:24px;color:#0f172a} .status-pill{display:inline-flex;padding:8px 12px;border-radius:999px;background:#e2e8f0;font-weight:700} .status-pill.warning{background:#fef3c7}.status-pill.error{background:#fee2e2} .plant-sheet{display:grid;gap:18px}.plant-sheet-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.plant-sheet-title{font-size:28px;font-weight:900}.plant-sheet-subtitle{color:#475569;font-size:14px;margin-top:6px}.plant-sheet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.plant-sheet-card{background:#fff;border:1px solid #d9e3ee;border-radius:12px;padding:16px}.plant-sheet-card h4{margin:0 0 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#475569}.plant-sheet-main{font-size:26px;font-weight:800}.plant-sheet-text,.plant-step-meta{color:#334155;line-height:1.5}.plant-sheet-list{margin:0;padding-left:18px;color:#334155;line-height:1.5}.plant-sheet-steps{display:grid;gap:10px}.plant-step{background:#fff;border:1px solid #d9e3ee;border-left:4px solid #184e77;border-radius:10px;padding:14px}.plant-step-title{font-weight:800;margin-bottom:6px}.plant-sheet-table{width:100%;border-collapse:collapse;background:#fff}.plant-sheet-table th,.plant-sheet-table td{padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}.plant-sheet-table thead{background:#184e77;color:#fff}.plant-ok{color:#15803d;font-weight:800}.plant-bad{color:#b91c1c;font-weight:800}
             </style></head><body>${html}<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}};<\/script></body></html>`);
             win.document.close();
@@ -1276,9 +1394,14 @@
             state.compliance = `${((insideCount / Math.max(total, 1)) * 100).toFixed(1)}%`;
             state.complianceDetail = `${insideCount} de ${total} tamices dentro de banda para la curva virtual ajustada.`;
 
-            const modal = document.getElementById('plantOperatorModal');
-            if (modal && modal.classList.contains('is-open')) {
+            const modalVistaOperativa = document.getElementById('plantOperatorModal');
+            if (modalVistaOperativa && modalVistaOperativa.classList.contains('is-open')) {
                 abrirVistaOperativa();
+            }
+
+            const modal = document.getElementById('informeParaOperadorPlanta');
+            if (modal && modal.classList.contains('is-open')) {
+                abrirInformeParaOperadorPlanta();
             }
         }
 
@@ -2330,6 +2453,7 @@
                     <div class="report-hint">${tAuditoria('export_pdf_helper', 'Genera un PDF desde el navegador con el informe visible y sus gráficos.')}</div>
                     <button type="button" onclick="exportarReportePDF()">${tAuditoria('export_pdf_btn', '🖨️ Exportar PDF')}</button>
                     <button type="button" onclick="descargarGraficoComparacionPNG()">${tAuditoria('export_chart_png_btn', '🖼️ Descargar curva PNG')}</button>
+                    <button type="button" onclick="abrirInformeParaOperadorPlanta()">${tAuditoria('operator_report_btn', '🧾 Informe operador planta')}</button>
                 </div>
                     <div class="operator-panel">
                     <div class="operator-title">
