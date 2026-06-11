@@ -53,3 +53,16 @@ def test_auditoria_expone_tipos_de_curva_en_trazabilidad():
     assert TIPO_CURVA_RETENIDO_ACUMULADO in trazabilidad["tipos_soportados_material"]
     assert TIPO_CURVA_PASANTE_ACUMULADO in trazabilidad["tipos_soportados_material"]
     assert trazabilidad_material[0]["tipo_curva_origen"] == TIPO_CURVA_RETENIDO_INDIVIDUAL
+
+
+def test_auditoria_sin_materiales_expone_trazabilidad_vacia():
+    resultado = generar_auditoria_completa(
+        pasante_real=[99, 78, 6, 2, 1],
+        banda_min=[85, 60, 10, 2, 0],
+        banda_max=[100, 90, 40, 15, 5],
+        tamices=[6.3, 4.8, 2.4, 1.2, 0.6],
+        materiales=None,
+        proporciones_optimizadas=None,
+    )
+
+    assert resultado["auditoria_industrial"]["validacion_materiales"]["trazabilidad"] == []

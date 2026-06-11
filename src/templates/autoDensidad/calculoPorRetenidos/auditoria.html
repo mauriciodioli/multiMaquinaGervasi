@@ -1288,7 +1288,34 @@
                         </div>
                     `;
                 }).join('')
-                : `<div class="plant-sheet-text">${tAuditoria('real_order_missing', 'No hay una orden operativa real disponible para mostrar.')}</div>`;
+                : `
+                    <div style="display: grid; gap: 14px;">
+                        <div style="padding: 14px; border-radius: 6px; border-left: 4px solid #1d4ed8; background: #eff6ff;">
+                            <div style="font-size: 14px; color: #1e3a8a; margin-bottom: 8px;"><strong>${tAuditoria('action_label', 'Acción')}</strong></div>
+                            <div style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">${state.actionMain || tAuditoria('real_order_missing', 'No hay una orden operativa real disponible para mostrar.')}</div>
+                            <div class="plant-sheet-text">${state.actionDetail || state.decisionJustification || ''}</div>
+                        </div>
+
+                        <div style="padding: 14px; border-radius: 6px; border-left: 4px solid #0f766e; background: #f0fdfa;">
+                            <div style="font-size: 14px; color: #115e59; margin-bottom: 8px;"><strong>${tAuditoria('instruction_label', 'Instrucción')}</strong></div>
+                            <div class="plant-sheet-text">${state.instruction || state.decisionJustification || tAuditoria('real_order_missing', 'No hay una orden operativa real disponible para mostrar.')}</div>
+                        </div>
+
+                        <div style="padding: 14px; border-radius: 6px; border-left: 4px solid #a16207; background: #fffbeb;">
+                            <div style="font-size: 14px; color: #92400e; margin-bottom: 8px;"><strong>${tAuditoria('plant_critical_sieves_title', 'Tamices críticos')}</strong></div>
+                            ${Array.isArray(state.criticalRows) && state.criticalRows.length > 0
+                                ? `<ul style="margin: 0; padding-left: 18px; color: #334155; line-height: 1.6;">${state.criticalRows.map((row) => `<li>${tAuditoria('sieve_label_short', 'Tamiz')} ${row.tamiz}: ${state.realLabel || tAuditoria('real_label', 'Real')} ${row.real}, ${tAuditoria('band_label', 'Banda')} ${row.banda}, estado ${row.status}.</li>`).join('')}</ul>`
+                                : `<div class="plant-sheet-text">${tAuditoria('plant_all_sieves_ok', 'Todos los tamices están dentro de banda.')}</div>`}
+                        </div>
+
+                        <div style="padding: 14px; border-radius: 6px; border-left: 4px solid #7c3aed; background: #faf5ff;">
+                            <div style="font-size: 14px; color: #6d28d9; margin-bottom: 8px;"><strong>${tAuditoria('real_plant_recommendations_title', 'Recomendaciones reales para planta')}</strong></div>
+                            ${Array.isArray(state.operatorRecommendations) && state.operatorRecommendations.length > 0
+                                ? `<ul style="margin: 0; padding-left: 18px; color: #334155; line-height: 1.6;">${state.operatorRecommendations.map((item) => `<li>${item}</li>`).join('')}</ul>`
+                                : `<div class="plant-sheet-text">${state.decisionJustification || tAuditoria('real_plant_recommendations_empty', 'No hay recomendaciones adicionales de planta.')}</div>`}
+                        </div>
+                    </div>
+                `;
 
             return `
                 <div class="plant-sheet">
@@ -2390,6 +2417,10 @@
                 compliance: `${fase1.cumplimiento_pct}%`,
                 complianceDetail: `${fase1.cumpl_count} de ${fase1.n_tamices} tamices dentro de banda.`,
                 instruction: instruccionOperador,
+                decisionJustification: decisionIndustrial.justificacion || '',
+                operatorRecommendations: Array.isArray(auditoriaIndustrial.recomendaciones_reales_planta)
+                    ? auditoriaIndustrial.recomendaciones_reales_planta
+                    : [],
                 recipe,
                 criticalRows,
                 steps: Array.isArray(datos.orden_operativa_real) ? datos.orden_operativa_real : []

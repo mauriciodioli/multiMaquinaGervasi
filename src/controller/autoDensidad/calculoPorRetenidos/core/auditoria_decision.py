@@ -296,6 +296,7 @@ def _analizar_materiales(
             "materiales_ignorados": [],
             "dominancia": [],
             "materiales_originales": [],
+            "trazabilidad": [],
         }
 
     nombres = []
