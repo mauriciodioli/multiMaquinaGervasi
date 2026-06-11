@@ -953,6 +953,38 @@
 
             return retidos;
         }
+
+        function normalizarTamizValor(valor) {
+            const numero = Number.parseFloat(valor);
+            return Number.isFinite(numero) ? numero : null;
+        }
+
+        function construirEjeComunTamices(tablas) {
+            const tamicesUnicos = new Set();
+
+            tablas.forEach((tabla) => {
+                (tabla.filas || []).forEach((fila) => {
+                    const tamiz = normalizarTamizValor(fila.tamiz);
+                    if (tamiz !== null) {
+                        tamicesUnicos.add(tamiz);
+                    }
+                });
+            });
+
+            return Array.from(tamicesUnicos).sort((a, b) => b - a);
+        }
+
+        function alinearFilasATamices(tabla, tamices) {
+            const filasMapeadas = new Map();
+
+            (tabla.filas || []).forEach((fila) => {
+                const tamiz = normalizarTamizValor(fila.tamiz);
+                if (tamiz === null) return;
+                filasMapeadas.set(tamiz, Number.parseFloat(fila.porcentaje) || 0);
+            });
+
+            return tamices.map((tamiz) => filasMapeadas.get(tamiz) ?? 0);
+        }
         
         /**
          * Construye curva inicial desde datos crudos y conserva materiales para optimización
@@ -964,8 +996,8 @@
             
             console.log(`📊 Construyendo curva inicial cruda de ${tablas.length} materiales...`);
             
-            // Extraer tamices (deben ser iguales en todas)
-            const tamices = tablas[0].filas.map(f => parseFloat(f.tamiz));
+            // Construir eje común de tamices para tolerar tablas con distinta cantidad de filas.
+            const tamices = construirEjeComunTamices(tablas);
             console.log(`   Tamices: [${tamices.join(', ')}]`);
 
             const pesosDeclarados = tablas.map((tabla) => {
@@ -993,8 +1025,7 @@
             const materialesProcesados = [];
             const retidosCrudosResultantes = new Array(tamices.length).fill(0);
             tablas.forEach((tabla, idx) => {
-                const filas = tabla.filas || [];
-                const valores = filas.map(f => parseFloat(f.porcentaje));
+                const valores = alinearFilasATamices(tabla, tamices);
                 const formato = detectarFormatoPortcentajes(valores);
                 const pesoNormalizado = pesosNormalizados[idx] || 0;
                 const proporcionPct = pesoNormalizado * 100;
@@ -1027,6 +1058,7 @@
                 materialesProcesados.push({
                     nombre: tabla.nombre,
                     pasantes: pasantes,
+                    retido_ind_pct: retidosNormalizados,
                     peso: pesoNormalizado,
                     proporcion_pct: proporcionPct
                 });
@@ -1173,17 +1205,20 @@
                     console.log(`✅ CASO 2 (múltiples tablas):`, resultado);
                 }
                 
-                // Definir bandas por defecto (Paver para Brasil)
-                // Especificación estándar ABNT para pavimentos
+                // Definir bandas por defecto como PASANTE acumulado.
+                // Los valores históricos cargados aquí estaban en retenido y
+                // desalineaban el gráfico respecto de pasante_real/pasante_virtual.
                 const bandas_paver = {
-                    '9.5': [0, 0],
-                    '6.3': [0, 10],
-                    '4.8': [0, 22],
-                    '2.4': [19, 40],
-                    '1.2': [37, 61],
-                    '0.6': [54, 78],
-                    '0.3': [72, 92],
-                    '0.15': [85, 100]
+                    '12.5': [100, 100],
+                    '9.5': [100, 100],
+                    '6.3': [90, 100],
+                    '4.8': [78, 100],
+                    '2.4': [60, 81],
+                    '1.2': [39, 63],
+                    '0.6': [22, 46],
+                    '0.3': [8, 28],
+                    '0.15': [0, 15],
+                    '0.075': [0, 10]
                 };
                 
                 const tieneBandasReales = Array.isArray(resultado.banda_min)
@@ -1272,6 +1307,14 @@
                 // Validar cada material
                 datos.materiales.forEach((mat, idx) => {
                     if (!mat.nombre) warnings.push(`❌ Material ${idx}: nombre faltante`);
+                    if (Array.isArray(datos.tamices) && datos.tamices.length > 0) {
+                        if (Array.isArray(mat.pasantes) && mat.pasantes.length !== datos.tamices.length) {
+                            warnings.push(`❌ Material "${mat.nombre}": pasantes len=${mat.pasantes.length} != tamices len=${datos.tamices.length}`);
+                        }
+                        if (Array.isArray(mat.retido_ind_pct) && mat.retido_ind_pct.length !== datos.tamices.length) {
+                            warnings.push(`❌ Material "${mat.nombre}": retido_ind_pct len=${mat.retido_ind_pct.length} != tamices len=${datos.tamices.length}`);
+                        }
+                    }
                     if (mat.pasantes && Array.isArray(mat.pasantes)) {
                         const negatives = mat.pasantes.filter(v => v < 0);
                         if (negatives.length > 0) {
@@ -2512,40 +2555,19 @@
                 instanciaChart = null;
             }
             
-            // 🔨 Agregar 12.5 mm (agregado máximo estándar) si no está presente
-            if (datos.tamices.length > 0 && parseFloat(datos.tamices[0]) !== 12.5) {
-                console.log('🔨 Agregando 12.5mm al inicio');
-                datos.tamices = [12.5, ...datos.tamices];
-                datos.banda_min = [0, ...datos.banda_min];  // 12.5 mm: no retenido
-                datos.banda_max = [0, ...datos.banda_max];  // no retenido
-                datos.pasante_real = [100, ...datos.pasante_real];  // todo pasa
-                
-                // ✅ Validar que pasante_virtual exista antes de agregar
-                if (datos.pasante_virtual && Array.isArray(datos.pasante_virtual)) {
-                    datos.pasante_virtual = [100, ...datos.pasante_virtual];
-                    console.log('   ✅ pasante_virtual actualizado, nuevo largo:', datos.pasante_virtual.length);
-                } else {
-                    console.warn('   ⚠️ pasante_virtual NO estaba disponible, NO se agregó 12.5mm');
-                }
-                
-                datos.fuller_ideal = datos.fuller_ideal ? [100, ...datos.fuller_ideal] : [];
-                
-                console.log('   Resultado: tamices=' + datos.tamices.length + ', pasante_virtual=' + (datos.pasante_virtual?.length ?? 'undefined'));
-            }
-            
-            // Invertir tamices para mostrar de menor a mayor en el eje X
+            // Mostrar tamices de fino a grueso en el eje X: 0.075 -> 12.5.
             const labels = datos.tamices.slice().reverse().map(t => `${t} mm`);
             const datasets = [];
             const pasanteEntradaOriginal = Array.isArray(datos.pasante_entrada_original)
                 ? datos.pasante_entrada_original
                 : (entrada && Array.isArray(entrada.pasante_real) ? entrada.pasante_real : null);
+            const resultadoCalculadoGrafico = datos.pasante_real.map((valor) => 100 - Number(valor || 0));
 
-            // ✅ Invertir bandas VERTICALMENTE (en Y, no en X)
-            // Esto significa: 100 - valor para cada elemento
-            const bandaMinInvertida = datos.banda_min.map(v => 100 - v);
-            const bandaMaxInvertida = datos.banda_max.map(v => 100 - v);
-            console.log('[GRAFICO] Banda Min invertida verticalmente:', bandaMinInvertida.map(v => v.toFixed(1)));
-            console.log('[GRAFICO] Banda Max invertida verticalmente:', bandaMaxInvertida.map(v => v.toFixed(1)));
+            const bandaMinGrafico = datos.banda_min.slice();
+            const bandaMaxGrafico = datos.banda_max.slice();
+
+            console.log('[GRAFICO] Banda Min pasante:', bandaMinGrafico.map(v => v.toFixed(1)));
+            console.log('[GRAFICO] Banda Max pasante:', bandaMaxGrafico.map(v => v.toFixed(1)));
 
             if (Array.isArray(pasanteEntradaOriginal) && pasanteEntradaOriginal.length === datos.tamices.length) {
                 datasets.push({
@@ -2565,7 +2587,7 @@
             datasets.push(
                 {
                     label: tAuditoria('chart_mix_result', 'DESPUÉS · Resultado calculado'),
-                    data: datos.pasante_real.slice().reverse(),
+                    data: resultadoCalculadoGrafico.slice().reverse(),
                     borderColor: '#0066cc',
                     backgroundColor: 'rgba(0, 102, 204, 0.1)',
                     borderWidth: 2,
@@ -2579,7 +2601,7 @@
             datasets.push(
                 {
                     label: tAuditoria('chart_band_min', 'Banda Min'),
-                    data: bandaMinInvertida.slice(),
+                    data: bandaMinGrafico.slice().reverse(),
                     borderColor: '#28a745',
                     borderWidth: 2,
                     borderDash: [5, 5],
@@ -2590,7 +2612,7 @@
                 },
                 {
                     label: tAuditoria('chart_band_max', 'Banda Max'),
-                    data: bandaMaxInvertida.slice(),
+                    data: bandaMaxGrafico.slice().reverse(),
                     borderColor: '#ffc107',
                     borderWidth: 2,
                     borderDash: [5, 5],
@@ -2601,7 +2623,7 @@
                 },
                 {
                     label: tAuditoria('chart_fuller_ideal', 'Curva Fuller Ideal'),
-                    data: datos.fuller_ideal ? datos.fuller_ideal.slice().reverse() : [],
+                    data: Array.isArray(datos.fuller_ideal) ? datos.fuller_ideal.slice().reverse() : [],
                     borderColor: '#FFD700',
                     borderWidth: 3,
                     fill: false,
@@ -2612,7 +2634,7 @@
             );
             
             // ✅ Agregar curva VIRTUAL AL FINAL (se dibuja al último, quedando visible sobre azul)
-            if (datos.pasante_virtual && Array.isArray(datos.pasante_virtual) && datos.pasante_virtual.length === datos.tamices.length) {
+            if (Array.isArray(datos.pasante_virtual) && datos.pasante_virtual.length === datos.tamices.length) {
                 console.log('✅ Curva virtual detectada, agregando al FINAL (para dibujarse sobre la azul)...');
                 console.log('   Datos:', {
                     largo_tamices: datos.tamices.length,
