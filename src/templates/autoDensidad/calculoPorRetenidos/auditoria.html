@@ -1049,8 +1049,8 @@
             <div class="plant-modal-toolbar">
                 <h3 id="plantOperatorModalHeading">Vista Operativa</h3>
                 <div class="plant-modal-toolbar-actions">
-                    <button type="button" class="primary" onclick="imprimirVistaOperativa()">🖨️ Imprimir</button>
-                    <button type="button" onclick="cerrarVistaOperativa()">Cerrar</button>
+                    <button type="button" id="plantOperatorPrintBtn" class="primary" onclick="imprimirVistaOperativa()">🖨️ Imprimir</button>
+                    <button type="button" id="plantOperatorCloseBtn" onclick="cerrarVistaOperativa()">Cerrar</button>
                 </div>
             </div>
             <div class="plant-modal-body">
@@ -1064,8 +1064,8 @@
             <div class="plant-modal-toolbar">
                 <h3 id="informeParaOperadorPlantaHeading">Informe Para Operador Planta</h3>
                 <div class="plant-modal-toolbar-actions">
-                    <button type="button" class="primary" onclick="imprimirInformeParaOperadorPlanta()">🖨️ Imprimir</button>
-                    <button type="button" onclick="cerrarInformeParaOperadorPlanta()">Cerrar</button>
+                    <button type="button" id="operatorReportPrintBtn" class="primary" onclick="imprimirInformeParaOperadorPlanta()">🖨️ Imprimir</button>
+                    <button type="button" id="operatorReportCloseBtn" onclick="cerrarInformeParaOperadorPlanta()">Cerrar</button>
                 </div>
             </div>
             <div class="plant-modal-body">
@@ -1114,6 +1114,7 @@
                 I18N.applyTranslations(document);
             }
             actualizarTextosModalPDF();
+            actualizarTextosModalesOperador();
         }
 
         function actualizarTextosModalPDF() {
@@ -1132,17 +1133,35 @@
             if (confirmBtn) confirmBtn.textContent = tAuditoria('pdf_title_modal_confirm', 'Generar PDF');
         }
 
+        function actualizarTextosModalesOperador() {
+            const plantHeading = document.getElementById('plantOperatorModalHeading');
+            const plantPrintBtn = document.getElementById('plantOperatorPrintBtn');
+            const plantCloseBtn = document.getElementById('plantOperatorCloseBtn');
+            const operatorHeading = document.getElementById('informeParaOperadorPlantaHeading');
+            const operatorPrintBtn = document.getElementById('operatorReportPrintBtn');
+            const operatorCloseBtn = document.getElementById('operatorReportCloseBtn');
+
+            if (plantHeading) plantHeading.textContent = tAuditoria('plant_modal_title', 'Vista Operativa');
+            if (plantPrintBtn) plantPrintBtn.textContent = tAuditoria('print_btn', '🖨️ Imprimir');
+            if (plantCloseBtn) plantCloseBtn.textContent = tAuditoria('close_btn', 'Cerrar');
+            if (operatorHeading) operatorHeading.textContent = tAuditoria('operator_report_modal_title', 'Informe Para Operador Planta');
+            if (operatorPrintBtn) operatorPrintBtn.textContent = tAuditoria('print_btn', '🖨️ Imprimir');
+            if (operatorCloseBtn) operatorCloseBtn.textContent = tAuditoria('close_btn', 'Cerrar');
+        }
+
         function buildPlantOperatorHtml(state) {
             if (!state) return '';
 
             const statusClass = state.statusLevel === 'ok' ? 'plant-ok' : 'plant-bad';
-            const criticalTitle = state.manualAdjusted ? 'Tamices críticos (curva virtual ajustada)' : 'Tamices críticos';
+            const criticalTitle = state.manualAdjusted
+                ? tAuditoria('plant_critical_sieves_virtual_title', 'Tamices críticos (curva virtual ajustada)')
+                : tAuditoria('plant_critical_sieves_title', 'Tamices críticos');
             const instructionText = state.manualAdjusted
-                ? `${state.instruction} Ajuste manual aplicado sobre la curva virtual; validar en laboratorio antes de ejecutar en planta.`
+                ? `${state.instruction} ${tAuditoria('plant_manual_adjust_note', 'Ajuste manual aplicado sobre la curva virtual; validar en laboratorio antes de ejecutar en planta.')}`
                 : state.instruction;
             const recipeItems = Array.isArray(state.recipe) && state.recipe.length > 0
                 ? `<ul class="plant-sheet-list">${state.recipe.map((item) => `<li><strong>${item.nombre}</strong>: ${item.valor}</li>`).join('')}</ul>`
-                : `<div class="plant-sheet-text">Sin receta específica disponible.</div>`;
+                : `<div class="plant-sheet-text">${tAuditoria('plant_no_recipe_text', 'Sin receta específica disponible.')}</div>`;
             const rowsToShow = state.manualAdjusted && Array.isArray(state.virtualCriticalRows)
                 ? state.virtualCriticalRows
                 : state.criticalRows;
@@ -1151,10 +1170,10 @@
                     <table class="plant-sheet-table">
                         <thead>
                             <tr>
-                                <th>Tamiz</th>
-                                <th>${state.manualAdjusted ? 'Virtual' : 'Real'}</th>
-                                <th>Banda</th>
-                                <th>Estado</th>
+                                <th>${tAuditoria('sieve_label_short', 'Tamiz')}</th>
+                                <th>${state.manualAdjusted ? tAuditoria('virtual_label', 'Virtual') : tAuditoria('real_label', 'Real')}</th>
+                                <th>${tAuditoria('band_label', 'Banda')}</th>
+                                <th>${tAuditoria('state_label', 'Estado')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1169,47 +1188,47 @@
                         </tbody>
                     </table>
                 `
-                : `<div class="plant-sheet-text">Todos los tamices están dentro de banda.</div>`;
+                : `<div class="plant-sheet-text">${tAuditoria('plant_all_sieves_ok', 'Todos los tamices están dentro de banda.')}</div>`;
             const stepsHtml = Array.isArray(state.steps) && state.steps.length > 0
                 ? `<div class="plant-sheet-steps">${state.steps.map((step) => `
                     <div class="plant-step">
-                        <div class="plant-step-title">Paso ${step.paso}: ${step.material}</div>
+                        <div class="plant-step-title">${fmtAuditoria('plant_step_title', { step: step.paso }, `Paso ${step.paso}:`)} ${step.material}</div>
                         <div class="plant-step-meta">${step.accion}${step.malla ? ` | ${step.malla}` : ''}</div>
                         <div class="plant-step-meta">${step.uso}</div>
                     </div>
                 `).join('')}</div>`
-                : `<div class="plant-sheet-text">No hay pasos operativos adicionales para este turno.</div>`;
+                : `<div class="plant-sheet-text">${tAuditoria('plant_no_extra_steps', 'No hay pasos operativos adicionales para este turno.')}</div>`;
 
             return `
                 <div class="plant-sheet">
                     <div class="plant-sheet-header">
                         <div>
-                            <div class="plant-sheet-title">Hoja rápida para planta</div>
-                            <div class="plant-sheet-subtitle">Llevar esta vista a máquina para ejecutar y validar la mezcla.</div>
+                            <div class="plant-sheet-title">${tAuditoria('plant_sheet_title', 'Hoja rápida para planta')}</div>
+                            <div class="plant-sheet-subtitle">${tAuditoria('plant_sheet_subtitle', 'Llevar esta vista a máquina para ejecutar y validar la mezcla.')}</div>
                         </div>
                         <div class="status-pill ${state.semaforoClase || ''}">${state.statusText}</div>
                     </div>
 
                     <div class="plant-sheet-grid">
                         <div class="plant-sheet-card">
-                            <h4>Acción</h4>
+                            <h4>${tAuditoria('action_label', 'Acción')}</h4>
                             <div class="plant-sheet-main ${statusClass}">${state.actionMain}</div>
                             <div class="plant-sheet-text">${state.actionDetail}</div>
                         </div>
                         <div class="plant-sheet-card">
-                            <h4>Cumplimiento</h4>
+                            <h4>${tAuditoria('compliance_label', 'Cumplimiento')}</h4>
                             <div class="plant-sheet-main">${state.compliance}</div>
                             <div class="plant-sheet-text">${state.complianceDetail}</div>
                         </div>
                         <div class="plant-sheet-card">
-                            <h4>Instrucción</h4>
+                            <h4>${tAuditoria('instruction_label', 'Instrucción')}</h4>
                             <div class="plant-sheet-text">${instructionText}</div>
                         </div>
                     </div>
 
                     <div class="plant-sheet-grid">
                         <div class="plant-sheet-card">
-                            <h4>Receta / distribución</h4>
+                            <h4>${tAuditoria('recipe_distribution_label', 'Receta / distribución')}</h4>
                             ${recipeItems}
                         </div>
                         <div class="plant-sheet-card">
@@ -1219,7 +1238,7 @@
                     </div>
 
                     <div class="plant-sheet-card">
-                        <h4>Pasos operativos</h4>
+                        <h4>${tAuditoria('plant_operational_steps_title', 'Pasos operativos')}</h4>
                         ${stepsHtml}
                     </div>
                 </div>
@@ -1254,45 +1273,45 @@
                             <div style="display: flex; align-items: flex-start; gap: 12px;">
                                 <div style="font-size: 24px; flex-shrink: 0;">${iconoPaso}</div>
                                 <div style="flex: 1;">
-                                    <div style="font-size: 15px; margin-bottom: 8px;"><strong>Paso ${step.paso}:</strong> ${step.material}</div>
-                                    <div style="font-size: 13px; color: #6b7280;">Tipo: <strong>${step.tipo}</strong></div>
+                                    <div style="font-size: 15px; margin-bottom: 8px;"><strong>${fmtAuditoria('plant_step_title', { step: step.paso }, `Paso ${step.paso}:`)}</strong> ${step.material}</div>
+                                    <div style="font-size: 13px; color: #6b7280;">${tAuditoria('label_type', 'Tipo:')} <strong>${step.tipo}</strong></div>
                                 </div>
                             </div>
                             <div style="margin-left: 36px; margin-top: 8px; color: #334155; line-height: 1.5;">
-                                <div><strong>Acción:</strong> ${(step.tipo_interno === 'grueso' || step.tipo_interno === 'medio') ? '🔄 ' + step.accion : step.accion}</div>
-                                ${step.malla ? `<div style="margin-top: 8px;"><strong>Malla:</strong> ${step.malla}</div>` : ''}
-                                <div style="margin-top: 8px;"><strong>Resultado esperado:</strong> ${step.resultado}</div>
+                                <div><strong>${tAuditoria('label_action', 'Acción:')}</strong> ${(step.tipo_interno === 'grueso' || step.tipo_interno === 'medio') ? '🔄 ' + step.accion : step.accion}</div>
+                                ${step.malla ? `<div style="margin-top: 8px;"><strong>${tAuditoria('label_mesh', 'Malla:')}</strong> ${step.malla}</div>` : ''}
+                                <div style="margin-top: 8px;"><strong>${tAuditoria('label_expected_result', 'Resultado esperado:')}</strong> ${step.resultado}</div>
                                 <div style="margin-top: 8px; padding: 10px; background: white; border-radius: 3px; border-left: 3px solid ${colorBorde};">
-                                    <strong>Uso en planta:</strong> ${step.uso}
+                                    <strong>${tAuditoria('label_use_plant', 'Uso en planta:')}</strong> ${step.uso}
                                 </div>
                             </div>
                         </div>
                     `;
                 }).join('')
-                : `<div class="plant-sheet-text">No hay una orden operativa real disponible para mostrar.</div>`;
+                : `<div class="plant-sheet-text">${tAuditoria('real_order_missing', 'No hay una orden operativa real disponible para mostrar.')}</div>`;
 
             return `
                 <div class="plant-sheet">
                     <div class="plant-sheet-header">
                         <div>
-                            <div class="plant-sheet-title">🧾 Orden Operativa Real (Materiales Originales)</div>
-                            <div class="plant-sheet-subtitle">Instrucciones operativas basadas en los materiales originales. Leer y seguir los pasos en secuencia.</div>
+                            <div class="plant-sheet-title">🧾 ${tAuditoria('real_order_title', 'Orden Operativa Real (Materiales Originales)')}</div>
+                            <div class="plant-sheet-subtitle">${tAuditoria('real_order_modal_subtitle', 'Instrucciones operativas basadas en los materiales originales. Leer y seguir los pasos en secuencia.')}</div>
                         </div>
-                        <div class="status-pill ${state.semaforoClase || ''}">Operador</div>
+                        <div class="status-pill ${state.semaforoClase || ''}">${tAuditoria('operator_label', 'Operador')}</div>
                     </div>
 
                     <div class="plant-sheet-card">
-                        <h4>Descripción simple</h4>
-                        <div class="plant-sheet-text">Esta hoja indica qué material tocar, qué acción hacer, qué malla usar y qué resultado buscar. Si algo no coincide con planta, detener y consultar.</div>
+                        <h4>${tAuditoria('simple_description_title', 'Descripción simple')}</h4>
+                        <div class="plant-sheet-text">${tAuditoria('real_order_modal_description', 'Esta hoja indica qué material tocar, qué acción hacer, qué malla usar y qué resultado buscar. Si algo no coincide con planta, detener y consultar.')}</div>
                     </div>
 
                     <div class="plant-sheet-card">
-                        <h4>Pasos operativos</h4>
+                        <h4>${tAuditoria('plant_operational_steps_title', 'Pasos operativos')}</h4>
                         ${stepsHtml}
                     </div>
 
                     <div class="plant-sheet-card">
-                        <div class="plant-sheet-text"><strong>📌 Esta orden se basa en los materiales originales. Seguir los pasos en secuencia.</strong></div>
+                        <div class="plant-sheet-text"><strong>📌 ${tAuditoria('real_order_footer', 'Esta orden se basa en los materiales originales. Seguir los pasos en secuencia.')}</strong></div>
                     </div>
                 </div>
             `;
@@ -1340,7 +1359,7 @@
             const html = ultimoHTMLVistaOperativa || buildPlantOperatorHtml(state);
             const win = window.open('', '_blank', 'width=980,height=900');
             if (!win) return;
-            win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vista Operativa</title><style>
+            win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${tAuditoria('plant_modal_title', 'Vista Operativa')}</title><style>
                 body{font-family:Segoe UI,Tahoma,sans-serif;padding:24px;color:#0f172a} .status-pill{display:inline-flex;padding:8px 12px;border-radius:999px;background:#e2e8f0;font-weight:700} .status-pill.warning{background:#fef3c7}.status-pill.error{background:#fee2e2} .plant-sheet{display:grid;gap:18px}.plant-sheet-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.plant-sheet-title{font-size:28px;font-weight:900}.plant-sheet-subtitle{color:#475569;font-size:14px;margin-top:6px}.plant-sheet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.plant-sheet-card{background:#fff;border:1px solid #d9e3ee;border-radius:12px;padding:16px}.plant-sheet-card h4{margin:0 0 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#475569}.plant-sheet-main{font-size:26px;font-weight:800}.plant-sheet-text,.plant-step-meta{color:#334155;line-height:1.5}.plant-sheet-list{margin:0;padding-left:18px;color:#334155;line-height:1.5}.plant-sheet-steps{display:grid;gap:10px}.plant-step{background:#fff;border:1px solid #d9e3ee;border-left:4px solid #184e77;border-radius:10px;padding:14px}.plant-step-title{font-weight:800;margin-bottom:6px}.plant-sheet-table{width:100%;border-collapse:collapse;background:#fff}.plant-sheet-table th,.plant-sheet-table td{padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}.plant-sheet-table thead{background:#184e77;color:#fff}.plant-ok{color:#15803d;font-weight:800}.plant-bad{color:#b91c1c;font-weight:800}
             </style></head><body>${html}<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}};<\/script></body></html>`);
             win.document.close();
@@ -1352,7 +1371,7 @@
             const html = ultimoHTMLInformeParaOperadorPlanta || buildInformeParaOperadorPlantaHtml(state);
             const win = window.open('', '_blank', 'width=980,height=900');
             if (!win) return;
-            win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Informe Para Operador Planta</title><style>
+            win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${tAuditoria('operator_report_modal_title', 'Informe Para Operador Planta')}</title><style>
                 body{font-family:Segoe UI,Tahoma,sans-serif;padding:24px;color:#0f172a} .status-pill{display:inline-flex;padding:8px 12px;border-radius:999px;background:#e2e8f0;font-weight:700} .status-pill.warning{background:#fef3c7}.status-pill.error{background:#fee2e2} .plant-sheet{display:grid;gap:18px}.plant-sheet-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.plant-sheet-title{font-size:28px;font-weight:900}.plant-sheet-subtitle{color:#475569;font-size:14px;margin-top:6px}.plant-sheet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.plant-sheet-card{background:#fff;border:1px solid #d9e3ee;border-radius:12px;padding:16px}.plant-sheet-card h4{margin:0 0 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#475569}.plant-sheet-main{font-size:26px;font-weight:800}.plant-sheet-text,.plant-step-meta{color:#334155;line-height:1.5}.plant-sheet-list{margin:0;padding-left:18px;color:#334155;line-height:1.5}.plant-sheet-steps{display:grid;gap:10px}.plant-step{background:#fff;border:1px solid #d9e3ee;border-left:4px solid #184e77;border-radius:10px;padding:14px}.plant-step-title{font-weight:800;margin-bottom:6px}.plant-sheet-table{width:100%;border-collapse:collapse;background:#fff}.plant-sheet-table th,.plant-sheet-table td{padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}.plant-sheet-table thead{background:#184e77;color:#fff}.plant-ok{color:#15803d;font-weight:800}.plant-bad{color:#b91c1c;font-weight:800}
             </style></head><body>${html}<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}};<\/script></body></html>`);
             win.document.close();
@@ -1803,6 +1822,20 @@
                 try {
                     const payloadSession = JSON.parse(datosSession);
                     const entrada = payloadSession && payloadSession.entrada;
+                    const tablasCargadas = localStorage.getItem('tablasCargadas');
+                    let tablasLocales = [];
+
+                    if (tablasCargadas) {
+                        try {
+                            const tablasParseadas = JSON.parse(tablasCargadas);
+                            tablasLocales = Array.isArray(tablasParseadas) ? tablasParseadas : [];
+                        } catch (storageError) {
+                            console.warn('⚠️ No se pudo leer localStorage.tablasCargadas para validar sessionStorage:', storageError);
+                        }
+                    }
+
+                    const necesitaMateriales = tablasLocales.length > 1;
+                    const sessionTieneMateriales = Array.isArray(entrada?.materiales) && entrada.materiales.length > 0;
 
                     sessionStorage.removeItem('datosAuditoriaRecientes');
 
@@ -1812,12 +1845,17 @@
                         && Array.isArray(entrada.tamices)
                         && entrada.pasante_real.length > 0
                         && entrada.tamices.length > 0
+                        && (!necesitaMateriales || sessionTieneMateriales)
                     ) {
                         console.log('✅ Entrada encontrada en sessionStorage; se recalculará auditoría con datos frescos.');
                         return entrada;
                     }
 
-                    console.warn('⚠️ SessionStorage no tenía una entrada reutilizable; se continúa con localStorage.');
+                    if (necesitaMateriales && !sessionTieneMateriales) {
+                        console.warn('⚠️ SessionStorage tenía una entrada sin materiales; se descarta y se usa localStorage.tablasCargadas.');
+                    } else {
+                        console.warn('⚠️ SessionStorage no tenía una entrada reutilizable; se continúa con localStorage.');
+                    }
                 } catch (e) {
                     console.warn('Error al cargar de sessionStorage:', e);
                     sessionStorage.removeItem('datosAuditoriaRecientes');
@@ -2970,6 +3008,10 @@
             selectors.forEach((selector) => {
                 document.querySelectorAll(selector).forEach((button) => {
                     const body = button.nextElementSibling;
+                    if (!(body instanceof Element)) {
+                        return;
+                    }
+
                     const chevron = button.querySelector('span:last-child');
                     const estabaVisible = window.getComputedStyle(body).display !== 'none';
 
