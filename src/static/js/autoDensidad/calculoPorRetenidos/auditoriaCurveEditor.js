@@ -85,6 +85,7 @@
                         <div class="curve-editor-panel-meta">Tamiz ${tamiz} mm | rango permitido ${formatPercent(min)} - ${formatPercent(max)}</div>
                     </div>
                     <div class="curve-editor-actions">
+                        <button type="button" class="primary" data-action="consolidate">Consolidar ajuste</button>
                         <button type="button" data-action="reset">Restablecer</button>
                         <button type="button" data-action="close">Cerrar</button>
                     </div>
@@ -104,11 +105,13 @@
                         <span>${formatPercent(max)}</span>
                     </div>
                 </div>
+                <div class="curve-editor-feedback">Ajustá la curva y consolidá cuando el resultado quede listo para validar.</div>
             </div>
         `;
 
         const slider = host.querySelector('.curve-editor-range');
         const currentValueLabel = host.querySelector('.curve-editor-current');
+        const consolidateButton = host.querySelector('[data-action="consolidate"]');
         const resetButton = host.querySelector('[data-action="reset"]');
         const closeButton = host.querySelector('[data-action="close"]');
         const originalValue = currentValue;
@@ -130,6 +133,14 @@
             slider.value = String(resetValue);
             applyValue(resetValue);
         });
+
+        if (consolidateButton) {
+            consolidateButton.addEventListener('click', () => {
+                if (typeof window.consolidarAjusteManual === 'function') {
+                    window.consolidarAjusteManual();
+                }
+            });
+        }
 
         closeButton.addEventListener('click', () => {
             closeEditor();

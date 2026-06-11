@@ -2592,6 +2592,36 @@ def _calcular_error_fuera_banda(pasante, banda_min, banda_max):
     return float(error_total)
 
 
+def _resumen_cumplimiento_banda(curva, banda_min, banda_max, tamices):
+    detalles = []
+    cumplidos = 0
+
+    for tamiz, valor, minimo, maximo in zip(tamices, curva, banda_min, banda_max):
+        valor_f = float(valor)
+        minimo_f = float(minimo)
+        maximo_f = float(maximo)
+        dentro = minimo_f <= valor_f <= maximo_f
+        if dentro:
+            cumplidos += 1
+
+        detalles.append({
+            'tamiz': float(tamiz),
+            'valor': round(valor_f, 2),
+            'banda_min': round(minimo_f, 2),
+            'banda_max': round(maximo_f, 2),
+            'dentro_banda': dentro,
+        })
+
+    total = len(detalles)
+    return {
+        'cumplidos': cumplidos,
+        'total': total,
+        'cumplimiento_pct': round((cumplidos / total) * 100, 1) if total else 0.0,
+        'error_total': round(_calcular_error_fuera_banda(curva, banda_min, banda_max), 2),
+        'detalles': detalles,
+    }
+
+
 def _validar_resultado_optimizacion_industrial(pasante_original, pasante_optimizado, proporciones_dict):
     if not pasante_optimizado or not proporciones_dict:
         return {
@@ -3390,6 +3420,140 @@ def api_auditoria():
             'exito': False,
             'error': str(e),
             'traceback': traceback.format_exc()
+        }), 500
+
+
+@calculoPorRetenidos.route('/calculoPorRetenidos/auditoria/consolidar-ajuste', methods=['POST'])
+def api_consolidar_ajuste_auditoria():
+    try:
+        data = request.get_json(force=True) or {}
+
+        tamices = [float(x) for x in data.get('tamices', [])]
+        banda_min = [float(x) for x in data.get('banda_min', [])]
+        banda_max = [float(x) for x in data.get('banda_max', [])]
+        pasante_real = [float(x) for x in data.get('pasante_real', [])]
+        pasante_virtual_ajustada = [float(x) for x in data.get('pasante_virtual_ajustada', [])]
+        materiales = data.get('materiales', []) or []
+
+        if not all([tamices, banda_min, banda_max, pasante_real, pasante_virtual_ajustada]):
+            return jsonify({
+                'exito': False,
+                'error': 'Faltan datos requeridos para consolidar el ajuste manual.'
+            }), 400
+
+        n = len(tamices)
+        if not (len(banda_min) == len(banda_max) == len(pasante_real) == len(pasante_virtual_ajustada) == n):
+            return jsonify({
+                'exito': False,
+                'error': f'Longitudes inconsistentes: tamices={len(tamices)}, banda_min={len(banda_min)}, banda_max={len(banda_max)}, pasante_real={len(pasante_real)}, pasante_virtual_ajustada={len(pasante_virtual_ajustada)}'
+            }), 400
+
+        pasante_virtual_ajustada = [float(x) for x in np.clip(np.array(pasante_virtual_ajustada, dtype=float), 0.0, 100.0).tolist()]
+
+        import copy
+        materiales_reparados = _reparar_materiales_auditoria(copy.deepcopy(materiales), tamices) if materiales else []
+
+        proporciones_consolidadas = None
+        pasante_consolidado = pasante_virtual_ajustada[:]
+        optimizacion_objetivo = {
+            'aplicada': False,
+            'razon': 'No se recalcularon proporciones a partir del ajuste manual.'
+        }
+
+        if materiales_reparados and len(materiales_reparados) > 1:
+            objetivo_min = [max(0.0, float(v) - 0.5) for v in pasante_virtual_ajustada]
+            objetivo_max = [min(100.0, float(v) + 0.5) for v in pasante_virtual_ajustada]
+
+            pasante_objetivo, proporciones_objetivo = optimizar_proporciones_materiales(
+                materiales=materiales_reparados,
+                banda_min=objetivo_min,
+                banda_max=objetivo_max,
+                tamices=tamices,
+            )
+
+            if pasante_objetivo and proporciones_objetivo:
+                pasante_consolidado = [float(x) for x in pasante_objetivo]
+                proporciones_consolidadas = proporciones_objetivo
+                optimizacion_objetivo = {
+                    'aplicada': True,
+                    'razon': 'Se recalcularon proporciones usando la curva virtual ajustada como objetivo.',
+                }
+
+        resultado = generar_auditoria_completa(
+            pasante_real=pasante_consolidado,
+            banda_min=banda_min,
+            banda_max=banda_max,
+            tamices=tamices,
+            materiales=materiales_reparados,
+            proporciones_optimizadas=proporciones_consolidadas,
+        )
+
+        if proporciones_consolidadas and 'fase_6_receta' in resultado:
+            resultado['fase_6_receta']['proporciones'] = proporciones_consolidadas
+            resultado['fase_6_receta']['instruction'] = generar_instruccion_receta(proporciones_consolidadas)
+
+        resumen_virtual = _resumen_cumplimiento_banda(pasante_virtual_ajustada, banda_min, banda_max, tamices)
+        resumen_real_consolidado = _resumen_cumplimiento_banda(pasante_consolidado, banda_min, banda_max, tamices)
+
+        if 'fase_5_virtual' in resultado:
+            resultado['fase_5_virtual'].update({
+                'generada': True,
+                'valida': True,
+                'cumplimiento_pct': resumen_virtual['cumplimiento_pct'],
+                'cumpl_count': resumen_virtual['cumplidos'],
+                'error_total': resumen_virtual['error_total'],
+                'mejora_cumplimiento': resumen_virtual['cumplidos'] - resultado['fase_1']['cumpl_count'],
+                'mejora_error': round(resultado['fase_1']['error_total'] - resumen_virtual['error_total'], 2),
+            })
+
+        if 'fase_6_receta' in resultado:
+            resultado['fase_6_receta']['tabla_virtual_pasante'] = [round(float(x), 2) for x in pasante_virtual_ajustada]
+            resultado['fase_6_receta']['instruction'] = (
+                resultado['fase_6_receta'].get('instruction', '') +
+                ' | Ajuste manual consolidado: validar esta curva virtual en laboratorio antes de ejecutar en planta.'
+            ).strip(' |')
+
+        if 'para_grafico' in resultado:
+            resultado['para_grafico']['pasante_real'] = [float(x) for x in pasante_consolidado]
+            resultado['para_grafico']['pasante_virtual'] = [float(x) for x in pasante_virtual_ajustada]
+            resultado['para_grafico']['pasante_entrada_original'] = [float(x) for x in pasante_real]
+
+        resultado['meta'] = {
+            'consolidacion_manual': {
+                'aplicada': True,
+                'optimizacion_objetivo': optimizacion_objetivo,
+                'curva_virtual_objetivo': [float(x) for x in pasante_virtual_ajustada],
+                'curva_consolidada': [float(x) for x in pasante_consolidado],
+                'resumen_virtual': resumen_virtual,
+                'resumen_consolidado': resumen_real_consolidado,
+            }
+        }
+
+        try:
+            if materiales_reparados and proporciones_consolidadas:
+                for material in materiales_reparados:
+                    nombre = material.get('nombre')
+                    if nombre in proporciones_consolidadas:
+                        material['proporcion_pct'] = proporciones_consolidadas[nombre]
+
+            lang = request.cookies.get('lang', 'es')
+            orden_real = generar_orden_operativa_real(materiales_reparados, lang=lang) if materiales_reparados else []
+            if orden_real:
+                resultado['orden_operativa_real'] = orden_real
+        except Exception as order_error:
+            print(f'⚠️ Error generando orden operativa consolidada: {order_error}')
+
+        return jsonify({
+            'exito': True,
+            'data': resultado,
+        }), 200
+
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'exito': False,
+            'error': str(e),
+            'traceback': traceback.format_exc(),
         }), 500
 
 

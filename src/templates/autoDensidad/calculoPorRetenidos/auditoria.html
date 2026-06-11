@@ -193,9 +193,27 @@
             font: inherit;
         }
 
+        .curve-editor-actions .primary {
+            background: #184e77;
+            border-color: #184e77;
+            color: #ffffff;
+        }
+
         .curve-editor-actions button:hover {
             border-color: #0066cc;
             color: #0066cc;
+        }
+
+        .curve-editor-actions .primary:hover {
+            color: #ffffff;
+            background: #123a59;
+            border-color: #123a59;
+        }
+
+        .curve-editor-feedback {
+            min-height: 20px;
+            font-size: 13px;
+            color: #475569;
         }
         
         .criterio {
@@ -1262,6 +1280,71 @@
             if (modal && modal.classList.contains('is-open')) {
                 abrirVistaOperativa();
             }
+        }
+
+        function consolidarAjusteManual() {
+            const state = window.__auditoriaCurveEditorState;
+            const host = document.getElementById('curveEditorHost');
+            const feedback = host ? host.querySelector('.curve-editor-feedback') : null;
+            const actionButton = host ? host.querySelector('[data-action="consolidate"]') : null;
+
+            if (!state || !state.grafico || !state.entrada) {
+                if (feedback) {
+                    feedback.textContent = 'No hay un ajuste manual listo para consolidar.';
+                }
+                return;
+            }
+
+            if (actionButton) {
+                actionButton.disabled = true;
+            }
+            if (feedback) {
+                feedback.textContent = 'Consolidando ajuste manual...';
+            }
+
+            fetch('/calculoPorRetenidos/auditoria/consolidar-ajuste', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    tamices: state.grafico.tamices,
+                    banda_min: state.grafico.banda_min,
+                    banda_max: state.grafico.banda_max,
+                    pasante_real: state.grafico.pasante_real,
+                    pasante_virtual_ajustada: state.grafico.pasante_virtual,
+                    materiales: Array.isArray(state.entrada.materiales) ? state.entrada.materiales : []
+                })
+            })
+            .then((response) => response.json())
+            .then((result) => {
+                if (!result.exito) {
+                    throw new Error(result.error || 'No se pudo consolidar el ajuste manual.');
+                }
+
+                try {
+                    sessionStorage.setItem('datosAuditoriaRecientes', JSON.stringify({
+                        datos: result.data,
+                        entrada: state.entrada
+                    }));
+                } catch (storageError) {
+                    console.warn('⚠️ No se pudo persistir el ajuste consolidado en sessionStorage:', storageError);
+                }
+
+                mostrarResultado(result.data, state.entrada);
+            })
+            .catch((error) => {
+                if (feedback) {
+                    feedback.textContent = `Error al consolidar: ${error.message}`;
+                } else {
+                    mostrarError(`Error al consolidar ajuste manual: ${error.message}`);
+                }
+            })
+            .finally(() => {
+                if (actionButton) {
+                    actionButton.disabled = false;
+                }
+            });
         }
 
         function obtenerModalPDF() {
