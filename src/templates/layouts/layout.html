@@ -151,7 +151,9 @@ img {
                                                                   <a href="/pantalla_simulador_densidad/">{{ t_menu.get('simulador_dosificacion', 'Simulador Dosificación') }}</a> 
                                                             </li>
                                                             <li id="menu-item-475">
-                                                                 <a href="#" id="crud-link-mix">{{ t_menu.get('agregados', 'Agregados') }}</a>
+                                                                <a href="{{ url_for('crud_agregado.mixFamiliari_crud_agregado_agregados_listar') }}" id="crud-link-mix"> {{ t_menu.get('agregados', 'Agregados') }}</a>
+
+
                                                             </li>
                                                              
                                                             <li id="menu-item-mix" class="has-sub">

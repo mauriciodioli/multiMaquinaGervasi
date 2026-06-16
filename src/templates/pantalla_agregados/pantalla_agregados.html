@@ -45,3 +45,6 @@
 {% include 'pantalla_agregados/modals/modal_agregar_agregado.html' %}
 
 {% endblock %}
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/autoDensidad/agregados/crud_agregados.js') }}"></script>
+{% endblock %}
