@@ -14,7 +14,7 @@ jobs:
       EC2_HOST: ec2-54-234-169-22.compute-1.amazonaws.com # IMAGEN PRODUCCION
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
         
     - name: Set Dockerfile WORKDIR to /src
       run: |

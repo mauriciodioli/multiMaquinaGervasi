@@ -2,39 +2,35 @@ FROM python:3.12-bullseye
 
 WORKDIR /app
 
-
-# Instala dependencias del sistema para pyodbc + SQL Server (msodbcsql17)
-RUN apt-get update && apt-get install -y \
+# System dependencies for pyodbc + SQL Server
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gnupg \
-    apt-transport-https \
+    ca-certificates \
     unixodbc \
     unixodbc-dev \
- && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+ && mkdir -p /etc/apt/keyrings \
+ && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg \
  && curl -fsSL https://packages.microsoft.com/config/debian/11/prod.list \
+    | sed 's#deb \\[arch=amd64\\]#deb [signed-by=/etc/apt/keyrings/microsoft.gpg arch=amd64]#' \
     > /etc/apt/sources.list.d/mssql-release.list \
  && apt-get update \
- && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
+ && ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql17 \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-# ───────── 2. Dependencias Python ─────────
 COPY src/requirements.txt .
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-# ───────── 3. Código ─────────
 COPY src    /app/src
 COPY config /app/config
 COPY config/.env /app/.env
 
-# Copia el script de copiado y da permisos de ejecución
 COPY scripts/copiar_archivo.sh /scripts/copiar_archivo.sh
 RUN chmod +x /scripts/copiar_archivo.sh
 
-# ───────── 4. PYTHONPATH ─────────
 ENV PYTHONPATH=/app:/app/src
 
-# Puerto expuesto
-EXPOSE 5000 
+EXPOSE 5000
 
 CMD ["python", "-m", "src.app"]
