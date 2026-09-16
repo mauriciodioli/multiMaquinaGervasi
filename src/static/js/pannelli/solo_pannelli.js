@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('btnSoloPannelli');
   if (!btn) return;
   btn.addEventListener('click', initSoloPannelli);
+  initSoloPannelli();
 });
 
 function initSoloPannelli(){

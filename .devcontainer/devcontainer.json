@@ -1,12 +1,12 @@
 {
-  "build": {
-    "context": "..",
-    "dockerfile": "../Dockerfile"
-  },
+  "image": "mauriciodioli/msgervasi202505i:main",
+
   "forwardPorts": [5000],
+
   "mounts": [
-    "source=C:/Users/Tecnico03/Downloads,target=/mnt/origen,type=bind,consistency=cached",
-    "source=C:/Users/Tecnico03/Documents,target=/mnt/destino,type=bind,consistency=cached"
+    "source=C:/Users/mauri/Downloads,target=/mnt/origen,type=bind,consistency=cached",
+    "source=C:/Users/mauri/Documents,target=/mnt/destino,type=bind,consistency=cached"
   ],
+
   "postCreateCommand": "echo '✅ Contenedor iniciado con volúmenes montados correctamente.'"
 }

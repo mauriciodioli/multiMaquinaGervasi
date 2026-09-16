@@ -210,6 +210,7 @@ def pannelli_crud_consulta():
                 trabajos=trabajos,
                 mensaje=mensaje,
                 t_menu=t_menu,
+                hide_menu=True,
             )
 
     except Exception as e:

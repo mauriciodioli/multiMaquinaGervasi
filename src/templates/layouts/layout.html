@@ -105,6 +105,7 @@ img {
 		</div>
 	</div>
 
+{% if not hide_menu|default(false) %}
 <nav>
 	<div id="sticky-wrapper" class="sticky-wrapper" style="height: 155.453px;"><div class="head-mast" >
 
@@ -286,7 +287,8 @@ img {
 			   
     </div>
 
-</nav>   
+</nav>
+{% endif %}
 
 </header>
 <main>
