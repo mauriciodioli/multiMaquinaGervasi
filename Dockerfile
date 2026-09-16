@@ -1,8 +1,7 @@
-FROM python:3.12-bullseye
+FROM python:3.12-bookworm
 
 WORKDIR /app
 
-# System dependencies for pyodbc + SQL Server
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gnupg \
@@ -11,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unixodbc-dev \
  && mkdir -p /etc/apt/keyrings \
  && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg \
- && curl -fsSL https://packages.microsoft.com/config/debian/11/prod.list \
+ && curl -fsSL https://packages.microsoft.com/config/debian/12/prod.list \
     | sed 's#deb \\[arch=amd64\\]#deb [signed-by=/etc/apt/keyrings/microsoft.gpg arch=amd64]#' \
     > /etc/apt/sources.list.d/mssql-release.list \
  && apt-get update \
