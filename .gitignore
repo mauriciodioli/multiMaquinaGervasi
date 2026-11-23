@@ -13,5 +13,7 @@ __pycache__/
 
 # Ignorar archivos Markdown
 *.md
+/tests/gervasi_respuesta_regresion.json
+/tests/test_regresion_granulometria.py
 
 
