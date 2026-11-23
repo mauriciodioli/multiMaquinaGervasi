@@ -1770,27 +1770,46 @@
             const materialesProcesados = [];
             const retidosCrudosResultantes = new Array(tamices.length).fill(0);
             tablas.forEach((tabla, idx) => {
-                const valores = alinearFilasATamices(tabla, tamices);
-                const formato = detectarFormatoPortcentajes(valores);
                 const pesoNormalizado = pesosNormalizados[idx] || 0;
                 const proporcionPct = pesoNormalizado * 100;
-                
-                console.log(`   Material ${idx+1} (${tabla.nombre}): formato=${formato}, suma=${valores.reduce((a, b) => a + b, 0).toFixed(1)}%`);
-                
-                let retidos = valores;
-                
-                // Si detectó pasantes, revertir a retidos
-                if (formato === 'pasantes') {
-                    console.log(`     → Revirtiendo pasantes a retidos`);
-                    retidos = pasantesARetidos(valores);
+                const esGramos = tabla.unidadEntrada === 'g' || tabla.unidadEntrada === 'gramos';
+                let retidosNormalizados;
+                let fondoPct = 0;
+
+                if (esGramos) {
+                    const pesoMuestra = Number(String(tabla.pesoCampione || '').replace(',', '.'));
+                    const filas = tabla.filas || [];
+                    const masasTamices = alinearFilasATamices(tabla, tamices);
+                    const filaFondo = filas.find(f => /^(fundo|pan|piatto di fondo|bandeja de fondo)$/i.test(String(f.tamiz || '').trim()));
+                    if (!Number.isFinite(pesoMuestra) || pesoMuestra <= 0 || !filaFondo) {
+                        throw new Error(`${tabla.nombre}: falta peso de muestra o fila Pan/Fundo`);
+                    }
+                    const masaFondo = Number(String(filaFondo.porcentaje).replace(',', '.'));
+                    const masaTotal = masasTamices.reduce((a, b) => a + b, 0) + masaFondo;
+                    if (![...masasTamices, masaFondo].every(v => Number.isFinite(v) && v >= 0) ||
+                        Math.abs(masaTotal - pesoMuestra) > Math.max(0.01, pesoMuestra * 0.001)) {
+                        throw new Error(`${tabla.nombre}: balance de masa inválido (${masaTotal} g / ${pesoMuestra} g)`);
+                    }
+                    retidosNormalizados = masasTamices.map(masa => masa * 100 / pesoMuestra);
+                    fondoPct = masaFondo * 100 / pesoMuestra;
+                } else {
+                    const valores = alinearFilasATamices(tabla, tamices);
+                    const formato = detectarFormatoPortcentajes(valores);
+                    const retidos = formato === 'pasantes' ? pasantesARetidos(valores) : valores;
+                    const sumaRetidos = retidos.reduce((a, b) => a + b, 0);
+                    const filaFondo = (tabla.filas || []).find(f => /^(fundo|pan|piatto di fondo|bandeja de fondo)$/i.test(String(f.tamiz || '').trim()));
+                    const fondoDeclarado = filaFondo ? Number(String(filaFondo.porcentaje).replace(',', '.')) : null;
+                    if (fondoDeclarado !== null && Number.isFinite(fondoDeclarado) &&
+                        Math.abs(sumaRetidos + fondoDeclarado - 100) <= 0.1) {
+                        retidosNormalizados = retidos;
+                        fondoPct = fondoDeclarado;
+                    } else if (Math.abs(sumaRetidos - 100) <= 0.1) {
+                        retidosNormalizados = retidos;
+                    } else {
+                        throw new Error(`${tabla.nombre}: no se puede reconstruir el balance de masa con los datos guardados`);
+                    }
                 }
-                
-                // Mantener materiales normalizados para la optimización posterior
-                const sumaRetidos = retidos.reduce((a, b) => a + b, 0);
-                const retidosNormalizados = sumaRetidos > 0
-                    ? retidos.map(r => (r / sumaRetidos) * 100)
-                    : retidos.map(() => 0);
-                console.log(`     Retidos normalizados (suma=${sumaRetidos.toFixed(1)}%): [${retidosNormalizados.map(r => r.toFixed(2)).join(', ')}]`);
+                console.log(`   ${tabla.nombre}: retenido tamices=${retidosNormalizados.reduce((a,b)=>a+b,0).toFixed(4)}%, Pan=${fondoPct.toFixed(4)}%`);
 
                 for (let i = 0; i < retidosNormalizados.length; i++) {
                     retidosCrudosResultantes[i] += (retidosNormalizados[i] || 0) * pesoNormalizado;
@@ -1804,6 +1823,7 @@
                     nombre: tabla.nombre,
                     pasantes: pasantes,
                     retido_ind_pct: retidosNormalizados,
+                    fondo_pct: fondoPct,
                     peso: pesoNormalizado,
                     proporcion_pct: proporcionPct
                 });
