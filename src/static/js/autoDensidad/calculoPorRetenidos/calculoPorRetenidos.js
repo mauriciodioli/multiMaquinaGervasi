@@ -545,6 +545,7 @@ function construirPayloadRetido(){
   const proporciones = leerProporciones();
   const mezclas = [...document.querySelectorAll('.mezcla')];
   const entradas = [];
+  const erroresAuditoria = [];
   const tamicesSet = new Set();
   const leerNumero = v => {
     const t = String(v ?? '').trim().replace(',', '.');
@@ -552,12 +553,15 @@ function construirPayloadRetido(){
   };
 
   mezclas.forEach(mezcla => {
-    const nombre = (mezcla.querySelector('.nombreProducto')?.value || 'Sin nombre').trim();
+    const nombre = mezcla.querySelector('.nombreProducto')?.value.trim() || '';
+    const mezclaId = mezcla.dataset.mezclaId || mezcla.id || undefined;
     const masas = new Map();
     let fondo = 0;
+    let ensayo;
     if (esTablaFullerGramos(mezcla)) {
       // La misma validación y denominador utilizados por Calculate All.
       const datos = prepararEnsayoGramos(mezcla);
+      ensayo = datos;
       datos.tamices.forEach((d, i) => {
         masas.set(d, 100 * datos.pesos_retenidos_g[i] / datos.peso_total_recuperado_g);
         tamicesSet.add(d);
@@ -569,36 +573,69 @@ function construirPayloadRetido(){
         const c = tr.querySelectorAll('td');
         const etiqueta = c[0]?.textContent?.trim() || '';
         const valor = leerNumero(c[1]?.textContent);
-        if (!Number.isFinite(valor)) return;
+        if (!Number.isFinite(valor)) {
+          erroresAuditoria.push(`${nombre}: falta un porcentaje válido para ${etiqueta}.`);
+          return;
+        }
         if (tr.dataset.fondo === 'true' || /^(fundo|pan|piatto di fondo|bandeja de fondo)$/i.test(etiqueta)) {
           fondo = valor;
         } else {
           const d = leerNumero(etiqueta);
-          if (Number.isFinite(d) && d > 0) { masas.set(d, valor); tamicesSet.add(d); }
+          if (Number.isFinite(d) && d > 0) {
+            if (masas.has(d)) erroresAuditoria.push(`${nombre}: tamiz duplicado ${d} mm.`);
+            masas.set(d, valor);
+            tamicesSet.add(d);
+          } else {
+            erroresAuditoria.push(`${nombre}: tamiz inválido ${etiqueta}.`);
+          }
         }
       });
     }
-    if (masas.size) entradas.push({nombre, masas, fondo, proporcion_pct:Number(proporciones[nombre] || 0)});
+    if (!nombre) erroresAuditoria.push('Falta el nombre de un material.');
+    if (!masas.size) erroresAuditoria.push(`${nombre}: faltan datos de tamices.`);
+    if (!Number.isFinite(proporciones[nombre])) erroresAuditoria.push(`${nombre}: falta la proporción.`);
+    if (masas.size) entradas.push({nombre, mezclaId, masas, fondo, ensayo, proporcion_pct:Number(proporciones[nombre] || 0)});
   });
   if (!entradas.length) throw new Error('No hay materiales con datos de retenido.');
   const tamices = [...tamicesSet].sort((a,b) => b-a);
   tamices.push('Fundo');
-  const materiales = entradas.map(e => ({
-    nombre:e.nombre,
-    proporcion_pct:e.proporcion_pct,
-    retido_ind_pct:[...tamices.slice(0,-1).map(d => e.masas.get(d) || 0), e.fondo],
-    normalizar:false
-  }));
+  const materiales = entradas.map(e => {
+    if (e.masas.size !== tamicesSet.size) erroresAuditoria.push(`${e.nombre}: el eje de tamices difiere del de la mezcla.`);
+    const material = {
+      nombre: e.nombre || 'Sin nombre',
+      mezclaId: e.mezclaId,
+      proporcion_pct: e.proporcion_pct,
+      retido_ind_pct: [...tamices.slice(0, -1).map(d => e.masas.get(d) ?? 0), e.fondo],
+      normalizar: false
+    };
+    if (e.ensayo) {
+      const { pesos_retenidos_g, peso_fondo_g, peso_campione_g, peso_total_recuperado_g, unidad_entrada } = e.ensayo;
+      Object.assign(material, { pesos_retenidos_g, peso_fondo_g, peso_campione_g, peso_total_recuperado_g, unidad_entrada });
+    }
+    return material;
+  });
   const suma = materiales.reduce((s,m) => s+m.proporcion_pct, 0);
   if (Math.abs(suma-100) > 0.01) throw new Error('Las proporciones de los agregados deben sumar 100%.');
-  return {tamices, materiales, limites:LIMITES_BR, debug:true};
+  return {
+    payload: { tamices, materiales, limites: LIMITES_BR, debug: true },
+    erroresAuditoria,
+    cantidadMateriales: mezclas.length
+  };
 }
 
 // === Acción principal: enviar a backend y manejar respuesta ===
+let calculoRetenidoMostrado;
+let solicitudRetenido = 0;
+let calculandoRetenido = false;
+
 async function calcularRetenidoBR() {
-  let payload;
-  try { payload = construirPayloadRetido(); }
+  let calculo;
+  try { calculo = construirPayloadRetido(); }
   catch (e) { alert(e.message); return; }
+
+  const { payload } = calculo;
+  const solicitud = ++solicitudRetenido;
+  calculandoRetenido = true;
 
   // STEP 6: Debug BEFORE sending
   console.log("FINAL PAYLOAD:", payload);
@@ -617,31 +654,14 @@ async function calcularRetenidoBR() {
     const text = await resp.text();
     let data; try { data = JSON.parse(text); } catch { data = { ok:false, error:text }; }
 
+    if (solicitud !== solicitudRetenido) return;
+
     if (!resp.ok || !data?.ok) {
       console.warn("[retido] error:", data?.error || text);
       notify('error', 'Error', data?.error || 'Fallo el cálculo de retenidos.');
       return;
     }
 
-    window.granRetidoResultado = data;
-    
-    // 💾 Guardar límites en localStorage para que auditoría los pueda usar
-    if (data.faixas && data.faixas.bloco) {
-      try {
-        const banda_min = data.faixas.bloco.map(spec => spec.min);
-        const banda_max = data.faixas.bloco.map(spec => spec.max);
-        localStorage.setItem('limitesGranulometria', JSON.stringify({
-          banda_min: banda_min,
-          banda_max: banda_max,
-          tamices: data.tamices,
-          timestamp: new Date().toISOString()
-        }));
-        console.log('💾 Límites guardados en localStorage para auditoría');
-      } catch (e) {
-        console.warn('No se pudieron guardar los límites:', e);
-      }
-    }
-    
     renderRetidoGrafico(
       data.tamices,
       data.mix_acum,
@@ -654,6 +674,8 @@ async function calcularRetenidoBR() {
     if (data.sugerencia_division) {
       renderSugerenciaDivision(data.sugerencia_division);
     }
+    window.granRetidoResultado = data;
+    calculoRetenidoMostrado = { ...calculo, resultado: data };
     abrirModal('modalRetidoBR');
 
     console.log("✅ MIX ACUM:", data.mix_acum);
@@ -661,8 +683,12 @@ async function calcularRetenidoBR() {
     notify('success', 'Listo', `MF: ${data.modulo_finura}`);
 
   } catch (err) {
-    console.error(err);
-    notify('error', 'Error de red', String(err));
+    if (solicitud === solicitudRetenido) {
+      console.error(err);
+      notify('error', 'Error de red', String(err));
+    }
+  } finally {
+    if (solicitud === solicitudRetenido) calculandoRetenido = false;
   }
 }
 
@@ -725,8 +751,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas, fuller_idea
   // Reordenar según xs (por si hubiese desfasajes)
   const reorder = (det, pick) => dataOrdenada.map(p => {
     const key = p.label;
-    const idx = tamices.findIndex(t => String(t) === key);
-    const d = det[idx];
+    const d = det.find(limite => String(limite.tamiz) === key);
     if (!d || d.min == null || d.max == null) return null;
     return pick === 'min' ? d.min : d.max;
   });
@@ -1262,7 +1287,7 @@ function toggleDebugInfo(debugId) {
 
   function abrirModal(id) {
   const modal = document.getElementById(id);
-  if (!modal) return;
+  if (!modal || openModals.has(modal)) return;
 
   if (openModals.size === 0) {
     document.body.classList.add('body--modal-open');
@@ -1553,114 +1578,82 @@ document.getElementById('btnCalcularConsumo')?.addEventListener('click', ()=>{
   document.getElementById('resultadoDesglose').innerHTML = rows;
 });
 
-// ============================================================================
-// FUNCIÓN: Abrir Auditoría desde Modal Retido
-// ============================================================================
-function abrirAuditoriaDesdeModal() {
-  try {
-    // 1. Obtener la tabla visible en el modal
-    const weightedTitles = new Set([
-      typeof I18N !== 'undefined' ? I18N.t('sim.retido_tabla1_titulo') : '',
-      'Weighted granulometry two aggregates',
-      'Granulometría ponderada dos agregados',
-      'Granulometria ponderata due aggregati',
-      'Granulometria ponderada dois agregados',
-      'Granulometria ważona dwa agregaty'
-    ].filter(Boolean).map(text => text.trim()));
+// El backend de auditoría opera sobre aberturas en mm. Fondo interviene
+// en la masa recuperada y el cálculo de retenidos, pero no es una abertura.
+function prepararEntradaAuditoria(calculo) {
+  if (!calculo) throw new Error('Primero ejecutá el cálculo de retenidos.');
+  const { payload, resultado, erroresAuditoria, cantidadMateriales } = calculo;
+  if (erroresAuditoria.length) throw new Error(erroresAuditoria[0]);
 
-    let tituloWeighted = Array.from(document.querySelectorAll('.mini-title'))
-      .find(el => weightedTitles.has((el.textContent || '').trim()));
+  const tamicesConFondo = resultado.tamices;
+  if (!Array.isArray(tamicesConFondo)) throw new Error('Faltan los tamices del cálculo de retenidos.');
+  const tamices = tamicesConFondo.slice(0, -1);
+  const esPorcentaje = valor => Number.isFinite(valor) && valor >= 0 && valor <= 100;
+  const serieValida = serie => Array.isArray(serie) && serie.length === tamicesConFondo.length &&
+    serie.every(esPorcentaje);
 
-    if (!tituloWeighted) {
-      tituloWeighted = document.querySelector('.mini-card .mini-title');
-    }
-    
-    if (!tituloWeighted) {
-      alert('No se encontró la tabla de granulometría ponderada. Asegúrate de haber calculado los retenidos primero.');
-      return;
-    }
-    
-    const tablaWeighted = tituloWeighted.closest('.mini-card').querySelector('table');
-    const filas = Array.from(tablaWeighted.querySelectorAll('tbody tr'));
-    
-    if (filas.length === 0) {
-      alert('La tabla está vacía. Calcula los valores primero.');
-      return;
-    }
-    
-    // 2. Extraer tamices y pasantes (YA SON PASANTES, NO RETENIDOS)
-    const tamices = [];
-    const pasante_real = [];
-    
-    filas.forEach((fila, idx) => {
-      const celdas = fila.querySelectorAll('td');
-      console.log(`Fila ${idx}: ${celdas.length} celdas`);
-      if (celdas.length >= 2) {
-        const tVal = parseFloat(celdas[0].textContent.trim());
-        const pVal = parseFloat(celdas[1].textContent.trim());
-        console.log(`  Tamiz=${tVal}, Pasante=${pVal}`);
-        tamices.push(tVal);
-        pasante_real.push(pVal); // Ya es pasante acumulado
-      }
-    });
-    
-    if (tamices.length === 0) {
-      alert('No se pudieron extraer los datos de la tabla.');
-      return;
-    }
-    
-    // 3. Definir bandas por defecto (valores estándar para agregados finos)
-    // NOTA: Deben tener la MISMA longitud que tamices y pasante_real
-    const banda_min = [100, 95, 85, 70, 50, 35, 15, 5].slice(0, tamices.length);
-    const banda_max = [100, 100, 100, 90, 75, 60, 30, 15].slice(0, tamices.length);
-    
-    // 4. Preparar datos para el endpoint
-    // VALIDACIÓN DEFENSIVA: Asegurar que TODOS tienen la misma longitud
-    const longitud_maxima = Math.max(tamices.length, pasante_real.length, banda_min.length, banda_max.length);
-    
-    // Si faltan elementos, rellenarlos
-    while (tamices.length < longitud_maxima) tamices.push(0);
-    while (pasante_real.length < longitud_maxima) pasante_real.push(0);
-    while (banda_min.length < longitud_maxima) banda_min.push(0);
-    while (banda_max.length < longitud_maxima) banda_max.push(100);
-    
-    // Truncar si alguno tiene más
-    const datos = {
-      pasante_real: pasante_real.slice(0, longitud_maxima),
-      banda_min: banda_min.slice(0, longitud_maxima),
-      banda_max: banda_max.slice(0, longitud_maxima),
-      tamices: tamices.slice(0, longitud_maxima)
-    };
-    
-    console.log('✓ Validación defensiva completada');
-    console.log(`  - Longitud final: ${longitud_maxima} elementos en cada array`);
-    
-    // 🛡️ NUEVA: Advertencia sobre contexto de origen
-    console.warn('⚠️ ADVERTENCIA: Enviando desde Modal (SIN materiales)');
-    console.warn('   - Backend NO generará orden_operativa_real');
-    console.warn('   - Estructura esperada: {pasante_real, banda_min, banda_max, tamices}');
-    console.log('[DEBUG] Enviando datos a auditoría:', datos);
-    
-    // 5. Guardar datos en sessionStorage y sessionStorage para que auditoria.html los use
-    sessionStorage.setItem('datosAuditoriaRecientes', JSON.stringify({
-      entrada: datos
-    }));
-    console.log('💾 Datos guardados en sessionStorage para auditoría');
-    
-    // 6. Abrir nueva ventana con la auditoría
-    console.log('🔓 Abriendo ventana de auditoría...');
-    const ventana = window.open('/calculoPorRetenidos/auditoria', 'auditoria');
-    
-    if (!ventana) {
-      alert('⚠️ No se pudo abrir la ventana de auditoría. Verifica si los popups están bloqueados.');
-    } else {
-      console.log('✅ Ventana de auditoría abierta correctamente');
-    }
-    
-  } catch (e) {
-    alert('❌ Error: ' + e.message);
-    console.error('Error en abrirAuditoriaDesdeModal:', e);
+  if (!tamices.length || tamicesConFondo.at(-1) !== 'Fundo' ||
+      tamicesConFondo.length !== payload.tamices.length ||
+      tamicesConFondo.some((tamiz, i) => tamiz !== payload.tamices[i]) ||
+      tamices.some((tamiz, i) => !Number.isFinite(tamiz) || tamiz <= 0 || (i > 0 && tamiz >= tamices[i - 1]))) {
+    throw new Error('Los tamices del cálculo de retenidos son inconsistentes.');
   }
+  if (!serieValida(resultado.mix_pasante) || !serieValida(resultado.mix_acum)) {
+    throw new Error('El cálculo de retenidos devolvió porcentajes incompletos o fuera de rango.');
+  }
+
+  // La auditoría de pavers usa la banda de la curva de retenido acumulado,
+  // expresada en pasante (se invierten los extremos al complementar).
+  const banda = resultado.faixas?.paver;
+  if (!Array.isArray(banda) || banda.length !== tamicesConFondo.length || banda.some(
+    (limite, i) => limite?.tamiz !== tamicesConFondo[i] || !esPorcentaje(limite.min) ||
+      !esPorcentaje(limite.max) || limite.min > limite.max
+  )) {
+    throw new Error('Faltan límites válidos de pavers para los tamices de la curva.');
+  }
+
+  const originales = payload.materiales;
+  const procesados = resultado.materiales;
+  const nombres = new Set(originales.map(material => material.nombre));
+  if (!cantidadMateriales || originales.length !== cantidadMateriales || nombres.size !== cantidadMateriales ||
+      procesados?.length !== cantidadMateriales) {
+    throw new Error('La curva debe incluir todos los materiales con nombres únicos.');
+  }
+
+  const materiales = originales.map((material, i) => {
+    const { nombre, proporcion_pct, retido_ind_pct } = material;
+    const procesado = procesados[i];
+    if (!nombre || !esPorcentaje(proporcion_pct) || !serieValida(retido_ind_pct) ||
+        procesado?.nombre !== nombre || !serieValida(procesado.ret_ind)) {
+      throw new Error(`${nombre}: datos de material incompletos o fuera de rango.`);
+    }
+    // Retener la precisión del ensayo cuando el cálculo solo redondeó.
+    // Las tablas antiguas pueden haber pasado por un cambio de formato.
+    const retidos = retido_ind_pct.every((valor, indice) => Math.abs(valor - procesado.ret_ind[indice]) <= 0.005000001)
+      ? retido_ind_pct : procesado.ret_ind;
+    return {
+      ...material,
+      peso: proporcion_pct / 100,
+      retido_ind_pct: retidos.slice(0, tamices.length)
+    };
+  });
+  const total = materiales.reduce((suma, material) => suma + material.proporcion_pct, 0);
+  if (Math.abs(total - 100) > 0.01) throw new Error('Las proporciones deben sumar 100%.');
+
+  return {
+    tamices,
+    pasante_real: resultado.mix_pasante.slice(0, tamices.length),
+    banda_min: banda.slice(0, tamices.length).map(limite => 100 - limite.max),
+    banda_max: banda.slice(0, tamices.length).map(limite => 100 - limite.min),
+    materiales
+  };
+}
+
+function abrirAuditoriaDesdeModal() {
+  return abrirAuditoriaIntegrada(calculandoRetenido ? null : calculoRetenidoMostrado, calculo => {
+    if (calculandoRetenido) throw new Error('El cálculo de retenidos está en curso.');
+    return prepararEntradaAuditoria(calculo);
+  });
 }
 
 

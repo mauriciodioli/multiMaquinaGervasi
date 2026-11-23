@@ -372,9 +372,13 @@
 
 
     <script src="{{ url_for('static', filename='js/dpia_i18n.js') }}"></script>
+    {% with auditoria_integrada = true %}
+        {% include 'autoDensidad/calculoPorRetenidos/auditoria.html' %}
+    {% endwith %}
+
     <script src="{{ url_for('static', filename='js/autoDensidad/agregados/agregaAgregado_densidadFuller.js') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js') }}"></script>     
-    <script src="{{ url_for('static', filename='js/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.js', v='2025-03-23-v2') }}"></script>   
+    <script src="{{ url_for('static', filename='js/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.js', v='auditoria-integrada') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/modalTablaTamices.js') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/guardarAnalisisGranulometrico.js') }}"></script>
 

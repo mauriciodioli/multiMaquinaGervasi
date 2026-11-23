@@ -42,18 +42,18 @@
 
     function redrawCurves() {
         const state = getState();
-        if (!state || typeof window.dibujarGrafico !== 'function') {
+        if (!state || typeof window.AuditoriaUI?.dibujarGrafico !== 'function') {
             return;
         }
 
-        window.dibujarGrafico(state.grafico, state.entrada);
+        window.AuditoriaUI?.dibujarGrafico(state.grafico, state.entrada);
 
-        if (typeof window.dibujarGraficosAnalisis === 'function') {
-            window.dibujarGraficosAnalisis(state.grafico, state.entrada);
+        if (typeof window.AuditoriaUI?.dibujarGraficosAnalisis === 'function') {
+            window.AuditoriaUI?.dibujarGraficosAnalisis(state.grafico, state.entrada);
         }
 
-        if (typeof window.recalcularVistaOperativaDesdeCurvaVirtual === 'function') {
-            window.recalcularVistaOperativaDesdeCurvaVirtual();
+        if (typeof window.AuditoriaUI?.recalcularVistaOperativaDesdeCurvaVirtual === 'function') {
+            window.AuditoriaUI?.recalcularVistaOperativaDesdeCurvaVirtual();
         }
     }
 
@@ -136,8 +136,8 @@
 
         if (consolidateButton) {
             consolidateButton.addEventListener('click', () => {
-                if (typeof window.consolidarAjusteManual === 'function') {
-                    window.consolidarAjusteManual();
+                if (typeof window.AuditoriaUI?.consolidarAjusteManual === 'function') {
+                    window.AuditoriaUI?.consolidarAjusteManual();
                 }
             });
         }

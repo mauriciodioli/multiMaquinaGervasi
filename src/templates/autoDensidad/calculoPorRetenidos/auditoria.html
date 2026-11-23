@@ -1,3 +1,4 @@
+{% if not auditoria_integrada %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,33 +9,36 @@
     <script src="/static/js/i18n.js"></script>
     <script src="/static/js/dpia_i18n.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+{% endif %}
     <script src="/static/js/autoDensidad/calculoPorRetenidos/auditoriaCurveEditor.js"></script>
     <style>
         
 
-    header{background:var(--white);padding:.9rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.18);}
-    .logo{display:flex;align-items:center;gap:.6rem;text-decoration:none;}
-    .logo-text{font-family:var(--font-display);font-size:2rem;font-weight:900;color:var(--black);letter-spacing:-.03em;}
-    .logo-icon{display:grid;grid-template-columns:1fr 1fr;gap:3px;width:28px;height:28px;}
-    .logo-icon span{border-radius:2px;}
-    .logo-icon span:nth-child(1){background:#C8102E;}
-    .logo-icon span:nth-child(2){background:#F5A800;}
-    .logo-icon span:nth-child(3){background:#00A550;}
-    .logo-icon span:nth-child(4){background:#0057A8;}
+    #auditoriaVista header{background:var(--white);padding:.9rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.18);}
+    #auditoriaVista .logo{display:flex;align-items:center;gap:.6rem;text-decoration:none;}
+    #auditoriaVista .logo-text{font-family:var(--font-display);font-size:2rem;font-weight:900;color:var(--black);letter-spacing:-.03em;}
+    #auditoriaVista .logo-icon{display:grid;grid-template-columns:1fr 1fr;gap:3px;width:28px;height:28px;}
+    #auditoriaVista .logo-icon span{border-radius:2px;}
+    #auditoriaVista .logo-icon span:nth-child(1){background:#C8102E;}
+    #auditoriaVista .logo-icon span:nth-child(2){background:#F5A800;}
+    #auditoriaVista .logo-icon span:nth-child(3){background:#00A550;}
+    #auditoriaVista .logo-icon span:nth-child(4){background:#0057A8;}
 
-       * {
+       #auditoriaVista * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         
-        body {
+        #auditoriaVista {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f5f5f5;
             padding: 20px;
         }
         
-        .container {
+        #auditoriaVista .auditoria-contenido {
             max-width: 1400px;
             margin: 0 auto;
             background: white;
@@ -43,7 +47,7 @@
             padding: 30px;
         }
         
-        h1 {
+        #auditoriaVista h1 {
             color: #333;
             text-align: center;
             margin-bottom: 10px;
@@ -51,14 +55,14 @@
             padding-bottom: 15px;
         }
         
-        .subtitle {
+        #auditoriaVista .subtitle {
             text-align: center;
             color: #666;
             margin-bottom: 30px;
             font-size: 14px;
         }
         
-        .section {
+        #auditoriaVista .section {
             margin: 30px 0;
             padding: 20px;
             border-left: 4px solid #0066cc;
@@ -66,7 +70,7 @@
             border-radius: 4px;
         }
         
-        .section h2 {
+        #auditoriaVista .section h2 {
             color: #0066cc;
             margin-bottom: 15px;
             display: flex;
@@ -74,11 +78,11 @@
             gap: 10px;
         }
         
-        .section h2::before {
+        #auditoriaVista .section h2::before {
             content: '📊';
         }
 
-        .curve-editor-trigger {
+        #auditoriaVista .curve-editor-trigger {
             width: 100%;
             border: 1px solid #d0d7de;
             background: #fff;
@@ -90,24 +94,24 @@
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .curve-editor-trigger:hover,
-        .curve-editor-trigger:focus {
+        #auditoriaVista .curve-editor-trigger:hover,
+        #auditoriaVista .curve-editor-trigger:focus {
             border-color: #0066cc;
             box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.12);
             outline: none;
         }
 
-        .curve-editor-host {
+        #auditoriaVista .curve-editor-host {
             margin-top: 16px;
         }
 
-        .curve-reference-actions {
+        #auditoriaVista .curve-reference-actions {
             display: flex;
             justify-content: flex-end;
             margin-top: 12px;
         }
 
-        .icon-only-action {
+        #auditoriaVista .icon-only-action {
             width: 42px;
             height: 42px;
             border-radius: 999px;
@@ -122,14 +126,14 @@
             box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
         }
 
-        .icon-only-action:hover,
-        .icon-only-action:focus {
+        #auditoriaVista .icon-only-action:hover,
+        #auditoriaVista .icon-only-action:focus {
             border-color: #0066cc;
             color: #0066cc;
             outline: none;
         }
 
-        .curve-editor-panel {
+        #auditoriaVista .curve-editor-panel {
             display: grid;
             gap: 12px;
             padding: 16px;
@@ -139,33 +143,33 @@
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
         }
 
-        .curve-editor-panel-header {
+        #auditoriaVista .curve-editor-panel-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 12px;
         }
 
-        .curve-editor-panel-title {
+        #auditoriaVista .curve-editor-panel-title {
             font-weight: 700;
             color: #0f172a;
         }
 
-        .curve-editor-panel-meta {
+        #auditoriaVista .curve-editor-panel-meta {
             color: #475569;
             font-size: 13px;
         }
 
-        .curve-editor-range-wrap {
+        #auditoriaVista .curve-editor-range-wrap {
             display: grid;
             gap: 8px;
         }
 
-        .curve-editor-range {
+        #auditoriaVista .curve-editor-range {
             width: 100%;
         }
 
-        .curve-editor-values {
+        #auditoriaVista .curve-editor-values {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -174,17 +178,17 @@
             color: #475569;
         }
 
-        .curve-editor-current {
+        #auditoriaVista .curve-editor-current {
             font-weight: 700;
             color: #0066cc;
         }
 
-        .curve-editor-actions {
+        #auditoriaVista .curve-editor-actions {
             display: flex;
             gap: 10px;
         }
 
-        .curve-editor-actions button {
+        #auditoriaVista .curve-editor-actions button {
             border: 1px solid #cbd5e1;
             background: #fff;
             border-radius: 6px;
@@ -193,30 +197,30 @@
             font: inherit;
         }
 
-        .curve-editor-actions .primary {
+        #auditoriaVista .curve-editor-actions .primary {
             background: #184e77;
             border-color: #184e77;
             color: #ffffff;
         }
 
-        .curve-editor-actions button:hover {
+        #auditoriaVista .curve-editor-actions button:hover {
             border-color: #0066cc;
             color: #0066cc;
         }
 
-        .curve-editor-actions .primary:hover {
+        #auditoriaVista .curve-editor-actions .primary:hover {
             color: #ffffff;
             background: #123a59;
             border-color: #123a59;
         }
 
-        .curve-editor-feedback {
+        #auditoriaVista .curve-editor-feedback {
             min-height: 20px;
             font-size: 13px;
             color: #475569;
         }
         
-        .criterio {
+        #auditoriaVista .criterio {
             margin: 15px 0;
             padding: 12px;
             background: white;
@@ -224,35 +228,35 @@
             border-left: 3px solid #ddd;
         }
         
-        .criterio.ok {
+        #auditoriaVista .criterio.ok {
             border-left-color: #28a745;
             background: #f0fff4;
         }
         
-        .criterio.warning {
+        #auditoriaVista .criterio.warning {
             border-left-color: #ffc107;
             background: #fffbf0;
         }
         
-        .criterio.error {
+        #auditoriaVista .criterio.error {
             border-left-color: #dc3545;
             background: #fff5f5;
         }
         
-        .criterio label {
+        #auditoriaVista .criterio label {
             font-weight: bold;
             color: #444;
             display: block;
             margin-bottom: 5px;
         }
         
-        .criterio .value {
+        #auditoriaVista .criterio .value {
             font-size: 18px;
             color: #0066cc;
             font-weight: bold;
         }
         
-        .decision-box {
+        #auditoriaVista .decision-box {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 20px;
@@ -261,49 +265,49 @@
             text-align: center;
         }
         
-        .decision-box h3 {
+        #auditoriaVista .decision-box h3 {
             font-size: 24px;
             margin-bottom: 10px;
         }
         
-        .decision-box p {
+        #auditoriaVista .decision-box p {
             font-size: 16px;
             opacity: 0.9;
         }
         
-        .semaforo {
+        #auditoriaVista .semaforo {
             text-align: center;
             font-size: 48px;
             margin: 15px 0;
         }
         
-        .tabla-receta {
+        #auditoriaVista .tabla-receta {
             width: 100%;
             border-collapse: collapse;
             margin: 15px 0;
         }
         
-        .tabla-receta thead {
+        #auditoriaVista .tabla-receta thead {
             background: #0066cc;
             color: white;
         }
         
-        .tabla-receta th,
-        .tabla-receta td {
+        #auditoriaVista .tabla-receta th,
+        #auditoriaVista .tabla-receta td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
         
-        .tabla-receta tbody tr:nth-child(even) {
+        #auditoriaVista .tabla-receta tbody tr:nth-child(even) {
             background: #f9f9f9;
         }
         
-        .tabla-receta tbody tr:hover {
+        #auditoriaVista .tabla-receta tbody tr:hover {
             background: #f0f0f0;
         }
         
-        .grafico-container {
+        #auditoriaVista .grafico-container {
             position: relative;
             height: 400px;
             margin: 30px 0;
@@ -313,7 +317,7 @@
             border: 1px solid #eee;
         }
         
-        .instruccion {
+        #auditoriaVista .instruccion {
             background: #e3f2fd;
             border-left: 4px solid #2196f3;
             padding: 15px;
@@ -324,14 +328,14 @@
             line-height: 1.6;
         }
         
-        .proporciones {
+        #auditoriaVista .proporciones {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin: 15px 0;
         }
         
-        .proporcion-item {
+        #auditoriaVista .proporcion-item {
             background: white;
             border: 2px solid #0066cc;
             border-radius: 8px;
@@ -339,19 +343,19 @@
             text-align: center;
         }
         
-        .proporcion-item .nombre {
+        #auditoriaVista .proporcion-item .nombre {
             font-size: 14px;
             color: #666;
             margin-bottom: 10px;
         }
         
-        .proporcion-item .valor {
+        #auditoriaVista .proporcion-item .valor {
             font-size: 28px;
             font-weight: bold;
             color: #0066cc;
         }
         
-        .mejora-item {
+        #auditoriaVista .mejora-item {
             display: inline-block;
             background: white;
             border: 1px solid #ddd;
@@ -361,28 +365,28 @@
             font-size: 14px;
         }
         
-        .mejora-item .label {
+        #auditoriaVista .mejora-item .label {
             color: #666;
             display: block;
             font-size: 12px;
             margin-bottom: 5px;
         }
         
-        .mejora-item .valor {
+        #auditoriaVista .mejora-item .valor {
             font-size: 18px;
             font-weight: bold;
             color: #28a745;
         }
         
-        .carga-datos {
+        #auditoriaVista .carga-datos {
             background: #f0f0f0;
             padding: 20px;
             border-radius: 4px;
             margin-bottom: 20px;
         }
         
-        .carga-datos input,
-        .carga-datos button {
+        #auditoriaVista .carga-datos input,
+        #auditoriaVista .carga-datos button {
             padding: 10px 15px;
             margin: 5px;
             border: 1px solid #ddd;
@@ -390,18 +394,18 @@
             font-size: 14px;
         }
         
-        .carga-datos button {
+        #auditoriaVista .carga-datos button {
             background: #0066cc;
             color: white;
             cursor: pointer;
             border: none;
         }
         
-        .carga-datos button:hover {
+        #auditoriaVista .carga-datos button:hover {
             background: #0052a3;
         }
 
-        .report-actions {
+        #auditoriaVista .report-actions {
             display: flex;
             justify-content: flex-end;
             gap: 12px;
@@ -409,7 +413,7 @@
             flex-wrap: wrap;
         }
 
-        .report-actions button {
+        #auditoriaVista .report-actions button {
             padding: 10px 16px;
             border: none;
             border-radius: 6px;
@@ -420,32 +424,32 @@
             cursor: pointer;
         }
 
-        .report-actions button:hover {
+        #auditoriaVista .report-actions button:hover {
             background: #123a59;
         }
 
-        .report-actions .report-hint {
+        #auditoriaVista .report-actions .report-hint {
             display: flex;
             align-items: center;
             color: #5b6670;
             font-size: 13px;
         }
 
-        .pdf-print-title {
+        #auditoriaVista .pdf-print-title {
             display: none;
             margin: 0 0 22px;
             padding: 0 0 14px;
             border-bottom: 2px solid #d5dde5;
         }
 
-        .pdf-print-title h2 {
+        #auditoriaVista .pdf-print-title h2 {
             margin: 0;
             color: #123a59;
             font-size: 24px;
             line-height: 1.2;
         }
 
-        .pdf-title-modal {
+        #auditoriaVista .pdf-title-modal {
             position: fixed;
             inset: 0;
             display: none;
@@ -456,11 +460,11 @@
             padding: 20px;
         }
 
-        .pdf-title-modal.is-open {
+        #auditoriaVista .pdf-title-modal.is-open {
             display: flex;
         }
 
-        .pdf-title-dialog {
+        #auditoriaVista .pdf-title-dialog {
             width: min(100%, 460px);
             background: #ffffff;
             border-radius: 14px;
@@ -468,20 +472,20 @@
             padding: 22px;
         }
 
-        .pdf-title-dialog h3 {
+        #auditoriaVista .pdf-title-dialog h3 {
             margin: 0 0 10px;
             color: #123a59;
             font-size: 20px;
         }
 
-        .pdf-title-dialog p {
+        #auditoriaVista .pdf-title-dialog p {
             margin: 0 0 14px;
             color: #516170;
             font-size: 14px;
             line-height: 1.5;
         }
 
-        .pdf-title-dialog label {
+        #auditoriaVista .pdf-title-dialog label {
             display: block;
             margin-bottom: 8px;
             color: #22313f;
@@ -489,7 +493,7 @@
             font-weight: 700;
         }
 
-        .pdf-title-dialog input {
+        #auditoriaVista .pdf-title-dialog input {
             width: 100%;
             border: 1px solid #c9d6e2;
             border-radius: 8px;
@@ -498,19 +502,19 @@
             color: #17212b;
         }
 
-        .pdf-title-dialog input:focus {
+        #auditoriaVista .pdf-title-dialog input:focus {
             outline: 2px solid rgba(24, 78, 119, 0.18);
             border-color: #184e77;
         }
 
-        .pdf-title-error {
+        #auditoriaVista .pdf-title-error {
             min-height: 20px;
             margin-top: 8px;
             color: #b42318;
             font-size: 13px;
         }
 
-        .pdf-title-actions {
+        #auditoriaVista .pdf-title-actions {
             display: flex;
             justify-content: flex-end;
             gap: 10px;
@@ -518,7 +522,7 @@
             flex-wrap: wrap;
         }
 
-        .pdf-title-actions button {
+        #auditoriaVista .pdf-title-actions button {
             border: none;
             border-radius: 8px;
             padding: 10px 14px;
@@ -527,17 +531,17 @@
             font-weight: 700;
         }
 
-        .pdf-title-actions .secondary {
+        #auditoriaVista .pdf-title-actions .secondary {
             background: #e9eef3;
             color: #294255;
         }
 
-        .pdf-title-actions .primary {
+        #auditoriaVista .pdf-title-actions .primary {
             background: #184e77;
             color: #ffffff;
         }
 
-        .plant-modal {
+        #auditoriaVista .plant-modal {
             position: fixed;
             inset: 0;
             display: none;
@@ -548,11 +552,11 @@
             padding: 20px;
         }
 
-        .plant-modal.is-open {
+        #auditoriaVista .plant-modal.is-open {
             display: flex;
         }
 
-        .plant-modal-dialog {
+        #auditoriaVista .plant-modal-dialog {
             width: min(100%, 920px);
             max-height: calc(100vh - 40px);
             overflow: auto;
@@ -561,7 +565,7 @@
             box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
         }
 
-        .plant-modal-toolbar {
+        #auditoriaVista .plant-modal-toolbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -574,18 +578,18 @@
             z-index: 2;
         }
 
-        .plant-modal-toolbar h3 {
+        #auditoriaVista .plant-modal-toolbar h3 {
             margin: 0;
             color: #123a59;
             font-size: 20px;
         }
 
-        .plant-modal-toolbar-actions {
+        #auditoriaVista .plant-modal-toolbar-actions {
             display: flex;
             gap: 10px;
         }
 
-        .plant-modal-toolbar-actions button {
+        #auditoriaVista .plant-modal-toolbar-actions button {
             border: 1px solid #cbd5e1;
             border-radius: 8px;
             padding: 9px 14px;
@@ -595,23 +599,23 @@
             font-weight: 700;
         }
 
-        .plant-modal-toolbar-actions .primary {
+        #auditoriaVista .plant-modal-toolbar-actions .primary {
             background: #184e77;
             color: #ffffff;
             border-color: #184e77;
         }
 
-        .plant-modal-body {
+        #auditoriaVista .plant-modal-body {
             padding: 22px;
             background: linear-gradient(180deg, #f8fbff 0%, #ffffff 180px);
         }
 
-        .plant-sheet {
+        #auditoriaVista .plant-sheet {
             display: grid;
             gap: 18px;
         }
 
-        .plant-sheet-header {
+        #auditoriaVista .plant-sheet-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
@@ -619,33 +623,33 @@
             flex-wrap: wrap;
         }
 
-        .plant-sheet-title {
+        #auditoriaVista .plant-sheet-title {
             font-size: 28px;
             line-height: 1.1;
             color: #0f172a;
             font-weight: 900;
         }
 
-        .plant-sheet-subtitle {
+        #auditoriaVista .plant-sheet-subtitle {
             color: #475569;
             font-size: 14px;
             margin-top: 6px;
         }
 
-        .plant-sheet-grid {
+        #auditoriaVista .plant-sheet-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 14px;
         }
 
-        .plant-sheet-card {
+        #auditoriaVista .plant-sheet-card {
             background: #ffffff;
             border: 1px solid #d9e3ee;
             border-radius: 12px;
             padding: 16px;
         }
 
-        .plant-sheet-card h4 {
+        #auditoriaVista .plant-sheet-card h4 {
             margin: 0 0 10px;
             font-size: 13px;
             letter-spacing: 0.04em;
@@ -653,30 +657,30 @@
             color: #475569;
         }
 
-        .plant-sheet-main {
+        #auditoriaVista .plant-sheet-main {
             font-size: 26px;
             font-weight: 800;
             color: #0f172a;
         }
 
-        .plant-sheet-text {
+        #auditoriaVista .plant-sheet-text {
             color: #334155;
             line-height: 1.5;
         }
 
-        .plant-sheet-list {
+        #auditoriaVista .plant-sheet-list {
             margin: 0;
             padding-left: 18px;
             color: #334155;
             line-height: 1.5;
         }
 
-        .plant-sheet-steps {
+        #auditoriaVista .plant-sheet-steps {
             display: grid;
             gap: 10px;
         }
 
-        .plant-step {
+        #auditoriaVista .plant-step {
             background: #ffffff;
             border: 1px solid #d9e3ee;
             border-left: 4px solid #184e77;
@@ -684,19 +688,19 @@
             padding: 14px;
         }
 
-        .plant-step-title {
+        #auditoriaVista .plant-step-title {
             font-weight: 800;
             color: #0f172a;
             margin-bottom: 6px;
         }
 
-        .plant-step-meta {
+        #auditoriaVista .plant-step-meta {
             color: #475569;
             font-size: 14px;
             line-height: 1.45;
         }
 
-        .plant-sheet-table {
+        #auditoriaVista .plant-sheet-table {
             width: 100%;
             border-collapse: collapse;
             background: #ffffff;
@@ -704,36 +708,36 @@
             overflow: hidden;
         }
 
-        .plant-sheet-table th,
-        .plant-sheet-table td {
+        #auditoriaVista .plant-sheet-table th,
+        #auditoriaVista .plant-sheet-table td {
             padding: 10px 12px;
             border-bottom: 1px solid #e2e8f0;
             text-align: left;
             font-size: 14px;
         }
 
-        .plant-sheet-table thead {
+        #auditoriaVista .plant-sheet-table thead {
             background: #184e77;
             color: #ffffff;
         }
 
-        .plant-ok {
+        #auditoriaVista .plant-ok {
             color: #15803d;
             font-weight: 800;
         }
 
-        .plant-bad {
+        #auditoriaVista .plant-bad {
             color: #b91c1c;
             font-weight: 800;
         }
         
-        .loading {
+        #auditoriaVista .loading {
             text-align: center;
             padding: 40px;
             color: #666;
         }
         
-        .error-box {
+        #auditoriaVista .error-box {
             background: #fff5f5;
             border: 1px solid #fc8181;
             border-left: 4px solid #f56565;
@@ -743,7 +747,7 @@
             margin: 15px 0;
         }
 
-        .operator-panel {
+        #auditoriaVista .operator-panel {
             margin: 30px 0;
             padding: 24px;
             border-radius: 12px;
@@ -751,7 +755,7 @@
             border: 1px solid #d8e8db;
         }
 
-        .operator-title {
+        #auditoriaVista .operator-title {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -759,12 +763,12 @@
             margin-bottom: 18px;
         }
 
-        .operator-title h2 {
+        #auditoriaVista .operator-title h2 {
             color: #184e77;
             margin: 0;
         }
 
-        .status-pill {
+        #auditoriaVista .status-pill {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -779,81 +783,81 @@
             color: #1f6f43;
         }
 
-        .status-pill.warning {
+        #auditoriaVista .status-pill.warning {
             background: #fff4dd;
             color: #9a6700;
         }
 
-        .status-pill.error {
+        #auditoriaVista .status-pill.error {
             background: #fdeaea;
             color: #b42318;
         }
 
-        .ops-grid {
+        #auditoriaVista .ops-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 16px;
             margin-top: 18px;
         }
 
-        .ops-card {
+        #auditoriaVista .ops-card {
             background: white;
             border: 1px solid #dce7ef;
             border-radius: 10px;
             padding: 16px;
         }
 
-        .ops-card h3 {
+        #auditoriaVista .ops-card h3 {
             margin: 0 0 10px;
             color: #184e77;
             font-size: 15px;
         }
 
-        .ops-main-value {
+        #auditoriaVista .ops-main-value {
             font-size: 28px;
             font-weight: 700;
             color: #0f4c5c;
             margin-bottom: 8px;
         }
 
-        .ops-card p,
-        .ops-card li {
+        #auditoriaVista .ops-card p,
+        #auditoriaVista .ops-card li {
             color: #44515c;
             font-size: 14px;
             line-height: 1.5;
         }
 
-        .ops-card ul {
+        #auditoriaVista .ops-card ul {
             margin: 8px 0 0 18px;
         }
 
-        .recipe-strip {
+        #auditoriaVista .recipe-strip {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 12px;
             margin-top: 18px;
         }
 
-        .recipe-item {
+        #auditoriaVista .recipe-item {
             background: white;
             border: 2px solid #d6e6f2;
             border-radius: 10px;
             padding: 14px;
         }
 
-        .recipe-item .material {
+        #auditoriaVista .recipe-item .material {
             color: #4d5b67;
             font-size: 13px;
             margin-bottom: 8px;
         }
 
-        .recipe-item .percent {
+        #auditoriaVista .recipe-item .percent {
             color: #184e77;
             font-size: 30px;
             font-weight: 800;
         }
 
-        .detail-toggle {
+        #auditoriaVista .detail-toggle {
             margin-top: 22px;
             border: 1px solid #d8dde3;
             border-radius: 10px;
@@ -861,7 +865,7 @@
             background: white;
         }
 
-        .detail-toggle button {
+        #auditoriaVista .detail-toggle button {
             width: 100%;
             padding: 16px 18px;
             border: none;
@@ -875,13 +879,13 @@
             align-items: center;
         }
 
-        .detail-body {
+        #auditoriaVista .detail-body {
             display: none;
             padding: 0 18px 18px;
             background: #fff;
         }
         
-        .success-box {
+        #auditoriaVista .success-box {
             background: #f0fff4;
             border: 1px solid #9ae6b4;
             border-left: 4px solid #38a169;
@@ -891,117 +895,125 @@
             margin: 15px 0;
         }
         
-        @media (max-width: 768px) {
-            .container {
+        #auditoriaVista @media (max-width: 768px) {
+            #auditoriaVista .auditoria-contenido {
                 padding: 15px;
             }
 
-            .report-actions {
+            #auditoriaVista .report-actions {
                 justify-content: stretch;
             }
 
-            .report-actions button,
-            .report-actions .report-hint {
+            #auditoriaVista .report-actions button,
+            #auditoriaVista .report-actions .report-hint {
                 width: 100%;
             }
 
-            .pdf-title-actions button {
+            #auditoriaVista .pdf-title-actions button {
                 width: 100%;
             }
             
-            .proporciones {
+            #auditoriaVista .proporciones {
                 grid-template-columns: 1fr;
             }
             
-            .grafico-container {
+            #auditoriaVista .grafico-container {
                 height: 300px;
             }
         }
 
-        @page {
+        #auditoriaVista @page {
             size: A4;
             margin: 12mm;
         }
 
-        @media print {
-            * {
+        #auditoriaVista @media print {
+            #auditoriaVista * {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
 
-            body {
+            #auditoriaVista {
                 background: white;
                 padding: 0;
             }
 
-            .container {
+            #auditoriaVista .auditoria-contenido {
                 max-width: none;
                 box-shadow: none;
                 border-radius: 0;
                 padding: 0;
             }
 
-            .carga-datos,
-            .report-actions,
-            .detail-toggle button,
-            .accordion-header,
-            .pdf-title-modal {
+            #auditoriaVista .carga-datos,
+            #auditoriaVista .report-actions,
+            #auditoriaVista .detail-toggle button,
+            #auditoriaVista .accordion-header,
+            #auditoriaVista .pdf-title-modal {
                 display: none !important;
             }
 
-            .pdf-print-title {
+            #auditoriaVista .pdf-print-title {
                 display: block !important;
             }
 
-            .detail-body,
-            .accordion-body {
+            #auditoriaVista .detail-body,
+            #auditoriaVista .accordion-body {
                 display: block !important;
                 padding-top: 16px;
             }
 
-            .operator-panel,
-            .section,
-            .ops-card,
-            .recipe-item,
-            .criterio,
-            .grafico-container,
-            .accordion-item,
-            .detail-toggle,
-            .tabla-receta {
+            #auditoriaVista .operator-panel,
+            #auditoriaVista .section,
+            #auditoriaVista .ops-card,
+            #auditoriaVista .recipe-item,
+            #auditoriaVista .criterio,
+            #auditoriaVista .grafico-container,
+            #auditoriaVista .accordion-item,
+            #auditoriaVista .detail-toggle,
+            #auditoriaVista .tabla-receta {
                 break-inside: avoid;
                 page-break-inside: avoid;
             }
 
-            .grafico-container,
-            #graficoErrorTamiz,
-            #graficoDesviacion {
+            #auditoriaVista .grafico-container,
+            #auditoriaVista #graficoErrorTamiz,
+            #auditoriaVista #graficoDesviacion {
                 height: 280px !important;
                 width: 100% !important;
                 max-width: 100% !important;
                 overflow: hidden !important;
             }
 
-            .grafico-container canvas,
-            #graficoErrorTamiz canvas,
-            #graficoDesviacion canvas {
+            #auditoriaVista .grafico-container canvas,
+            #auditoriaVista #graficoErrorTamiz canvas,
+            #auditoriaVista #graficoDesviacion canvas {
                 width: 100% !important;
                 max-width: 100% !important;
             }
 
-            .grafico-print-snapshot {
+            #auditoriaVista .grafico-print-snapshot {
                 display: block !important;
                 width: 100% !important;
                 max-width: 100% !important;
                 height: auto !important;
             }
 
-            h1 {
+            #auditoriaVista h1 {
                 font-size: 20pt;
             }
         }
     </style>
-</head>
-<body>
+{% if auditoria_integrada %}
+<dialog id="modalAuditoria" aria-labelledby="auditoriaTitulo">
+    <div class="auditoria-cerrar">
+        <form method="dialog">
+            <button class="dpia-btn dpia-btn--secondary" type="submit" data-i18n="sim.btn_cerrar" autofocus>Cerrar</button>
+        </form>
+    </div>
+{% endif %}
+<div id="auditoriaVista">
+{% if not auditoria_integrada %}
     <header>
         <a href="/" class="logo">
             <div class="logo-icon">
@@ -1013,21 +1025,23 @@
             <span class="logo-text">Gervasi</span>
         </a>
     </header>
-    
-    <div class="container">
-        <h1 data-i18n="auditoria.page_header">🔬 Auditoría de Mezcla Granulométrica</h1>
+{% endif %}
+    <div class="auditoria-contenido">
+        <h1 id="auditoriaTitulo" data-i18n="auditoria.page_header">🔬 Auditoría de Mezcla Granulométrica</h1>
         <p class="subtitle" data-i18n="auditoria.page_subtitle">Evaluación de cumplimiento de banda y decisión de tabla virtual dirigida</p>
         
+        {% if not auditoria_integrada %}
         <!-- Sección de carga de datos -->
         <div class="carga-datos">
             <h3 data-i18n="auditoria.load_section_title">Cargar datos desde archivo JSON o ingreso manual</h3>
             <textarea id="jsonInput" style="width:100%; height:100px; margin: 10px 0; padding: 10px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px;" placeholder='{"pasante_real": [...], "banda_min": [...], "banda_max": [...], "tamices": [...]}'></textarea>
-            <button onclick="cargarDatos()" data-i18n="auditoria.load_json_btn">📤 Cargar JSON</button>
-            <button onclick="usarEjemplo()" data-i18n="auditoria.use_example_btn">📋 Usar ejemplo</button>
+            <button onclick="AuditoriaUI.cargarDatos()" data-i18n="auditoria.load_json_btn">📤 Cargar JSON</button>
+            <button onclick="AuditoriaUI.usarEjemplo()" data-i18n="auditoria.use_example_btn">📋 Usar ejemplo</button>
         </div>
         
+        {% endif %}
         <!-- Resultado -->
-        <div id="resultado"></div>
+        <div id="auditoriaResultado" aria-live="polite"></div>
     </div>
 
     <div id="pdfTitleModal" class="pdf-title-modal" aria-hidden="true">
@@ -1049,8 +1063,8 @@
             <div class="plant-modal-toolbar">
                 <h3 id="plantOperatorModalHeading">Vista Operativa</h3>
                 <div class="plant-modal-toolbar-actions">
-                    <button type="button" id="plantOperatorPrintBtn" class="primary" onclick="imprimirVistaOperativa()">🖨️ Imprimir</button>
-                    <button type="button" id="plantOperatorCloseBtn" onclick="cerrarVistaOperativa()">Cerrar</button>
+                    <button type="button" id="plantOperatorPrintBtn" class="primary" onclick="AuditoriaUI.imprimirInformeOperador()">🖨️ Imprimir</button>
+                    <button type="button" id="plantOperatorCloseBtn" onclick="AuditoriaUI.cerrarVistaOperativa()">Cerrar</button>
                 </div>
             </div>
             <div class="plant-modal-body">
@@ -1064,8 +1078,8 @@
             <div class="plant-modal-toolbar">
                 <h3 id="informeParaOperadorPlantaHeading">Informe Para Operador Planta</h3>
                 <div class="plant-modal-toolbar-actions">
-                    <button type="button" id="operatorReportPrintBtn" class="primary" onclick="imprimirInformeParaOperadorPlanta()">🖨️ Imprimir</button>
-                    <button type="button" id="operatorReportCloseBtn" onclick="cerrarInformeParaOperadorPlanta()">Cerrar</button>
+                    <button type="button" id="operatorReportPrintBtn" class="primary" onclick="AuditoriaUI.imprimirInformeOperador()">🖨️ Imprimir</button>
+                    <button type="button" id="operatorReportCloseBtn" onclick="AuditoriaUI.cerrarInformeParaOperadorPlanta()">Cerrar</button>
                 </div>
             </div>
             <div class="plant-modal-body">
@@ -1074,15 +1088,23 @@
         </div>
     </div>
     
+</div>
+{% if auditoria_integrada %}
+</dialog>
+{% endif %}
     <script>
+    (() => {
+        const vista = document.getElementById('auditoriaVista');
+        const modalAuditoria = document.getElementById('modalAuditoria');
+        let calculoEnAuditoria;
+        let versionAuditoria = 0;
+        let dibujarGraficosPendientes;
         // ============ VARIABLES GLOBALES ============
         let instanciaChart = null; // Rastrear instancia de Chart.js para destruir antes de recrear
         let instanciaErrorChart = null; // Gráfico de error por tamiz
         let instanciaDesviacionChart = null; // Gráfico de desviación
         let snapshotGraficoComparacion = null;
         let ultimoTituloPDF = '';
-        let ultimoHTMLVistaOperativa = '';
-        let ultimoHTMLInformeParaOperadorPlanta = '';
 
         function tAuditoria(key, fallback = '') {
             if (typeof I18N !== 'undefined' && I18N && typeof I18N.t === 'function') {
@@ -1103,15 +1125,18 @@
         function applyAuditoriaTranslations() {
             const lang = (typeof I18N !== 'undefined' && I18N && typeof I18N.getLang === 'function')
                 ? I18N.getLang()
-                : (localStorage.getItem('lang') || 'es');
-            document.documentElement.lang = lang;
-            document.title = tAuditoria('page_title', 'Auditoría de Mezcla Granulométrica');
+                : (document.documentElement.lang || 'es');
+            vista.lang = lang;
+            if (!modalAuditoria) {
+                document.documentElement.lang = lang;
+                document.title = tAuditoria('page_title', 'Auditoría de Mezcla Granulométrica');
+            }
             const input = document.getElementById('jsonInput');
             if (input) {
                 input.placeholder = tAuditoria('json_placeholder', '{"pasante_real": [...], "banda_min": [...], "banda_max": [...], "tamices": [...]}');
             }
             if (typeof I18N !== 'undefined' && I18N && typeof I18N.applyTranslations === 'function') {
-                I18N.applyTranslations(document);
+                I18N.applyTranslations(modalAuditoria || vista);
             }
             actualizarTextosModalPDF();
             actualizarTextosModalesOperador();
@@ -1349,8 +1374,7 @@
             const content = document.getElementById('plantOperatorModalContent');
             const state = window.__plantOperatorViewState;
             if (!modal || !content || !state) return;
-            ultimoHTMLVistaOperativa = buildPlantOperatorHtml(state);
-            content.innerHTML = ultimoHTMLVistaOperativa;
+            content.innerHTML = buildPlantOperatorHtml(state);
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
         }
@@ -1360,8 +1384,7 @@
             const content = document.getElementById('informeParaOperadorPlantaContent');
             const state = window.__plantOperatorViewState;
             if (!modal || !content || !state) return;
-            ultimoHTMLInformeParaOperadorPlanta = buildInformeParaOperadorPlantaHtml(state);
-            content.innerHTML = ultimoHTMLInformeParaOperadorPlanta;
+            content.innerHTML = buildInformeParaOperadorPlantaHtml(state);
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
         }
@@ -1380,28 +1403,9 @@
             modal.setAttribute('aria-hidden', 'true');
         }
 
-        function imprimirVistaOperativa() {
-            const state = window.__plantOperatorViewState;
-            if (!state) return;
-            const html = ultimoHTMLVistaOperativa || buildPlantOperatorHtml(state);
-            const win = window.open('', '_blank', 'width=980,height=900');
-            if (!win) return;
-            win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${tAuditoria('plant_modal_title', 'Vista Operativa')}</title><style>
-                body{font-family:Segoe UI,Tahoma,sans-serif;padding:24px;color:#0f172a} .status-pill{display:inline-flex;padding:8px 12px;border-radius:999px;background:#e2e8f0;font-weight:700} .status-pill.warning{background:#fef3c7}.status-pill.error{background:#fee2e2} .plant-sheet{display:grid;gap:18px}.plant-sheet-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.plant-sheet-title{font-size:28px;font-weight:900}.plant-sheet-subtitle{color:#475569;font-size:14px;margin-top:6px}.plant-sheet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.plant-sheet-card{background:#fff;border:1px solid #d9e3ee;border-radius:12px;padding:16px}.plant-sheet-card h4{margin:0 0 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#475569}.plant-sheet-main{font-size:26px;font-weight:800}.plant-sheet-text,.plant-step-meta{color:#334155;line-height:1.5}.plant-sheet-list{margin:0;padding-left:18px;color:#334155;line-height:1.5}.plant-sheet-steps{display:grid;gap:10px}.plant-step{background:#fff;border:1px solid #d9e3ee;border-left:4px solid #184e77;border-radius:10px;padding:14px}.plant-step-title{font-weight:800;margin-bottom:6px}.plant-sheet-table{width:100%;border-collapse:collapse;background:#fff}.plant-sheet-table th,.plant-sheet-table td{padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}.plant-sheet-table thead{background:#184e77;color:#fff}.plant-ok{color:#15803d;font-weight:800}.plant-bad{color:#b91c1c;font-weight:800}
-            </style></head><body>${html}<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}};<\/script></body></html>`);
-            win.document.close();
-        }
-
-        function imprimirInformeParaOperadorPlanta() {
-            const state = window.__plantOperatorViewState;
-            if (!state) return;
-            const html = ultimoHTMLInformeParaOperadorPlanta || buildInformeParaOperadorPlantaHtml(state);
-            const win = window.open('', '_blank', 'width=980,height=900');
-            if (!win) return;
-            win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${tAuditoria('operator_report_modal_title', 'Informe Para Operador Planta')}</title><style>
-                body{font-family:Segoe UI,Tahoma,sans-serif;padding:24px;color:#0f172a} .status-pill{display:inline-flex;padding:8px 12px;border-radius:999px;background:#e2e8f0;font-weight:700} .status-pill.warning{background:#fef3c7}.status-pill.error{background:#fee2e2} .plant-sheet{display:grid;gap:18px}.plant-sheet-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.plant-sheet-title{font-size:28px;font-weight:900}.plant-sheet-subtitle{color:#475569;font-size:14px;margin-top:6px}.plant-sheet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.plant-sheet-card{background:#fff;border:1px solid #d9e3ee;border-radius:12px;padding:16px}.plant-sheet-card h4{margin:0 0 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#475569}.plant-sheet-main{font-size:26px;font-weight:800}.plant-sheet-text,.plant-step-meta{color:#334155;line-height:1.5}.plant-sheet-list{margin:0;padding-left:18px;color:#334155;line-height:1.5}.plant-sheet-steps{display:grid;gap:10px}.plant-step{background:#fff;border:1px solid #d9e3ee;border-left:4px solid #184e77;border-radius:10px;padding:14px}.plant-step-title{font-weight:800;margin-bottom:6px}.plant-sheet-table{width:100%;border-collapse:collapse;background:#fff}.plant-sheet-table th,.plant-sheet-table td{padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}.plant-sheet-table thead{background:#184e77;color:#fff}.plant-ok{color:#15803d;font-weight:800}.plant-bad{color:#b91c1c;font-weight:800}
-            </style></head><body>${html}<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}};<\/script></body></html>`);
-            win.document.close();
+        function imprimirInformeOperador() {
+            vista.dataset.imprimirOperador = '';
+            window.print();
         }
 
         function recalcularVistaOperativaDesdeCurvaVirtual() {
@@ -1491,18 +1495,11 @@
                     throw new Error(result.error || 'No se pudo consolidar el ajuste manual.');
                 }
 
-                try {
-                    sessionStorage.setItem('datosAuditoriaRecientes', JSON.stringify({
-                        datos: result.data,
-                        entrada: state.entrada
-                    }));
-                } catch (storageError) {
-                    console.warn('⚠️ No se pudo persistir el ajuste consolidado en sessionStorage:', storageError);
-                }
-
+                if (state !== window.__auditoriaCurveEditorState) return;
                 mostrarResultado(result.data, state.entrada);
             })
             .catch((error) => {
+                if (state !== window.__auditoriaCurveEditorState) return;
                 if (feedback) {
                     feedback.textContent = `Error al consolidar: ${error.message}`;
                 } else {
@@ -1554,7 +1551,7 @@
         }
 
         function asegurarNodoTituloPDF() {
-            const resultado = document.getElementById('resultado');
+            const resultado = document.getElementById('auditoriaResultado');
             if (!resultado) {
                 return null;
             }
@@ -1628,12 +1625,13 @@
             });
 
             document.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+                if (!modalAuditoria && event.key === 'Escape' && modal.classList.contains('is-open')) {
                     cerrarModalTituloPDF();
                 }
             });
         }
         
+        {% if not auditoria_integrada %}
         // ============ FUNCIONES DE SOPORTE PARA CONVERSIÓN ============
         
         /**
@@ -1760,9 +1758,10 @@
                 ? pesosDeclarados.reduce((acumulado, peso) => acumulado + peso, 0)
                 : 0;
 
-            const pesosNormalizados = todosLosPesosDeclarados && sumaPesosDeclarados > 0
-                ? pesosDeclarados.map((peso) => peso / sumaPesosDeclarados)
-                : tablas.map(() => 1 / tablas.length);
+            if (!todosLosPesosDeclarados || Math.abs(sumaPesosDeclarados - 100) > 0.01) {
+                throw new Error('Auditoría bloqueada: faltan proporciones originales o no suman 100%.');
+            }
+            const pesosNormalizados = pesosDeclarados.map(peso => peso / 100);
 
             console.log(`   Pesos usados para auditoría: [${pesosNormalizados.map((peso) => (peso * 100).toFixed(2)).join(', ')}]%`);
             
@@ -2067,70 +2066,6 @@
         }
         
         // 🛡️ FUNCIÓN VALIDADORA CENTRALIZADA
-        function validarDatosParaBackend(datos) {
-            // Validación defensiva sin modificar datos
-            let warnings = [];
-            
-            // Verificar estructura mínima
-            if (!datos.pasante_real || !Array.isArray(datos.pasante_real)) {
-                warnings.push('❌ pasante_real inválido o faltante');
-            }
-            
-            if (!datos.tamices || !Array.isArray(datos.tamices)) {
-                warnings.push('❌ tamices inválido o faltante');
-            }
-            
-            // Verificar materiales
-            if (datos.materiales === undefined) {
-                warnings.push('⚠️ NO hay materiales en payload - backend no generará orden_operativa_real');
-            } else if (!Array.isArray(datos.materiales)) {
-                warnings.push('❌ materiales no es array');
-            } else if (datos.materiales.length === 0) {
-                warnings.push('⚠️ materiales array está vacío');
-            } else {
-                // Validar cada material
-                datos.materiales.forEach((mat, idx) => {
-                    if (!mat.nombre) warnings.push(`❌ Material ${idx}: nombre faltante`);
-                    if (Array.isArray(datos.tamices) && datos.tamices.length > 0) {
-                        if (Array.isArray(mat.pasantes) && mat.pasantes.length !== datos.tamices.length) {
-                            warnings.push(`❌ Material "${mat.nombre}": pasantes len=${mat.pasantes.length} != tamices len=${datos.tamices.length}`);
-                        }
-                        if (Array.isArray(mat.retido_ind_pct) && mat.retido_ind_pct.length !== datos.tamices.length) {
-                            warnings.push(`❌ Material "${mat.nombre}": retido_ind_pct len=${mat.retido_ind_pct.length} != tamices len=${datos.tamices.length}`);
-                        }
-                    }
-                    if (mat.pasantes && Array.isArray(mat.pasantes)) {
-                        const negatives = mat.pasantes.filter(v => v < 0);
-                        if (negatives.length > 0) {
-                            warnings.push(`⚠️ Material "${mat.nombre}": detectados valores negativos`);
-                        }
-                    }
-                });
-            }
-            
-            // Detectar valores negativos en pasante_real
-            if (datos.pasante_real) {
-                const negatives = datos.pasante_real.filter(v => v < 0);
-                if (negatives.length > 0) {
-                    warnings.push(`⚠️ pasante_real contiene negativos`);
-                }
-            }
-            
-            // Log de validación
-            if (warnings.length > 0) {
-                console.warn('🚨 ADVERTENCIAS DE VALIDACIÓN:');
-                warnings.forEach(w => console.warn(`   ${w}`));
-            } else {
-                console.log('✅ Validación: todos los datos son consistentes');
-            }
-            
-            return {
-                isValid: warnings.length === 0,
-                warnings: warnings,
-                hasBasicStructure: !!datos.pasante_real && !!datos.tamices
-            };
-        }
-        
         function cargarDatos() {
             const jsonText = document.getElementById('jsonInput').value;
             try {
@@ -2203,81 +2138,39 @@
             return datosClonados;
         }
         
-        function ejecutarAuditoria(datos) {
-            // 🔄 REFACTOR: Este es el ÚNICO punto de entrada al backend (POST /calculoPorRetenidos/auditoria)
-            // RAZÓN: Garantiza que datos con materiales completos llegan al backend
-            // El fetch automático fue deshabilitado para evitar envío de datos incompletos
-            // RESULTADO: 
-            //   ✅ datos locales se muestran SIN latencia
-            //   ✅ backend se llama SOLO cuando usuario lo requiere
-            //   ✅ backend recibe SIEMPRE datos completos con materiales
-            
-            // 🛡️ NUEVA: Validar datos ANTES de adaptar
-            const validacion = validarDatosParaBackend(datos);
-            
-            // 🔧 NUEVA: Adaptar datos para compatibilidad con backend
-            const datosAdaptados = adaptarDatosParaBackend(datos);
-            
-            // 📊 Log completo para debugging - ANTES/DESPUÉS
-            console.log('[DEBUG] Enviando payload a /calculoPorRetenidos/auditoria');
-            console.log('[ADAPTER] Materiales originales:', datos.materiales);
-            console.log('[ADAPTER] Materiales adaptados:', datosAdaptados.materiales);
-            console.log('[DEBUG] Estructura:', {
-                tienePassante: !!datosAdaptados.pasante_real,
-                tieneTamices: !!datosAdaptados.tamices,
-                tieneMateriales: !!datosAdaptados.materiales,
-                longitudMateriales: datosAdaptados.materiales?.length,
-                primerMaterial: datosAdaptados.materiales?.[0] ? {
-                    nombre: datosAdaptados.materiales[0].nombre,
-                    tieneRetido_ind_pct: !!datosAdaptados.materiales[0].retido_ind_pct,
-                    tieneProporcion_pct: !!datosAdaptados.materiales[0].proporcion_pct,
-                    tienePassantes: !!datosAdaptados.materiales[0].pasantes,
-                    tienePeso: !!datosAdaptados.materiales[0].peso
-                } : null
-            });
-            
-            const resultadoDiv = document.getElementById('resultado');
+        {% endif %}
+        async function ejecutarAuditoria(datos) {
+            const version = ++versionAuditoria;
+            const entrada = modalAuditoria ? datos : adaptarDatosParaBackend(datos);
+            const resultadoDiv = document.getElementById('auditoriaResultado');
             resultadoDiv.innerHTML = `<div class="loading">⏳ ${tAuditoria('loading', 'Ejecutando auditoría...')}</div>`;
-            
-            // 🔧 CAMBIO CRÍTICO: Usar datosAdaptados en lugar de datos
-            fetch('/calculoPorRetenidos/auditoria', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(datosAdaptados)
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.exito) {
-                    // Guardar datos frescos en sessionStorage para próximas cargas
-                    // (ahora incluye propuesta_agregados_correctivos con acciones_zaranda)
-                    try {
-                        sessionStorage.setItem('datosAuditoriaRecientes', JSON.stringify({
-                            datos: result.data,
-                            entrada: datosAdaptados  // 🔧 Usar datos adaptados para consistencia
-                        }));
-                        console.log('💾 Datos frescos guardados en sessionStorage (incluye propuesta_agregados_correctivos)');
-                    } catch (e) {
-                        console.warn('⚠️ No se pudo guardar en sessionStorage:', e);
-                    }
-                    // Mostrar datos frescos (ACTUALIZACIÓN de UI)
-                    mostrarResultado(result.data, datosAdaptados);  // 🔧 Usar datos adaptados
-                    console.log('✅ UI actualizada con datos frescos del backend (con acciones zaranda)');
-                } else {
-                    mostrarError(result.error);
+
+            try {
+                const response = await fetch('/calculoPorRetenidos/auditoria', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(entrada)
+                });
+                const result = await response.json();
+                if (version !== versionAuditoria) return;
+                if (!response.ok || !result.exito) {
+                    throw new Error(result.error || `HTTP ${response.status}`);
                 }
-            })
-            .catch(error => {
-                mostrarError(`${tAuditoria('connection_error', 'Error de conexión')}: ${error.message}`);
-            });
+                mostrarResultado(result.data, entrada);
+            } catch (error) {
+                if (version !== versionAuditoria) return;
+                calculoEnAuditoria = null;
+                mostrarError(error.message);
+            }
         }
-        
+
         function mostrarError(mensaje) {
-            document.getElementById('resultado').innerHTML = 
-                `<div class="error-box"><strong>${tAuditoria('generic_error', '❌ Error:')}</strong> ${mensaje}</div>`;
+            const error = document.createElement('div');
+            error.className = 'error-box';
+            error.textContent = `${tAuditoria('generic_error', '❌ Error:')} ${mensaje}`;
+            document.getElementById('auditoriaResultado').replaceChildren(error);
         }
-        
+
         function mostrarResultado(datos, entrada) {
             const fase1 = datos.fase_1;
             const criterios = datos.fase_2_4_criterios;
@@ -2540,9 +2433,9 @@
             html += `
                 <div class="report-actions">
                     <div class="report-hint">${tAuditoria('export_pdf_helper', 'Genera un PDF desde el navegador con el informe visible y sus gráficos.')}</div>
-                    <button type="button" onclick="exportarReportePDF()">${tAuditoria('export_pdf_btn', '🖨️ Exportar PDF')}</button>
-                    <button type="button" onclick="descargarGraficoComparacionPNG()">${tAuditoria('export_chart_png_btn', '🖼️ Descargar curva PNG')}</button>
-                    <button type="button" onclick="abrirInformeParaOperadorPlanta()">${tAuditoria('operator_report_btn', '🧾 Informe operador planta')}</button>
+                    <button type="button" onclick="AuditoriaUI.exportarReportePDF()">${tAuditoria('export_pdf_btn', '🖨️ Exportar PDF')}</button>
+                    <button type="button" onclick="AuditoriaUI.descargarGraficoComparacionPNG()">${tAuditoria('export_chart_png_btn', '🖼️ Descargar curva PNG')}</button>
+                    <button type="button" onclick="AuditoriaUI.abrirInformeParaOperadorPlanta()">${tAuditoria('operator_report_btn', '🧾 Informe operador planta')}</button>
                 </div>
                     <div class="operator-panel">
                     <div class="operator-title">
@@ -2776,7 +2669,7 @@
 
             html += `
                     <div class="detail-toggle">
-                        <button onclick="toggleAccordion(this)">
+                        <button onclick="AuditoriaUI.toggleAccordion(this)">
                             <span>${tAuditoria('technical_detail_toggle', 'Ver detalle técnico de laboratorio')}</span>
                             <span>▼</span>
                         </button>
@@ -2932,7 +2825,7 @@
                     </div>
                     <div id="curveEditorHost" class="curve-editor-host"></div>
                     <div class="curve-reference-actions">
-                        <button type="button" class="icon-only-action" onclick="abrirVistaOperativa()" title="Abrir vista operativa" aria-label="Abrir vista operativa">⤢</button>
+                        <button type="button" class="icon-only-action" onclick="AuditoriaUI.abrirVistaOperativa()" title="Abrir vista operativa" aria-label="Abrir vista operativa">⤢</button>
                     </div>
                 </div>
 
@@ -2996,7 +2889,7 @@
                     
                     <!-- Acordeón 1: Error por Tamiz -->
                     <div class="accordion-item" style="border: 1px solid #ddd; border-radius: 6px; overflow: hidden; margin-bottom: 15px;">
-                        <button class="accordion-header" onclick="toggleAccordion(this)" style="width: 100%; padding: 15px; background: #f8f9fa; border: none; text-align: left; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: #333;">
+                        <button class="accordion-header" onclick="AuditoriaUI.toggleAccordion(this)" style="width: 100%; padding: 15px; background: #f8f9fa; border: none; text-align: left; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: #333;">
                             <span>${tAuditoria('error_by_sieve', '📈 Error por Tamiz')}</span>
                             <span style="font-size: 1.2em;">▼</span>
                         </button>
@@ -3009,7 +2902,7 @@
                     
                     <!-- Acordeón 2: Desviación vs Centro de Banda -->
                     <div class="accordion-item" style="border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
-                        <button class="accordion-header" onclick="toggleAccordion(this)" style="width: 100%; padding: 15px; background: #f8f9fa; border: none; text-align: left; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: #333;">
+                        <button class="accordion-header" onclick="AuditoriaUI.toggleAccordion(this)" style="width: 100%; padding: 15px; background: #f8f9fa; border: none; text-align: left; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: #333;">
                             <span>${tAuditoria('deviation_vs_center', '📊 Desviación vs Centro de Banda')}</span>
                             <span style="font-size: 1.2em;">▼</span>
                         </button>
@@ -3025,22 +2918,28 @@
                 </div>
             `;
             
-            document.getElementById('resultado').innerHTML = html;
+            document.getElementById('auditoriaResultado').innerHTML = html;
 
             if (typeof I18N !== 'undefined' && I18N && typeof I18N.applyTranslations === 'function') {
-                I18N.applyTranslations(document.getElementById('resultado'));
+                I18N.applyTranslations(document.getElementById('auditoriaResultado'));
             }
             
             // Dibujar gráficos (esperar a que el DOM se actualice)
-            setTimeout(() => {
+            dibujarGraficosPendientes = () => {
+                if (modalAuditoria && !modalAuditoria.open) return;
+                dibujarGraficosPendientes = null;
                 dibujarGrafico(grafico, entrada);
                 dibujarGraficosAnalisis(grafico, entrada);
                 if (window.AuditoriaCurveEditor && typeof window.AuditoriaCurveEditor.init === 'function') {
                     window.AuditoriaCurveEditor.init();
                 }
-            }, 100);
+            };
+            const dibujar = dibujarGraficosPendientes;
+            requestAnimationFrame(() => {
+                if (dibujar === dibujarGraficosPendientes) dibujar();
+            });
         }
-        
+
         // Función para toggle acordeón
         function toggleAccordion(button) {
             const body = button.nextElementSibling;
@@ -3054,10 +2953,10 @@
 
         function expandirSeccionesParaImpresion() {
             const cambios = [];
-            const selectors = ['#resultado .detail-toggle button', '#resultado .accordion-header'];
+            const selectors = ['#auditoriaResultado .detail-toggle button', '#auditoriaResultado .accordion-header'];
 
             selectors.forEach((selector) => {
-                document.querySelectorAll(selector).forEach((button) => {
+                vista.querySelectorAll(selector).forEach((button) => {
                     const body = button.nextElementSibling;
                     if (!(body instanceof Element)) {
                         return;
@@ -3190,7 +3089,7 @@
         }
 
         function ejecutarExportacionPDFConTitulo(tituloPDF) {
-            const resultado = document.getElementById('resultado');
+            const resultado = document.getElementById('auditoriaResultado');
             if (!resultado || !resultado.innerHTML.trim()) {
                 mostrarError(tAuditoria('export_pdf_missing_report', 'Primero genera el informe de auditoría antes de exportarlo.'));
                 return;
@@ -3216,7 +3115,7 @@
         }
 
         function exportarReportePDF() {
-            const resultado = document.getElementById('resultado');
+            const resultado = document.getElementById('auditoriaResultado');
             if (!resultado || !resultado.innerHTML.trim()) {
                 mostrarError(tAuditoria('export_pdf_missing_report', 'Primero genera el informe de auditoría antes de exportarlo.'));
                 return;
@@ -3226,11 +3125,19 @@
         }
 
         window.addEventListener('beforeprint', () => {
+            if (modalAuditoria && !modalAuditoria.open) return;
+            document.body.classList.add('auditoria-imprimiendo');
+            if ('imprimirOperador' in vista.dataset) return;
             prepararGraficoPrincipalParaImpresion();
             resizeChartsParaImpresion();
         });
 
-        window.addEventListener('afterprint', restaurarGraficoPrincipalDespuesDeImpresion);
+        window.addEventListener('afterprint', () => {
+            if (!document.body.classList.contains('auditoria-imprimiendo')) return;
+            document.body.classList.remove('auditoria-imprimiendo');
+            delete vista.dataset.imprimirOperador;
+            restaurarGraficoPrincipalDespuesDeImpresion();
+        });
         inicializarModalTituloPDF();
         
         // Función para dibujar gráficos de análisis (Error y Desviación)
@@ -3420,7 +3327,8 @@
 
             if (Array.isArray(pasanteEntradaOriginal) && pasanteEntradaOriginal.length === datos.tamices.length) {
                 datasets.push({
-                    label: tAuditoria('chart_initial_input', 'ANTES · Datos crudos desde localStorage'),
+                    label: modalAuditoria ? 'Curva pasante del cálculo de retenidos'
+                        : tAuditoria('chart_initial_input', 'ANTES · Datos crudos desde localStorage'),
                     data: pasanteEntradaOriginal.slice().reverse(),
                     borderColor: '#d97706',
                     backgroundColor: 'rgba(217, 119, 6, 0.12)',
@@ -3556,26 +3464,65 @@
             });
         }
         
-        // 📋 Cargar JSON del localStorage en el textarea
-        function cargarJSONEnTextarea() {
-            const tablasCargadas = localStorage.getItem('tablasCargadas');
-            if (tablasCargadas) {
-                try {
-                    const datos = JSON.parse(tablasCargadas);
-                    document.getElementById('jsonInput').value = JSON.stringify(datos, null, 2);
-                    console.log('✅ JSON cargado en textarea desde localStorage.tablasCargadas');
-                } catch (e) {
-                    console.error('❌ Error al cargar JSON en textarea:', e);
-                }
+        {% if auditoria_integrada %}
+        // Colocar el diálogo junto al contenido principal para aislar la impresión.
+        document.body.appendChild(modalAuditoria);
+        modalAuditoria.addEventListener('cancel', event => {
+            const panel = vista.querySelector('.pdf-title-modal.is-open, .plant-modal.is-open');
+            if (!panel) return;
+            event.preventDefault();
+            if (panel.id === 'pdfTitleModal') cerrarModalTituloPDF();
+            else if (panel.id === 'plantOperatorModal') cerrarVistaOperativa();
+            else cerrarInformeParaOperadorPlanta();
+        });
+
+        window.abrirAuditoriaIntegrada = (calculo, prepararEntrada) => {
+            if (!modalAuditoria.open) modalAuditoria.showModal();
+            if (calculo && calculo === calculoEnAuditoria) {
+                dibujarGraficosPendientes?.();
+                return;
             }
-        }
-        
-        // Cargar ejemplo al abrir la página
+            dibujarGraficosPendientes = null;
+            versionAuditoria++;
+            calculoEnAuditoria = null;
+            window.__auditoriaCurveEditorState = null;
+            window.__plantOperatorViewState = null;
+            cerrarModalTituloPDF();
+            cerrarVistaOperativa();
+            cerrarInformeParaOperadorPlanta();
+            [instanciaChart, instanciaErrorChart, instanciaDesviacionChart].forEach(chart => chart?.destroy());
+            instanciaChart = instanciaErrorChart = instanciaDesviacionChart = null;
+            applyAuditoriaTranslations();
+            try {
+                const entrada = prepararEntrada(calculo);
+                calculoEnAuditoria = calculo;
+                return ejecutarAuditoria(entrada);
+            } catch (error) {
+                mostrarError(error.message);
+            }
+        };
+        {% else %}
         window.addEventListener('load', () => {
             applyAuditoriaTranslations();
-            cargarJSONEnTextarea();
+            const tablas = localStorage.getItem('tablasCargadas');
+            if (tablas) document.getElementById('jsonInput').value = tablas;
             usarEjemplo();
         });
+        {% endif %}
+
+        window.AuditoriaUI = {
+            {% if not auditoria_integrada %}
+            cargarDatos, usarEjemplo,
+            {% endif %}
+            imprimirInformeOperador, abrirVistaOperativa, cerrarVistaOperativa,
+            abrirInformeParaOperadorPlanta, cerrarInformeParaOperadorPlanta,
+            exportarReportePDF, descargarGraficoComparacionPNG, toggleAccordion,
+            dibujarGrafico, dibujarGraficosAnalisis, recalcularVistaOperativaDesdeCurvaVirtual,
+            consolidarAjusteManual
+        };
+    })();
     </script>
+{% if not auditoria_integrada %}
 </body>
 </html>
+{% endif %}
