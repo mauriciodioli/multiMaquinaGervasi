@@ -91,6 +91,13 @@ function usarAgregadoSeleccionado() {
                 }
                 return;
             }
+            // Los agregados precargados existentes contienen porcentajes, no gramos.
+            // Mantener el modo historico para no reinterpretar datos almacenados.
+            mezclaSeleccionada.dataset.unidadEntrada = 'porcentaje_legacy';
+            const encabezado = mezclaSeleccionada.querySelector('table.tabla thead tr');
+            if (encabezado) encabezado.innerHTML = '<th>Tamiz (mm)</th><th>% Real</th><th>Acción</th>';
+            const configMasa = mezclaSeleccionada.querySelector('.configuracionMasa');
+            if (configMasa) configMasa.style.display = 'none';
             tbody.innerHTML = "";
 
             tamices.forEach(t => {

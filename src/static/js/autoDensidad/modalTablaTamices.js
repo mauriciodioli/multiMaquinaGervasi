@@ -8,6 +8,8 @@
 
 
 function copiarFilaTamiz(event, valor) {
+    // Un clic mantiene el comportamiento original: copiar al portapapeles.
+
     // Copiar al portapapeles
     navigator.clipboard.writeText(valor);
 
@@ -37,3 +39,19 @@ function copiarFilaTamiz(event, valor) {
     function cerrarModalParametros() {
     document.getElementById('modal-configuracion').style.display = 'none';
   }
+// Doble clic: insertar en la última celda de diámetro seleccionada.
+// Si no existe una celda válida, conservar el comportamiento de portapapeles.
+function insertarTamizDobleClic(event, valor) {
+    const celda = window.ultimaCeldaTamizFuller;
+    const valida = celda && celda.isConnected && celda.isContentEditable &&
+        celda.matches('table.tabla tbody tr td:first-child') &&
+        !celda.closest('tr')?.dataset.fondo;
+    if (valida) {
+        celda.textContent = valor;
+        celda.dispatchEvent(new Event('input', {bubbles:true}));
+        celda.dispatchEvent(new Event('blur', {bubbles:true}));
+        celda.style.backgroundColor = '';
+    } else if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(valor).catch(() => {});
+    }
+}

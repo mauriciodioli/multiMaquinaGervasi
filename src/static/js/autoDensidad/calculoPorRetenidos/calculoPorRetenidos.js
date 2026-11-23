@@ -141,6 +141,13 @@ function abrirProporcionesYCalcular(){
  * 1. Que cada tabla tenga retidos que sumen 100%
  * 2. Que los tamices sean consistentes (sin duplicados, valores correctos)
  */
+// Detecta las tablas métricas por su estructura real, incluso si se perdió
+// data-unidad-entrada por un script anterior o por una carga del DOM.
+function esTablaFullerGramos(mezcla) {
+  return mezcla?.dataset?.unidadEntrada === 'g' ||
+    !!mezcla?.querySelector('input.pesoCampione');
+}
+
 function validarDatosCompletos(){
   const errores = [];
   const t = (key, fallback) => typeof I18N !== 'undefined' ? I18N.t(key) : fallback;
@@ -178,8 +185,24 @@ function validarDatosCompletos(){
     return retidos;
   }
   
+  // Ensayos nuevos: los valores son gramos, NO porcentajes. La masa de fondo
+  // participa en el total recuperado; la numeración <th> no es un tamiz.
+  const mezclasGramos = [...document.querySelectorAll('.mezcla')]
+    .filter(esTablaFullerGramos);
+  mezclasGramos.forEach(mezcla => {
+    const nombre = (mezcla.querySelector('.nombreProducto')?.value || 'Sin nombre').trim();
+    try {
+      if (typeof prepararEnsayoGramos !== 'function') {
+        throw new Error('No está disponible la conversión de gramos a porcentajes');
+      }
+      prepararEnsayoGramos(mezcla);
+    } catch (e) {
+      errores.push({tabla:nombre, tipo:'ENSAYO_GRAMOS_INVALIDO', mensaje:e.message, severidad:'CRÍTICA'});
+    }
+  });
+
   // 1️⃣ VALIDAR RETIDOS POR TABLA
-  const mezclas = document.querySelectorAll('.mezcla');
+  const mezclas = [...document.querySelectorAll('.mezcla')].filter(m => !esTablaFullerGramos(m));
   
   mezclas.forEach((mezcla, idx) => {
     const nombre = (mezcla.querySelector('.nombreProducto')?.value || 'Sin nombre').trim();
@@ -366,7 +389,13 @@ function mostrarErroresValidacion(errores){
   `;
   
   errores.forEach(error => {
-    if (error.tipo === 'PORCENTAJES_FUERA_RANGO') {
+    if (error.tipo === 'ENSAYO_GRAMOS_INVALIDO') {
+      const li = document.createElement('li');
+      li.style.cssText = 'background:#ffccbc;border-left:4px solid #d84315;padding:8px;margin:8px 0;border-radius:4px;';
+      li.textContent = `${error.tabla}: ${error.mensaje}`;
+      // El contenido se escapa antes de incorporarse al HTML del modal.
+      html += li.outerHTML;
+    } else if (error.tipo === 'PORCENTAJES_FUERA_RANGO') {
       const detalles = error.valores.map(v => 
         `${v.problema === 'negativo' 
           ? `❌ ${v.tamiz}mm: ${v.valor}% (${lblValorNegativo})` 
@@ -513,50 +542,56 @@ function resolverProporcion(nombre, fallbackIgual, inputVal) {
 // === construir payload % retenido (usando MOCK de proporciones) ===
 
 function construirPayloadRetido(){
-  const proporciones = leerProporciones();  // <- fuente de verdad
-  const materiales = [];
+  const proporciones = leerProporciones();
+  const mezclas = [...document.querySelectorAll('.mezcla')];
+  const entradas = [];
   const tamicesSet = new Set();
+  const leerNumero = v => {
+    const t = String(v ?? '').trim().replace(',', '.');
+    return t === '' ? NaN : Number(t);
+  };
 
-  const mezclas = document.querySelectorAll('.mezcla');
   mezclas.forEach(mezcla => {
     const nombre = (mezcla.querySelector('.nombreProducto')?.value || 'Sin nombre').trim();
-
-    const retidosLoc = [];
-    const tamicesLoc = [];
-
-    mezcla.querySelectorAll('tbody tr').forEach(tr => {
-      const tRaw = tr.cells[0]?.textContent?.trim();
-      const pRaw = tr.cells[1]?.textContent?.trim();
-      const t = (tRaw?.toLowerCase() === 'fundo') ? 'Fundo' : parseFloat(tRaw);
-      const r = parseFloat(pRaw);
-      if ((t === 'Fundo' || !isNaN(t)) && !isNaN(r)){
-        tamicesLoc.push(t);
-        retidosLoc.push(r);
-        tamicesSet.add(t);
-      }
-    });
-
-    if (retidosLoc.length){
-      const pct = Number(proporciones[nombre] || 0);
-      materiales.push({
-        nombre,
-        proporcion_pct: pct,      // ya no hay mock
-        retido_ind_pct: retidosLoc,
-        normalizar: false          // STEP 3: Add normalization flag (always true for now)
+    const masas = new Map();
+    let fondo = 0;
+    if (esTablaFullerGramos(mezcla)) {
+      // La misma validación y denominador utilizados por Calculate All.
+      const datos = prepararEnsayoGramos(mezcla);
+      datos.tamices.forEach((d, i) => {
+        masas.set(d, 100 * datos.pesos_retenidos_g[i] / datos.peso_total_recuperado_g);
+        tamicesSet.add(d);
+      });
+      fondo = 100 * datos.peso_fondo_g / datos.peso_total_recuperado_g;
+    } else {
+      // Compatibilidad con tablas antiguas que ya contienen % retenido.
+      mezcla.querySelectorAll('table.tabla tbody tr').forEach(tr => {
+        const c = tr.querySelectorAll('td');
+        const etiqueta = c[0]?.textContent?.trim() || '';
+        const valor = leerNumero(c[1]?.textContent);
+        if (!Number.isFinite(valor)) return;
+        if (tr.dataset.fondo === 'true' || /^(fundo|pan|piatto di fondo|bandeja de fondo)$/i.test(etiqueta)) {
+          fondo = valor;
+        } else {
+          const d = leerNumero(etiqueta);
+          if (Number.isFinite(d) && d > 0) { masas.set(d, valor); tamicesSet.add(d); }
+        }
       });
     }
+    if (masas.size) entradas.push({nombre, masas, fondo, proporcion_pct:Number(proporciones[nombre] || 0)});
   });
-
-  if (!materiales.length) throw new Error('No hay materiales con datos de % retenido.');
-
-  const tamices = Array.from(tamicesSet);
-
-  // Control rápido
-  const suma = materiales.reduce((s,m)=>s+(+m.proporcion_pct||0), 0);
-  if (Math.abs(suma-100) > 0.01){
-    console.warn('[retido] Proporciones ≠ 100:', suma);
-  }
-  return { tamices, materiales, limites: LIMITES_BR, debug: true };
+  if (!entradas.length) throw new Error('No hay materiales con datos de retenido.');
+  const tamices = [...tamicesSet].sort((a,b) => b-a);
+  tamices.push('Fundo');
+  const materiales = entradas.map(e => ({
+    nombre:e.nombre,
+    proporcion_pct:e.proporcion_pct,
+    retido_ind_pct:[...tamices.slice(0,-1).map(d => e.masas.get(d) || 0), e.fondo],
+    normalizar:false
+  }));
+  const suma = materiales.reduce((s,m) => s+m.proporcion_pct, 0);
+  if (Math.abs(suma-100) > 0.01) throw new Error('Las proporciones de los agregados deben sumar 100%.');
+  return {tamices, materiales, limites:LIMITES_BR, debug:true};
 }
 
 // === Acción principal: enviar a backend y manejar respuesta ===

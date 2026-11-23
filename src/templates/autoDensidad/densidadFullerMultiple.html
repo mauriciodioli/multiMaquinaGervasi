@@ -205,29 +205,24 @@
         <h5 class="modal-title" id="modaltablaTamicesLabel">
           📘 {{ t_menu.get('tabla_parametros_tamices', 'Tabla de Parámetros Tamices') }}
         </h5>
-          <button type="button" class="btn-close" onclick="cerrarModalParametros()" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close" onclick="cerrarModalTamices()" aria-label="Cerrar"></button>
       </div>
       <div class="modal-body">
 
         <table border="1" cellpadding="5" cellspacing="0">
           <thead>
-           <tr><th>{{ t_menu.get('tamiz_comercial', 'Tamiz comercial') }}</th><th>{{ t_menu.get('diametro', 'Diámetro (mm)') }}</th></tr>
+           <tr><th>{{ t_menu.get('tamiz_metrico', 'Tamiz métrico') }}</th><th>{{ t_menu.get('diametro', 'Diámetro (mm)') }}</th></tr>
           </thead>
           <tbody>
-            <tbody>
-                <tr class="copiable" onclick="copiarFilaTamiz(event, '25.4')"><td>1"</td><td>25.4</td></tr>
-                <tr class="copiable" onclick="copiarFilaTamiz(event, '19.0')"><td>3/4"</td><td>19.0</td></tr>
-                <tr class="copiable" onclick="copiarFilaTamiz(event, '12.5')"><td>1/2"</td><td>12.5</td></tr>
-                <tr class="copiable" onclick="copiarFilaTamiz(event, '9.5')"><td>3/8"</td><td>9.5</td></tr>
-                <tr class="copiable" onclick="copiarFilaTamiz(event, '4.75')"><td>N° 4</td><td>4.75</td></tr>
-                <tr class="copiable" onclick="copiarFilaTamiz(event, '2.36')"><td>N° 8</td><td>2.36</td></tr>
-                <tr class="copiable" onclick="copiarFilaTamiz(event, '1.18')"><td>N° 16</td><td>1.18</td></tr>
-                <tr class="copiable" onclick="copiarFilaTamiz(event, '0.60')"><td>N° 30</td><td>0.60</td></tr>
-                <tr class="copiable" onclick="copiarFilaTamiz(event, '0.30')"><td>N° 50</td><td>0.30</td></tr>
-                <tr class="copiable" onclick="copiarFilaTamiz(event, '0.15')"><td>N° 100</td><td>0.15</td></tr>
-                <tr class="copiable" onclick="copiarFilaTamiz(event, '0.075')"><td>N° 200</td><td>0.075</td></tr>
-
-
+            <tr class="copiable" onclick="copiarFilaTamiz(event, '10')" ondblclick="insertarTamizDobleClic(event, '10')"><td>10 mm</td><td>10</td></tr>
+            <tr class="copiable" onclick="copiarFilaTamiz(event, '8')" ondblclick="insertarTamizDobleClic(event, '8')"><td>8 mm</td><td>8</td></tr>
+            <tr class="copiable" onclick="copiarFilaTamiz(event, '4')" ondblclick="insertarTamizDobleClic(event, '4')"><td>4 mm</td><td>4</td></tr>
+            <tr class="copiable" onclick="copiarFilaTamiz(event, '2')" ondblclick="insertarTamizDobleClic(event, '2')"><td>2 mm</td><td>2</td></tr>
+            <tr class="copiable" onclick="copiarFilaTamiz(event, '1')" ondblclick="insertarTamizDobleClic(event, '1')"><td>1 mm</td><td>1</td></tr>
+            <tr class="copiable" onclick="copiarFilaTamiz(event, '0.5')" ondblclick="insertarTamizDobleClic(event, '0.5')"><td>500 µm</td><td>0.5</td></tr>
+            <tr class="copiable" onclick="copiarFilaTamiz(event, '0.25')" ondblclick="insertarTamizDobleClic(event, '0.25')"><td>250 µm</td><td>0.25</td></tr>
+            <tr class="copiable" onclick="copiarFilaTamiz(event, '0.125')" ondblclick="insertarTamizDobleClic(event, '0.125')"><td>125 µm</td><td>0.125</td></tr>
+            <tr class="copiable" onclick="copiarFilaTamiz(event, '0.063')" ondblclick="insertarTamizDobleClic(event, '0.063')"><td>63 µm</td><td>0.063</td></tr>
           </tbody>
         </table>
       </div>

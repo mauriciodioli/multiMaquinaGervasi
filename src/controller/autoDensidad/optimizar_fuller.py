@@ -41,7 +41,8 @@ def _expandir_objetivo_a_master(curva_objetivo9):
     x  = np.log10(np.asarray(OBJ_TAMICES, dtype=float))            # 9
     y  = np.asarray(curva_objetivo9, dtype=float)                  # 9
     xm = np.log10(np.asarray(MASTER_TAMICES, dtype=float))         # L (p.ej., 14)
-    return np.interp(xm, x, y, left=y[0], right=y[-1])             # L
+    orden = np.argsort(x)
+    return np.interp(xm, x[orden], y[orden], left=y[orden][0], right=y[orden][-1])  # L
 
 @optimizar_fuller.route('/densidadFullerAutoOptimizar/', methods=['POST'])
 def auto_optimizar_curva():

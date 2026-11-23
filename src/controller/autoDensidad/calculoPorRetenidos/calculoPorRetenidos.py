@@ -950,12 +950,19 @@ def granulometria_retido():
     D_max = 12.5
     fuller_ideal = []
     for tamiz in tamices_ord:
-        if tamiz > 0:
-            P = 100.0 * (float(tamiz) / D_max) ** 0.45
-            fuller_ideal.append(round(P, 2))
-        else:
-            # En el fundo (tamiz 0), el pasante es 100%
-            fuller_ideal.append(100.0)
+        # La bandeja de fondo (Fundo/Pan) no tiene abertura de tamiz.
+        # En d=0, el porcentaje pasante ideal de Fuller es 0%.
+        if str(tamiz).strip().lower() in {"fundo", "pan", "piatto di fondo", "bandeja de fondo"}:
+            fuller_ideal.append(0.0)
+            continue
+        try:
+            abertura_mm = float(tamiz)
+        except (TypeError, ValueError):
+            return jsonify(ok=False, error=f"Tamiz no numérico: {tamiz!r}"), 400
+        if abertura_mm < 0:
+            return jsonify(ok=False, error=f"Abertura de tamiz negativa: {abertura_mm}"), 400
+        P = 100.0 * (abertura_mm / D_max) ** 0.45
+        fuller_ideal.append(round(P, 2))
     
     return jsonify({
         "ok": True,
@@ -2303,10 +2310,51 @@ def generar_propuesta_3_agregados(
             'detalles_errores': errores_validacion
         }
         
-        log(f"\n[PROPUESTA 3-AGG] ✅ Generación completada exitosamente")
-        
+        # Validación fail-closed: una curva sintética no es una receta de planta.
+        # Se comprueba consistencia física de M1/M2/M3 y que su mezcla ponderada
+        # reproduzca la curva de resultado declarada. No se altera el cálculo principal.
+        defectos_fisicos = []
+        curvas = []
+        for clave in ('m1', 'm2', 'm3'):
+            material = propuesta[clave]
+            pas = [float(x) for x in material['pasante_pct']]
+            ret = [float(x) for x in material['retido_ind_pct']]
+            if len(pas) != n or len(ret) != n:
+                defectos_fisicos.append(f'{clave}: longitud incorrecta')
+                continue
+            if any(not math.isfinite(x) or x < -0.01 or x > 100.01 for x in pas + ret):
+                defectos_fisicos.append(f'{clave}: porcentaje fuera de rango')
+            if any(pas[i] + 0.02 < pas[i+1] for i in range(n-1)):
+                defectos_fisicos.append(f'{clave}: pasante no monótono')
+            # El retenido en Pan puede venir como último elemento solo si
+            # tamices incluye Fundo/Pan; en otro caso se exige consistencia
+            # entre retenidos y pasantes sin inventar masa de fondo.
+            acumulado = 0.0
+            for i, valor in enumerate(ret):
+                acumulado += valor
+                if abs((100.0 - acumulado) - pas[i]) > 0.15:
+                    defectos_fisicos.append(f'{clave}: retenido/pasante inconsistente en {i}')
+                    break
+            curvas.append(pas)
+
+        if len(curvas) == 3:
+            pesos = (prop_gruesa, prop_media, prop_fina)
+            for i in range(n):
+                ponderado = sum(pesos[j] * curvas[j][i] for j in range(3))
+                if abs(ponderado - mix_resultado_pasante[i]) > 0.2:
+                    defectos_fisicos.append(f'mezcla correctiva no reproduce resultado en tamiz {tamices[i]}')
+                    break
+
+        propuesta_valida = bool(cumplimiento_pct >= 95.0 and not defectos_fisicos)
+        validacion['curvas_fisicamente_validas'] = not defectos_fisicos
+        validacion['defectos_fisicos'] = defectos_fisicos
+        validacion['apta_para_operacion'] = propuesta_valida
+        if not propuesta_valida:
+            log('[PROPUESTA 3-AGG] NO APTA para instrucciones operativas: ' +
+                '; '.join(defectos_fisicos[:3]))
+
         return {
-            'exito': True,
+            'exito': propuesta_valida,
             'propuesta': propuesta,
             'proporciones': [
                 round(prop_gruesa, 6),
@@ -2319,7 +2367,7 @@ def generar_propuesta_3_agregados(
                 f"Cumplimiento esperado: {round(cumplimiento_pct, 1)}%. "
                 f"M1={round(prop_gruesa*100, 1)}%, M2={round(prop_media*100, 1)}%, M3={round(prop_fina*100, 1)}%"
             ),
-            'acciones_zaranda': acciones_zaranda
+            'acciones_zaranda': acciones_zaranda if propuesta_valida else []
         }
     
     except Exception as e:

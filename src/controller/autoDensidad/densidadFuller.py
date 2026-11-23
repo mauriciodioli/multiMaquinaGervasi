@@ -205,7 +205,14 @@ def densidad_fuller_multiple():
             "error_promedio": error_promedio,
             "ajustes": ajustes,
             "comentario": comentario,  # el diagnóstico global
-            "tamices": tamices
+            "tamices": tamices,
+            "datos_ensayo": next(({
+                "unidad_entrada": original.get("unidad_entrada"),
+                "peso_campione_g": original.get("peso_campione_g"),
+                "peso_total_recuperado_g": original.get("peso_total_recuperado_g"),
+                "peso_fondo_g": original.get("peso_fondo_g"),
+                "pesos_retenidos_g": original.get("pesos_retenidos_g")
+            } for original in mezclas if original.get("nombre") == nombre and original.get("unidad_entrada") == "g"), None)
         })
 
 

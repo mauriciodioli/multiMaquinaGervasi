@@ -226,6 +226,122 @@ function enviarDatos() {
 // Función para calcular la densidad de Fuller multiple****************/
 //*********************************************************************/
 
+// Serie de tamices metricos solicitada para ensayos nuevos (mm).
+// La etiqueta se traduce visualmente; data-fondo mantiene la identificación estable.
+function idiomaFuller() {
+    const titulo = document.querySelector('.container h2')?.textContent?.trim().toLowerCase() || '';
+    if (titulo.startsWith('calculation')) return 'en';
+    if (titulo.startsWith('calcolo')) return 'it';
+    return 'es';
+}
+function etiquetaFondoFuller() {
+    return ({en:'Pan', it:'Piatto di fondo', es:'Bandeja de fondo'})[idiomaFuller()];
+}
+function esFilaFondoFuller(fila) {
+    return fila?.dataset?.fondo === 'true' || /^(piatto di fondo|pan|bandeja de fondo)$/i.test(fila?.cells?.[0]?.textContent?.trim() || '');
+}
+function traducirFondoFuller(mezcla) {
+    mezcla.querySelectorAll('table.tabla tbody tr').forEach(fila => {
+        if (esFilaFondoFuller(fila)) {
+            fila.dataset.fondo = 'true';
+            fila.cells[0].textContent = etiquetaFondoFuller();
+            fila.cells[0].removeAttribute('contenteditable');
+        }
+    });
+}
+const TAMICES_METRICOS_GERVASI = [10, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063];
+function numeroGranulometrico(v) {
+    const t = String(v ?? '').trim().replace(',', '.');
+    return t === '' ? NaN : Number(t);
+}
+function prepararEnsayoGramos(mezcla) {
+    const filas = [...mezcla.querySelectorAll('table.tabla tbody tr')];
+    const masas = [];
+    const tamices = [];
+    let fondo = null;
+    for (const fila of filas) {
+        const c = fila.querySelectorAll('td');
+        const etiqueta = (c[0]?.textContent || '').trim();
+        const textoMasa = (c[1]?.textContent || '').trim();
+        if (!textoMasa) throw Error('Complete todos los pesos retenidos, incluido Piatto di fondo.');
+        const masa = numeroGranulometrico(textoMasa);
+        if (!Number.isFinite(masa) || masa < 0) throw Error('Peso retenido no valido: ' + etiqueta);
+        if (esFilaFondoFuller(fila)) { if (fondo !== null) throw Error('Piatto di fondo duplicado'); fondo = masa; continue; }
+        const d = numeroGranulometrico(etiqueta);
+        if (!Number.isFinite(d) || d <= 0) throw Error('Tamiz no valido: ' + etiqueta);
+        if (tamices.includes(d)) throw Error('Tamiz duplicado: ' + etiqueta);
+        tamices.push(d); masas.push(masa);
+    }
+    if (fondo === null) throw Error('Falta Piatto di fondo');
+    const total = masas.reduce((a,b)=>a+b, fondo);
+    if (!(total > 0)) throw Error('El peso total debe ser mayor que cero');
+    const pesoCampione = numeroGranulometrico(mezcla.querySelector('.pesoCampione')?.value);
+    if (!Number.isFinite(pesoCampione) || pesoCampione <= 0) throw Error('Ingrese Peso campione (g)');
+    const orden = tamices.map((d,i)=>({d,m:masas[i]})).sort((a,b)=>b.d-a.d);
+    let acumulado = 0;
+    const pasantes = orden.map(x => { acumulado += x.m; return Math.max(0,100*(1-acumulado/total)); });
+    const aviso = mezcla.querySelector('.balanceMasa');
+    if (aviso) aviso.textContent = `Totale trattenuto: ${total.toFixed(2)} g | Peso campione: ${pesoCampione.toFixed(2)} g | Differenza: ${(total-pesoCampione).toFixed(2)} g`;
+    return {tamices:orden.map(x=>x.d), porcentajes_reales:pasantes, pesos_retenidos_g:orden.map(x=>x.m), peso_fondo_g:fondo, peso_campione_g:pesoCampione, peso_total_recuperado_g:total, unidad_entrada:'g'};
+}
+function datosMezclaParaCalculo(mezcla) {
+    if (mezcla.dataset.unidadEntrada === 'g') return prepararEnsayoGramos(mezcla);
+    const tamices=[], porcentajes_reales=[];
+    mezcla.querySelectorAll('table.tabla tbody tr').forEach(fila=>{
+        const c=fila.querySelectorAll('td');
+        const d=numeroGranulometrico(c[0]?.textContent), p=numeroGranulometrico(c[1]?.textContent);
+        if(Number.isFinite(d)&&d>0&&Number.isFinite(p)) {tamices.push(d);porcentajes_reales.push(p);}
+    });
+    return {tamices,porcentajes_reales,unidad_entrada:'porcentaje_legacy'};
+}
+// Columna HTML real de numeracion. Se usa <th scope="row"> para no
+// desplazar los indices td[0]=tamiz y td[1]=peso utilizados por los calculos.
+function numerarFilasFuller(mezcla) {
+    if (!mezcla) return;
+    const tabla = mezcla.querySelector('table.tabla');
+    if (!tabla) return;
+    const cabecera = tabla.querySelector('thead tr');
+    if (cabecera && !cabecera.querySelector('th[data-numero-fila]')) {
+        const th = document.createElement('th');
+        th.dataset.numeroFila = 'true';
+        th.textContent = 'N.º';
+        th.style.cssText = 'width:48px;text-align:center;';
+        cabecera.prepend(th);
+    }
+    let numero = 0;
+    tabla.querySelectorAll('tbody tr').forEach(fila => {
+        let th = fila.querySelector(':scope > th[data-numero-fila]');
+        if (!th) {
+            th = document.createElement('th');
+            th.dataset.numeroFila = 'true';
+            th.scope = 'row';
+            th.style.cssText = 'width:48px;text-align:center;font-weight:500;';
+            fila.prepend(th);
+        }
+        th.textContent = esFilaFondoFuller(fila) ? '—' : String(++numero);
+    });
+}
+function observarNumeracionFuller(mezcla) {
+    const tbody = mezcla?.querySelector('table.tabla tbody');
+    if (!tbody || tbody.dataset.numeracionObservada === 'true') return;
+    tbody.dataset.numeracionObservada = 'true';
+    new MutationObserver(() => numerarFilasFuller(mezcla))
+        .observe(tbody, {childList:true});
+    numerarFilasFuller(mezcla);
+}
+
+function inicializarEnsayoGramos(mezcla) {
+    mezcla.dataset.unidadEntrada = 'g';
+    const tabla=mezcla.querySelector('table.tabla');
+    if (!tabla) return;
+    tabla.querySelector('thead tr').innerHTML='<th>Tamiz (mm)</th><th>Peso trattenuto (g)</th><th>Azione</th>';
+    const cabecera=tabla.previousElementSibling;
+    const campo=document.createElement('div');
+    campo.className='configuracionMasa';
+    campo.innerHTML='<label>Peso campione (g): <input class="pesoCampione" type="number" min="0.01" step="any" value="1000"></label> <small class="balanceMasa"></small>';
+    tabla.parentNode.insertBefore(campo,tabla);
+    tabla.querySelector('tbody').innerHTML=TAMICES_METRICOS_GERVASI.map(d=>`<tr><td contenteditable="true">${d}</td><td contenteditable="true"></td><td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td></tr>`).join('')+`<tr data-fondo="true"><td>${etiquetaFondoFuller()}</td><td contenteditable="true"></td><td>—</td></tr>`;
+}
 function agregarMezcla() {
     const container = document.getElementById("mezclasContainer");
 
@@ -269,6 +385,8 @@ function agregarMezcla() {
     `;
 
     container.appendChild(mezclaDiv);
+    inicializarEnsayoGramos(mezclaDiv);
+    observarNumeracionFuller(mezclaDiv);
     
     // Agregar validadores a las filas iniciales
     mezclaDiv.querySelectorAll('tbody tr').forEach(fila => {
@@ -327,7 +445,9 @@ function agregarTablaAlocalStorage(btn) {
     const tablaActual = {
         mezclaId,
         nombre,
-        filas
+        filas,
+        unidadEntrada: mezclaEl.dataset.unidadEntrada || "porcentaje_legacy",
+        pesoCampione: mezclaEl.querySelector(".pesoCampione")?.value || null
     };
 
     // 6) upsert
@@ -488,56 +608,30 @@ function agregarFilaMultiple(btn) {
         <td contenteditable="true">0</td>
         <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
     `;
-    tbody.appendChild(fila);
-    
+    const fondo = [...tbody.rows].find(esFilaFondoFuller);
+    if (fondo) tbody.insertBefore(fila, fondo);
+    else tbody.appendChild(fila);
     // 4️⃣ AGREGAR VALIDACIÓN A LAS CELDAS CONTENTEDITABLE
     agregarValidadoresACeldas(fila);
+    numerarFilasFuller(mezcla);
     
     console.log("✅ Fila agregada a ESTA tabla");
 }
 
 // ✅ FUNCIÓN PARA VALIDAR CELDAS CON CONTENTEDITABLE
 function agregarValidadoresACeldas(fila) {
-  const celdas = fila.querySelectorAll('td[contenteditable="true"]');
-  
-  celdas.forEach((celda, idx) => {
-    celda.addEventListener('blur', function() {
-      const valor = parseFloat(this.textContent.trim());
-      
-      // Celda 0: Tamiz (debe ser positivo)
-      if (idx === 0) {
-        if (isNaN(valor) || valor < 0) {
-          this.style.backgroundColor = '#ffcccc';
-          this.title = idx === 0 ? '❌ Tamiz no puede ser negativo' : '';
-          console.warn('⚠️ Tamiz inválido:', valor);
-        } else {
-          this.style.backgroundColor = '';
-          this.title = '';
-        }
-      }
-      
-      // Celda 1: Porcentaje (debe estar entre 0-100%)
-      if (idx === 1) {
-        if (isNaN(valor) || valor < 0 || valor > 100) {
-          this.style.backgroundColor = '#ffcccc';
-          this.title = '❌ Porcentaje debe estar entre 0% y 100%';
-          console.warn('⚠️ Porcentaje inválido:', valor);
-        } else {
-          this.style.backgroundColor = '';
-          this.title = '';
-        }
-      }
-    });
-    
-    // Trigger inicial
-    celda.addEventListener('blur', function() {
-      this.dispatchEvent(new Event('blur', { bubbles: true }));
+  fila.querySelectorAll('td[contenteditable="true"]').forEach((celda,idx)=>{
+    celda.addEventListener('focus', () => { window.ultimaCeldaTamizFuller = celda; });
+    celda.addEventListener('click', () => { window.ultimaCeldaTamizFuller = celda; });
+    celda.addEventListener('blur',()=>{
+      const valor=numeroGranulometrico(celda.textContent);
+      const esMasa=fila.closest('.mezcla')?.dataset.unidadEntrada==='g';
+      const valido=celda.textContent.trim()==='' || (Number.isFinite(valor)&&valor>=0&&(idx!==0||valor>0)&&(!(!esMasa&&idx===1)||valor<=100));
+      celda.style.backgroundColor=valido?'':'#ffcccc';
+      celda.title=valido?'':'Valor numerico no valido';
     });
   });
 }
-
-
-
 
 
 let curvas = []; // guardar aquí
@@ -550,37 +644,15 @@ function calcularTodas() {
 
     let dMaxFinal = null;
 
-    mezclasDivs.forEach(mezcla => {
-        const nombre = mezcla.querySelector(".nombreProducto").value || "Sin nombre";
-        const filas = mezcla.querySelectorAll("tbody tr");
-
-        const tamices = [];
-        const porcentajes = [];
-
-        for (let fila of filas) {
-            const celdas = fila.querySelectorAll("td");
-            const tamiz = parseFloat(celdas[0].textContent);
-            const porcentaje = parseFloat(celdas[1].textContent);
-
-            if (!isNaN(tamiz) && !isNaN(porcentaje)) {
-                tamices.push(tamiz);
-                porcentajes.push(porcentaje);
-
-                // Buscar primer tamiz con < 100% pasante → posible d_max
-                if (porcentaje < 100 && (dMaxFinal === null || tamiz > dMaxFinal)) {
-                    dMaxFinal = tamiz;
-                }
-            }
+    try {
+      mezclasDivs.forEach(mezcla => {
+        const datos=datosMezclaParaCalculo(mezcla);
+        if (datos.tamices.length) {
+          payload.push({nombre:mezcla.querySelector('.nombreProducto')?.value || 'Sin nombre',...datos});
+          datos.tamices.forEach((d,i)=>{if(datos.porcentajes_reales[i]<100&&(dMaxFinal===null||d>dMaxFinal))dMaxFinal=d;});
         }
-
-        if (tamices.length > 0 && porcentajes.length > 0) {
-            payload.push({
-                nombre: nombre,
-                tamices: tamices,
-                porcentajes_reales: porcentajes
-            });
-        }
-    });
+      });
+    } catch(error) { alert(error.message); return; }
 
     if (payload.length === 0) {
         alert("Debe ingresar al menos una mezcla con datos válidos (tamiz y % real).");
@@ -1261,29 +1333,12 @@ function calcularMezclaOptima() {
     const mezclasDivs = document.querySelectorAll(".mezcla");
     const payload = [];
 
-    mezclasDivs.forEach(mezcla => {
-      const nombre = mezcla.querySelector(".nombreProducto").value || "Sin nombre";
-      const filas = mezcla.querySelectorAll("tbody tr");
-
-      const tamices = [];
-      const porcentajes = [];
-
-      filas.forEach(fila => {
-        const celdas = fila.querySelectorAll("td");
-        const tamiz = parseFloat(celdas[0].textContent);
-        const porcentaje = parseFloat(celdas[1].textContent);
-
-        if (!isNaN(tamiz) && !isNaN(porcentaje)) {
-          tamices.push(tamiz);
-          porcentajes.push(porcentaje);
-        }
+    try {
+      mezclasDivs.forEach(mezcla=>{
+        const datos=datosMezclaParaCalculo(mezcla);
+        if(datos.tamices.length) payload.push({nombre:mezcla.querySelector('.nombreProducto')?.value||'Sin nombre',...datos});
       });
-
-      // Solo agregamos si tiene datos válidos
-      if (tamices.length > 0 && porcentajes.length > 0) {
-        payload.push({ nombre, tamices, porcentajes_reales: porcentajes });
-      }
-    });
+    } catch(error) {alert(error.message);return reject(error);}
 
     // Prevención si no hay mezclas válidas
     if (payload.length === 0) {
@@ -1795,3 +1850,12 @@ function getCookie(nombre) {
 
 
 
+
+// Numerar tambien tablas restauradas o incorporadas por otras funciones.
+document.addEventListener('DOMContentLoaded', () => {
+    const contenedor = document.getElementById('mezclasContainer');
+    if (!contenedor) return;
+    const activar = () => contenedor.querySelectorAll('.mezcla').forEach(observarNumeracionFuller);
+    activar();
+    new MutationObserver(activar).observe(contenedor, {childList:true,subtree:false});
+});

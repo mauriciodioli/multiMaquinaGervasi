@@ -178,3 +178,29 @@ td[contenteditable="true"]:focus {
   padding-top: 30px;
   border-top: 1px solid #dee2e6;
 }
+
+/* Columna N.º visual: el DOM conserva sus tres celdas originales. */
+#mezclasContainer table.tabla { counter-reset: fila-tamiz; }
+#mezclasContainer table.tabla th:first-child,
+#mezclasContainer table.tabla td:first-child {
+  position: relative;
+  padding-left: 68px !important;
+}
+#mezclasContainer table.tabla th:first-child::before,
+#mezclasContainer table.tabla td:first-child::before {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 51px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-right: 1px solid #dee2e6;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+#mezclasContainer table.tabla th:first-child::before { content: 'N.º'; font-weight: 700; }
+#mezclasContainer table.tabla tbody tr:not([data-fondo="true"]) { counter-increment: fila-tamiz; }
+#mezclasContainer table.tabla tbody tr:not([data-fondo="true"]) td:first-child::before { content: counter(fila-tamiz); }
+#mezclasContainer table.tabla tbody tr[data-fondo="true"] td:first-child::before { content: '—'; }
