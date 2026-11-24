@@ -9,6 +9,9 @@
 /* visible */
 .dpia-modal[aria-hidden="false"]{ display:block; }
 
+#estadoFinuraAutomatica.text-success { color: #166534; }
+#estadoFinuraAutomatica.text-danger { color: #b91c1c; }
+
 #modalLimitesGranulometricos .form-control {
   display: block;
   width: 100%;

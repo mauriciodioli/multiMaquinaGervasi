@@ -55,11 +55,13 @@ def pantalla_densidad_fuller_multiple():
 
     lang = request.cookies.get("lang", "es")
     t_menu = get_textos_menu(lang)
+    from .calculoPorRetenidos.calculoPorRetenidos import _seleccionar_metodo_finura
 
     return render_template(
         "autoDensidad/densidadFullerMultiple.html",
         usuario=usuario,
-        t_menu=t_menu
+        t_menu=t_menu,
+        metodo_finura_servidor=_seleccionar_metodo_finura({}) is not None,
     )
 
 

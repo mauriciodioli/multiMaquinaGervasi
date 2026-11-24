@@ -126,6 +126,19 @@ class FinuraDinamicaTest(unittest.TestCase):
         self.assertEqual(datos["tamices"], [5, 2])
         self.assertEqual(datos["finura"]["valor"], 0.01)
 
+    def test_referencia_experimental_cede_ante_metodo_configurado(self):
+        automatico = {"id": "FM_AUTO_prueba", "tamices": [5, 2], "permitir_interpolacion": False}
+        argumentos = ([5, 2], [("A", 100, [20, 80], None)])
+        self.app.config["METODO_FINURA"] = None
+        datos = self.calcular(*argumentos, fondo_explicito=False, metodo_finura_automatico=automatico)
+        self.assertEqual(datos["modulo_finura"], 1.2)
+        self.assertEqual(datos["finura"]["tipo_metodo"], "experimental")
+        self.app.config["METODO_FINURA"] = {"id": "Referencia configurada", "tamices": [5]}
+        datos = self.calcular(*argumentos, fondo_explicito=False, metodo_finura_automatico=automatico)
+        self.assertEqual(datos["modulo_finura"], 0.2)
+        self.assertEqual(datos["finura"]["metodo"], "Referencia configurada")
+        self.assertNotIn("tipo_metodo", datos["finura"])
+
     def test_seleccion_vacia_o_perfil_desconocido(self):
         muestras = [("A", 100, [20, 80], None)]
         self.app.config["METODO_FINURA"] = " "

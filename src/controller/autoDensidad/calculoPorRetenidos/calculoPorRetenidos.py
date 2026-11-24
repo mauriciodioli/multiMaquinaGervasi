@@ -914,7 +914,14 @@ def granulometria_retido():
 
     # 4) MF
     metodo_finura = _seleccionar_metodo_finura(data)
+    experimental = metodo_finura is None and "metodo_finura" not in data and isinstance(
+        data.get("metodo_finura_automatico"), dict
+    )
+    if experimental:
+        metodo_finura = data["metodo_finura_automatico"]
     finura = _finura_modulus(mix_acum, tamices_ord, metodo_finura)
+    if experimental:
+        finura["tipo_metodo"] = "experimental"
     log(f"> Finura: {finura}")
 
     # 5) validación contra faixas

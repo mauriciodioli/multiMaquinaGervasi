@@ -15,6 +15,112 @@ function guardarProporciones(map){
   localStorage.setItem(LS_PROP, JSON.stringify(map || {}));
 }
 
+function detectarSerieFinura() {
+  const materiales = [...document.querySelectorAll('.mezcla')].map((mezcla, indice) => {
+    const nombre = mezcla.querySelector('.nombreProducto')?.value?.trim();
+    const serie = new Set();
+    const error = (clave, defecto, tamiz = '') => {
+      throw new Error(textoFinura(clave, defecto).replace('{material}', nombre || `#${indice + 1}`).replace('{sieve}', tamiz));
+    };
+    if (!nombre) error('mf_auto_material', 'Falta el nombre del material {material}.');
+    const gramos = esTablaFullerGramos(mezcla);
+    let fondo = false;
+    let total = 0;
+    for (const fila of mezcla.querySelectorAll('table.tabla tbody tr')) {
+      const [abertura, valor] = fila.querySelectorAll('td');
+      const etiqueta = abertura?.textContent.trim() || '';
+      const esFondo = esFilaFondoFuller(fila);
+      if (esFondo && gramos && !valor?.textContent.trim()) continue;
+      const tamiz = esFondo ? null : aberturaTamizMm(etiqueta);
+      if (!esFondo && !Number.isFinite(tamiz)) error('mf_auto_sieve', '{material}: abertura inválida ({sieve}).', etiqueta || '—');
+      if (esFondo ? fondo : serie.has(tamiz)) error('mf_auto_duplicate', '{material}: tamiz duplicado ({sieve}).', etiqueta);
+      const dato = numeroGranulometrico(valor?.textContent);
+      if (!Number.isFinite(dato) || dato < 0 || (!gramos && dato > 100)) {
+        error('mf_auto_data', '{material}: dato faltante o inválido en {sieve}.', etiqueta);
+      }
+      total += dato;
+      if (esFondo) fondo = true;
+      else serie.add(tamiz);
+    }
+    if (!serie.size) error('mf_auto_empty', '{material}: faltan tamices medidos.');
+    if (gramos) {
+      if (!Number.isFinite(total) || total <= 0) error('mf_auto_weight', '{material}: la masa recuperada debe ser positiva.');
+      const muestra = numeroGranulometrico(mezcla.querySelector('.pesoCampione')?.value);
+      if (!Number.isFinite(muestra) || muestra <= 0) error('mf_auto_sample', '{material}: ingresá una masa de muestra positiva.');
+    }
+    return { nombre, serie };
+  });
+  const tamices = [...new Set(materiales.flatMap(({ serie }) => [...serie]))].sort((a, b) => b - a);
+  if (!tamices.length) throw new Error(textoFinura('mf_auto_no_tables', 'Cargá tablas de materiales para detectar los tamices.'));
+  const faltantes = materiales.flatMap(({ nombre, serie }) => {
+    const faltan = tamices.filter(tamiz => !serie.has(tamiz));
+    return faltan.length ? [`${nombre}: ${faltan.join('; ')} mm`] : [];
+  });
+  if (faltantes.length) {
+    throw new Error(`${textoFinura('mf_auto_incompatible', 'Series incompatibles. Faltan tamices en')}: ${faltantes.join(' | ')}.`);
+  }
+  return tamices;
+}
+
+let metodoAutomaticoFinura;
+let refrescarProporciones;
+let secuenciaFinura = 0;
+
+function esReferenciaAutomatica(id, serie, interpolar) {
+  return !!metodoAutomaticoFinura && id === metodoAutomaticoFinura.id &&
+    serie === metodoAutomaticoFinura.serie && !interpolar;
+}
+
+function actualizarReferenciaFinura() {
+  const estado = document.getElementById('estadoFinuraAutomatica');
+  const id = document.getElementById('metodoFinuraId');
+  const serie = document.getElementById('metodoFinuraTamices');
+  const interpolar = document.getElementById('metodoFinuraInterpolacion');
+  if (!estado || !id || !serie || !interpolar) return true;
+  const automatico = metodoAutomaticoFinura;
+  const sigueAutomatico = esReferenciaAutomatica(id.value, serie.value, interpolar.checked);
+  if (automatico && !sigueAutomatico) {
+    if (id.value !== automatico.id && serie.value === automatico.serie) serie.value = '';
+    if (id.value === automatico.id) id.value = '';
+    metodoAutomaticoFinura = undefined;
+  }
+  const explicito = !sigueAutomatico && (id.value?.trim() || serie.value?.trim());
+  try {
+    const tamices = detectarSerieFinura();
+    if (explicito || estado.dataset.metodoServidor === 'true') {
+      if (sigueAutomatico) {
+        id.value = serie.value = '';
+        metodoAutomaticoFinura = undefined;
+      }
+      estado.className = '';
+      estado.textContent = textoFinura('mf_auto_configured', 'Se usará la referencia explícita configurada.');
+      return true;
+    }
+
+    const texto = tamices.join('; ');
+    if (!sigueAutomatico || automatico.serie !== texto) {
+      const fecha = new Date().toISOString();
+      const sufijo = globalThis.crypto?.randomUUID?.().slice(0, 8) ?? `${Date.now()}_${++secuenciaFinura}`;
+      const identificador = `FM_AUTO_${fecha.slice(0, 10).replaceAll('-', '')}_${fecha.slice(11, 19).replaceAll(':', '')}_${sufijo}`;
+      metodoAutomaticoFinura = { id: identificador, serie: texto };
+      id.value = identificador;
+      serie.value = texto;
+      interpolar.checked = false;
+    }
+    estado.className = 'text-success';
+    estado.textContent = textoFinura('mf_auto_ready', 'Referencia válida · Método experimental basado en la serie medida.');
+    return true;
+  } catch (error) {
+    if (sigueAutomatico) {
+      id.value = serie.value = '';
+      metodoAutomaticoFinura = undefined;
+    }
+    estado.className = 'text-danger';
+    estado.textContent = error.message;
+    return false;
+  }
+}
+
 function abrirModalProporciones(onOk){
   const tablas = leerTablasCargadas();
   if (!Array.isArray(tablas) || !tablas.length){
@@ -64,8 +170,9 @@ function abrirModalProporciones(onOk){
     msg.textContent = '';
     btn.disabled = true;
 
+    const referenciaValida = actualizarReferenciaFinura();
     if (Object.keys(map).length === inputs.length && Math.abs(total - 100) < 0.01){
-      btn.disabled = false;
+      btn.disabled = !referenciaValida;
     } else {
       msg.textContent = t('sim.prop_error_suma_100', 'Las proporciones deben sumar 100%');
     }
@@ -73,11 +180,17 @@ function abrirModalProporciones(onOk){
     guardarProporciones(map);
   }
 
+  refrescarProporciones = recalcular;
   form.oninput = recalcular;
+  for (const id of ['metodoFinuraId', 'metodoFinuraTamices', 'metodoFinuraInterpolacion']) {
+    document.getElementById(id).oninput = recalcular;
+  }
+  document.getElementById('finuraAvanzada').open = false;
   recalcular();
 
   btn.onclick = (e) => {
     e.preventDefault();
+    recalcular();
     if (btn.disabled) return;
     cerrarModal('modalProporciones');
     if (typeof onOk === 'function') onOk();
@@ -92,6 +205,13 @@ function abrirModalProporciones(onOk){
     }
   }, 50);
 }
+
+document.addEventListener('input', evento => {
+  if (evento.target.closest?.('.mezcla') &&
+      document.getElementById('modalProporciones')?.getAttribute('aria-hidden') === 'false') {
+    refrescarProporciones?.();
+  }
+});
 
 
 
@@ -620,8 +740,14 @@ function construirPayloadRetido(){
   const suma = materiales.reduce((s,m) => s+m.proporcion_pct, 0);
   if (Math.abs(suma-100) > 0.01) throw new Error('Las proporciones de los agregados deben sumar 100%.');
   const metodo_finura = leerMetodoFinura();
+  const automatico = esReferenciaAutomatica(
+    metodo_finura?.id, metodo_finura?.tamices?.join('; '), metodo_finura?.permitir_interpolacion
+  );
   return {
-    payload: { tamices, materiales, debug: true, ...(metodo_finura ? { metodo_finura } : {}) },
+    payload: {
+      tamices, materiales, debug: true,
+      ...(automatico ? { metodo_finura_automatico: metodo_finura } : metodo_finura ? { metodo_finura } : {})
+    },
     erroresAuditoria,
     cantidadMateriales: mezclas.length
   };
@@ -647,7 +773,9 @@ function mostrarFinura(finura, nodo = document.getElementById('retidoFinura')) {
     const etiqueta = finura.estado === 'estimado'
       ? t('mf_estimado', 'MF estimado por interpolación logarítmica')
       : t('mf_calculado', 'MF calculado');
-    nodo.textContent = `${etiqueta}: ${numero(finura.valor)}${metodo || ` (${t('mf_serie_configurada', 'serie configurada')})`}`;
+    const experimental = finura.tipo_metodo === 'experimental'
+      ? ` · ${t('mf_auto_experimental', 'Método experimental basado en la serie medida')}` : '';
+    nodo.textContent = `${etiqueta}: ${numero(finura.valor)}${metodo || ` (${t('mf_serie_configurada', 'serie configurada')})`}${experimental}`;
     return;
   }
   const motivos = {

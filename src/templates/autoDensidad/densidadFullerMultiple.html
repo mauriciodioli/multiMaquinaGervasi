@@ -89,8 +89,9 @@
       <form id="formProporciones" class="prop-form"></form>
       <div class="prop-total"><span data-i18n="sim.prop_total">Total:</span> <span id="propTotal">0</span>%</div>
       <div id="propMsg" class="prop-msg"></div>
-      <details>
-        <summary data-i18n="sim.mf_referencia_opcional">Referencia de finura (opcional)</summary>
+      <p id="estadoFinuraAutomatica" role="status" data-metodo-servidor="{{ 'true' if metodo_finura_servidor else 'false' }}"></p>
+      <details id="finuraAvanzada">
+        <summary data-i18n="sim.mf_avanzada">Referencia de finura avanzada</summary>
         {{ campos_finura('metodoFinura') }}
       </details>
     </div>
@@ -452,7 +453,7 @@
 
     <script src="{{ url_for('static', filename='js/autoDensidad/agregados/agregaAgregado_densidadFuller.js') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js', v='finura-dinamica') }}"></script>
-    <script src="{{ url_for('static', filename='js/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.js', v='perfil-granulometrico') }}"></script>
+    <script src="{{ url_for('static', filename='js/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.js', v='finura-automatica') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/modalTablaTamices.js') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/guardarAnalisisGranulometrico.js') }}"></script>
 

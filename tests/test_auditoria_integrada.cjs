@@ -276,6 +276,29 @@ test('tres series recorren el motor y el informe original de Auditoría', async 
   desdeBotonRetenidos = true;
   const botonRetenidos = principal.match(/onclick="(abrirProporcionesYCalcular\(\))"/)[1];
   vm.runInContext(botonRetenidos, contexto);
+  const estadoMF = getElementById('estadoFinuraAutomatica');
+  const botonProporciones = getElementById('btnGuardarProporciones');
+  const formularioProporciones = getElementById('formProporciones');
+  assert.equal(estadoMF.className, 'text-success');
+  assert.match(estadoMF.textContent, /experimental/);
+  assert.match(metodo.value, /^FM_AUTO_\d{8}_\d{6}_/);
+  assert.equal(serie.value, tamicesMoreno.join('; '));
+  assert.equal(interpolar.checked, false);
+  assert.equal(getElementById('finuraAvanzada').open, false);
+  const barile = tablas[1];
+  const filasBarile = barile.querySelectorAll;
+  barile.querySelectorAll = () => filasBarile().filter((_, i) => i !== 8);
+  formularioProporciones.oninput();
+  assert.match(estadoMF.textContent, /BARILE: 0\.063 mm/);
+  assert.equal(botonProporciones.disabled, true);
+  barile.querySelectorAll = filasBarile;
+  formularioProporciones.oninput();
+  assert.equal(botonProporciones.disabled, false);
+  estadoMF.dataset.metodoServidor = 'true';
+  formularioProporciones.oninput();
+  assert.equal(serie.value, '');
+  assert.equal(vm.runInContext('construirPayloadRetido().payload.metodo_finura_automatico', contexto), undefined);
+  estadoMF.dataset.metodoServidor = 'false';
   getElementById('btnGuardarProporciones').onclick({ preventDefault() {} });
   desdeBotonRetenidos = false;
   await new Promise(setImmediate);
@@ -293,6 +316,7 @@ test('tres series recorren el motor y el informe original de Auditoría', async 
   assert.match(filasPerfil[8].children[2].children[0].className, /is-invalid/);
   vm.runInContext("cerrarModal('modalLimitesGranulometricos')", contexto);
   // Mantener también la regresión del informe con banda incompleta para clientes directos.
+  metodo.value = serie.value = '';
   await vm.runInContext('calcularRetenidoBR()', contexto);
 
   const inicialMoreno = peticiones[5];
@@ -419,6 +443,8 @@ test('tres series recorren el motor y el informe original de Auditoría', async 
   for (const [nombre, proporcion] of moreno) proporciones[nombre] = proporcion;
   tablas.splice(0, tablas.length, ...prepararTablas(etiquetas, moreno));
   dialogo.close();
+  metodo.value = serie.value = '';
+  vm.runInContext('actualizarReferenciaFinura()', contexto);
   await vm.runInContext('calcularRetenidoBR(true)', contexto);
   const antesDeGuardar = peticiones.length;
   const filaFaltante = getElementById('perfilFilas').children.at(-1);
@@ -443,6 +469,10 @@ test('tres series recorren el motor y el informe original de Auditoría', async 
   assert.equal(peticiones.length, antesDeGuardar + 1);
   assert.equal(modalLimites['aria-hidden'], 'true');
   const retenidosPerfil = peticiones.at(-1);
+  assert.equal(retenidosPerfil.data.finura.tipo_metodo, 'experimental');
+  assert.equal(retenidosPerfil.data.modulo_finura, 5.41);
+  assert.deepEqual(retenidosPerfil.entrada.metodo_finura_automatico.tamices, tamicesMoreno);
+  assert.equal(retenidosPerfil.entrada.metodo_finura, undefined);
   assert.deepEqual(retenidosPerfil.entrada.perfil_granulometrico, JSON.parse(perfilGuardado));
   assert.deepEqual(retenidosPerfil.entrada.materiales, inicialMoreno.entrada.materiales);
   await vm.runInContext(boton, contexto);
