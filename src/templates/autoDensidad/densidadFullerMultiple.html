@@ -343,6 +343,10 @@
       </select>
       <label for="perfilFuente" data-i18n="sim.profile_source">Fuente técnica</label>
       <input id="perfilFuente" class="form-control" required>
+      <div id="perfilFuenteManualGrupo" hidden>
+        <label for="perfilFuenteManual" data-i18n="sim.profile_manual_source">Referencia técnica de los límites ingresados</label>
+        <input id="perfilFuenteManual" class="form-control">
+      </div>
       <p data-i18n="sim.profile_representation">Porcentaje retenido acumulado (%)</p>
       <table class="mini-table">
         <thead><tr>
@@ -453,7 +457,7 @@
 
     <script src="{{ url_for('static', filename='js/autoDensidad/agregados/agregaAgregado_densidadFuller.js') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js', v='finura-dinamica') }}"></script>
-    <script src="{{ url_for('static', filename='js/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.js', v='finura-automatica') }}"></script>
+    <script src="{{ url_for('static', filename='js/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.js', v='perfil-precarga') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/modalTablaTamices.js') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/guardarAnalisisGranulometrico.js') }}"></script>
 

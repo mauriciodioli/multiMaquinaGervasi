@@ -728,7 +728,9 @@ def granulometria_retido():
             bandas = resolver_bandas([t for t in tamices if t != FONDO], referencias, perfil)
             filas = bandas[producto]
             compatible = _banda_completa(filas) if perfil else all(_banda_completa(f) for f in bandas.values())
-            return jsonify(ok=True, filas=filas, compatible=compatible, perfil_granulometrico=perfil)
+            return jsonify(ok=True, filas=filas, compatible=compatible, perfil_granulometrico=perfil,
+                           producto=producto, fuente_base="LIMITES_BR",
+                           incluye_interpolacion=any(f["origen"] == "interpolated" for f in filas))
         except (KeyError, TypeError, ValueError) as error:
             return jsonify(ok=False, error=str(error)), 400
 
@@ -3317,6 +3319,7 @@ def api_auditoria():
 
         bandas = config.get("bandas")
         evaluar_banda = True
+        banda_interpolada = False
         if bandas is not None:
             try:
                 normalizados, _ = ordenar_tamices(tamices)
@@ -3342,6 +3345,7 @@ def api_auditoria():
             banda_max = [fila["max"] for fila in banda]
             evaluar_banda = (_banda_completa(banda) if perfil else
                              all(_banda_completa(filas) for filas in bandas_originales.values()))
+            banda_interpolada = evaluar_banda and any(fila["origen"] == "interpolated" for fila in banda)
 
         _debug_etapa_curva(
             etapa='api_auditoria.payload_entrada',
@@ -3506,6 +3510,8 @@ def api_auditoria():
             resultado["producto_banda"] = producto
             resultado["perfil_granulometrico"] = perfil
             resultado["validacion_bandas"] = {"completa": evaluar_banda}
+            if banda_interpolada:
+                resultado["validacion_bandas"].update(liberacion_produccion=False, motivo_liberacion="band_interpolated")
             if not evaluar_banda:
                 resultado["validacion_bandas"]["liberacion_produccion"] = False
                 resultado["validacion_bandas"]["no_evaluadas"] = [
@@ -3540,6 +3546,11 @@ def api_auditoria():
             resultado['fase_6_receta']['proporciones'] = proporciones_optimizadas
             resultado['fase_6_receta']['instruction'] = generar_instruccion_receta(proporciones_optimizadas)
             resultado['fase_6_receta']['tabla_entrada_pasante'] = pasante_entrada_original
+
+        if banda_interpolada:
+            mensaje = "Los límites interpolados solo están autorizados para el análisis técnico."
+            resultado["fase_6_receta"].update(instruction=mensaje, semaforo="NO LIBERAR")
+            resultado["auditoria_industrial"]["decision_final"].update(estado="NO LIBERAR", justificacion=mensaje)
         
         # ===== NUEVO: Generar propuesta de agregados correctivos =====
         try:
@@ -3558,7 +3569,7 @@ def api_auditoria():
         # ===== NUEVO: Generar orden operativa para planta =====
         # IMPORTANTE: Generar SIEMPRE si tenemos propuesta_agregados_correctivos, sin depender de parámetros
         try:
-            if 'propuesta_agregados_correctivos' in resultado and resultado['propuesta_agregados_correctivos'].get('exito'):
+            if not banda_interpolada and 'propuesta_agregados_correctivos' in resultado and resultado['propuesta_agregados_correctivos'].get('exito'):
                 propuesta_dict = resultado['propuesta_agregados_correctivos'].get('propuesta', {})
                 if propuesta_dict:
                     materiales_con_retido = []
@@ -3600,7 +3611,7 @@ def api_auditoria():
             print(f"[DEBUG] materiales_originales_para_orden is list? {isinstance(materiales_originales_para_orden, list) if materiales_originales_para_orden else False}")
             print(f"[DEBUG] materiales_originales_para_orden length? {len(materiales_originales_para_orden) if materiales_originales_para_orden else 0}")
             
-            if evaluar_banda and materiales_originales_para_orden:
+            if evaluar_banda and not banda_interpolada and materiales_originales_para_orden:
                 # 🌐 Obtener idioma desde cookies
                 lang = request.cookies.get('lang', 'es')
                 print(f"[DEBUG] Idioma obtenido desde cookies: {lang}")

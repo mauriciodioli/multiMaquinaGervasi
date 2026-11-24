@@ -2254,6 +2254,12 @@
             const meta = datos.meta || {};
             const auditoriaIndustrial = datos.auditoria_industrial || {};
             const bandaEvaluable = datos.validacion_bandas?.completa !== false;
+            const bandaInterpolada = datos.validacion_bandas?.motivo_liberacion === 'band_interpolated';
+            const puedeProducir = criterios.cumple_banda && !bandaInterpolada;
+            const operacionHabilitada = bandaEvaluable && !bandaInterpolada;
+            const avisoInterpolacion = typeof I18N !== 'undefined' && typeof I18N.t === 'function'
+                ? I18N.t('sim.profile_technical_only')
+                : 'Límites interpolados autorizados solo para análisis técnico. Producción no habilitada.';
             const noEvaluado = tAuditoria('not_available', 'No disponible');
             const porcentaje = (valor, decimales) => Number.isFinite(valor) ? `${valor.toFixed(decimales)}%` : noEvaluado;
             const avisoBanda = typeof I18N !== 'undefined' && typeof I18N.t === 'function'
@@ -2295,10 +2301,10 @@
                     .sort((a, b) => b[1] - a[1])
                 : [];
 
-            const estadoOperacion = criterios.cumple_banda
+            const estadoOperacion = puedeProducir
                 ? tAuditoria('operator_status_released', 'RECETA LIBERADA')
                 : tAuditoria('operator_status_lab', 'REVISAR EN LABORATORIO');
-            const accionOperacion = criterios.cumple_banda
+            const accionOperacion = bandaInterpolada ? avisoInterpolacion : puedeProducir
                 ? tAuditoria('operator_action_produce_desc', 'Trabajar con la receta indicada y mantener la relación de carga durante la producción.')
                 : tAuditoria('operator_action_stop_desc', 'No liberar esta mezcla a planta. Ajustar la combinación en laboratorio antes de producir.');
             const calidadOperacion = !bandaEvaluable ? avisoBanda : criterios.es_buena_calidad
@@ -2311,7 +2317,7 @@
                 { value: criterios.desviacion_media_centro.toFixed(2) },
                 `Desvío medio al centro: ${criterios.desviacion_media_centro.toFixed(2)}%. Mientras más cerca de 100%, mejor.`
             ) : '';
-            const semaforoClase = criterios.cumple_banda
+            const semaforoClase = puedeProducir
                 ? (criterios.es_buena_calidad ? '' : 'warning')
                 : 'error';
             const estadoFase1 = !bandaEvaluable ? noEvaluado : fase1.cumplimiento_pct >= 100
@@ -2323,7 +2329,7 @@
             const razonDecision = !bandaEvaluable ? criterios.razon : criterios.cumple_banda
                 ? tAuditoria('decision_reason_ok', 'La solución actual ya satisface la especificación.')
                 : tAuditoria('decision_reason_fail', 'La solución actual NO satisface la especificación.');
-            const instruccionOperador = esModoMateriales
+            const instruccionOperador = bandaInterpolada ? avisoInterpolacion : esModoMateriales
                 ? fmtAuditoria(
                     'operator_instruction_recipe',
                     { recipe: materialesOrdenados.map(([nombre, pct]) => `${pct.toFixed(2)}% ${nombre}`).join(' + ') },
@@ -2404,9 +2410,9 @@
 
             window.__plantOperatorViewState = {
                 statusText: estadoOperacion,
-                statusLevel: criterios.cumple_banda ? 'ok' : 'error',
+                statusLevel: puedeProducir ? 'ok' : 'error',
                 semaforoClase,
-                actionMain: criterios.cumple_banda ? 'PRODUCIR' : 'AJUSTAR',
+                actionMain: puedeProducir ? 'PRODUCIR' : 'AJUSTAR',
                 actionDetail: accionOperacion,
                 compliance: porcentaje(fase1.cumplimiento_pct, 1),
                 complianceDetail: bandaEvaluable ? `${fase1.cumpl_count} de ${fase1.n_tamices} tamices dentro de banda.` : avisoBanda,
@@ -2516,7 +2522,7 @@
                     <div class="report-hint">${tAuditoria('export_pdf_helper', 'Genera un PDF desde el navegador con el informe visible y sus gráficos.')}</div>
                     <button type="button" onclick="AuditoriaUI.exportarReportePDF()">${tAuditoria('export_pdf_btn', '🖨️ Exportar PDF')}</button>
                     <button type="button" onclick="AuditoriaUI.descargarGraficoComparacionPNG()">${tAuditoria('export_chart_png_btn', '🖼️ Descargar curva PNG')}</button>
-                    <button type="button" onclick="AuditoriaUI.abrirInformeParaOperadorPlanta()" ${bandaEvaluable ? '' : 'disabled'}>${tAuditoria('operator_report_btn', '🧾 Informe operador planta')}</button>
+                    <button type="button" onclick="AuditoriaUI.abrirInformeParaOperadorPlanta()" ${operacionHabilitada ? '' : 'disabled'}>${tAuditoria('operator_report_btn', '🧾 Informe operador planta')}</button>
                 </div>
                     <div class="operator-panel">
                     <div class="operator-title">
@@ -2527,7 +2533,7 @@
                     <div class="ops-grid">
                         <div class="ops-card">
                             <h3>${tAuditoria('action_label', 'Acción')}</h3>
-                            <div class="ops-main-value">${criterios.cumple_banda ? tAuditoria('action_produce', 'PRODUCIR') : tAuditoria('action_stop', 'DETENER')}</div>
+                            <div class="ops-main-value">${puedeProducir ? tAuditoria('action_produce', 'PRODUCIR') : tAuditoria('action_stop', 'DETENER')}</div>
                             <p>${accionOperacion}</p>
                         </div>
                         <div class="ops-card">
@@ -2951,7 +2957,7 @@
                             <button
                                 type="button"
                                 class="curve-editor-trigger"
-                                ${bandaEvaluable ? '' : 'disabled'}
+                                ${operacionHabilitada ? '' : 'disabled'}
                                 data-curve-index="${i}"
                                 data-tamiz="${tamiz}"
                                 data-min="${bandaMin}"
@@ -3014,7 +3020,7 @@
             programarGraficos(() => {
                 dibujarGrafico(grafico, entrada);
                 if (bandaEvaluable) dibujarGraficosAnalisis(grafico, entrada);
-                if (bandaEvaluable && window.AuditoriaCurveEditor && typeof window.AuditoriaCurveEditor.init === 'function') {
+                if (operacionHabilitada && window.AuditoriaCurveEditor && typeof window.AuditoriaCurveEditor.init === 'function') {
                     window.AuditoriaCurveEditor.init();
                 }
             });

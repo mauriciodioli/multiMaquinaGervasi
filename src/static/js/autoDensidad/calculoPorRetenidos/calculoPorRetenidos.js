@@ -792,6 +792,7 @@ function mostrarFinura(finura, nodo = document.getElementById('retidoFinura')) {
 
 const clavePerfilGranulometrico = 'perfilGranulometricoFuller';
 let comprobandoLimites = false;
+let borradorPerfilGranulometrico;
 
 async function comprobarLimites(calculo, perfil, producto) {
   const respuesta = await fetch('/calculoPorRetenidos/granulometria/retido/?debug=1', {
@@ -808,10 +809,11 @@ async function comprobarLimites(calculo, perfil, producto) {
   return datos;
 }
 
-function renderizarFilasPerfil(filas) {
+function renderizarFilasPerfil(filas, alEditar = () => {}) {
   const tabla = document.getElementById('perfilFilas');
   const origenes = {
     exact: ['text-success', textoFinura('profile_exact', 'Exacto')],
+    manual: ['text-success', textoFinura('profile_manual', 'Manual')],
     interpolated: ['text-warning', textoFinura('profile_interpolated', 'Interpolado')],
     unavailable: ['text-danger', textoFinura('profile_missing', 'Faltante')]
   };
@@ -831,7 +833,8 @@ function renderizarFilasPerfil(filas) {
     const valores = ['min', 'max'].map(extremo => {
       const td = document.createElement('td');
       const input = document.createElement('input');
-      const inicial = fila[extremo] == null ? '' : String(Number(fila[extremo].toFixed(6)));
+      const original = fila[extremo];
+      const inicial = original == null ? '' : original.toFixed(2);
       Object.assign(input, {
         type: 'number', min: '0', max: '100', step: 'any', required: true, value: inicial,
         className: inicial === '' ? 'form-control is-invalid' : 'form-control'
@@ -839,46 +842,107 @@ function renderizarFilasPerfil(filas) {
       input.setAttribute('aria-label', `${fila.tamiz} mm · ${textoFinura('profile_' + extremo, extremo)}`);
       td.appendChild(input);
       tr.appendChild(td);
-      return { input, inicial };
+      return { input, inicial, original };
     });
     const origen = document.createElement('td');
     [origen.className, origen.textContent] = origenes[fila.origen];
     tr.appendChild(origen);
     tabla.appendChild(tr);
-    return { tamiz: fila.tamiz, valores };
+    const editada = () => valores.some(({ input, inicial }) => input.value !== inicial);
+    const numeros = () => valores.map(({ input, inicial, original }) =>
+      input.value === inicial && original !== null ? original : input.valueAsNumber);
+    for (const { input } of valores) {
+      input.oninput = () => {
+        const limites = numeros();
+        const invertidos = limites[0] > limites[1];
+        valores.forEach(({ input: campo }, i) => {
+          const n = limites[i];
+          campo.className = `form-control${!Number.isFinite(n) || n < 0 || n > 100 || invertidos ? ' is-invalid' : ''}`;
+        });
+        const completos = limites.every(n => Number.isFinite(n) && n >= 0 && n <= 100) && !invertidos;
+        const clave = completos ? (editada() ? 'manual' : fila.origen) : 'unavailable';
+        [origen.className, origen.textContent] = origenes[clave];
+        alEditar();
+      };
+    }
+    return { tamiz: fila.tamiz, valores, editada, numeros };
   });
 }
 
+function nombrePerfilAutomatico(producto) {
+  const fecha = new Date().toISOString();
+  const id = globalThis.crypto?.randomUUID?.().slice(0, 8) ?? Math.random().toString(36).slice(2, 10);
+  return `${producto === 'paver' ? 'PAVER' : 'BLOCK'}_AUTO_${fecha.slice(0, 10).replaceAll('-', '')}_${fecha.slice(11, 19).replaceAll(':', '')}_${id}`;
+}
+
+function fuentePerfilDetectada(comprobacion) {
+  const base = comprobacion.fuente_base || '';
+  return comprobacion.incluye_interpolacion
+    ? `${base} · ${textoFinura('profile_log_source', 'Interpolación logarítmica')}`
+    : base;
+}
+
 function abrirPerfilGranulometrico(calculo, comprobacion) {
+  const clave = JSON.stringify([calculo.payload.tamices,
+    calculo.payload.materiales.map(({ proporcion_pct, ...material }) => material)]);
+  if (borradorPerfilGranulometrico?.clave === clave) {
+    borradorPerfilGranulometrico.calculo = calculo;
+    abrirModal('modalLimitesGranulometricos');
+    return;
+  }
+  const borrador = { clave, calculo };
+  borradorPerfilGranulometrico = borrador;
   const el = id => document.getElementById(id);
   const form = el('formLimitesGranulometricos');
   const boton = el('guardarPerfilGranulometrico');
   const producto = el('perfilProducto');
   const error = el('perfilError');
   const inicial = comprobacion.perfil_granulometrico;
-  let productoFilas = inicial?.producto || 'bloco';
+  let productoFilas = comprobacion.producto || 'bloco';
   let puntos = { ...inicial?.puntos };
-  let entradas = renderizarFilasPerfil(comprobacion.filas);
+  const fuenteManual = el('perfilFuenteManual');
+  function actualizarFuenteManual() {
+    const manual = Object.keys(puntos).length > 0 || entradas.some(fila => fila.editada());
+    el('perfilFuenteManualGrupo').hidden = !manual;
+    fuenteManual.required = manual;
+  }
+  let entradas = renderizarFilasPerfil(comprobacion.filas, actualizarFuenteManual);
   producto.value = productoFilas;
-  el('perfilNombre').value = inicial?.nombre || '';
-  el('perfilFuente').value = inicial?.fuente || '';
-  el('perfilInterpolar').checked = inicial?.permitir_interpolacion === true;
+  let nombreSugerido = inicial?.nombre || nombrePerfilAutomatico(productoFilas);
+  let fuenteSugerida = inicial?.fuente || fuentePerfilDetectada(comprobacion);
+  el('perfilNombre').value = nombreSugerido;
+  el('perfilFuente').value = fuenteSugerida;
+  fuenteManual.value = inicial?.fuente_manual || '';
+  actualizarFuenteManual();
+  el('perfilInterpolar').checked = inicial ? inicial.permitir_interpolacion === true : true;
   error.textContent = '';
 
   producto.onchange = async () => {
-    boton.disabled = producto.disabled = true;
+    boton.disabled = producto.disabled = comprobandoLimites = true;
     error.textContent = '';
     try {
       const seleccionado = producto.value;
-      const variante = await comprobarLimites(calculo, seleccionado === inicial?.producto ? inicial : null, seleccionado);
+      const variante = await comprobarLimites(borrador.calculo, seleccionado === inicial?.producto ? inicial : null, seleccionado);
       puntos = { ...variante.perfil_granulometrico?.puntos };
-      entradas = renderizarFilasPerfil(variante.filas);
+      entradas = renderizarFilasPerfil(variante.filas, actualizarFuenteManual);
+      actualizarFuenteManual();
+      if (el('perfilNombre').value === nombreSugerido) {
+        nombreSugerido = variante.perfil_granulometrico?.nombre || nombrePerfilAutomatico(seleccionado);
+        el('perfilNombre').value = nombreSugerido;
+      }
+      if (el('perfilFuente').value === fuenteSugerida) {
+        fuenteSugerida = variante.perfil_granulometrico?.fuente || fuentePerfilDetectada(variante);
+        el('perfilFuente').value = fuenteSugerida;
+      }
+      if (variante.perfil_granulometrico) {
+        el('perfilInterpolar').checked = variante.perfil_granulometrico.permitir_interpolacion === true;
+      }
       productoFilas = seleccionado;
     } catch (err) {
       producto.value = productoFilas;
       error.textContent = err.message;
     } finally {
-      boton.disabled = producto.disabled = false;
+      boton.disabled = producto.disabled = comprobandoLimites = false;
     }
   };
 
@@ -886,30 +950,32 @@ function abrirPerfilGranulometrico(calculo, comprobacion) {
     evento.preventDefault();
     if (boton.disabled || comprobandoLimites || calculandoRetenido) return;
     const nuevosPuntos = { ...puntos };
-    for (const { tamiz, valores } of entradas) {
-      const numeros = valores.map(({ input }) => input.valueAsNumber);
+    for (const { tamiz, editada, numeros: leerNumeros } of entradas) {
+      const numeros = leerNumeros();
       if (numeros.some(n => !Number.isFinite(n) || n < 0 || n > 100) || numeros[0] > numeros[1]) {
         error.textContent = textoFinura('profile_values', 'Ingresá extremos válidos entre 0 y 100.');
         return;
       }
-      if (valores.some(({ input, inicial }) => input.value !== inicial)) nuevosPuntos[tamiz] = numeros;
+      if (editada()) nuevosPuntos[tamiz] = numeros;
     }
     const perfil = {
       nombre: el('perfilNombre').value, producto: productoFilas, fuente: el('perfilFuente').value,
       permitir_interpolacion: el('perfilInterpolar').checked, puntos: nuevosPuntos
     };
+    if (Object.keys(nuevosPuntos).length) perfil.fuente_manual = fuenteManual.value;
     boton.disabled = producto.disabled = comprobandoLimites = true;
     error.textContent = '';
     try {
-      const verificado = await comprobarLimites(calculo, perfil);
+      const verificado = await comprobarLimites(borrador.calculo, perfil);
       if (!verificado.compatible) {
         error.textContent = textoFinura('profile_policy', 'Completá los límites faltantes y revisá la autorización de interpolación.');
         return;
       }
       localStorage.setItem(clavePerfilGranulometrico, JSON.stringify(verificado.perfil_granulometrico));
-      calculo.payload.perfil_granulometrico = verificado.perfil_granulometrico;
+      borrador.calculo.payload.perfil_granulometrico = verificado.perfil_granulometrico;
+      borradorPerfilGranulometrico = undefined;
       cerrarModal('modalLimitesGranulometricos');
-      await enviarCalculoRetenido(calculo);
+      await enviarCalculoRetenido(borrador.calculo);
     } catch (err) {
       error.textContent = err.message;
     } finally {

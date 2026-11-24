@@ -149,17 +149,26 @@ def referencias_perfil(perfil):
     filas = [referencias[producto][str(t)] for t in eje]
     if any(lo1 > lo2 or hi1 > hi2 for (lo1, hi1), (lo2, hi2) in zip(filas, filas[1:])):
         raise ValueError("profile_monotonic")
+    fuente_manual = perfil.get("fuente_manual", fuente)
+    if canonicos and (not isinstance(fuente_manual, str) or not fuente_manual.strip()):
+        raise ValueError("profile_manual_source")
     return referencias, {
         "nombre": nombre.strip(), "fuente": fuente.strip(), "producto": producto,
         "puntos": canonicos, "permitir_interpolacion": perfil.get("permitir_interpolacion") is True,
+        **({"fuente_manual": fuente_manual.strip()} if canonicos else {}),
     }
 
 
 def resolver_bandas(tamices, referencias, perfil=None, representacion="retenido"):
-    return {
+    bandas = {
         producto: resolver_limites(
             tamices, referencias.get(producto, {}), representacion,
             permitir_interpolacion=bool(perfil and perfil["producto"] == producto and perfil["permitir_interpolacion"]),
         )
         for producto in LIMITES_BR
     }
+    if perfil:
+        for fila in bandas[perfil["producto"]]:
+            if str(fila["tamiz"]) in perfil["puntos"]:
+                fila["origen"] = "manual"
+    return bandas
