@@ -12,6 +12,7 @@ from controller.autoDensidad.calcularMezclaOptima import mostrar_datos_crudos_en
 from controller.autoDensidad.calcularMezclaOptima import encontrar_n_optimo
 from controller.autoDensidad.calcularMezclaOptima import calcular_curva_fuller
 from controller.autoDensidad.optimizar_fuller import generar_informe_ajuste
+from .tamices import FONDO, ordenar_tamices
 from src.utils.auth import current_user
 
 from src.utils.get_textos_menu  import get_textos_menu
@@ -66,29 +67,18 @@ def pantalla_densidad_fuller_multiple():
 
 
 
-def _redondear_tamiz(x: float, dec=3) -> float:
-    # Evita 1.160 vs 1.18 por ruido decimal
-    return round(float(x), dec)
-
-def alinear_mezclas_por_tamices(mezclas, dec=3, tol=0.0):
-    """
-    Devuelve:
-      master_tamices (list[float], orden desc)
-      mezclas_alineadas (list[dict] con mismas keys que 'mezclas', pero tamices/porcentajes_reales alineados)
-    - dec: redondeo de tamices para normalizar (p.ej. 3 decimales).
-    - tol: tolerancia opcional para *agrupar* tamices casi iguales (si la querés usar más adelante).
-    """
-    # 1) Unificar todos los tamices (redondeados) en un master
+def alinear_mezclas_por_tamices(mezclas):
+    """Alinear al eje de aberturas, conservando la correspondencia de cada par."""
     master_set = set()
     normalizados = []
-    for m in mezclas:
-        t_raw = m.get("tamices", []) or []
-        r_raw = m.get("porcentajes_reales", []) or []
-        # Filtra pares inválidos
-        pares = [( _redondear_tamiz(t, dec), float(r) ) for t, r in zip(t_raw, r_raw)]
-        normalizados.append({"nombre": m.get("nombre", "Sin nombre"), "pares": pares})
-        for t, _ in pares:
-            master_set.add(t)
+    for mezcla in mezclas:
+        valores = mezcla.get("porcentajes_reales", [])
+        tamices, indices = ordenar_tamices(mezcla.get("tamices", []))
+        if len(tamices) != len(valores):
+            raise ValueError("Cada tamiz debe tener un porcentaje asociado.")
+        pares = [(tamiz, float(valores[i])) for tamiz, i in zip(tamices, indices) if tamiz != FONDO]
+        normalizados.append({"nombre": mezcla.get("nombre", "Sin nombre"), "pares": pares})
+        master_set.update(t for t, _ in pares)
 
     # 2) Orden convención de tamices: de mayor a menor
     master_tamices = sorted(master_set, reverse=True)
@@ -99,7 +89,6 @@ def alinear_mezclas_por_tamices(mezclas, dec=3, tol=0.0):
         nombre = item["nombre"]
         mapa = {}
         for t, r in item["pares"]:
-            # si el mismo tamiz aparece varias veces, sumá o tomá el último; acá usamos último
             mapa[t] = r
         reales_alineados = [mapa.get(t, 0.0) for t in master_tamices]
         mezclas_alineadas.append({
@@ -128,10 +117,13 @@ def densidad_fuller_multiple():
     curvas_individuales = []
     nombres_mezclas = []
     curva_resultante = []
+    try:
+        master_tamices, mezclas_alineadas = alinear_mezclas_por_tamices(mezclas)
+    except (TypeError, ValueError) as error:
+        return jsonify(error=str(error)), 400
+    if not master_tamices:
+        return jsonify(error="Ingresá al menos un tamiz de abertura positiva."), 400
     mostrar_datos_crudos_entrada(mezclas)
-
-  # 💥 NUEVO: alinear todas las mezclas a un mismo set de tamices
-    master_tamices, mezclas_alineadas = alinear_mezclas_por_tamices(mezclas, dec=3, tol=0.0)
 
     for mezcla in mezclas_alineadas:  # <— usar las alineadas
         nombre = mezcla.get("nombre", "Sin nombre")

@@ -1,15 +1,3 @@
-// === Config ===
-const TAMICES_ORDEN = [12.5, 9.5, 6.3, 4.8, 2.4, 1.2, 0.6, 0.3, 0.15, 0.075, "Fundo"];
-
-const LIMITES_BR = {
-  bloco: {"12.5":[0,0],"9.5":[0,0],"6.3":[0,15],"4.8":[0,33],"2.4":[19,51],"1.2":[37,66],"0.6":[54,78],"0.3":[68,90],"0.15":[80,97],"0.075":[90,100],"Fundo":[100,100]},
-  paver: {"12.5":[0,0],"9.5":[0,0],"6.3":[0,10],"4.8":[0,22],"2.4":[19,40],"1.2":[37,61],"0.6":[54,78],"0.3":[72,92],"0.15":[85,100],"0.075":[95,100],"Fundo":[100,100]}
-};
-
-
-
-
-
 const LS_TABLAS = 'tablasCargadas';
 const LS_PROP   = 'proporcionesRetido'; // mapa { nombre -> porcentaje }
 
@@ -52,7 +40,7 @@ function abrirModalProporciones(onOk){
     row.className = 'prop-row';
     row.innerHTML = `
       <label class="prop-label">${nombre}</label>
-      <input class="prop-input" type="number" inputmode="decimal" step="0.01" min="0" max="100"
+      <input class="prop-input" type="number" inputmode="decimal" step="any" min="0" max="100"
              name="${nombre}" value="${val !== undefined ? val : ''}" placeholder="0">
       <span class="prop-suf">%</span>
     `;
@@ -68,7 +56,7 @@ function abrirModalProporciones(onOk){
     const map = {};
     inputs.forEach(inp => {
       const n = parseFloat(inp.value);
-      const ok = !isNaN(n) && n >= 0;
+      const ok = Number.isFinite(n) && n >= 0 && n <= 100;
       if (ok) { total += n; map[inp.name] = +n; }
     });
     spanTotal.textContent = total.toFixed(2);
@@ -76,7 +64,7 @@ function abrirModalProporciones(onOk){
     msg.textContent = '';
     btn.disabled = true;
 
-    if (Math.abs(total - 100) < 0.01){
+    if (Object.keys(map).length === inputs.length && Math.abs(total - 100) < 0.01){
       btn.disabled = false;
     } else {
       msg.textContent = t('sim.prop_error_suma_100', 'Las proporciones deben sumar 100%');
@@ -85,7 +73,7 @@ function abrirModalProporciones(onOk){
     guardarProporciones(map);
   }
 
-  form.addEventListener('input', recalcular, { passive:true });
+  form.oninput = recalcular;
   recalcular();
 
   btn.onclick = (e) => {
@@ -127,7 +115,7 @@ function abrirProporcionesYCalcular(){
         return;  // No continuar si hay errores
       }
       
-      calcularRetenidoBR();  // tu flujo actual (fetch + gráfico + modal resultado)
+      calcularRetenidoBR(true);
     } catch (e){
       console.error(e);
       alert('Error al calcular retenidos: ' + e.message);
@@ -218,8 +206,8 @@ function validarDatosCompletos(){
     mezcla.querySelectorAll('tbody tr').forEach(tr => {
       const tRaw = tr.cells[0]?.textContent?.trim();
       const rRaw = tr.cells[1]?.textContent?.trim();
-      const tNum = parseFloat(tRaw);
-      const rNum = parseFloat(rRaw);
+      const tNum = aberturaTamizMm(tRaw);
+      const rNum = numeroGranulometrico(rRaw);
       
       if (!isNaN(tNum) && !isNaN(rNum)) {
         valoresLei.push(rNum);
@@ -541,22 +529,36 @@ function resolverProporcion(nombre, fallbackIgual, inputVal) {
 }
 // === construir payload % retenido (usando MOCK de proporciones) ===
 
+function leerMetodoFinura(prefijo = 'metodoFinura') {
+  const id = document.getElementById(`${prefijo}Id`)?.value?.trim();
+  const serie = document.getElementById(`${prefijo}Tamices`)?.value?.trim();
+  if (!serie) return id || undefined;
+
+  const tamices = serie.split(';').map(aberturaTamizMm);
+  if (tamices.some(d => !Number.isFinite(d)) || new Set(tamices).size !== tamices.length) {
+    throw new Error(typeof I18N !== 'undefined' && typeof I18N.t === 'function'
+      ? I18N.t('sim.mf_referencia_error')
+      : 'Ingresá aberturas de referencia válidas y sin duplicados, separadas por punto y coma.');
+  }
+  return {
+    ...(id ? { id } : {}),
+    tamices,
+    permitir_interpolacion: document.getElementById(`${prefijo}Interpolacion`)?.checked === true
+  };
+}
+
 function construirPayloadRetido(){
   const proporciones = leerProporciones();
   const mezclas = [...document.querySelectorAll('.mezcla')];
   const entradas = [];
   const erroresAuditoria = [];
   const tamicesSet = new Set();
-  const leerNumero = v => {
-    const t = String(v ?? '').trim().replace(',', '.');
-    return t === '' ? NaN : Number(t);
-  };
 
   mezclas.forEach(mezcla => {
     const nombre = mezcla.querySelector('.nombreProducto')?.value.trim() || '';
     const mezclaId = mezcla.dataset.mezclaId || mezcla.id || undefined;
     const masas = new Map();
-    let fondo = 0;
+    let fondo = null;
     let ensayo;
     if (esTablaFullerGramos(mezcla)) {
       // La misma validación y denominador utilizados por Calculate All.
@@ -566,58 +568,60 @@ function construirPayloadRetido(){
         masas.set(d, 100 * datos.pesos_retenidos_g[i] / datos.peso_total_recuperado_g);
         tamicesSet.add(d);
       });
-      fondo = 100 * datos.peso_fondo_g / datos.peso_total_recuperado_g;
+      if (datos.tiene_fondo) fondo = 100 * datos.peso_fondo_g / datos.peso_total_recuperado_g;
     } else {
       // Compatibilidad con tablas antiguas que ya contienen % retenido.
       mezcla.querySelectorAll('table.tabla tbody tr').forEach(tr => {
         const c = tr.querySelectorAll('td');
         const etiqueta = c[0]?.textContent?.trim() || '';
-        const valor = leerNumero(c[1]?.textContent);
+        const valor = numeroGranulometrico(c[1]?.textContent);
         if (!Number.isFinite(valor)) {
-          erroresAuditoria.push(`${nombre}: falta un porcentaje válido para ${etiqueta}.`);
-          return;
+          throw new Error(`${nombre}: falta un porcentaje válido para ${etiqueta}.`);
         }
-        if (tr.dataset.fondo === 'true' || /^(fundo|pan|piatto di fondo|bandeja de fondo)$/i.test(etiqueta)) {
+        if (esFilaFondoFuller(tr)) {
+          if (fondo !== null) throw new Error(`${nombre}: bandeja de fondo duplicada.`);
           fondo = valor;
         } else {
-          const d = leerNumero(etiqueta);
-          if (Number.isFinite(d) && d > 0) {
-            if (masas.has(d)) erroresAuditoria.push(`${nombre}: tamiz duplicado ${d} mm.`);
-            masas.set(d, valor);
-            tamicesSet.add(d);
-          } else {
-            erroresAuditoria.push(`${nombre}: tamiz inválido ${etiqueta}.`);
-          }
+          const d = aberturaTamizMm(etiqueta);
+          if (!Number.isFinite(d)) throw new Error(`${nombre}: tamiz inválido ${etiqueta}.`);
+          if (masas.has(d)) throw new Error(`${nombre}: tamiz duplicado ${d} mm.`);
+          masas.set(d, valor);
+          tamicesSet.add(d);
         }
       });
     }
     if (!nombre) erroresAuditoria.push('Falta el nombre de un material.');
     if (!masas.size) erroresAuditoria.push(`${nombre}: faltan datos de tamices.`);
-    if (!Number.isFinite(proporciones[nombre])) erroresAuditoria.push(`${nombre}: falta la proporción.`);
-    if (masas.size) entradas.push({nombre, mezclaId, masas, fondo, ensayo, proporcion_pct:Number(proporciones[nombre] || 0)});
+    const proporcion_pct = proporciones[nombre];
+    if (!Number.isFinite(proporcion_pct) || proporcion_pct < 0 || proporcion_pct > 100) {
+      throw new Error(`${nombre}: falta una proporción válida.`);
+    }
+    if (masas.size) entradas.push({nombre, mezclaId, masas, fondo, ensayo, proporcion_pct});
   });
   if (!entradas.length) throw new Error('No hay materiales con datos de retenido.');
   const tamices = [...tamicesSet].sort((a,b) => b-a);
-  tamices.push('Fundo');
+  if (entradas.some(entrada => entrada.fondo !== null)) tamices.push('Fundo');
   const materiales = entradas.map(e => {
     if (e.masas.size !== tamicesSet.size) erroresAuditoria.push(`${e.nombre}: el eje de tamices difiere del de la mezcla.`);
     const material = {
       nombre: e.nombre || 'Sin nombre',
       mezclaId: e.mezclaId,
       proporcion_pct: e.proporcion_pct,
-      retido_ind_pct: [...tamices.slice(0, -1).map(d => e.masas.get(d) ?? 0), e.fondo],
+      retido_ind_pct: tamices.map(d => (d === 'Fundo' ? e.fondo : e.masas.get(d)) ?? 0),
       normalizar: false
     };
     if (e.ensayo) {
       const { pesos_retenidos_g, peso_fondo_g, peso_campione_g, peso_total_recuperado_g, unidad_entrada } = e.ensayo;
-      Object.assign(material, { pesos_retenidos_g, peso_fondo_g, peso_campione_g, peso_total_recuperado_g, unidad_entrada });
+      Object.assign(material, { tamices_masa: e.ensayo.tamices, pesos_retenidos_g, peso_fondo_g,
+        peso_campione_g, peso_total_recuperado_g, unidad_entrada });
     }
     return material;
   });
   const suma = materiales.reduce((s,m) => s+m.proporcion_pct, 0);
   if (Math.abs(suma-100) > 0.01) throw new Error('Las proporciones de los agregados deben sumar 100%.');
+  const metodo_finura = leerMetodoFinura();
   return {
-    payload: { tamices, materiales, limites: LIMITES_BR, debug: true },
+    payload: { tamices, materiales, debug: true, ...(metodo_finura ? { metodo_finura } : {}) },
     erroresAuditoria,
     cantidadMateriales: mezclas.length
   };
@@ -628,14 +632,240 @@ let calculoRetenidoMostrado;
 let solicitudRetenido = 0;
 let calculandoRetenido = false;
 
-async function calcularRetenidoBR() {
+function textoFinura(clave, defecto) {
+  const mensaje = typeof I18N !== 'undefined' && I18N.t ? I18N.t(`sim.${clave}`) : '';
+  return mensaje && mensaje !== `[sim.${clave}]` ? mensaje : defecto;
+}
+
+function mostrarFinura(finura, nodo = document.getElementById('retidoFinura')) {
+  if (!nodo || !finura) return;
+  const idioma = typeof I18N !== 'undefined' && I18N.getLang ? I18N.getLang() : 'es';
+  const numero = valor => valor.toLocaleString(idioma, { maximumFractionDigits: 2 });
+  const t = textoFinura;
+  const metodo = finura.metodo ? ` (${finura.metodo})` : '';
+  if (finura.estado !== 'no_calculable') {
+    const etiqueta = finura.estado === 'estimado'
+      ? t('mf_estimado', 'MF estimado por interpolación logarítmica')
+      : t('mf_calculado', 'MF calculado');
+    nodo.textContent = `${etiqueta}: ${numero(finura.valor)}${metodo || ` (${t('mf_serie_configurada', 'serie configurada')})`}`;
+    return;
+  }
+  const motivos = {
+    sin_referencia: t('mf_sin_referencia', 'Sin serie de referencia configurada.'),
+    referencia_invalida: t('mf_referencia_invalida', 'El método de referencia es inválido.'),
+    curva_invalida: t('mf_curva_invalida', 'Curva granulométrica incompleta o inválida.'),
+    faltan_tamices: t('mf_faltan_tamices', 'Tamices de referencia sin datos válidos.')
+  };
+  const faltantes = finura.tamices_faltantes?.map(d => d.toLocaleString(idioma, { maximumFractionDigits: 9 })).join(' · ');
+  const indice = finura.indice_descriptivo;
+  const descripcion = indice ? ` ${t('mf_indice', 'Índice descriptivo (retenido acumulado medio)')}: ${numero(indice.valor)} %.` : '';
+  nodo.textContent = `${t('mf_no_calculable', 'MF no calculable')}${metodo}. ${motivos[finura.motivo]}${faltantes ? ` [${faltantes} mm]` : ''}${descripcion}`;
+}
+
+const clavePerfilGranulometrico = 'perfilGranulometricoFuller';
+let comprobandoLimites = false;
+
+async function comprobarLimites(calculo, perfil, producto) {
+  const respuesta = await fetch('/calculoPorRetenidos/granulometria/retido/?debug=1', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      solo_validar_limites: true, tamices: calculo.payload.tamices,
+      perfil_granulometrico: perfil, producto
+    })
+  });
+  const datos = await respuesta.json();
+  if (!respuesta.ok || !datos.ok) throw new Error(textoFinura(datos.error, datos.error));
+  return datos;
+}
+
+function renderizarFilasPerfil(filas) {
+  const tabla = document.getElementById('perfilFilas');
+  const origenes = {
+    exact: ['text-success', textoFinura('profile_exact', 'Exacto')],
+    interpolated: ['text-warning', textoFinura('profile_interpolated', 'Interpolado')],
+    unavailable: ['text-danger', textoFinura('profile_missing', 'Faltante')]
+  };
+  const contar = origen => filas.filter(fila => fila.origen === origen).length;
+  document.getElementById('perfilCobertura').textContent = textoFinura('profile_coverage',
+    '{sieves} tamices · {interpolated} interpolados · {missing} faltantes')
+    .replace('{sieves}', filas.length).replace('{interpolated}', contar('interpolated'))
+    .replace('{missing}', contar('unavailable'));
+  tabla.replaceChildren();
+
+  return filas.map(fila => {
+    const tr = document.createElement('tr');
+    const tamiz = document.createElement('th');
+    tamiz.scope = 'row';
+    tamiz.textContent = fila.tamiz;
+    tr.appendChild(tamiz);
+    const valores = ['min', 'max'].map(extremo => {
+      const td = document.createElement('td');
+      const input = document.createElement('input');
+      const inicial = fila[extremo] == null ? '' : String(Number(fila[extremo].toFixed(6)));
+      Object.assign(input, {
+        type: 'number', min: '0', max: '100', step: 'any', required: true, value: inicial,
+        className: inicial === '' ? 'form-control is-invalid' : 'form-control'
+      });
+      input.setAttribute('aria-label', `${fila.tamiz} mm · ${textoFinura('profile_' + extremo, extremo)}`);
+      td.appendChild(input);
+      tr.appendChild(td);
+      return { input, inicial };
+    });
+    const origen = document.createElement('td');
+    [origen.className, origen.textContent] = origenes[fila.origen];
+    tr.appendChild(origen);
+    tabla.appendChild(tr);
+    return { tamiz: fila.tamiz, valores };
+  });
+}
+
+function abrirPerfilGranulometrico(calculo, comprobacion) {
+  const el = id => document.getElementById(id);
+  const form = el('formLimitesGranulometricos');
+  const boton = el('guardarPerfilGranulometrico');
+  const producto = el('perfilProducto');
+  const error = el('perfilError');
+  const inicial = comprobacion.perfil_granulometrico;
+  let productoFilas = inicial?.producto || 'bloco';
+  let puntos = { ...inicial?.puntos };
+  let entradas = renderizarFilasPerfil(comprobacion.filas);
+  producto.value = productoFilas;
+  el('perfilNombre').value = inicial?.nombre || '';
+  el('perfilFuente').value = inicial?.fuente || '';
+  el('perfilInterpolar').checked = inicial?.permitir_interpolacion === true;
+  error.textContent = '';
+
+  producto.onchange = async () => {
+    boton.disabled = producto.disabled = true;
+    error.textContent = '';
+    try {
+      const seleccionado = producto.value;
+      const variante = await comprobarLimites(calculo, seleccionado === inicial?.producto ? inicial : null, seleccionado);
+      puntos = { ...variante.perfil_granulometrico?.puntos };
+      entradas = renderizarFilasPerfil(variante.filas);
+      productoFilas = seleccionado;
+    } catch (err) {
+      producto.value = productoFilas;
+      error.textContent = err.message;
+    } finally {
+      boton.disabled = producto.disabled = false;
+    }
+  };
+
+  form.onsubmit = async evento => {
+    evento.preventDefault();
+    if (boton.disabled || comprobandoLimites || calculandoRetenido) return;
+    const nuevosPuntos = { ...puntos };
+    for (const { tamiz, valores } of entradas) {
+      const numeros = valores.map(({ input }) => input.valueAsNumber);
+      if (numeros.some(n => !Number.isFinite(n) || n < 0 || n > 100) || numeros[0] > numeros[1]) {
+        error.textContent = textoFinura('profile_values', 'Ingresá extremos válidos entre 0 y 100.');
+        return;
+      }
+      if (valores.some(({ input, inicial }) => input.value !== inicial)) nuevosPuntos[tamiz] = numeros;
+    }
+    const perfil = {
+      nombre: el('perfilNombre').value, producto: productoFilas, fuente: el('perfilFuente').value,
+      permitir_interpolacion: el('perfilInterpolar').checked, puntos: nuevosPuntos
+    };
+    boton.disabled = producto.disabled = comprobandoLimites = true;
+    error.textContent = '';
+    try {
+      const verificado = await comprobarLimites(calculo, perfil);
+      if (!verificado.compatible) {
+        error.textContent = textoFinura('profile_policy', 'Completá los límites faltantes y revisá la autorización de interpolación.');
+        return;
+      }
+      localStorage.setItem(clavePerfilGranulometrico, JSON.stringify(verificado.perfil_granulometrico));
+      calculo.payload.perfil_granulometrico = verificado.perfil_granulometrico;
+      cerrarModal('modalLimitesGranulometricos');
+      await enviarCalculoRetenido(calculo);
+    } catch (err) {
+      error.textContent = err.message;
+    } finally {
+      boton.disabled = producto.disabled = comprobandoLimites = false;
+    }
+  };
+  abrirModal('modalLimitesGranulometricos');
+}
+
+async function calcularRetenidoBR(validarLimites = false) {
+  if (validarLimites && (comprobandoLimites || calculandoRetenido)) return;
   let calculo;
   try { calculo = construirPayloadRetido(); }
   catch (e) { alert(e.message); return; }
+  if (validarLimites) {
+    comprobandoLimites = true;
+    try {
+      let perfil;
+      try { perfil = JSON.parse(localStorage.getItem(clavePerfilGranulometrico)); }
+      catch { perfil = null; }
+      const comprobacion = await comprobarLimites(calculo, perfil);
+      if (!comprobacion.compatible) return abrirPerfilGranulometrico(calculo, comprobacion);
+      if (comprobacion.perfil_granulometrico) calculo.payload.perfil_granulometrico = comprobacion.perfil_granulometrico;
+    } catch (error) {
+      alert(error.message);
+      return;
+    } finally {
+      comprobandoLimites = false;
+    }
+  }
+  return enviarCalculoRetenido(calculo);
+}
 
-  const { payload } = calculo;
+function abrirConfiguracionFinura(calculo, tamices) {
+  const form = document.getElementById('formConfigurarFinura');
+  const error = document.getElementById('finuraConfiguracionError');
+  const confirmar = document.getElementById('confirmarFinura');
+  const metodo = calculo.payload.metodo_finura;
+  document.getElementById('finuraTamicesDetectados').textContent = tamices.filter(Number.isFinite).join(' · ');
+  document.getElementById('reintentoFinuraId').value = typeof metodo === 'string' ? metodo : metodo?.id ?? '';
+  document.getElementById('reintentoFinuraTamices').value = metodo?.tamices?.join('; ') ?? '';
+  document.getElementById('reintentoFinuraInterpolacion').checked = metodo?.permitir_interpolacion === true;
+  error.textContent = '';
+
+  form.onsubmit = async evento => {
+    evento.preventDefault();
+    if (confirmar.disabled || calculandoRetenido || calculoRetenidoMostrado !== calculo) return;
+    let metodo_finura;
+    try {
+      metodo_finura = leerMetodoFinura('reintentoFinura');
+      if (!metodo_finura) throw new Error(textoFinura('mf_referencia_requerida', 'Ingresá un método o una serie de referencia.'));
+    } catch (err) {
+      error.textContent = err.message;
+      return;
+    }
+
+    error.textContent = '';
+    confirmar.disabled = true;
+    try {
+      const finura = await enviarCalculoRetenido(calculo, metodo_finura);
+      if (finura?.motivo === 'sin_referencia') {
+        error.textContent = textoFinura('mf_referencia_no_aplicada',
+          'El servidor sigue sin reconocer la referencia enviada. Revisá el método o la serie y volvé a confirmar.');
+      } else if (finura?.estado === 'no_calculable') {
+        mostrarFinura(finura, error);
+      } else if (Number.isFinite(finura?.valor)) {
+        document.getElementById('metodoFinuraId').value =
+          typeof metodo_finura === 'string' ? metodo_finura : metodo_finura.id ?? '';
+        document.getElementById('metodoFinuraTamices').value = metodo_finura?.tamices?.join('; ') ?? '';
+        document.getElementById('metodoFinuraInterpolacion').checked = metodo_finura?.permitir_interpolacion === true;
+        cerrarModal('modalConfigurarFinura');
+      }
+    } finally {
+      confirmar.disabled = false;
+    }
+  };
+  abrirModal('modalConfigurarFinura');
+}
+
+async function enviarCalculoRetenido(calculo, metodoFinura) {
+  const reintentoMF = metodoFinura !== undefined;
+  const payload = reintentoMF ? { ...calculo.payload, metodo_finura: metodoFinura } : calculo.payload;
   const solicitud = ++solicitudRetenido;
-  calculandoRetenido = true;
+  if (!reintentoMF) calculandoRetenido = true;
 
   // STEP 6: Debug BEFORE sending
   console.log("FINAL PAYLOAD:", payload);
@@ -662,25 +892,27 @@ async function calcularRetenidoBR() {
       return;
     }
 
-    renderRetidoGrafico(
-      data.tamices,
-      data.mix_acum,
-      data.mix_pasante,
-      data.faixas,
-      data.fuller_ideal
-    );
-    //renderRetidoGrafico( data.tamices, data.mix_pasante, data.faixas, { faixa: 'bloco' } );
-    renderRetidoTablitas(data.tamices, data.mix_acum, data.faixas);
-    if (data.sugerencia_division) {
-      renderSugerenciaDivision(data.sugerencia_division);
+    if (reintentoMF) {
+      // El mismo ensayo sigue publicado y conserva la identidad usada por Auditoría.
+      calculo.payload = payload;
+      Object.assign(calculo.resultado, { finura: data.finura, modulo_finura: data.modulo_finura });
+    } else {
+      renderRetidoGrafico(data.tamices, data.mix_acum, data.mix_pasante, data.faixas, data.fuller_ideal);
+      renderRetidoTablitas(data.tamices, data.mix_acum, data.faixas);
+      if (data.sugerencia_division) {
+        renderSugerenciaDivision(data.sugerencia_division);
+      }
+      window.granRetidoResultado = data;
+      calculoRetenidoMostrado = { ...calculo, resultado: data };
+      abrirModal('modalRetidoBR');
     }
-    window.granRetidoResultado = data;
-    calculoRetenidoMostrado = { ...calculo, resultado: data };
-    abrirModal('modalRetidoBR');
 
     console.log("✅ MIX ACUM:", data.mix_acum);
-    console.log("✅ MF:", data.modulo_finura);
-    notify('success', 'Listo', `MF: ${data.modulo_finura}`);
+    mostrarFinura(data.finura);
+    if (!reintentoMF && data.finura?.motivo === 'sin_referencia') {
+      abrirConfiguracionFinura(calculoRetenidoMostrado, data.tamices);
+    }
+    return data.finura;
 
   } catch (err) {
     if (solicitud === solicitudRetenido) {
@@ -688,7 +920,7 @@ async function calcularRetenidoBR() {
       notify('error', 'Error de red', String(err));
     }
   } finally {
-    if (solicitud === solicitudRetenido) calculandoRetenido = false;
+    if (!reintentoMF && solicitud === solicitudRetenido) calculandoRetenido = false;
   }
 }
 
@@ -696,25 +928,14 @@ let retidoChart;
 
 //function renderRetidoGrafico(tamices, mix_acum, faixas, opts = { faixa: 'bloco' }) {
 function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas, fuller_ideal, opts = { faixa: 'bloco' }) {
-  // Mapear a puntos X,Y en eje log y preparar etiquetas exactas (incluye FUNDO)
-  const FUNDO_X = 0.01;
-
-  // 🔨 Agregar 12.5 mm (agregado máximo estándar) si no está presente
-  if (tamices.length > 0 && parseFloat(tamices[0]) !== 12.5) {
-    tamices = [12.5, ...tamices];
-    mix_acum = [100, ...mix_acum];  // 12.5 mm: todo pasa (100%)
-    mix_pasante = [100, ...mix_pasante];  // todo pasa
-    fuller_ideal = fuller_ideal ? [100, ...fuller_ideal] : [];  // Fuller(12.5) = 100%
-  }
-
   const dataOrdenada = tamices.map((t, i) => ({
-    x: String(t).toLowerCase() === 'fundo' ? FUNDO_X : parseFloat(t),
+    x: t,
     label: String(t),
     acum: parseFloat(mix_acum[i]),
     pasante: parseFloat(mix_pasante[i]),
     idx: i
   }))
-  .filter(p => !Number.isNaN(p.x))
+  .filter(p => Number.isFinite(p.x))
   .sort((a,b) => a.x - b.x);
 
   // 👉 Prepare axes data
@@ -770,10 +991,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas, fuller_idea
   });
 
   // Helper to convert array of y-values to {x, y} dataset format (filter out nulls)
-  const toDataset = (yArr) => dataOrdenada.map((p, i) => {
-    const y = yArr[i];
-    return y != null ? {x: p.x, y: y} : null;
-  }).filter(v => v != null);
+  const toDataset = yArr => dataOrdenada.map((p, i) => ({x: p.x, y: yArr[i] ?? null}));
 
   // Preparar canvas
   const ctx = document.getElementById('retidoChart').getContext('2d');
@@ -831,7 +1049,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas, fuller_idea
           tension: 0.25,
           borderWidth: 3,
           fill: false,
-          yAxisID: 'y'
+          yAxisID: 'y1'
         },
 
         // === Curva en estudio (roja sólida con puntos) ===
@@ -870,8 +1088,7 @@ function renderRetidoGrafico(tamices, mix_acum, mix_pasante, faixas, fuller_idea
         tooltip: {
           callbacks: {
             title: (items) => {
-              const i = items[0].dataIndex;
-              return `Peneira ${labels[i]} mm`;
+              return `${items[0].parsed.x} mm`;
             },
             label: (ctx) => `${ctx.dataset.label}: ${ctx.formattedValue}%`
           }
@@ -966,15 +1183,33 @@ document.getElementById('btnIrConsumo')?.addEventListener('click', () => {
 
 
 
+function formatearLimiteGranulometrico(fila, extremo) {
+  const t = (clave, fallback) => typeof I18N !== 'undefined' && typeof I18N.t === 'function'
+    ? I18N.t(`sim.${clave}`) : fallback;
+  if (fila?.[extremo] == null) {
+    const motivos = {
+      outside_domain: t('limite_fuera_dominio', 'Fuera del dominio de referencia.'),
+      excluded_interval: t('limite_intervalo_excluido', 'Intervalo excluido o sin referencias válidas.'),
+      pan_without_reference: t('limite_fondo', 'La bandeja de fondo no tiene abertura.')
+    };
+    return `<span title="${motivos[fila?.motivo] || motivos.outside_domain}">${t('limite_nd', 'N/D')}</span>`;
+  }
+  if (fila.origen === 'interpolated') {
+    return `<span title="${t('limite_interpolado', 'Interpolación técnica sin autorización normativa.')}">≈ ${fila[extremo].toFixed(2)}</span>`;
+  }
+  return fila[extremo];
+}
+
 function renderRetidoTablitas(tamices, mix_acum, faixas){
   // Destino
   const host = document.getElementById('retidoTables');
   if (!host) return;
 
   // Helper para i18n seguro
-  const t = (key, fallback = '') => typeof I18N !== 'undefined' ? I18N.t(key) : fallback;
+  const t = (key, fallback = '') => typeof I18N !== 'undefined' && typeof I18N.t === 'function'
+    ? I18N.t(key) : fallback;
 
-  // Normalizamos filas (ignoramos valores sin banda si no existen)
+  // Mantener una fila por abertura y la bandeja por separado.
   const rows = tamices.map((t, i) => {
     const label = String(t); // puede ser "Fundo"
     const mix = Number(mix_acum[i] ?? 0);
@@ -984,10 +1219,10 @@ function renderRetidoTablitas(tamices, mix_acum, faixas){
     return {
       label,
       mix: isFinite(mix) ? mix.toFixed(1) : '-',
-      bmin: (b.min ?? null) != null ? Number(b.min).toFixed(0) : '-',
-      bmax: (b.max ?? null) != null ? Number(b.max).toFixed(0) : '-',
-      pmin: (p.min ?? null) != null ? Number(p.min).toFixed(0) : '-',
-      pmax: (p.max ?? null) != null ? Number(p.max).toFixed(0) : '-',
+      bmin: formatearLimiteGranulometrico(b, 'min'),
+      bmax: formatearLimiteGranulometrico(b, 'max'),
+      pmin: formatearLimiteGranulometrico(p, 'min'),
+      pmax: formatearLimiteGranulometrico(p, 'max'),
     };
   });
 
@@ -1042,7 +1277,8 @@ function renderRetidoTablitas(tamices, mix_acum, faixas){
             </tr>`).join('')}
         </tbody>
       </table>
-      <div class="muted" style="margin-top:6px">${tbl2Nota}</div>
+      <div class="muted" style="margin-top:6px">${tbl2Nota} ${t('sim.limite_nota_origen',
+        '≈ Interpolado. N/D: fuera del dominio o en un intervalo excluido.')}</div>
     </div>`;
 
   host.innerHTML = tbl1 + tbl2;
@@ -1587,12 +1823,12 @@ function prepararEntradaAuditoria(calculo) {
 
   const tamicesConFondo = resultado.tamices;
   if (!Array.isArray(tamicesConFondo)) throw new Error('Faltan los tamices del cálculo de retenidos.');
-  const tamices = tamicesConFondo.slice(0, -1);
+  const tamices = tamicesConFondo.at(-1) === 'Fundo' ? tamicesConFondo.slice(0, -1) : tamicesConFondo;
   const esPorcentaje = valor => Number.isFinite(valor) && valor >= 0 && valor <= 100;
   const serieValida = serie => Array.isArray(serie) && serie.length === tamicesConFondo.length &&
     serie.every(esPorcentaje);
 
-  if (!tamices.length || tamicesConFondo.at(-1) !== 'Fundo' ||
+  if (!tamices.length ||
       tamicesConFondo.length !== payload.tamices.length ||
       tamicesConFondo.some((tamiz, i) => tamiz !== payload.tamices[i]) ||
       tamices.some((tamiz, i) => !Number.isFinite(tamiz) || tamiz <= 0 || (i > 0 && tamiz >= tamices[i - 1]))) {
@@ -1602,15 +1838,14 @@ function prepararEntradaAuditoria(calculo) {
     throw new Error('El cálculo de retenidos devolvió porcentajes incompletos o fuera de rango.');
   }
 
-  // La auditoría de pavers usa la banda de la curva de retenido acumulado,
-  // expresada en pasante (se invierten los extremos al complementar).
-  const banda = resultado.faixas?.paver;
-  if (!Array.isArray(banda) || banda.length !== tamicesConFondo.length || banda.some(
-    (limite, i) => limite?.tamiz !== tamicesConFondo[i] || !esPorcentaje(limite.min) ||
-      !esPorcentaje(limite.max) || limite.min > limite.max
-  )) {
-    throw new Error('Faltan límites válidos de pavers para los tamices de la curva.');
-  }
+  const bandas = Object.fromEntries(['bloco', 'paver'].map(nombre => {
+    const filas = resultado.bandas_pasantes?.[nombre];
+    if (!Array.isArray(filas) || filas.length !== tamicesConFondo.length ||
+        filas.some((fila, i) => fila?.tamiz !== tamicesConFondo[i])) {
+      throw new Error('La respuesta de retenidos no identifica los límites de cada tamiz.');
+    }
+    return [nombre, filas.slice(0, tamices.length)];
+  }));
 
   const originales = payload.materiales;
   const procesados = resultado.materiales;
@@ -1640,11 +1875,17 @@ function prepararEntradaAuditoria(calculo) {
   const total = materiales.reduce((suma, material) => suma + material.proporcion_pct, 0);
   if (Math.abs(total - 100) > 0.01) throw new Error('Las proporciones deben sumar 100%.');
 
+  const perfil = resultado.perfil_granulometrico;
+  const banda = bandas[perfil?.producto || 'paver'];
   return {
     tamices,
     pasante_real: resultado.mix_pasante.slice(0, tamices.length),
-    banda_min: banda.slice(0, tamices.length).map(limite => 100 - limite.max),
-    banda_max: banda.slice(0, tamices.length).map(limite => 100 - limite.min),
+    bandas,
+    ...(perfil ? { perfil_granulometrico: perfil } : {}),
+    banda_min: banda.map(limite => limite.min),
+    banda_max: banda.map(limite => limite.max),
+    mix_acum: resultado.mix_acum.slice(0, tamices.length),
+    fuller_ideal: resultado.fuller_ideal.slice(0, tamices.length),
     materiales
   };
 }

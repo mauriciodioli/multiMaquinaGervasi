@@ -9,6 +9,20 @@
 /* visible */
 .dpia-modal[aria-hidden="false"]{ display:block; }
 
+#modalLimitesGranulometricos .form-control {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #bfc4ca;
+  border-radius: 6px;
+  padding: 0.4rem;
+}
+
+#modalLimitesGranulometricos .is-invalid { border-color: #b91c1c; }
+#modalLimitesGranulometricos .text-danger { color: #b91c1c; }
+#modalLimitesGranulometricos .text-warning { color: #995900; }
+#modalLimitesGranulometricos .text-success { color: #166534; }
+
 /* backdrop */
 .dpia-modal::before{
   content:"";

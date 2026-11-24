@@ -922,18 +922,92 @@
             }
         }
 
-        #auditoriaVista @page {
+        @page auditoria {
             size: A4;
             margin: 12mm;
         }
 
-        #auditoriaVista @media print {
+        @media print {
+            html.auditoria-imprimiendo,
+            body.auditoria-imprimiendo {
+                margin: 0;
+                padding: 0;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+            }
+
+            body.auditoria-imprimiendo > :not(#modalAuditoria):not(#auditoriaVista) {
+                display: none !important;
+            }
+
+            body.auditoria-imprimiendo #modalAuditoria,
+            #auditoriaVista .plant-modal[data-informe-impresion],
+            #auditoriaVista .plant-modal[data-informe-impresion] .plant-modal-dialog,
+            #auditoriaVista .plant-modal[data-informe-impresion] .plant-modal-body {
+                display: block !important;
+                position: static !important;
+                inset: auto;
+                width: 100%;
+                max-width: none;
+                height: auto !important;
+                min-height: 0;
+                max-height: none !important;
+                overflow: visible !important;
+                background: white;
+                margin: 0;
+                padding: 0;
+                border: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            #modalAuditoria::backdrop,
+            #modalAuditoria .auditoria-cerrar,
+            #auditoriaVista > header,
+            #auditoriaVista .plant-modal:not([data-informe-impresion]),
+            #auditoriaVista .plant-modal-toolbar,
+            #auditoriaVista[data-imprimir-operador] .auditoria-contenido {
+                display: none !important;
+            }
+
+            #auditoriaVista .plant-sheet,
+            #auditoriaVista .plant-sheet-grid,
+            #auditoriaVista .plant-sheet-steps {
+                display: block;
+            }
+
+            #auditoriaVista .plant-sheet > *,
+            #auditoriaVista .plant-sheet-grid > *,
+            #auditoriaVista .plant-sheet-steps > * {
+                margin-bottom: 8px;
+            }
+
+            #auditoriaVista .plant-step,
+            #auditoriaVista .plant-sheet-card,
+            #auditoriaVista .instruccion-impresa {
+                break-inside: avoid;
+            }
+
+            #auditoriaVista .plant-sheet-card-pasos {
+                break-inside: auto;
+            }
+
+            #auditoriaVista .plant-sheet-card-pasos > h4 {
+                break-after: avoid;
+            }
+
+            #auditoriaVista .plant-sheet-table {
+                overflow: visible;
+            }
+
             #auditoriaVista * {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
 
             #auditoriaVista {
+                page: auditoria;
                 background: white;
                 padding: 0;
             }
@@ -947,7 +1021,7 @@
 
             #auditoriaVista .carga-datos,
             #auditoriaVista .report-actions,
-            #auditoriaVista .detail-toggle button,
+            #auditoriaVista .detail-toggle > button,
             #auditoriaVista .accordion-header,
             #auditoriaVista .pdf-title-modal {
                 display: none !important;
@@ -963,15 +1037,10 @@
                 padding-top: 16px;
             }
 
-            #auditoriaVista .operator-panel,
-            #auditoriaVista .section,
             #auditoriaVista .ops-card,
             #auditoriaVista .recipe-item,
             #auditoriaVista .criterio,
-            #auditoriaVista .grafico-container,
-            #auditoriaVista .accordion-item,
-            #auditoriaVista .detail-toggle,
-            #auditoriaVista .tabla-receta {
+            #auditoriaVista .grafico-container {
                 break-inside: avoid;
                 page-break-inside: avoid;
             }
@@ -1063,7 +1132,7 @@
             <div class="plant-modal-toolbar">
                 <h3 id="plantOperatorModalHeading">Vista Operativa</h3>
                 <div class="plant-modal-toolbar-actions">
-                    <button type="button" id="plantOperatorPrintBtn" class="primary" onclick="AuditoriaUI.imprimirInformeOperador()">🖨️ Imprimir</button>
+                    <button type="button" id="plantOperatorPrintBtn" class="primary" onclick="AuditoriaUI.imprimirInformeOperador(this)">🖨️ Imprimir</button>
                     <button type="button" id="plantOperatorCloseBtn" onclick="AuditoriaUI.cerrarVistaOperativa()">Cerrar</button>
                 </div>
             </div>
@@ -1078,7 +1147,7 @@
             <div class="plant-modal-toolbar">
                 <h3 id="informeParaOperadorPlantaHeading">Informe Para Operador Planta</h3>
                 <div class="plant-modal-toolbar-actions">
-                    <button type="button" id="operatorReportPrintBtn" class="primary" onclick="AuditoriaUI.imprimirInformeOperador()">🖨️ Imprimir</button>
+                    <button type="button" id="operatorReportPrintBtn" class="primary" onclick="AuditoriaUI.imprimirInformeOperador(this)">🖨️ Imprimir</button>
                     <button type="button" id="operatorReportCloseBtn" onclick="AuditoriaUI.cerrarInformeParaOperadorPlanta()">Cerrar</button>
                 </div>
             </div>
@@ -1262,7 +1331,7 @@
                         </div>
                     </div>
 
-                    <div class="plant-sheet-card">
+                    <div class="plant-sheet-card plant-sheet-card-pasos">
                         <h4>${tAuditoria('plant_operational_steps_title', 'Pasos operativos')}</h4>
                         ${stepsHtml}
                     </div>
@@ -1294,7 +1363,7 @@
                     }
 
                     return `
-                        <div style="padding: 14px; border-radius: 6px; border-left: 4px solid ${colorBorde}; background: ${colorFondo}; position: relative;">
+                        <div class="instruccion-impresa" style="padding: 14px; border-radius: 6px; border-left: 4px solid ${colorBorde}; background: ${colorFondo}; position: relative;">
                             <div style="display: flex; align-items: flex-start; gap: 12px;">
                                 <div style="font-size: 24px; flex-shrink: 0;">${iconoPaso}</div>
                                 <div style="flex: 1;">
@@ -1314,26 +1383,26 @@
                     `;
                 }).join('')
                 : `
-                    <div style="display: grid; gap: 14px;">
-                        <div style="padding: 14px; border-radius: 6px; border-left: 4px solid #1d4ed8; background: #eff6ff;">
+                    <div class="plant-sheet-steps" style="gap: 14px;">
+                        <div class="instruccion-impresa" style="padding: 14px; border-radius: 6px; border-left: 4px solid #1d4ed8; background: #eff6ff;">
                             <div style="font-size: 14px; color: #1e3a8a; margin-bottom: 8px;"><strong>${tAuditoria('action_label', 'Acción')}</strong></div>
                             <div style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">${state.actionMain || tAuditoria('real_order_missing', 'No hay una orden operativa real disponible para mostrar.')}</div>
                             <div class="plant-sheet-text">${state.actionDetail || state.decisionJustification || ''}</div>
                         </div>
 
-                        <div style="padding: 14px; border-radius: 6px; border-left: 4px solid #0f766e; background: #f0fdfa;">
+                        <div class="instruccion-impresa" style="padding: 14px; border-radius: 6px; border-left: 4px solid #0f766e; background: #f0fdfa;">
                             <div style="font-size: 14px; color: #115e59; margin-bottom: 8px;"><strong>${tAuditoria('instruction_label', 'Instrucción')}</strong></div>
                             <div class="plant-sheet-text">${state.instruction || state.decisionJustification || tAuditoria('real_order_missing', 'No hay una orden operativa real disponible para mostrar.')}</div>
                         </div>
 
-                        <div style="padding: 14px; border-radius: 6px; border-left: 4px solid #a16207; background: #fffbeb;">
+                        <div class="instruccion-impresa" style="padding: 14px; border-radius: 6px; border-left: 4px solid #a16207; background: #fffbeb;">
                             <div style="font-size: 14px; color: #92400e; margin-bottom: 8px;"><strong>${tAuditoria('plant_critical_sieves_title', 'Tamices críticos')}</strong></div>
                             ${Array.isArray(state.criticalRows) && state.criticalRows.length > 0
                                 ? `<ul style="margin: 0; padding-left: 18px; color: #334155; line-height: 1.6;">${state.criticalRows.map((row) => `<li>${tAuditoria('sieve_label_short', 'Tamiz')} ${row.tamiz}: ${state.realLabel || tAuditoria('real_label', 'Real')} ${row.real}, ${tAuditoria('band_label', 'Banda')} ${row.banda}, estado ${row.status}.</li>`).join('')}</ul>`
                                 : `<div class="plant-sheet-text">${tAuditoria('plant_all_sieves_ok', 'Todos los tamices están dentro de banda.')}</div>`}
                         </div>
 
-                        <div style="padding: 14px; border-radius: 6px; border-left: 4px solid #7c3aed; background: #faf5ff;">
+                        <div class="instruccion-impresa" style="padding: 14px; border-radius: 6px; border-left: 4px solid #7c3aed; background: #faf5ff;">
                             <div style="font-size: 14px; color: #6d28d9; margin-bottom: 8px;"><strong>${tAuditoria('real_plant_recommendations_title', 'Recomendaciones reales para planta')}</strong></div>
                             ${Array.isArray(state.operatorRecommendations) && state.operatorRecommendations.length > 0
                                 ? `<ul style="margin: 0; padding-left: 18px; color: #334155; line-height: 1.6;">${state.operatorRecommendations.map((item) => `<li>${item}</li>`).join('')}</ul>`
@@ -1357,7 +1426,7 @@
                         <div class="plant-sheet-text">${tAuditoria('real_order_modal_description', 'Esta hoja indica qué material tocar, qué acción hacer, qué malla usar y qué resultado buscar. Si algo no coincide con planta, detener y consultar.')}</div>
                     </div>
 
-                    <div class="plant-sheet-card">
+                    <div class="plant-sheet-card plant-sheet-card-pasos">
                         <h4>${tAuditoria('plant_operational_steps_title', 'Pasos operativos')}</h4>
                         ${stepsHtml}
                     </div>
@@ -1403,8 +1472,13 @@
             modal.setAttribute('aria-hidden', 'true');
         }
 
-        function imprimirInformeOperador() {
-            vista.dataset.imprimirOperador = '';
+        let informeParaImprimir;
+        let restaurarImpresion;
+
+        function imprimirInformeOperador(boton) {
+            const informe = boton.closest('.plant-modal.is-open');
+            if (!informe || restaurarImpresion) return;
+            informeParaImprimir = informe;
             window.print();
         }
 
@@ -2179,6 +2253,13 @@
             const grafico = datos.para_grafico;
             const meta = datos.meta || {};
             const auditoriaIndustrial = datos.auditoria_industrial || {};
+            const bandaEvaluable = datos.validacion_bandas?.completa !== false;
+            const noEvaluado = tAuditoria('not_available', 'No disponible');
+            const porcentaje = (valor, decimales) => Number.isFinite(valor) ? `${valor.toFixed(decimales)}%` : noEvaluado;
+            const avisoBanda = typeof I18N !== 'undefined' && typeof I18N.t === 'function'
+                ? I18N.t('sim.auditoria_banda_incompleta')
+                : 'Validación de cumplimiento incompleta. Liberación para producción deshabilitada.';
+            const etapasPendientes = datos.validacion_bandas?.no_evaluadas?.map(etapa => etapa.replaceAll('_', ' ')).join(', ');
             
             // 🔍 DEBUG: Verificar si pasante_virtual está presente
             console.log('📊 [DEBUG] Datos de gráfico recibidos:');
@@ -2220,26 +2301,26 @@
             const accionOperacion = criterios.cumple_banda
                 ? tAuditoria('operator_action_produce_desc', 'Trabajar con la receta indicada y mantener la relación de carga durante la producción.')
                 : tAuditoria('operator_action_stop_desc', 'No liberar esta mezcla a planta. Ajustar la combinación en laboratorio antes de producir.');
-            const calidadOperacion = criterios.es_buena_calidad
+            const calidadOperacion = !bandaEvaluable ? avisoBanda : criterios.es_buena_calidad
                 ? tAuditoria('quality_text_stable', 'Calidad granulométrica estable.')
                 : tAuditoria('quality_text_watch', 'La mezcla cumple banda, pero conviene vigilar estabilidad y repetir control.');
             const calidadPorcentaje = Math.max(0, 100 - criterios.desviacion_media_centro);
-            const calidadPorcentajeTexto = `${calidadPorcentaje.toFixed(2)}%`;
-            const calidadDetalle = fmtAuditoria(
+            const calidadPorcentajeTexto = bandaEvaluable ? porcentaje(calidadPorcentaje, 2) : noEvaluado;
+            const calidadDetalle = bandaEvaluable ? fmtAuditoria(
                 'quality_inverted_explanation',
                 { value: criterios.desviacion_media_centro.toFixed(2) },
                 `Desvío medio al centro: ${criterios.desviacion_media_centro.toFixed(2)}%. Mientras más cerca de 100%, mejor.`
-            );
+            ) : '';
             const semaforoClase = criterios.cumple_banda
                 ? (criterios.es_buena_calidad ? '' : 'warning')
                 : 'error';
-            const estadoFase1 = fase1.cumplimiento_pct >= 100
+            const estadoFase1 = !bandaEvaluable ? noEvaluado : fase1.cumplimiento_pct >= 100
                 ? tAuditoria('phase1_state_perfect', 'PERFECTO')
                 : tAuditoria('phase1_state_partial', 'PARCIAL');
-            const textoDecision = criterios.cumple_banda
+            const textoDecision = !bandaEvaluable ? noEvaluado : criterios.cumple_banda
                 ? tAuditoria('decision_no_virtual', 'NO GENERAR tabla virtual')
                 : tAuditoria('decision_generate_virtual', 'GENERAR tabla virtual');
-            const razonDecision = criterios.cumple_banda
+            const razonDecision = !bandaEvaluable ? criterios.razon : criterios.cumple_banda
                 ? tAuditoria('decision_reason_ok', 'La solución actual ya satisface la especificación.')
                 : tAuditoria('decision_reason_fail', 'La solución actual NO satisface la especificación.');
             const instruccionOperador = esModoMateriales
@@ -2300,7 +2381,7 @@
             const validacionTablaVirtual = auditoriaIndustrial.validacion_tabla_virtual || {};
             const decisionIndustrial = auditoriaIndustrial.decision_final || {};
             const controlOperacional = auditoriaIndustrial.control_operacional || {};
-            const criticalRows = grafico.tamices.map((tamiz, index) => {
+            const criticalRows = (bandaEvaluable ? grafico.tamices : []).map((tamiz, index) => {
                 const real = Number(grafico.pasante_real[index] || 0);
                 const min = Number(grafico.banda_min[index] || 0);
                 const max = Number(grafico.banda_max[index] || 0);
@@ -2327,8 +2408,8 @@
                 semaforoClase,
                 actionMain: criterios.cumple_banda ? 'PRODUCIR' : 'AJUSTAR',
                 actionDetail: accionOperacion,
-                compliance: `${fase1.cumplimiento_pct}%`,
-                complianceDetail: `${fase1.cumpl_count} de ${fase1.n_tamices} tamices dentro de banda.`,
+                compliance: porcentaje(fase1.cumplimiento_pct, 1),
+                complianceDetail: bandaEvaluable ? `${fase1.cumpl_count} de ${fase1.n_tamices} tamices dentro de banda.` : avisoBanda,
                 instruction: instruccionOperador,
                 decisionJustification: decisionIndustrial.justificacion || '',
                 operatorRecommendations: Array.isArray(auditoriaIndustrial.recomendaciones_reales_planta)
@@ -2435,7 +2516,7 @@
                     <div class="report-hint">${tAuditoria('export_pdf_helper', 'Genera un PDF desde el navegador con el informe visible y sus gráficos.')}</div>
                     <button type="button" onclick="AuditoriaUI.exportarReportePDF()">${tAuditoria('export_pdf_btn', '🖨️ Exportar PDF')}</button>
                     <button type="button" onclick="AuditoriaUI.descargarGraficoComparacionPNG()">${tAuditoria('export_chart_png_btn', '🖼️ Descargar curva PNG')}</button>
-                    <button type="button" onclick="AuditoriaUI.abrirInformeParaOperadorPlanta()">${tAuditoria('operator_report_btn', '🧾 Informe operador planta')}</button>
+                    <button type="button" onclick="AuditoriaUI.abrirInformeParaOperadorPlanta()" ${bandaEvaluable ? '' : 'disabled'}>${tAuditoria('operator_report_btn', '🧾 Informe operador planta')}</button>
                 </div>
                     <div class="operator-panel">
                     <div class="operator-title">
@@ -2451,8 +2532,9 @@
                         </div>
                         <div class="ops-card">
                             <h3>${tAuditoria('compliance_label', 'Cumplimiento')}</h3>
-                            <div class="ops-main-value">${fase1.cumplimiento_pct}%</div>
-                            <p>${fmtAuditoria('compliance_points_text', { count: fase1.cumpl_count, total: fase1.n_tamices }, `${fase1.cumpl_count} de ${fase1.n_tamices} puntos de control dentro de banda.`)}</p>
+                            <div class="ops-main-value">${porcentaje(fase1.cumplimiento_pct, 1)}</div>
+                            <p>${bandaEvaluable ? fmtAuditoria('compliance_points_text', { count: fase1.cumpl_count, total: fase1.n_tamices }, `${fase1.cumpl_count} de ${fase1.n_tamices} puntos de control dentro de banda.`) : avisoBanda}</p>
+                            ${etapasPendientes ? `<p>${noEvaluado} — ${etapasPendientes}.</p>` : ''}
                         </div>
                         <div class="ops-card">
                             <h3>${tAuditoria('quality_label', 'Calidad')}</h3>
@@ -2758,11 +2840,11 @@
                     <h2>${tAuditoria('phase1_title', 'Fase 1️⃣ Evaluación Inicial')}</h2>
                     <div class="criterio ok">
                         <label>${tAuditoria('band_compliance_label', 'Cumplimiento de Banda')}</label>
-                        <span class="value">${fase1.cumpl_count}/${fase1.n_tamices} ${tAuditoria('sieves_label', 'tamices')} (${fase1.cumplimiento_pct}%)</span>
+                        <span class="value">${bandaEvaluable ? `${fase1.cumpl_count}/${fase1.n_tamices} ${tAuditoria('sieves_label', 'tamices')} (${fase1.cumplimiento_pct}%)` : noEvaluado}</span>
                     </div>
                     <div class="criterio">
                         <label>${tAuditoria('error_total_label', 'Error Total')}</label>
-                        <span class="value">${fase1.error_total}%</span>
+                        <span class="value">${porcentaje(fase1.error_total, 2)}</span>
                     </div>
                     <div class="criterio">
                         <label>${tAuditoria('state_label', 'Estado')}</label>
@@ -2774,16 +2856,16 @@
                     <h2>${tAuditoria('phase24_title', 'Fase 2-4️⃣ Criterios de Decisión')}</h2>
                     <div class="criterio ${cumpleEstilo}">
                         <label>${tAuditoria('criteria1_label', 'Criterio 1 - Cumplimiento de Banda (OBLIGATORIO)')}</label>
-                        <div><strong>${criterios.cumplimiento_banda_pct.toFixed(1)}%</strong> / ${tAuditoria('criteria1_required', '95.0% requerido')}</div>
+                        <div><strong>${porcentaje(criterios.cumplimiento_banda_pct, 1)}</strong> / ${tAuditoria('criteria1_required', '95.0% requerido')}</div>
                         <div style="margin-top: 5px; color: ${criterios.cumple_banda ? '#28a745' : '#dc3545'}; font-weight: bold;">
-                            ${criterios.cumple_banda ? tAuditoria('criteria_band_ok', '✓ CUMPLE') : tAuditoria('criteria_band_fail', '✗ NO CUMPLE')}
+                            ${!bandaEvaluable ? noEvaluado : criterios.cumple_banda ? tAuditoria('criteria_band_ok', '✓ CUMPLE') : tAuditoria('criteria_band_fail', '✗ NO CUMPLE')}
                         </div>
                     </div>
                     <div class="criterio ${calidadEstilo}">
                         <label>${tAuditoria('criteria2_label', 'Criterio 2 - Desviación del Centro (Calidad Opcional)')}</label>
-                        <div><strong>${criterios.desviacion_media_centro.toFixed(2)}%</strong> / ${tAuditoria('criteria2_ideal', '±5.5% ideal')}</div>
+                        <div><strong>${porcentaje(criterios.desviacion_media_centro, 2)}</strong> / ${tAuditoria('criteria2_ideal', '±5.5% ideal')}</div>
                         <div style="margin-top: 5px; color: ${criterios.es_buena_calidad ? '#28a745' : '#ff9800'}; font-weight: bold;">
-                            ${criterios.es_buena_calidad ? tAuditoria('criteria_quality_ok', '✓ BUENA CALIDAD') : tAuditoria('criteria_quality_warn', '⚠ CALIDAD MEJORA')}
+                            ${!bandaEvaluable ? noEvaluado : criterios.es_buena_calidad ? tAuditoria('criteria_quality_ok', '✓ BUENA CALIDAD') : tAuditoria('criteria_quality_warn', '⚠ CALIDAD MEJORA')}
                         </div>
                     </div>
                 </div>
@@ -2853,24 +2935,29 @@
                 const bandaMin = grafico.banda_min[i];
                 const bandaMax = grafico.banda_max[i];
                 
-                const estadoReal1 = (pasanteReal >= bandaMin && pasanteReal <= bandaMax) ? '✓' : '✗';
-                const estadoVirt = (pasanteVirt >= bandaMin && pasanteVirt <= bandaMax) ? '✓' : '✗';
+                const bandaProducto = datos.bandas?.[datos.producto_banda || 'paver']?.[i];
+                const evaluarTamiz = bandaEvaluable || bandaProducto?.apto_validacion === true;
+                const estadoReal1 = !evaluarTamiz ? 'N/D' : (pasanteReal >= bandaMin && pasanteReal <= bandaMax) ? '✓' : '✗';
+                const estadoVirt = !bandaEvaluable ? 'N/D' : (pasanteVirt >= bandaMin && pasanteVirt <= bandaMax) ? '✓' : '✗';
+                const bandaTexto = bandaMin == null || bandaMax == null ? 'N/D' :
+                    `${bandaProducto?.origen === 'interpolated' ? '≈ ' : ''}[${bandaMin}-${bandaMax}]%`;
                 
                 html += `
                     <tr data-curve-index="${i}">
                         <td><strong>${tamiz}</strong></td>
                         <td>${pasanteReal.toFixed(2)}%</td>
-                        <td style="border-right: 2px solid #999;">[${bandaMin}-${bandaMax}]%</td>
+                        <td style="border-right: 2px solid #999;">${bandaTexto}</td>
                         <td>
                             <button
                                 type="button"
                                 class="curve-editor-trigger"
+                                ${bandaEvaluable ? '' : 'disabled'}
                                 data-curve-index="${i}"
                                 data-tamiz="${tamiz}"
                                 data-min="${bandaMin}"
                                 data-max="${bandaMax}"
                                 data-value="${pasanteVirt}"
-                            >${pasanteVirt.toFixed(2)}%</button>
+                            >${bandaEvaluable ? porcentaje(pasanteVirt, 2) : noEvaluado}</button>
                         </td>
                         <td><strong style="color: ${estadoReal1 === '✓' ? '#28a745' : '#dc3545'}">${estadoReal1}</strong></td>
                         <td class="curve-editor-state-virtual" data-curve-index="${i}"><strong style="color: ${estadoVirt === '✓' ? '#28a745' : '#dc3545'}">${estadoVirt}</strong></td>
@@ -2924,19 +3011,24 @@
                 I18N.applyTranslations(document.getElementById('auditoriaResultado'));
             }
             
-            // Dibujar gráficos (esperar a que el DOM se actualice)
-            dibujarGraficosPendientes = () => {
-                if (modalAuditoria && !modalAuditoria.open) return;
-                dibujarGraficosPendientes = null;
+            programarGraficos(() => {
                 dibujarGrafico(grafico, entrada);
-                dibujarGraficosAnalisis(grafico, entrada);
-                if (window.AuditoriaCurveEditor && typeof window.AuditoriaCurveEditor.init === 'function') {
+                if (bandaEvaluable) dibujarGraficosAnalisis(grafico, entrada);
+                if (bandaEvaluable && window.AuditoriaCurveEditor && typeof window.AuditoriaCurveEditor.init === 'function') {
                     window.AuditoriaCurveEditor.init();
                 }
+            });
+        }
+
+        function programarGraficos(dibujar) {
+            const pendiente = () => {
+                if (modalAuditoria && !modalAuditoria.open) return;
+                dibujarGraficosPendientes = null;
+                dibujar();
             };
-            const dibujar = dibujarGraficosPendientes;
+            dibujarGraficosPendientes = pendiente;
             requestAnimationFrame(() => {
-                if (dibujar === dibujarGraficosPendientes) dibujar();
+                if (pendiente === dibujarGraficosPendientes) pendiente();
             });
         }
 
@@ -3099,7 +3191,6 @@
 
             const cambios = expandirSeccionesParaImpresion();
             const onAfterPrint = () => {
-                restaurarGraficoPrincipalDespuesDeImpresion();
                 restaurarSeccionesDespuesDeImpresion(cambios);
                 window.removeEventListener('afterprint', onAfterPrint);
             };
@@ -3109,6 +3200,7 @@
             window.setTimeout(() => {
                 prepararGraficoPrincipalParaImpresion().finally(() => {
                     resizeChartsParaImpresion();
+                    informeParaImprimir = null;
                     window.print();
                 });
             }, 250);
@@ -3125,18 +3217,44 @@
         }
 
         window.addEventListener('beforeprint', () => {
+            if (restaurarImpresion) return;
             if (modalAuditoria && !modalAuditoria.open) return;
+            const informe = informeParaImprimir === undefined
+                ? vista.querySelector('.plant-modal.is-open') : informeParaImprimir;
+            const foco = document.activeElement;
+            const reabrirDialogo = modalAuditoria?.open;
+            const desplazamiento = modalAuditoria?.scrollTop;
+            restaurarImpresion = () => {
+                informe?.removeAttribute('data-informe-impresion');
+                delete vista.dataset.imprimirOperador;
+                document.body.classList.remove('auditoria-imprimiendo');
+                document.documentElement.classList.remove('auditoria-imprimiendo');
+                restaurarGraficoPrincipalDespuesDeImpresion();
+                if (reabrirDialogo && !modalAuditoria.open) {
+                    modalAuditoria.showModal();
+                    modalAuditoria.scrollTop = desplazamiento;
+                }
+                foco?.focus({ preventScroll: true });
+            };
+
             document.body.classList.add('auditoria-imprimiendo');
-            if ('imprimirOperador' in vista.dataset) return;
-            prepararGraficoPrincipalParaImpresion();
-            resizeChartsParaImpresion();
+            document.documentElement.classList.add('auditoria-imprimiendo');
+            if (informe) {
+                informe.setAttribute('data-informe-impresion', '');
+                vista.dataset.imprimirOperador = '';
+            } else {
+                prepararGraficoPrincipalParaImpresion();
+                resizeChartsParaImpresion();
+            }
+            // La capa superior de un diálogo modal puede repetirse al paginar.
+            // La hoja de impresión muestra el mismo nodo en el flujo del documento.
+            if (reabrirDialogo) modalAuditoria.close();
         });
 
         window.addEventListener('afterprint', () => {
-            if (!document.body.classList.contains('auditoria-imprimiendo')) return;
-            document.body.classList.remove('auditoria-imprimiendo');
-            delete vista.dataset.imprimirOperador;
-            restaurarGraficoPrincipalDespuesDeImpresion();
+            restaurarImpresion?.();
+            restaurarImpresion = undefined;
+            informeParaImprimir = undefined;
         });
         inicializarModalTituloPDF();
         
@@ -3317,15 +3435,14 @@
             const pasanteEntradaOriginal = Array.isArray(datos.pasante_entrada_original)
                 ? datos.pasante_entrada_original
                 : (entrada && Array.isArray(entrada.pasante_real) ? entrada.pasante_real : null);
-            const resultadoCalculadoGrafico = datos.pasante_real.map((valor) => 100 - Number(valor || 0));
+            const resultadoCalculadoGrafico = datos.pasante_real;
 
             const bandaMinGrafico = datos.banda_min.slice();
             const bandaMaxGrafico = datos.banda_max.slice();
+            const fullerIdeal = entrada?.fuller_ideal ?? datos.fuller_ideal;
 
-            console.log('[GRAFICO] Banda Min pasante:', bandaMinGrafico.map(v => v.toFixed(1)));
-            console.log('[GRAFICO] Banda Max pasante:', bandaMaxGrafico.map(v => v.toFixed(1)));
-
-            if (Array.isArray(pasanteEntradaOriginal) && pasanteEntradaOriginal.length === datos.tamices.length) {
+            if (Array.isArray(pasanteEntradaOriginal) && pasanteEntradaOriginal.length === datos.tamices.length &&
+                pasanteEntradaOriginal.some((valor, i) => valor !== resultadoCalculadoGrafico[i])) {
                 datasets.push({
                     label: modalAuditoria ? 'Curva pasante del cálculo de retenidos'
                         : tAuditoria('chart_initial_input', 'ANTES · Datos crudos desde localStorage'),
@@ -3380,7 +3497,7 @@
                 },
                 {
                     label: tAuditoria('chart_fuller_ideal', 'Curva Fuller Ideal'),
-                    data: Array.isArray(datos.fuller_ideal) ? datos.fuller_ideal.slice().reverse() : [],
+                    data: Array.isArray(fullerIdeal) ? fullerIdeal.slice().reverse() : [],
                     borderColor: '#FFD700',
                     borderWidth: 3,
                     fill: false,

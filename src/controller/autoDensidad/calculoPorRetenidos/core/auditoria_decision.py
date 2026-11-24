@@ -418,6 +418,10 @@ def _validar_tabla_virtual_industrial(
 ) -> Dict[str, Any]:
     problemas = []
 
+    if fase5["valida"] is None:
+        return {"resumen": "Tabla virtual no evaluada por falta de banda apta.", "problemas": problemas,
+                "estado": "NO EVALUADO"}
+
     if not fase5["generada"]:
         resumen = "No se generó tabla virtual porque la mezcla auditada ya quedó en condición suficiente o el flujo no la necesitó."
         return {
@@ -471,6 +475,8 @@ def _tabla_virtual_es_aplicable_industrialmente(
     analisis_materiales: Dict[str, Any],
 ) -> Tuple[bool, List[str]]:
     motivos = []
+    if fase5["valida"] is None:
+        return False, [validacion_tv["resumen"]]
 
     if not fase5.get("generada"):
         motivos.append("No se generó tabla virtual necesaria para análisis.")
@@ -503,6 +509,7 @@ def _construir_auditoria_industrial(
     materiales: Optional[List[Dict[str, Any]]] = None,
     proporciones_optimizadas: Optional[Dict[str, float]] = None,
 ) -> Dict[str, Any]:
+    print("FUNCION: _construir_auditoria_industrial")
     analisis_real = _analizar_monotonicidad_y_saltos(
         pasante_real,
         tamices,
@@ -530,8 +537,10 @@ def _construir_auditoria_industrial(
     riesgos_operativos = []
     recomendaciones = []
 
+    evaluable = fase1["cumplimiento_pct"] is not None
     tamices_fuera = []
-    for i, (pasante, minimo, maximo) in enumerate(zip(pasante_real, banda_min, banda_max)):
+    controles = zip(pasante_real, banda_min, banda_max) if evaluable else ()
+    for i, (pasante, minimo, maximo) in enumerate(controles):
         if _esta_dentro_banda(float(pasante), float(minimo), float(maximo)):
             continue
         if pasante < minimo:
@@ -594,7 +603,9 @@ def _construir_auditoria_industrial(
             if problema["severidad"] == "ERROR CRITICO":
                 problemas_criticos.append(problema)
 
-    if not criterios["cumple_banda"]:
+    if not evaluable:
+        recomendaciones.append("Completar una banda de referencia válida para evaluar cumplimiento y autorizar ajustes de producción.")
+    elif not criterios["cumple_banda"]:
         recomendaciones.append("No liberar mezcla tal como está. Corregir primero la zona fuera de banda con ajuste físico verificable en laboratorio.")
     else:
         recomendaciones.append("Mantener la receta dentro de una ventana operativa estrecha y repetir control si cambia humedad, zaranda o alimentación.")
@@ -617,7 +628,9 @@ def _construir_auditoria_industrial(
     elif fase5["generada"]:
         recomendaciones.append("La mezcla actual no puede corregirse automáticamente sin perder coherencia física o representatividad industrial.")
 
-    if problemas_criticos:
+    if not evaluable:
+        decision_estado = "NO LIBERAR"
+    elif problemas_criticos:
         decision_estado = "NO LIBERAR"
         if any("Material único eliminado" == p["titulo"] for p in problemas_criticos) or any("Tabla virtual" in p["titulo"] for p in problemas_criticos):
             decision_estado = "REQUIERE REFORMULACION"
@@ -629,8 +642,9 @@ def _construir_auditoria_industrial(
         decision_estado = "APTO PRODUCCION"
 
     diagnostico_partes = [
-        f"Cumplimiento actual: {fase1['cumpl_count']}/{fase1['n_tamices']} tamices ({fase1['cumplimiento_pct']}%).",
-        f"Error residual: {fase1['error_total']:.2f}%.",
+        (f"Cumplimiento actual: {fase1['cumpl_count']}/{fase1['n_tamices']} tamices ({fase1['cumplimiento_pct']}%)."
+         if evaluable else "Cumplimiento no evaluable con la banda disponible."),
+        f"Error residual: {fase1['error_total']:.2f}%." if evaluable else "Error residual no evaluado.",
         "Curva físicamente coherente." if analisis_real["es_monotona"] else "Curva con inconsistencias físicas de monotonicidad.",
         analisis_materiales["resumen"],
     ]
@@ -638,7 +652,9 @@ def _construir_auditoria_industrial(
     if tamices_fuera:
         diagnostico_partes.append(f"Tamices fuera de banda: {len(tamices_fuera)}.")
 
-    if decision_estado == "APTO PRODUCCION":
+    if not evaluable:
+        justificacion = criterios["razon"]
+    elif decision_estado == "APTO PRODUCCION":
         justificacion = "Se recomienda liberar a producción porque cumple banda y no aparecen objeciones físicas críticas."
     elif fase5.get("generada") and not tabla_virtual_aplicable:
         justificacion = "La mezcla actual no puede corregirse automáticamente sin perder coherencia física o representatividad industrial."
@@ -756,6 +772,7 @@ def generar_auditoria_completa(
     tamices: List[float],
     materiales: Optional[List[Dict[str, Any]]] = None,
     proporciones_optimizadas: Optional[Dict[str, float]] = None,
+    evaluar_banda: bool = True,
 ) -> Dict:
     """
     Genera auditoría completa con decisión y generación de tabla virtual
@@ -785,20 +802,21 @@ def generar_auditoria_completa(
     )
     
     # ===== FASE 1: EVALUACIÓN INICIAL =====
-    cumpl_inicial = sum([1 for p, min_b, max_b in zip(pasante_real, banda_min, banda_max) if _esta_dentro_banda(p, min_b, max_b)])
-    cumpl_inicial_pct = (cumpl_inicial / len(tamices)) * 100
-    
-    # Error total
-    error_real = sum([
-        max(0, banda_min[i] - pasante_real[i], pasante_real[i] - banda_max[i])
-        if not _esta_dentro_banda(pasante_real[i], banda_min[i], banda_max[i]) else 0
-        for i in range(len(tamices))
-    ])
-    
-    # ===== FASE 2-4: EVALUACIÓN DE CRITERIOS Y DECISIÓN =====
-    criterios = evaluar_criterios_decision(
-        pasante_real, banda_min, banda_max, tamices
-    )
+    if evaluar_banda:
+        cumpl_inicial = sum(1 for p, lo, hi in zip(pasante_real, banda_min, banda_max)
+                            if _esta_dentro_banda(p, lo, hi))
+        cumpl_inicial_pct = cumpl_inicial / len(tamices) * 100
+        error_real = sum(max(0, lo - p, p - hi) if not _esta_dentro_banda(p, lo, hi) else 0
+                         for p, lo, hi in zip(pasante_real, banda_min, banda_max))
+        criterios = evaluar_criterios_decision(pasante_real, banda_min, banda_max, tamices)
+    else:
+        cumpl_inicial = cumpl_inicial_pct = error_real = None
+        criterios = {
+            "cumplimiento_banda_pct": None, "cumple_banda": False,
+            "desviacion_media_centro": None, "es_buena_calidad": False,
+            "generar_tabla_virtual": False, "decision": "NO EVALUADO",
+            "razon": "Faltan límites aptos para evaluar cumplimiento, optimización y corrección de producción.",
+        }
     
     # ===== FASE 5: GENERACIÓN DE TABLA VIRTUAL SI REQUERIDA =====
     pasante_virtual = pasante_real.copy()
@@ -886,7 +904,10 @@ def generar_auditoria_completa(
         "total_pct": 100.0,
     }
 
-    if not criterios['generar_tabla_virtual']:
+    if not evaluar_banda:
+        semaforo = "NO EVALUADO"
+        instruction = criterios["razon"]
+    elif not criterios['generar_tabla_virtual']:
         semaforo = "🟢 OK - USAR DIRECTAMENTE"
         instruction = "Usar directamente los materiales en las proporciones reales validadas."
     elif virtual_usable_basica:
@@ -896,18 +917,21 @@ def generar_auditoria_completa(
         semaforo = "🔴 SIN CORRECCION AUTOMATICA"
         instruction = "La mezcla actual no puede corregirse automáticamente sin perder coherencia física o representatividad industrial."
     
+    def porcentaje(valor, decimales):
+        return round(float(valor), decimales) if valor is not None else None
+
     fase_1 = {
-        "cumplimiento_pct": round(cumpl_inicial_pct, 1),
-        "cumpl_count": int(cumpl_inicial),
+        "cumplimiento_pct": porcentaje(cumpl_inicial_pct, 1),
+        "cumpl_count": cumpl_inicial,
         "n_tamices": len(tamices),
-        "error_total": round(float(error_real), 2),
-        "estado": "PARCIAL" if cumpl_inicial_pct < 100 else "PERFECTO"
+        "error_total": porcentaje(error_real, 2),
+        "estado": ("PARCIAL" if cumpl_inicial_pct < 100 else "PERFECTO") if evaluar_banda else "NO EVALUADO"
     }
 
     fase_2_4 = {
-        "cumplimiento_banda_pct": round(criterios['cumplimiento_banda_pct'], 1),
+        "cumplimiento_banda_pct": porcentaje(criterios['cumplimiento_banda_pct'], 1),
         "cumple_banda": bool(criterios['cumple_banda']),
-        "desviacion_media_centro": round(criterios['desviacion_media_centro'], 2),
+        "desviacion_media_centro": porcentaje(criterios['desviacion_media_centro'], 2),
         "es_buena_calidad": bool(criterios['es_buena_calidad']),
         "decision": criterios['decision'],
         "razon": criterios['razon'],
@@ -915,11 +939,11 @@ def generar_auditoria_completa(
 
     fase_5 = {
         "generada": bool(criterios['generar_tabla_virtual']),
-        "valida": bool(es_valida),
-        "cumplimiento_pct": round(cumpl_virtual_pct, 1),
+        "valida": bool(es_valida) if evaluar_banda else None,
+        "cumplimiento_pct": round(cumpl_virtual_pct, 1) if evaluar_banda else None,
         "cumpl_count": int(cumpl_virtual) if criterios['generar_tabla_virtual'] else 0,
-        "cumplimiento_real_pct": round(cumpl_inicial_pct, 1),
-        "error_total": round(float(error_virtual), 2),
+        "cumplimiento_real_pct": fase_1["cumplimiento_pct"],
+        "error_total": round(float(error_virtual), 2) if evaluar_banda else None,
         "mejora_cumplimiento": int(cumpl_virtual - cumpl_inicial) if criterios['generar_tabla_virtual'] else 0,
         "mejora_error": round(float(mejora_error), 2),
     }
@@ -971,10 +995,10 @@ def generar_auditoria_completa(
         
         "para_grafico": {
             "tamices": [float(t) for t in tamices],
-            "banda_min": [float(b) for b in banda_min],
-            "banda_max": [float(b) for b in banda_max],
+            "banda_min": [float(b) if b is not None else None for b in banda_min],
+            "banda_max": [float(b) if b is not None else None for b in banda_max],
             "fuller_ideal": [float(round(100.0 - (100.0 * (float(tamiz) / 12.5) ** 0.45), 2)) if tamiz > 0 else 0.0 for tamiz in tamices],
             "pasante_real": [float(p) for p in pasante_real],
-            "pasante_virtual": [float(p) for p in pasante_virtual],
+            "pasante_virtual": [float(p) for p in pasante_virtual] if evaluar_banda else [],
         }
     }

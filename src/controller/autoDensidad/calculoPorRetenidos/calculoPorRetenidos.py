@@ -1,7 +1,10 @@
 import matplotlib.pyplot as plt
 import io
 import base64
-from flask import Blueprint, request, render_template, send_file, jsonify, redirect
+from flask import Blueprint, current_app, request, render_template, send_file, jsonify, redirect
+from bisect import bisect_left
+import json
+import os
 from collections import defaultdict
 import numpy as np
 from flask import jsonify, request
@@ -12,6 +15,7 @@ from controller.autoDensidad.calcularMezclaOptima import mostrar_datos_crudos_en
 from controller.autoDensidad.calcularMezclaOptima import encontrar_n_optimo
 from controller.autoDensidad.calcularMezclaOptima import calcular_curva_fuller
 from controller.autoDensidad.optimizar_fuller import generar_informe_ajuste
+from ..tamices import FONDO, normalizar_tamiz, ordenar_tamices, referencias_perfil, resolver_bandas
 from src.utils.auth import current_user
 import math
 from src.utils.get_textos_menu  import get_textos_menu
@@ -31,17 +35,6 @@ from .core.auditoria_decision import generar_auditoria_completa
 
 
 calculoPorRetenidos = Blueprint('calculoPorRetenidos', __name__)
-
-MF_SIEVES_BR = [4.8, 2.4, 1.2, 0.6, 0.3, 0.15]
-TAMICES_ORDEN = [12.5, 9.5, 6.3, 4.8, 2.4, 1.2, 0.6, 0.3, 0.15, 0.075, "Fundo"]
-
-
-
-
-def _ordenar_indices(tamices):
-    # fuerza el orden norma; si falta alguno lo ignora, si sobra alguno lo manda al final
-    pos = {str(t): i for i, t in enumerate(TAMICES_ORDEN)}
-    return sorted(range(len(tamices)), key=lambda i: pos.get(str(tamices[i]), 999))
 
 def _acum_to_ind(acum_list):
     """
@@ -93,23 +86,119 @@ def _acum_desc(ret_ind_list, debug=False):
 
     return acum
 
-def _mezcla_ponderada_acum(materiales):
+def _mezcla_ponderada_acum(materiales, pesos=None):
     # materiales: [{nombre, w, ret_ind[], ret_acum[]}, ...] con alineación ya hecha
     n = len(materiales[0]['ret_acum'])
     mix_acum = [0.0] * n
-    for m in materiales:
-        w = float(m['w'])
+    if pesos is None:
+        pesos = [float(m["w"]) for m in materiales]
+    for m, w in zip(materiales, pesos):
         for k in range(n):
             mix_acum[k] += w * m['ret_acum'][k]
     return [round(x, 1) for x in mix_acum]
 
 
-def _finura_modulus(mix_acum, tamices, mf_sieves=MF_SIEVES_BR):
-    def eq(a, b, tol=1e-3):
-        try: return abs(float(a) - float(b)) < tol
-        except: return False
-    idxs = [i for i,t in enumerate(tamices) if any(eq(t,s) for s in mf_sieves)]
-    return round(sum(float(mix_acum[i]) for i in idxs)/100.0, 2) if idxs else 0.0
+def _seleccionar_metodo_finura(datos):
+    """Aceptar una serie explícita o el identificador de un perfil configurado."""
+    seleccion = datos.get("metodo_finura", current_app.config.get(
+        "METODO_FINURA", os.getenv("GERVASI_METODO_FINURA")
+    ))
+    if not isinstance(seleccion, str):
+        return seleccion
+    seleccion = seleccion.strip()
+    if not seleccion:
+        return None
+    if seleccion.startswith("{"):
+        return seleccion
+
+    perfiles = current_app.config.get("METODOS_FINURA", os.getenv("GERVASI_METODOS_FINURA"))
+    try:
+        if isinstance(perfiles, str):
+            perfiles = json.loads(perfiles)
+        perfil = perfiles[seleccion]
+        if isinstance(perfil, dict):
+            return {"id": seleccion, **perfil}
+    except (KeyError, TypeError, ValueError):
+        pass
+    return {"id": seleccion}
+
+
+def _finura_modulus(mix_acum, tamices, metodo=None):
+    resultado = {"estado": "no_calculable", "valor": None, "metodo": None}
+    try:
+        eje, indices = ordenar_tamices(tamices)
+        if len(eje) != len(mix_acum):
+            raise ValueError("Longitud de curva incompatible.")
+        medidos = {d: float(mix_acum[i]) for d, i in zip(eje, indices) if d != FONDO}
+        if not medidos or not all(0 <= v <= 100 for v in medidos.values()):
+            raise ValueError("Retenidos acumulados inválidos.")
+    except (TypeError, ValueError):
+        return dict(resultado, motivo="curva_invalida")
+
+    if metodo is None:
+        return dict(resultado, motivo="sin_referencia", indice_descriptivo={
+            "tipo": "promedio_retenido_acumulado_pct",
+            "valor": round(math.fsum(medidos.values()) / len(medidos), 2),
+        })
+
+    try:
+        if isinstance(metodo, str):
+            metodo = json.loads(metodo)
+        identificador = metodo.get("id")
+        if identificador is not None and (not isinstance(identificador, str) or not identificador.strip()):
+            raise ValueError("Identificador del método inválido.")
+        resultado["metodo"] = identificador.strip() if identificador is not None else None
+        if not isinstance(metodo["tamices"], (list, tuple)):
+            raise ValueError("Se requiere una lista de tamices de referencia.")
+        referencia, _ = ordenar_tamices(metodo["tamices"])
+        if not referencia or FONDO in referencia:
+            raise ValueError("Serie de referencia inválida.")
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return dict(resultado, motivo="referencia_invalida")
+
+    aberturas = sorted(medidos)
+    puntos = []
+    faltantes = []
+    for d in referencia:
+        if d in medidos:
+            puntos.append({"tamiz": d, "ret_acum": medidos[d], "origen": "medido"})
+            continue
+        i = bisect_left(aberturas, d)
+        if metodo.get("permitir_interpolacion") is not True or not 0 < i < len(aberturas):
+            faltantes.append(d)
+            continue
+        menor, mayor = aberturas[i - 1:i + 1]
+        fraccion = (math.log(d) - math.log(menor)) / (math.log(mayor) - math.log(menor))
+        retenido = medidos[menor] + fraccion * (medidos[mayor] - medidos[menor])
+        puntos.append({"tamiz": d, "ret_acum": retenido, "origen": "interpolado"})
+
+    if faltantes:
+        return dict(resultado, motivo="faltan_tamices", tamices_faltantes=faltantes, puntos=puntos)
+    estado = "estimado" if any(p["origen"] == "interpolado" for p in puntos) else "calculado"
+    return dict(resultado, estado=estado, puntos=puntos,
+                valor=round(math.fsum(p["ret_acum"] for p in puntos) / 100, 2))
+
+
+def _retidos_de_masas(material, eje_entrada, tamices):
+    """Calcular a partir de gramos, sin inferir el formato ni reutilizar un total declarado."""
+    aberturas = material.get("tamices_masa", [d for d in eje_entrada if d != FONDO])
+    orden, indices = ordenar_tamices(aberturas)
+    gramos = [float(valor) for valor in material["pesos_retenidos_g"]]
+    fondo = float(material.get("peso_fondo_g", 0))
+    if (not orden or len(gramos) != len(orden) or set(orden) != {d for d in tamices if d != FONDO}
+            or any(not math.isfinite(g) or g < 0 for g in [*gramos, fondo])):
+        raise ValueError("Cada muestra debe tener una masa no negativa por abertura de la serie del ensayo.")
+    total = math.fsum([*gramos, fondo])
+    if total <= 0:
+        raise ValueError("El peso total recuperado debe ser mayor que cero.")
+    masas = {d: gramos[i] for d, i in zip(orden, indices)}
+    masas[FONDO] = fondo
+    return [100 * (masas[d] / total) for d in tamices], {
+        "tamices_masa": orden,
+        "pesos_retenidos_g": [gramos[i] for i in indices],
+        "peso_fondo_g": fondo,
+        "peso_total_recuperado_g": total,
+    }
 
 
 def optimizar_proporciones(materiales, tamices_ord, limites, log):
@@ -281,21 +370,18 @@ def optimizar_proporciones(materiales, tamices_ord, limites, log):
         return None
 
 
-def _validar_faixas(mix_acum, tamices, limites):
-    def eval_faixa(faixa):
-        oks, det = [], []
-        for x, t in zip(mix_acum, tamices):
-            rng = faixa.get(str(t))
-            if not rng:
-                oks.append(None); det.append({"tamiz":t,"ok":None}); continue
-            lo, hi = rng
-            ok = (x >= lo) and (x <= hi)
-            oks.append(ok)
-            det.append({"tamiz": t, "mix": x, "min": lo, "max": hi, "ok": ok})
-        return oks, det
-    ob, det_b = eval_faixa(limites.get('bloco', {}))
-    op, det_p = eval_faixa(limites.get('paver', {}))
-    return {"bloco": det_b, "paver": det_p}
+def _validar_faixas(mix_acum, tamices, limites, perfil=None):
+    faixas = resolver_bandas(tamices, limites, perfil)
+    for filas in faixas.values():
+        for valor, fila in zip(mix_acum, filas):
+            fila["mix"] = valor
+            fila["ok"] = fila["min"] <= valor <= fila["max"] if fila["apto_validacion"] else None
+    return faixas
+
+
+def _banda_completa(filas):
+    controles = [fila for fila in filas if fila["tamiz"] != FONDO]
+    return bool(controles) and all(fila["apto_validacion"] for fila in controles)
 
 
 # ================================================================================
@@ -634,6 +720,17 @@ def _debug_etapa_curva(etapa, funcion, tipo_curva, tamices, curva):
 @calculoPorRetenidos.route('/calculoPorRetenidos/granulometria/retido/', methods=['POST'])
 def granulometria_retido():
     data = request.get_json(force=True)
+    if data.get("solo_validar_limites") is True:
+        try:
+            referencias, perfil = referencias_perfil(data.get("perfil_granulometrico"))
+            tamices, _ = ordenar_tamices(data["tamices"])
+            producto = perfil["producto"] if perfil else data.get("producto", "bloco")
+            bandas = resolver_bandas([t for t in tamices if t != FONDO], referencias, perfil)
+            filas = bandas[producto]
+            compatible = _banda_completa(filas) if perfil else all(_banda_completa(f) for f in bandas.values())
+            return jsonify(ok=True, filas=filas, compatible=compatible, perfil_granulometrico=perfil)
+        except (KeyError, TypeError, ValueError) as error:
+            return jsonify(ok=False, error=str(error)), 400
 
     # ---- DEBUG SWITCH ----
     qdebug = request.args.get("debug", "1")
@@ -642,12 +739,18 @@ def granulometria_retido():
     log = (lambda *a, **k: print(*a, **k)) if debug else (lambda *a, **k: None)
 
     # STEP 1: Log full payload
+    log("FUNCION: granulometria_retido")
     log("\n=== DEBUG FULL PAYLOAD ===")
     log(data)
 
-    tamices = data.get('tamices', TAMICES_ORDEN)
+    tamices = data.get('tamices', [])
     materiales_in = data.get('materiales', [])
-    limites = data.get('limites', {})
+    try:
+        referencias, perfil = referencias_perfil(data.get("perfil_granulometrico"))
+    except (TypeError, ValueError) as error:
+        return jsonify(ok=False, error=str(error)), 400
+    if perfil is None:
+        referencias = data.get('limites', referencias)
 
     # STEP 2: Log raw materials
     log("\n=== DEBUG RAW MATERIALS ===")
@@ -662,14 +765,52 @@ def granulometria_retido():
     for m in materiales_in:
         log(f"  - {m.get('nombre')}: prop%={m.get('proporcion_pct')}  len(ret_ind)={len(m.get('retido_ind_pct',[]))}")
 
-    # 1) ordenar según norma
-    idx = sorted(range(len(tamices)), key=lambda i: float(tamices[i]) if str(tamices[i]).lower() != "fundo" else -1, reverse=True)
-    tamices_ord = [tamices[i] for i in idx]
+    try:
+        tamices_ord, indices = ordenar_tamices(tamices)
+        if not any(t != FONDO for t in tamices_ord):
+            raise ValueError("Ingresá al menos un tamiz de abertura positiva.")
+        eje_entrada = [normalizar_tamiz(t) for t in tamices]
+        agregar_fondo = FONDO not in tamices_ord and any(
+            "pesos_retenidos_g" in m and float(m.get("peso_fondo_g", 0)) != 0 for m in materiales_in
+        )
+        if agregar_fondo:
+            tamices_ord.append(FONDO)
+        materiales_ordenados = []
+        ensayos_masa = []
+        for material in materiales_in:
+            ensayo = {}
+            if "pesos_retenidos_g" in material:
+                valores, ensayo = _retidos_de_masas(material, eje_entrada, tamices_ord)
+                material = dict(material, retido_ind_pct=valores)
+            elif material.get("filas"):
+                filas = material["filas"]
+                ordenar_tamices([fila["tamiz"] for fila in filas])
+                material = dict(material, filas=[
+                    dict(fila, tamiz=normalizar_tamiz(fila["tamiz"])) for fila in filas
+                ])
+            elif "retido_ind_pct" in material:
+                valores = material["retido_ind_pct"]
+                if len(valores) != len(indices):
+                    raise ValueError("Cada tamiz debe tener un retenido asociado.")
+                ordenados = [valores[i] for i in indices]
+                if agregar_fondo:
+                    ordenados.append(0)
+                material = dict(material, retido_ind_pct=ordenados)
+            else:
+                raise ValueError("Cada material debe incluir masas o porcentajes granulométricos.")
+            materiales_ordenados.append(material)
+            ensayos_masa.append(ensayo)
+        materiales_in = materiales_ordenados
+        proporciones = [float(m["proporcion_pct"]) for m in materiales_in]
+        total_pct = math.fsum(proporciones)
+        if any(not math.isfinite(p) or p < 0 for p in proporciones) or total_pct <= 0:
+            raise ValueError("Se requieren proporciones no negativas con un total positivo.")
+    except (KeyError, ValueError, TypeError, OverflowError) as error:
+        return jsonify(ok=False, error=str(error)), 400
     log("\n> Orden aplicado:", tamices_ord)
 
     # 2) normalizar materiales y calcular acumulados
     materiales = []
-    total_pct = sum(float(m.get('proporcion_pct', 0.0)) for m in materiales_in) or 100.0
     log(f"> Suma proporciones declaradas: {round(total_pct,2)} %")
 
     def check_sum_100(vals, name):
@@ -677,16 +818,15 @@ def granulometria_retido():
         if abs(s-100.0) > 0.5:
             log(f"⚠️  {name}: suma IND no ~100 (={s}). (Normal en datos IND; el que debe dar 100 es ACUM final)")
 
-    for m in materiales_in:
+    for m, p, ensayo in zip(materiales_in, proporciones, ensayos_masa):
         nombre = m.get('nombre', 'sin_nombre')
-        p = float(m.get('proporcion_pct', 0.0))
         w = p / total_pct
 
         # STEP 3: Log normalization flag per material
         log(f"[FLAG] {nombre} normalizar = {m.get('normalizar')}")
 
         # STEP 1: Build ret_map depending on input format (new filas or legacy retido_ind_pct)
-        if "filas" in m and m["filas"]:
+        if m.get("filas") and not ensayo:
             # New format: map filas by sieve name
             ret_map = {
                 str(f["tamiz"]): float(f["porcentaje"])
@@ -719,7 +859,9 @@ def granulometria_retido():
         formato = m.get("formato")  # Puede ser: "ret_ind", "ret_acum", "pasante"
         
         try:
-            if flag_normalizar:
+            if ensayo:
+                ret_ind_norm = ret_ind_ord
+            elif flag_normalizar:
                 if total > 0 and abs(total - 100) > 1e-6:
                     log(f"🔥 NORMALIZING {nombre}")
                     log(f"[BEFORE] {nombre} sum = {round(total, 2)}")
@@ -752,15 +894,17 @@ def granulometria_retido():
             log(f"ACU último (debe ~100): {ret_acum_ord[-1]}")
 
         materiales.append({
+            **ensayo,
             "nombre": nombre,
             "proporcion_pct": round(p, 2),
             "w": round(w, 6),
             "ret_ind": [round(x, 2) for x in ret_ind_norm],
-            "ret_acum": [round(x, 2) for x in ret_acum_ord]
+            "ret_acum": [round(x, 2) for x in ret_acum_ord],
+            "pasante": [round(100 - x, 2) for x in ret_acum_ord],
         })
 
     # 3) mezcla ponderada (acumulado)
-    mix_acum = _mezcla_ponderada_acum(materiales)
+    mix_acum = _mezcla_ponderada_acum(materiales, [p / total_pct for p in proporciones])
 
     # 🔥 convertir a PASANTE
     mix_pasante = [round(100 - v, 1) for v in mix_acum]
@@ -769,11 +913,24 @@ def granulometria_retido():
     log("\n> MIX PASANTE:", ["{:.1f}".format(x) for x in mix_pasante])
 
     # 4) MF
-    mf = _finura_modulus(mix_acum, tamices_ord)
-    log(f"> Módulo de finura (esperado ~3.55 con planilla): {mf}")
+    metodo_finura = _seleccionar_metodo_finura(data)
+    finura = _finura_modulus(mix_acum, tamices_ord, metodo_finura)
+    log(f"> Finura: {finura}")
 
     # 5) validación contra faixas
-    valid = _validar_faixas(mix_pasante, tamices_ord, limites)
+    try:
+        valid = _validar_faixas(mix_acum, tamices_ord, referencias, perfil)
+    except (ValueError, TypeError) as error:
+        return jsonify(ok=False, error=str(error)), 400
+    bandas_pasantes = resolver_bandas(tamices_ord, referencias, perfil, "pasante")
+    # Las sugerencias operativas solo usan bandas completas con controles originales.
+    limites = {
+        nombre: {str(fila["tamiz"]): (fila["min"], fila["max"])
+                 for fila in filas if fila["origen"] == "exact" or fila["apto_validacion"]}
+        for nombre, filas in valid.items() if _banda_completa(filas)
+    }
+    if "bloco" not in limites:
+        log("[FAIXAS] Sin banda Block completa: división automática, comparativa N, optimización y correctivos no evaluados.")
     gran_ponderada = [{"#": t, "%": mix_acum[i]} for i, t in enumerate(tamices_ord)]
     # resumen corto por tamiz
     if limites:
@@ -801,7 +958,9 @@ def granulometria_retido():
 
     # Generar sugerencia de división para el primer agregado
     # Generar sugerencia de división automáticamente
-    sugerencia_division = evaluar_y_sugerir_division(materiales_in, materiales, tamices_ord, valid, log)
+    sugerencia_division = None
+    if "bloco" in limites:
+        sugerencia_division = evaluar_y_sugerir_division(materiales_in, materiales, tamices_ord, valid, log)
     
     if sugerencia_division:
         log(f"\n✓ Sugerencia de división generada:")
@@ -843,7 +1002,7 @@ def granulometria_retido():
     # ===============================================
     divisiones_n_tablas = None
     
-    if materiales_in and len(materiales_in) > 0:
+    if materiales_in and "bloco" in limites:
         try:
             primer_material = materiales_in[0]
             
@@ -908,31 +1067,18 @@ def granulometria_retido():
     
     if mix_pasante and limites and "bloco" in limites:
         try:
-            # Extraer límites del bloco
-            banda_min_valores = []
-            banda_max_valores = []
-            
-            for t in tamices_ord:
-                t_str = str(t)
-                if t_str in limites.get("bloco", {}):
-                    min_v, max_v = limites["bloco"][t_str]
-                    banda_min_valores.append(float(min_v))
-                    banda_max_valores.append(float(max_v))
-                else:
-                    # Default si no existe
-                    banda_min_valores.append(0.0)
-                    banda_max_valores.append(100.0)
-            
-            log(f"\n[PROPUESTA] Generando propuesta de 3 agregados correctivos...")
-            
+            controles = [
+                (pasante, fila) for pasante, fila in zip(mix_pasante, bandas_pasantes["bloco"])
+                if fila["tamiz"] != FONDO
+            ]
             propuesta_agregados = generar_propuesta_3_agregados(
-                mix_pasante=mix_pasante,
-                banda_min=banda_min_valores,
-                banda_max=banda_max_valores,
-                tamices=tamices_ord,
+                mix_pasante=[pasante for pasante, _ in controles],
+                banda_min=[fila["min"] for _, fila in controles],
+                banda_max=[fila["max"] for _, fila in controles],
+                tamices=[fila["tamiz"] for _, fila in controles],
                 log=log
             )
-            
+
             if propuesta_agregados and propuesta_agregados.get('exito'):
                 log(f"[PROPUESTA] ✅ Propuesta generada exitosamente")
             else:
@@ -945,24 +1091,12 @@ def granulometria_retido():
             log(traceback.format_exc())
             propuesta_agregados = None
 
-    # Calcular curva Fuller teórica real (fórmula universal, independiente del usuario)
-    # P = 100 * (d / D_max)^0.45, donde D_max = 12.5 mm (agregado máximo estándar)
-    D_max = 12.5
-    fuller_ideal = []
-    for tamiz in tamices_ord:
-        # La bandeja de fondo (Fundo/Pan) no tiene abertura de tamiz.
-        # En d=0, el porcentaje pasante ideal de Fuller es 0%.
-        if str(tamiz).strip().lower() in {"fundo", "pan", "piatto di fondo", "bandeja de fondo"}:
-            fuller_ideal.append(0.0)
-            continue
-        try:
-            abertura_mm = float(tamiz)
-        except (TypeError, ValueError):
-            return jsonify(ok=False, error=f"Tamiz no numérico: {tamiz!r}"), 400
-        if abertura_mm < 0:
-            return jsonify(ok=False, error=f"Abertura de tamiz negativa: {abertura_mm}"), 400
-        P = 100.0 * (abertura_mm / D_max) ** 0.45
-        fuller_ideal.append(round(P, 2))
+    # Mantener el D_max histórico como mínimo para la curva de referencia.
+    D_max = max(12.5, tamices_ord[0])
+    fuller_ideal = [
+        0.0 if tamiz == FONDO else round(100.0 * (tamiz / D_max) ** 0.45, 2)
+        for tamiz in tamices_ord
+    ]
     
     return jsonify({
         "ok": True,
@@ -970,8 +1104,11 @@ def granulometria_retido():
         "materiales": materiales,
         "mix_acum": mix_acum,
         "mix_pasante": mix_pasante,
-        "modulo_finura": mf,
+        "modulo_finura": finura["valor"],
+        "finura": finura,
         "faixas": valid,
+        "bandas_pasantes": bandas_pasantes,
+        "perfil_granulometrico": perfil,
         "gran_ponderada": gran_ponderada, 
         "tabla": tabla,
         "sugerencia_division": sugerencia_division,
@@ -2595,9 +2732,13 @@ def optimizar_proporciones_materiales(materiales, banda_min, banda_max, tamices)
             print(f"⚠️ Optimización falló: {resultado_opt.message}")
             return None, None
         
-        # Extraer solución
-        proporciones_optimas = resultado_opt.x
-        mezcla_optimizada = proporciones_optimas @ pasantes_array
+        # Publicar y reconstruir con las mismas proporciones. El redondeo a
+        # centésimas conserva el total al distribuir el residuo por resto mayor.
+        centesimas = resultado_opt.x * 10000
+        enteros = np.floor(centesimas).astype(int)
+        orden = np.argsort(-(centesimas - enteros), kind="stable")
+        enteros[orden[:10000 - int(enteros.sum())]] += 1
+        mezcla_optimizada = (enteros / 10000) @ pasantes_array
         mezcla_optimizada = np.clip(mezcla_optimizada, 0.0, 100.0)
         mezcla_optimizada[np.abs(mezcla_optimizada) < 1e-6] = 0.0
         mezcla_optimizada[np.abs(mezcla_optimizada - 100.0) < 1e-6] = 100.0
@@ -2610,7 +2751,7 @@ def optimizar_proporciones_materiales(materiales, banda_min, banda_max, tamices)
         # Construir diccionario de resultados
         proporciones_dict = {}
         for i, material in enumerate(materiales):
-            proporciones_dict[material['nombre']] = float(round(float(proporciones_optimas[i] * 100), 2))
+            proporciones_dict[material['nombre']] = float(enteros[i] / 100)
         proporciones_dict['total_pct'] = 100.0
         
         print(f"✅ Optimización exitosa:")
@@ -3167,6 +3308,34 @@ def api_auditoria():
         tamices = config.get('tamices', [])
         materiales = config.get('materiales', None)  # ← NUEVO: materiales para optimizar
 
+        bandas = config.get("bandas")
+        evaluar_banda = True
+        if bandas is not None:
+            try:
+                normalizados, _ = ordenar_tamices(tamices)
+                if not normalizados or FONDO in normalizados or normalizados != tamices:
+                    raise ValueError("El eje de auditoría debe contener aberturas en mm ordenadas.")
+                if len(pasante_real) != len(tamices) or not all(
+                    isinstance(valor, (float, int)) and not isinstance(valor, bool) and 0 <= valor <= 100
+                    for valor in pasante_real
+                ):
+                    raise ValueError("La curva pasante de auditoría es inválida.")
+                if not materiales:
+                    raise ValueError("Faltan los materiales de la mezcla original.")
+                referencias, perfil = referencias_perfil(config.get("perfil_granulometrico"))
+                bandas_originales = resolver_bandas(tamices, referencias, perfil, "pasante")
+                if bandas != bandas_originales:
+                    raise ValueError("Las bandas de auditoría difieren del cálculo de retenidos.")
+            except (TypeError, ValueError) as error:
+                return jsonify(exito=False, error=str(error)), 400
+
+            producto = perfil["producto"] if perfil else "paver"
+            banda = bandas_originales[producto]
+            banda_min = [fila["min"] for fila in banda]
+            banda_max = [fila["max"] for fila in banda]
+            evaluar_banda = (_banda_completa(banda) if perfil else
+                             all(_banda_completa(filas) for filas in bandas_originales.values()))
+
         _debug_etapa_curva(
             etapa='api_auditoria.payload_entrada',
             funcion='api_auditoria',
@@ -3250,35 +3419,10 @@ def api_auditoria():
                 'campos_requeridos': ['pasante_real', 'banda_min', 'banda_max', 'tamices']
             }), 400
         
-        # AUTO-CORRECCIÓN: Si las bandas tienen menos elementos que tamices/pasante, rellenarlas
-        n_tamices = len(tamices)
-        n_pasante = len(pasante_real)
-        n_banda_min = len(banda_min)
-        n_banda_max = len(banda_max)
-        
-        if n_tamices != n_pasante or n_banda_min != n_tamices or n_banda_max != n_tamices:
-            # Obtener la longitud máxima requerida
-            n_requerida = max(n_tamices, n_pasante)
-            
-            # Rellenar con valores por defecto estándar para agregados finos
-            bandas_default_min = [100, 95, 85, 70, 50, 35, 15, 5, 0]
-            bandas_default_max = [100, 100, 100, 90, 75, 60, 30, 15, 10]
-            
-            # Extender o truncar según sea necesario
-            banda_min = (banda_min + bandas_default_min[:max(0, n_requerida - len(banda_min))])[:n_requerida]
-            banda_max = (banda_max + bandas_default_max[:max(0, n_requerida - len(banda_max))])[:n_requerida]
-            
-            # Ajustar tamices y pasante si es necesario
-            if len(tamices) < n_requerida:
-                tamices = tamices + [0.0] * (n_requerida - len(tamices))
-            if len(pasante_real) < n_requerida:
-                pasante_real = pasante_real + [0.0] * (n_requerida - len(pasante_real))
-        
-        # Validación final
         if not (len(pasante_real) == len(banda_min) == len(banda_max) == len(tamices)):
             return jsonify({
                 'exito': False,
-                'error': f'Inconsistencia después de auto-corrección: pasante={len(pasante_real)}, banda_min={len(banda_min)}, banda_max={len(banda_max)}, tamices={len(tamices)}'
+                'error': 'Cada tamiz debe tener un pasante y ambos límites de banda.'
             }), 400
         
         # ===== NUEVA LÓGICA: OPTIMIZAR PROPORCIONES SI HAY MÚLTIPLES MATERIALES =====
@@ -3303,7 +3447,9 @@ def api_auditoria():
             'mejora_relativa_pct': 0.0,
         }
 
-        if materiales and len(materiales) > 1:
+        if not evaluar_banda:
+            validacion_optimizacion["razon"] = "Optimización no evaluada: faltan límites aptos para todos los controles."
+        if evaluar_banda and materiales and len(materiales) > 1:
             print(f"🔧 Optimizando proporcionesde {len(materiales)} materiales...")
             pasante_real_candidato, proporciones_candidatas = optimizar_proporciones_materiales(
                 materiales=materiales,
@@ -3339,6 +3485,7 @@ def api_auditoria():
             tamices=tamices,
             materiales=materiales_originales_para_orden,
             proporciones_optimizadas=proporciones_optimizadas,
+            evaluar_banda=evaluar_banda,
         )
 
         resultado['meta'] = {
@@ -3347,6 +3494,22 @@ def api_auditoria():
             'pasante_entrada_original': pasante_entrada_original,
             'pasante_auditado': pasante_auditado,
         }
+        if bandas is not None:
+            resultado["bandas"] = bandas_originales
+            resultado["producto_banda"] = producto
+            resultado["perfil_granulometrico"] = perfil
+            resultado["validacion_bandas"] = {"completa": evaluar_banda}
+            if not evaluar_banda:
+                resultado["validacion_bandas"]["liberacion_produccion"] = False
+                resultado["validacion_bandas"]["no_evaluadas"] = [
+                    "cumplimiento", "tabla_virtual", "optimizacion", "agregados_correctivos",
+                    "ajustes_de_zaranda", "orden_operativa",
+                ]
+                if not _banda_completa(bandas_originales["bloco"]):
+                    resultado["validacion_bandas"]["no_evaluadas"].extend(["division_automatica", "comparativa_divisiones"])
+            resultado["meta"]["proporciones_originales"] = {
+                material["nombre"]: material["proporcion_pct"] for material in materiales
+            }
         if 'para_grafico' in resultado:
             resultado['para_grafico']['pasante_entrada_original'] = pasante_entrada_original
             resultado['para_grafico']['pasante_auditado'] = pasante_auditado
@@ -3379,7 +3542,7 @@ def api_auditoria():
                 banda_max=banda_max,
                 tamices=tamices,
                 log=None
-            )
+            ) if evaluar_banda else None
             if propuesta_agregados and propuesta_agregados.get('exito'):
                 resultado['propuesta_agregados_correctivos'] = propuesta_agregados
         except Exception as e:
@@ -3430,7 +3593,7 @@ def api_auditoria():
             print(f"[DEBUG] materiales_originales_para_orden is list? {isinstance(materiales_originales_para_orden, list) if materiales_originales_para_orden else False}")
             print(f"[DEBUG] materiales_originales_para_orden length? {len(materiales_originales_para_orden) if materiales_originales_para_orden else 0}")
             
-            if materiales_originales_para_orden and isinstance(materiales_originales_para_orden, list) and len(materiales_originales_para_orden) > 0:
+            if evaluar_banda and materiales_originales_para_orden:
                 # 🌐 Obtener idioma desde cookies
                 lang = request.cookies.get('lang', 'es')
                 print(f"[DEBUG] Idioma obtenido desde cookies: {lang}")

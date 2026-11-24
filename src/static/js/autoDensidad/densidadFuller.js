@@ -238,7 +238,7 @@ function etiquetaFondoFuller() {
     return ({en:'Pan', it:'Piatto di fondo', es:'Bandeja de fondo'})[idiomaFuller()];
 }
 function esFilaFondoFuller(fila) {
-    return fila?.dataset?.fondo === 'true' || /^(piatto di fondo|pan|bandeja de fondo)$/i.test(fila?.cells?.[0]?.textContent?.trim() || '');
+    return fila?.dataset?.fondo === 'true' || /^(fundo|piatto di fondo|pan|bandeja de fondo)$/i.test(fila?.cells?.[0]?.textContent?.trim() || '');
 }
 function traducirFondoFuller(mezcla) {
     mezcla.querySelectorAll('table.tabla tbody tr').forEach(fila => {
@@ -254,6 +254,17 @@ function numeroGranulometrico(v) {
     const t = String(v ?? '').trim().replace(',', '.');
     return t === '' ? NaN : Number(t);
 }
+function aberturaTamizMm(valor) {
+    const match = String(valor ?? '').trim().match(/^([0-9]+(?:[.,][0-9]+)?|[.,][0-9]+)\s*(mm|mic|µm|μm|um)?$/i);
+    if (typeof valor !== 'number' && !match) return NaN;
+    const [, numero, unidad] = match || [];
+    const mm = typeof valor === 'number' ? valor
+        : Number(numero.replace(',', '.')) / (unidad && unidad.toLowerCase() !== 'mm' ? 1000 : 1);
+    // Misma precisión de abertura que las rutas Flask.
+    const normalizado = mm < 1e6 ? Math.floor(mm * 1e9 + 0.5) / 1e9 : mm;
+    return Number.isFinite(normalizado) && normalizado > 0 ? normalizado : NaN;
+}
+
 function prepararEnsayoGramos(mezcla) {
     const filas = [...mezcla.querySelectorAll('table.tabla tbody tr')];
     const masas = [];
@@ -263,18 +274,19 @@ function prepararEnsayoGramos(mezcla) {
         const c = fila.querySelectorAll('td');
         const etiqueta = (c[0]?.textContent || '').trim();
         const textoMasa = (c[1]?.textContent || '').trim();
-        if (!textoMasa) throw Error('Complete todos los pesos retenidos, incluido Piatto di fondo.');
+        if (!textoMasa && esFilaFondoFuller(fila)) continue;
+        if (!textoMasa) throw Error('Complete todos los pesos retenidos por tamiz.');
         const masa = numeroGranulometrico(textoMasa);
         if (!Number.isFinite(masa) || masa < 0) throw Error('Peso retenido no valido: ' + etiqueta);
         if (esFilaFondoFuller(fila)) { if (fondo !== null) throw Error('Piatto di fondo duplicado'); fondo = masa; continue; }
-        const d = numeroGranulometrico(etiqueta);
+        const d = aberturaTamizMm(etiqueta);
         if (!Number.isFinite(d) || d <= 0) throw Error('Tamiz no valido: ' + etiqueta);
         if (tamices.includes(d)) throw Error('Tamiz duplicado: ' + etiqueta);
         tamices.push(d); masas.push(masa);
     }
-    if (fondo === null) throw Error('Falta Piatto di fondo');
-    const total = masas.reduce((a,b)=>a+b, fondo);
-    if (!(total > 0)) throw Error('El peso total debe ser mayor que cero');
+    if (!tamices.length) throw Error('Ingrese al menos un tamiz de abertura positiva');
+    const total = masas.reduce((a,b)=>a+b, fondo ?? 0);
+    if (!Number.isFinite(total) || total <= 0) throw Error('El peso total debe ser mayor que cero');
     const pesoCampione = numeroGranulometrico(mezcla.querySelector('.pesoCampione')?.value);
     if (!Number.isFinite(pesoCampione) || pesoCampione <= 0) throw Error('Ingrese Peso campione (g)');
     const orden = tamices.map((d,i)=>({d,m:masas[i]})).sort((a,b)=>b.d-a.d);
@@ -282,17 +294,26 @@ function prepararEnsayoGramos(mezcla) {
     const pasantes = orden.map(x => { acumulado += x.m; return Math.max(0,100*(1-acumulado/total)); });
     const aviso = mezcla.querySelector('.balanceMasa');
     if (aviso) aviso.textContent = `Totale trattenuto: ${total.toFixed(2)} g | Peso campione: ${pesoCampione.toFixed(2)} g | Differenza: ${(total-pesoCampione).toFixed(2)} g`;
-    return {tamices:orden.map(x=>x.d), porcentajes_reales:pasantes, pesos_retenidos_g:orden.map(x=>x.m), peso_fondo_g:fondo, peso_campione_g:pesoCampione, peso_total_recuperado_g:total, unidad_entrada:'g'};
+    return {tamices:orden.map(x=>x.d), porcentajes_reales:pasantes, pesos_retenidos_g:orden.map(x=>x.m), peso_fondo_g:fondo ?? 0, tiene_fondo:fondo !== null, peso_campione_g:pesoCampione, peso_total_recuperado_g:total, unidad_entrada:'g'};
 }
 function datosMezclaParaCalculo(mezcla) {
     if (mezcla.dataset.unidadEntrada === 'g') return prepararEnsayoGramos(mezcla);
-    const tamices=[], porcentajes_reales=[];
-    mezcla.querySelectorAll('table.tabla tbody tr').forEach(fila=>{
-        const c=fila.querySelectorAll('td');
-        const d=numeroGranulometrico(c[0]?.textContent), p=numeroGranulometrico(c[1]?.textContent);
-        if(Number.isFinite(d)&&d>0&&Number.isFinite(p)) {tamices.push(d);porcentajes_reales.push(p);}
+    const pares = new Map();
+    mezcla.querySelectorAll('table.tabla tbody tr').forEach(fila => {
+        if (esFilaFondoFuller(fila)) return;
+        const c = fila.querySelectorAll('td');
+        const etiqueta = c[0]?.textContent?.trim();
+        const porcentaje = c[1]?.textContent?.trim();
+        if (!etiqueta && !porcentaje) return;
+        const d = aberturaTamizMm(etiqueta);
+        const p = numeroGranulometrico(porcentaje);
+        if (!Number.isFinite(d)) throw Error('Tamiz no valido: ' + etiqueta);
+        if (!Number.isFinite(p)) throw Error('Porcentaje no valido: ' + porcentaje);
+        if (pares.has(d)) throw Error('Tamiz duplicado: ' + etiqueta);
+        pares.set(d, p);
     });
-    return {tamices,porcentajes_reales,unidad_entrada:'porcentaje_legacy'};
+    const tamices = [...pares.keys()].sort((a, b) => b - a);
+    return {tamices, porcentajes_reales:tamices.map(d => pares.get(d)), unidad_entrada:'porcentaje_legacy'};
 }
 // Columna HTML real de numeracion. Se usa <th scope="row"> para no
 // desplazar los indices td[0]=tamiz y td[1]=peso utilizados por los calculos.
@@ -624,7 +645,7 @@ function agregarValidadoresACeldas(fila) {
     celda.addEventListener('focus', () => { window.ultimaCeldaTamizFuller = celda; });
     celda.addEventListener('click', () => { window.ultimaCeldaTamizFuller = celda; });
     celda.addEventListener('blur',()=>{
-      const valor=numeroGranulometrico(celda.textContent);
+      const valor = idx === 0 ? aberturaTamizMm(celda.textContent) : numeroGranulometrico(celda.textContent);
       const esMasa=fila.closest('.mezcla')?.dataset.unidadEntrada==='g';
       const valido=celda.textContent.trim()==='' || (Number.isFinite(valor)&&valor>=0&&(idx!==0||valor>0)&&(!(!esMasa&&idx===1)||valor<=100));
       celda.style.backgroundColor=valido?'':'#ffcccc';
@@ -1677,8 +1698,8 @@ document.addEventListener("keydown", function(event) {
           console.log(`📦 Fila ${i}:`, fila);
           console.log(`➡️ Celdas[0]:`, celdas[0]?.textContent, "➡️ Celdas[1]:", celdas[1]?.textContent);
 
-          const tamiz = parseFloat(celdas[0]?.textContent);
-          const real = parseFloat(celdas[1]?.textContent);
+          const tamiz = aberturaTamizMm(celdas[0]?.textContent);
+          const real = numeroGranulometrico(celdas[1]?.textContent);
 
           if (!isNaN(tamiz) && !isNaN(real)) {
             tamices.push(tamiz);
