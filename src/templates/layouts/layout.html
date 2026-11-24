@@ -14,7 +14,7 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- i18n scripts - MUST load before content -->
-    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/i18n.js', v='peso-muestra') }}"></script>
     <script src="{{ url_for('static', filename='js/modal-i18n.js') }}"></script>
 <meta name="robots" content="max-image-preview:large">
 	<style>img:is([sizes="auto" i], [sizes^="auto," i]) { contain-intrinsic-size: 3000px 1500px }</style>
@@ -371,7 +371,7 @@ img {
 </html>
 
 <script src="{{ url_for('static', filename='js/layouts/layout.js') }}"></script>
-<script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+<script src="{{ url_for('static', filename='js/i18n.js', v='peso-muestra') }}"></script>
 <script src="{{ url_for('static', filename='js/modal-i18n.js') }}"></script>
 
 <script>

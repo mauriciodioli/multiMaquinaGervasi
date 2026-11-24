@@ -146,7 +146,7 @@ function abrirModalProporciones(onOk){
     row.className = 'prop-row';
     row.innerHTML = `
       <label class="prop-label">${nombre}</label>
-      <input class="prop-input" type="number" inputmode="decimal" step="any" min="0" max="100"
+      <input class="prop-input" type="text" inputmode="decimal"
              name="${nombre}" value="${val !== undefined ? val : ''}" placeholder="0">
       <span class="prop-suf">%</span>
     `;
@@ -161,7 +161,7 @@ function abrirModalProporciones(onOk){
     let total = 0;
     const map = {};
     inputs.forEach(inp => {
-      const n = parseFloat(inp.value);
+      const n = numeroGranulometrico(inp.value);
       const ok = Number.isFinite(n) && n >= 0 && n <= 100;
       if (ok) { total += n; map[inp.name] = +n; }
     });
@@ -252,8 +252,8 @@ function abrirProporcionesYCalcular(){
 // Detecta las tablas métricas por su estructura real, incluso si se perdió
 // data-unidad-entrada por un script anterior o por una carga del DOM.
 function esTablaFullerGramos(mezcla) {
-  return mezcla?.dataset?.unidadEntrada === 'g' ||
-    !!mezcla?.querySelector('input.pesoCampione');
+  const unidad = mezcla?.dataset?.unidadEntrada;
+  return unidad ? unidad === 'g' : !!mezcla?.querySelector('input.pesoCampione');
 }
 
 function validarDatosCompletos(){
@@ -295,22 +295,21 @@ function validarDatosCompletos(){
   
   // Ensayos nuevos: los valores son gramos, NO porcentajes. La masa de fondo
   // participa en el total recuperado; la numeración <th> no es un tamiz.
-  const mezclasGramos = [...document.querySelectorAll('.mezcla')]
-    .filter(esTablaFullerGramos);
-  mezclasGramos.forEach(mezcla => {
+  const mezclasRetenido = [...document.querySelectorAll('.mezcla')]
+    .filter(m => esTablaFullerGramos(m) || m.dataset.unidadEntrada === 'porcentaje_retenido');
+  mezclasRetenido.forEach(mezcla => {
     const nombre = (mezcla.querySelector('.nombreProducto')?.value || 'Sin nombre').trim();
     try {
-      if (typeof prepararEnsayoGramos !== 'function') {
-        throw new Error('No está disponible la conversión de gramos a porcentajes');
-      }
-      prepararEnsayoGramos(mezcla);
+      prepararEnsayoRetenido(mezcla, mezcla.dataset.unidadEntrada === 'porcentaje_retenido');
     } catch (e) {
       errores.push({tabla:nombre, tipo:'ENSAYO_GRAMOS_INVALIDO', mensaje:e.message, severidad:'CRÍTICA'});
     }
   });
 
   // 1️⃣ VALIDAR RETIDOS POR TABLA
-  const mezclas = [...document.querySelectorAll('.mezcla')].filter(m => !esTablaFullerGramos(m));
+  const mezclas = [...document.querySelectorAll('.mezcla')].filter(
+    m => !esTablaFullerGramos(m) && m.dataset.unidadEntrada !== 'porcentaje_retenido'
+  );
   
   mezclas.forEach((mezcla, idx) => {
     const nombre = (mezcla.querySelector('.nombreProducto')?.value || 'Sin nombre').trim();
@@ -680,15 +679,18 @@ function construirPayloadRetido(){
     const masas = new Map();
     let fondo = null;
     let ensayo;
-    if (esTablaFullerGramos(mezcla)) {
-      // La misma validación y denominador utilizados por Calculate All.
-      const datos = prepararEnsayoGramos(mezcla);
-      ensayo = datos;
+    const gramos = esTablaFullerGramos(mezcla);
+    const porcentajeRetenido = mezcla.dataset.unidadEntrada === 'porcentaje_retenido';
+    if (gramos || porcentajeRetenido) {
+      const datos = prepararEnsayoRetenido(mezcla, porcentajeRetenido);
+      if (gramos) ensayo = datos;
       datos.tamices.forEach((d, i) => {
-        masas.set(d, 100 * datos.pesos_retenidos_g[i] / datos.peso_total_recuperado_g);
+        masas.set(d, gramos ? 100 * datos.pesos_retenidos_g[i] / datos.peso_total_recuperado_g : datos.retido_ind_pct[i]);
         tamicesSet.add(d);
       });
-      if (datos.tiene_fondo) fondo = 100 * datos.peso_fondo_g / datos.peso_total_recuperado_g;
+      if (datos.tiene_fondo) {
+        fondo = gramos ? 100 * datos.peso_fondo_g / datos.peso_total_recuperado_g : datos.retenido_fondo_pct;
+      }
     } else {
       // Compatibilidad con tablas antiguas que ya contienen % retenido.
       mezcla.querySelectorAll('table.tabla tbody tr').forEach(tr => {
@@ -716,12 +718,15 @@ function construirPayloadRetido(){
     if (!Number.isFinite(proporcion_pct) || proporcion_pct < 0 || proporcion_pct > 100) {
       throw new Error(`${nombre}: falta una proporción válida.`);
     }
-    if (masas.size) entradas.push({nombre, mezclaId, masas, fondo, ensayo, proporcion_pct});
+    if (masas.size) entradas.push({nombre, mezclaId, masas, fondo, ensayo, proporcion_pct, porcentajeRetenido});
   });
   if (!entradas.length) throw new Error('No hay materiales con datos de retenido.');
   const tamices = [...tamicesSet].sort((a,b) => b-a);
   if (entradas.some(entrada => entrada.fondo !== null)) tamices.push('Fundo');
   const materiales = entradas.map(e => {
+    if (e.porcentajeRetenido && e.masas.size !== tamicesSet.size) {
+      throw new Error(`${e.nombre}: ${textoEntradaFuller('input_retained_missing', 'Ingresá el retenido de cada tamiz y del fondo.')} (${[...tamicesSet].filter(d => !e.masas.has(d)).join(', ')} mm)`);
+    }
     if (e.masas.size !== tamicesSet.size) erroresAuditoria.push(`${e.nombre}: el eje de tamices difiere del de la mezcla.`);
     const material = {
       nombre: e.nombre || 'Sin nombre',
@@ -735,6 +740,7 @@ function construirPayloadRetido(){
       Object.assign(material, { tamices_masa: e.ensayo.tamices, pesos_retenidos_g, peso_fondo_g,
         peso_campione_g, peso_total_recuperado_g, unidad_entrada });
     }
+    if (e.porcentajeRetenido) material.unidad_entrada = 'porcentaje_retenido';
     return material;
   });
   const suma = materiales.reduce((s,m) => s+m.proporcion_pct, 0);

@@ -10,7 +10,7 @@
 
   
 
-  <button class="btn btn-danger" onclick="agregarMezcla()">
+  <button class="btn btn-danger" onclick="abrirSelectorTipoAgregado()">
   {{ t_menu.get('agregar_aggregato', 'Agregar agregado') }}
 </button>
 
@@ -64,6 +64,23 @@
 
 
 
+
+<div id="modalTipoAgregado" class="dpia-modal" aria-hidden="true">
+  <div class="dpia-modal__backdrop" data-close="1"></div>
+  <form class="dpia-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalTipoAgregadoTitulo" onsubmit="confirmarTipoAgregado(event)">
+    <div class="dpia-modal__header">
+      <h3 id="modalTipoAgregadoTitulo" data-i18n="sim.input_type_title">Modalidad de carga</h3>
+      <button type="button" class="dpia-modal__close" data-close="1" data-i18n="sim.btn_cerrar">Cerrar</button>
+    </div>
+    <div class="dpia-modal__body">
+      <label><input type="radio" name="tipoAgregado" value="g" checked> <span data-i18n="sim.input_weight">Peso (g)</span></label>
+      <label><input type="radio" name="tipoAgregado" value="porcentaje_retenido"> <span data-i18n="sim.input_percentage">Porcentaje (%)</span></label>
+    </div>
+    <div class="dpia-modal__footer">
+      <button type="submit" class="dpia-btn dpia-btn--primary" data-i18n="sim.input_add">Agregar agregado</button>
+    </div>
+  </form>
+</div>
 
 <!-- Modal proporciones -->
 {% macro campos_finura(prefijo) %}
@@ -455,9 +472,9 @@
         {% include 'autoDensidad/calculoPorRetenidos/auditoria.html' %}
     {% endwith %}
 
-    <script src="{{ url_for('static', filename='js/autoDensidad/agregados/agregaAgregado_densidadFuller.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js', v='finura-dinamica') }}"></script>
-    <script src="{{ url_for('static', filename='js/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.js', v='perfil-precarga') }}"></script>
+    <script src="{{ url_for('static', filename='js/autoDensidad/agregados/agregaAgregado_densidadFuller.js', v='modalidad-entrada') }}"></script>
+    <script src="{{ url_for('static', filename='js/autoDensidad/densidadFuller.js', v='peso-muestra') }}"></script>
+    <script src="{{ url_for('static', filename='js/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.js', v='modalidad-entrada') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/modalTablaTamices.js') }}"></script>
     <script src="{{ url_for('static', filename='js/autoDensidad/guardarAnalisisGranulometrico.js') }}"></script>
 
@@ -497,7 +514,7 @@
     </script>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/modalTablaTamices.css') }}">
-      <link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/autoDensidad/calculoPorRetenidos/calculoPorRetenidos.css', v='peso-muestra') }}">
 <script>
  document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('btn-guardar-analisis');

@@ -781,7 +781,14 @@ def granulometria_retido():
         ensayos_masa = []
         for material in materiales_in:
             ensayo = {}
-            if "pesos_retenidos_g" in material:
+            if material.get("unidad_entrada") == "porcentaje_retenido":
+                valores = [float(v) for v in material.get("retido_ind_pct", [])]
+                if (FONDO not in eje_entrada or len(valores) != len(indices)
+                        or any(not 0 <= v <= 100 for v in valores)
+                        or abs(math.fsum(valores) - 100) > 1e-6):
+                    raise ValueError("Los retenidos individuales, incluido el fondo, deben sumar 100 % (±0.000001).")
+                material = dict(material, retido_ind_pct=[valores[i] for i in indices])
+            elif "pesos_retenidos_g" in material:
                 valores, ensayo = _retidos_de_masas(material, eje_entrada, tamices_ord)
                 material = dict(material, retido_ind_pct=valores)
             elif material.get("filas"):
@@ -828,7 +835,8 @@ def granulometria_retido():
         log(f"[FLAG] {nombre} normalizar = {m.get('normalizar')}")
 
         # STEP 1: Build ret_map depending on input format (new filas or legacy retido_ind_pct)
-        if m.get("filas") and not ensayo:
+        porcentaje_retido = m.get("unidad_entrada") == "porcentaje_retenido"
+        if m.get("filas") and not ensayo and not porcentaje_retido:
             # New format: map filas by sieve name
             ret_map = {
                 str(f["tamiz"]): float(f["porcentaje"])
@@ -861,7 +869,7 @@ def granulometria_retido():
         formato = m.get("formato")  # Puede ser: "ret_ind", "ret_acum", "pasante"
         
         try:
-            if ensayo:
+            if ensayo or porcentaje_retido:
                 ret_ind_norm = ret_ind_ord
             elif flag_normalizar:
                 if total > 0 and abs(total - 100) > 1e-6:
@@ -898,8 +906,8 @@ def granulometria_retido():
         materiales.append({
             **ensayo,
             "nombre": nombre,
-            "proporcion_pct": round(p, 2),
-            "w": round(w, 6),
+            "proporcion_pct": p,
+            "w": w,
             "ret_ind": ret_ind_norm,
             "ret_acum": ret_acum_ord,
             "pasante": [100 - x for x in ret_acum_ord],

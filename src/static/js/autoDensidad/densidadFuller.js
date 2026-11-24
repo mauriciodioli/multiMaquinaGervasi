@@ -229,13 +229,14 @@ function enviarDatos() {
 // Serie de tamices metricos solicitada para ensayos nuevos (mm).
 // La etiqueta se traduce visualmente; data-fondo mantiene la identificación estable.
 function idiomaFuller() {
+    if (typeof I18N !== 'undefined') return I18N.getLang();
     const titulo = document.querySelector('.container h2')?.textContent?.trim().toLowerCase() || '';
     if (titulo.startsWith('calculation')) return 'en';
     if (titulo.startsWith('calcolo')) return 'it';
     return 'es';
 }
 function etiquetaFondoFuller() {
-    return ({en:'Pan', it:'Piatto di fondo', es:'Bandeja de fondo'})[idiomaFuller()];
+    return ({en:'Pan', it:'Piatto di fondo'})[idiomaFuller()] || 'Bandeja de fondo';
 }
 function esFilaFondoFuller(fila) {
     return fila?.dataset?.fondo === 'true' || /^(fundo|piatto di fondo|pan|bandeja de fondo)$/i.test(fila?.cells?.[0]?.textContent?.trim() || '');
@@ -250,6 +251,7 @@ function traducirFondoFuller(mezcla) {
     });
 }
 const TAMICES_METRICOS_GERVASI = [10, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063];
+const TAMICES_INICIALES_PORCENTAJE = [9.5, 6.3, 4.8, 2.4, 1.2, 0.6, 0.3, 0.15];
 function numeroGranulometrico(v) {
     const t = String(v ?? '').trim().replace(',', '.');
     return t === '' ? NaN : Number(t);
@@ -265,7 +267,14 @@ function aberturaTamizMm(valor) {
     return Number.isFinite(normalizado) && normalizado > 0 ? normalizado : NaN;
 }
 
-function prepararEnsayoGramos(mezcla) {
+const TOLERANCIA_RETENIDO_PCT = 1e-6;
+
+function textoEntradaFuller(clave, defecto) {
+    const valor = typeof I18N !== 'undefined' && typeof I18N.t === 'function' ? I18N.t(`sim.${clave}`) : '';
+    return valor && valor !== `[sim.${clave}]` ? valor : defecto;
+}
+
+function prepararEnsayoRetenido(mezcla, porPorcentaje = false) {
     const filas = [...mezcla.querySelectorAll('table.tabla tbody tr')];
     const masas = [];
     const tamices = [];
@@ -274,10 +283,13 @@ function prepararEnsayoGramos(mezcla) {
         const c = fila.querySelectorAll('td');
         const etiqueta = (c[0]?.textContent || '').trim();
         const textoMasa = (c[1]?.textContent || '').trim();
-        if (!textoMasa && esFilaFondoFuller(fila)) continue;
+        if (!textoMasa && esFilaFondoFuller(fila) && !porPorcentaje) continue;
+        if (porPorcentaje && !textoMasa) throw Error(textoEntradaFuller('input_retained_missing', 'Ingresá el retenido de cada tamiz y del fondo.') + ` (${etiqueta})`);
         if (!textoMasa) throw Error('Complete todos los pesos retenidos por tamiz.');
         const masa = numeroGranulometrico(textoMasa);
-        if (!Number.isFinite(masa) || masa < 0) throw Error('Peso retenido no valido: ' + etiqueta);
+        if (!Number.isFinite(masa) || masa < 0 || (porPorcentaje && masa > 100)) {
+            throw Error(textoEntradaFuller('input_retained_invalid', 'Retenido inválido') + ': ' + etiqueta);
+        }
         if (esFilaFondoFuller(fila)) { if (fondo !== null) throw Error('Piatto di fondo duplicado'); fondo = masa; continue; }
         const d = aberturaTamizMm(etiqueta);
         if (!Number.isFinite(d) || d <= 0) throw Error('Tamiz no valido: ' + etiqueta);
@@ -286,18 +298,40 @@ function prepararEnsayoGramos(mezcla) {
     }
     if (!tamices.length) throw Error('Ingrese al menos un tamiz de abertura positiva');
     const total = masas.reduce((a,b)=>a+b, fondo ?? 0);
+    if (porPorcentaje && (fondo === null || Math.abs(total - 100) > TOLERANCIA_RETENIDO_PCT)) {
+        throw Error(textoEntradaFuller('input_retained_sum', 'Los retenidos individuales, incluido el fondo, deben sumar 100 %.') +
+            ` (${total} %, ±${TOLERANCIA_RETENIDO_PCT})`);
+    }
     if (!Number.isFinite(total) || total <= 0) throw Error('El peso total debe ser mayor que cero');
-    const pesoCampione = numeroGranulometrico(mezcla.querySelector('.pesoCampione')?.value);
-    if (!Number.isFinite(pesoCampione) || pesoCampione <= 0) throw Error('Ingrese Peso campione (g)');
     const orden = tamices.map((d,i)=>({d,m:masas[i]})).sort((a,b)=>b.d-a.d);
     let acumulado = 0;
-    const pasantes = orden.map(x => { acumulado += x.m; return Math.max(0,100*(1-acumulado/total)); });
+    const pasantes = orden.map(x => {
+        acumulado += x.m;
+        return Math.max(0, porPorcentaje ? 100 - acumulado : 100 * (1 - acumulado / total));
+    });
+    if (porPorcentaje) {
+        return { tamices: orden.map(x => x.d), porcentajes_reales: pasantes, retido_ind_pct: orden.map(x => x.m),
+            retenido_fondo_pct: fondo, tiene_fondo: true, unidad_entrada: 'porcentaje_retenido' };
+    }
+    const pesoCampione = numeroGranulometrico(mezcla.querySelector('.pesoCampione')?.value);
+    if (!Number.isFinite(pesoCampione) || pesoCampione <= 0) {
+        throw Error(textoEntradaFuller('input_sample_weight_invalid', 'Ingresá un peso de muestra mayor que cero.'));
+    }
     const aviso = mezcla.querySelector('.balanceMasa');
-    if (aviso) aviso.textContent = `Totale trattenuto: ${total.toFixed(2)} g | Peso campione: ${pesoCampione.toFixed(2)} g | Differenza: ${(total-pesoCampione).toFixed(2)} g`;
+    if (aviso) {
+        aviso.innerHTML = `<span data-i18n="sim.input_balance_retained">Total retenido</span>: ${total.toFixed(2)} g | ` +
+            `<span data-i18n="sim.input_balance_sample">Peso de muestra</span>: ${pesoCampione.toFixed(2)} g | ` +
+            `<span data-i18n="sim.input_balance_difference">Diferencia</span>: ${(total - pesoCampione).toFixed(2)} g`;
+        if (typeof I18N !== 'undefined') I18N.applyTranslations(aviso);
+    }
     return {tamices:orden.map(x=>x.d), porcentajes_reales:pasantes, pesos_retenidos_g:orden.map(x=>x.m), peso_fondo_g:fondo ?? 0, tiene_fondo:fondo !== null, peso_campione_g:pesoCampione, peso_total_recuperado_g:total, unidad_entrada:'g'};
+}
+function prepararEnsayoGramos(mezcla) {
+    return prepararEnsayoRetenido(mezcla);
 }
 function datosMezclaParaCalculo(mezcla) {
     if (mezcla.dataset.unidadEntrada === 'g') return prepararEnsayoGramos(mezcla);
+    if (mezcla.dataset.unidadEntrada === 'porcentaje_retenido') return prepararEnsayoRetenido(mezcla, true);
     const pares = new Map();
     mezcla.querySelectorAll('table.tabla tbody tr').forEach(fila => {
         if (esFilaFondoFuller(fila)) return;
@@ -351,20 +385,43 @@ function observarNumeracionFuller(mezcla) {
     numerarFilasFuller(mezcla);
 }
 
-function inicializarEnsayoGramos(mezcla) {
-    mezcla.dataset.unidadEntrada = 'g';
+function configurarEntradaFuller(mezcla, modalidad, pesoCampione = '1000') {
+    mezcla.dataset.unidadEntrada = modalidad;
     const tabla=mezcla.querySelector('table.tabla');
     if (!tabla) return;
-    tabla.querySelector('thead tr').innerHTML='<th>Tamiz (mm)</th><th>Peso trattenuto (g)</th><th>Azione</th>';
-    const cabecera=tabla.previousElementSibling;
-    const campo=document.createElement('div');
-    campo.className='configuracionMasa';
-    campo.innerHTML='<label>Peso campione (g): <input class="pesoCampione" type="number" min="0.01" step="any" value="1000"></label> <small class="balanceMasa"></small>';
-    tabla.parentNode.insertBefore(campo,tabla);
-    tabla.querySelector('tbody').innerHTML=TAMICES_METRICOS_GERVASI.map(d=>`<tr><td contenteditable="true">${d}</td><td contenteditable="true"></td><td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td></tr>`).join('')+`<tr data-fondo="true"><td>${etiquetaFondoFuller()}</td><td contenteditable="true"></td><td>—</td></tr>`;
+    const gramos = modalidad === 'g';
+    const encabezadoRetenido = gramos ? '<th data-i18n="sim.input_weight_header">Peso retenido (g)</th>'
+        : modalidad === 'porcentaje_retenido' ? '<th data-i18n="sim.input_percentage_header">Retenido individual (%)</th>' : '<th>% Real</th>';
+    tabla.querySelector('thead tr').innerHTML = `<th data-i18n="sim.input_sieve_header">Tamiz (mm)</th>${encabezadoRetenido}<th data-i18n="sim.input_action_header">Acción</th>`;
+    mezcla.querySelector('.configuracionMasa')?.remove();
+    if (gramos) {
+        const campo = document.createElement('div');
+        campo.className = 'configuracionMasa';
+        campo.innerHTML = '<label><span data-i18n="sim.input_sample_weight">Peso de muestra (g)</span>: <input class="pesoCampione" inputmode="decimal"></label> <small class="balanceMasa"></small>';
+        campo.querySelector('.pesoCampione').value = pesoCampione;
+        tabla.parentNode.insertBefore(campo, tabla);
+    }
+    if (typeof I18N !== 'undefined') I18N.applyTranslations(mezcla);
 }
-function agregarMezcla() {
+
+function abrirSelectorTipoAgregado() {
+    const modal = document.getElementById('modalTipoAgregado');
+    modal.querySelector('input[value="g"]').checked = true;
+    if (typeof I18N !== 'undefined') I18N.applyTranslations(modal);
+    abrirModal('modalTipoAgregado');
+}
+
+function confirmarTipoAgregado(evento) {
+    evento.preventDefault();
+    const modalidad = evento.currentTarget.querySelector('input:checked').value;
+    cerrarModal('modalTipoAgregado');
+    agregarMezcla(modalidad);
+}
+
+function agregarMezcla(modalidad = 'g') {
     const container = document.getElementById("mezclasContainer");
+    const porPorcentaje = ['porcentaje_retenido', 'porcentaje', 'percentage', '%'].includes(modalidad);
+    const tamicesIniciales = porPorcentaje ? TAMICES_INICIALES_PORCENTAJE : TAMICES_METRICOS_GERVASI;
 
     const mezclaDiv = document.createElement("div");
     mezclaDiv.className = "mezcla";
@@ -372,15 +429,13 @@ function agregarMezcla() {
     // 🔴 ESTE es el ID que después vamos a usar para guardar y restaurar
     mezclaDiv.setAttribute("data-mezcla-id", `mezcla-${mezclaId}`);
 
-    const tamices = [9.5, 4.8, 2.4, 1.2, 0.6, 0.3, 0.15, 0.075];
-
-    const filasHTML = tamices.map(t => `
+    const filasHTML = tamicesIniciales.map(t => `
         <tr>
             <td contenteditable="true">${t}</td>
             <td contenteditable="true"></td>
             <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">Eliminar</button></td>
         </tr>
-    `).join("");
+    `).join("") + `<tr data-fondo="true"><td>${etiquetaFondoFuller()}</td><td contenteditable="true"></td><td>—</td></tr>`;
 
     mezclaDiv.innerHTML = `
         <div class="contenedor-producto">
@@ -406,7 +461,7 @@ function agregarMezcla() {
     `;
 
     container.appendChild(mezclaDiv);
-    inicializarEnsayoGramos(mezclaDiv);
+    configurarEntradaFuller(mezclaDiv, porPorcentaje ? 'porcentaje_retenido' : 'g');
     observarNumeracionFuller(mezclaDiv);
     
     // Agregar validadores a las filas iniciales
@@ -417,9 +472,8 @@ function agregarMezcla() {
     // 👇 lo incrementás al final para la próxima mezcla
     mezclaId++;
 }
-function agregarTablaAlocalStorage(btn) {
-    
-    const mezclaEl = btn.closest(".mezcla");
+function agregarTablaAlocalStorage(elemento, btn = elemento.matches('button') ? elemento : null) {
+    const mezclaEl = elemento.closest(".mezcla");
     if (!mezclaEl) {
         console.error("❌ No encontré la mezcla del botón save");
         return;
@@ -446,7 +500,7 @@ function agregarTablaAlocalStorage(btn) {
             const celdas = tr.querySelectorAll("td");
             const tamiz = (celdas[0]?.textContent || "").trim();
             const porcentaje = (celdas[1]?.textContent || "").trim();
-            filas.push({ tamiz, porcentaje });
+            filas.push({ tamiz, porcentaje, ...(esFilaFondoFuller(tr) ? { fondo: true } : {}) });
         });
     }
 
@@ -483,6 +537,7 @@ function agregarTablaAlocalStorage(btn) {
     localStorage.setItem("tablasCargadas", JSON.stringify(tablas));
 
     // 8) ✅ feedback visual en el botón
+    if (!btn) return;
     const originalText = btn.textContent;
     btn.textContent = "✅ guardado";
     btn.disabled = true;
@@ -641,13 +696,15 @@ function agregarFilaMultiple(btn) {
 
 // ✅ FUNCIÓN PARA VALIDAR CELDAS CON CONTENTEDITABLE
 function agregarValidadoresACeldas(fila) {
-  fila.querySelectorAll('td[contenteditable="true"]').forEach((celda,idx)=>{
+  fila.querySelectorAll('td[contenteditable="true"]').forEach(celda=>{
     celda.addEventListener('focus', () => { window.ultimaCeldaTamizFuller = celda; });
     celda.addEventListener('click', () => { window.ultimaCeldaTamizFuller = celda; });
     celda.addEventListener('blur',()=>{
-      const valor = idx === 0 ? aberturaTamizMm(celda.textContent) : numeroGranulometrico(celda.textContent);
+      const esTamiz = celda === fila.querySelector('td');
+      const valor = esTamiz ? aberturaTamizMm(celda.textContent) : numeroGranulometrico(celda.textContent);
       const esMasa=fila.closest('.mezcla')?.dataset.unidadEntrada==='g';
-      const valido=celda.textContent.trim()==='' || (Number.isFinite(valor)&&valor>=0&&(idx!==0||valor>0)&&(!(!esMasa&&idx===1)||valor<=100));
+      const valido = celda.textContent.trim() === '' ||
+        (Number.isFinite(valor) && (esTamiz ? valor > 0 : valor >= 0 && (esMasa || valor <= 100)));
       celda.style.backgroundColor=valido?'':'#ffcccc';
       celda.title=valido?'':'Valor numerico no valido';
     });
@@ -1674,6 +1731,11 @@ document.addEventListener("keydown", function(event) {
     alert(`✅ Nombre actualizado a "${nuevoNombre}".`);
     input.blur();
 
+    const mezcla = input.closest('.mezcla');
+    if (['g', 'porcentaje_retenido'].includes(mezcla?.dataset.unidadEntrada)) {
+      agregarTablaAlocalStorage(mezcla);
+      return;
+    }
 
 
 
@@ -1819,6 +1881,8 @@ function getCookie(nombre) {
   if (!container) return;
 
   Object.entries(mezclas).forEach(([clave, datos]) => {
+    if ([...container.querySelectorAll('.nombreProducto')].some(input =>
+      input.value.toLowerCase().replace(/\s/g, '') === clave.toLowerCase())) return;
     if (!Array.isArray(datos.tamices) || !Array.isArray(datos.reales) || datos.tamices.length !== datos.reales.length) {
       console.warn("Datos inválidos para mezcla:", clave, datos);
       return;

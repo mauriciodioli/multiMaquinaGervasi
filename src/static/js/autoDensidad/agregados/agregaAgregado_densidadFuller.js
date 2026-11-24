@@ -190,11 +190,6 @@ function guardarTablaEnLocalStorage(mezclaEl, nombreAgregado, tamices) {
 
 
 document.addEventListener("DOMContentLoaded", function() {
-    
-    restaurarTablasDesdeLocalStorage();
-});
-
-document.addEventListener("DOMContentLoaded", function() {
     restaurarTablasDesdeLocalStorage();
 });
 
@@ -261,24 +256,38 @@ function restaurarTablasDesdeLocalStorage() {
             console.warn(`⚠️ No tiene tbody mezcla ${tab.mezclaId}, salto`);
             return; // salir del forEach, NO de la función
         }
+        configurarEntradaFuller(mezclaEl, tab.unidadEntrada || 'porcentaje_legacy', tab.pesoCampione ?? '');
         tbody.innerHTML = "";
 
         (tab.filas || []).forEach(f => {
             const fila = document.createElement("tr");
             const btnLabel = typeof I18N !== 'undefined' ? I18N.t('sim.btn_eliminar') : 'Eliminar';
             fila.innerHTML = `
-                <td contenteditable="true">${f.tamiz || ""}</td>
-                <td contenteditable="true">${f.porcentaje || ""}</td>
+                <td contenteditable="true"></td>
+                <td contenteditable="true"></td>
                 <td><button class="btn btn-danger" onclick="this.closest('tr').remove()">${btnLabel}</button></td>
             `;
+            fila.cells[0].textContent = f.tamiz ?? '';
+            fila.cells[1].textContent = f.porcentaje ?? '';
+            if (f.fondo || esFilaFondoFuller(fila)) {
+                fila.dataset.fondo = 'true';
+                fila.cells[0].removeAttribute('contenteditable');
+                fila.cells[2].textContent = '—';
+            }
             tbody.appendChild(fila);
+            agregarValidadoresACeldas(fila);
         });
+        observarNumeracionFuller(mezclaEl);
+        numerarFilasFuller(mezclaEl);
     });
 
     // MUY IMPORTANTE: actualizar mezclaId global
     // para que las nuevas mezclas no pisen las que restauramos
     if (typeof mezclaId !== "undefined") {
-        mezclaId = tablas.length;
+        mezclaId = Math.max(mezclaId, tablas.length, ...tablas.map(tab => {
+            const id = /^mezcla-(\d+)$/.exec(tab.mezclaId);
+            return id ? Number(id[1]) + 1 : 0;
+        }));
     }
 }
 function LimpiarTodasLasTablas() {

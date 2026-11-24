@@ -128,3 +128,9 @@
 /* Scrollbar opcional (WebKit) */
 .retido-tables::-webkit-scrollbar{ width:8px; }
 .retido-tables::-webkit-scrollbar-thumb{ background:rgba(0,0,0,.2); border-radius:6px; }
+.configuracionMasa .pesoCampione {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+}
