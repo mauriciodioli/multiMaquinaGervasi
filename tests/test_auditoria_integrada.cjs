@@ -369,7 +369,7 @@ test('tres series recorren el motor y el informe original de Auditoría', async 
     suma + prop * masas.slice(0, i + 1).reduce((a, b) => a + b, 0) / total, 0));
   curvaMoreno.data.mix_acum.slice(0, -1).forEach((valor, i) => {
     assert.ok(Math.abs(valor - acumulados[i]) < 0.1);
-    assert.equal(curvaMoreno.data.mix_pasante[i], Number((100 - valor).toFixed(1)));
+    assert.equal(curvaMoreno.data.mix_pasante[i], 100 - valor);
   });
   assert.equal(curvaMoreno.data.mix_pasante.at(-1), 0);
   assert.ok(curvaMoreno.data.mix_acum.every((valor, i, serie) => i === 0 || serie[i - 1] <= valor));
@@ -486,6 +486,7 @@ test('tres series recorren el motor y el informe original de Auditoría', async 
   const retenidosPerfil = peticiones.at(-1);
   assert.equal(retenidosPerfil.data.finura.tipo_metodo, 'experimental');
   assert.equal(retenidosPerfil.data.modulo_finura, 5.41);
+  assert.ok(Math.abs(retenidosPerfil.data.finura.valor_exacto - 5.4075162) < 5e-8);
   assert.deepEqual(retenidosPerfil.entrada.metodo_finura_automatico.tamices, tamicesMoreno);
   assert.equal(retenidosPerfil.entrada.metodo_finura, undefined);
   assert.deepEqual(retenidosPerfil.entrada.perfil_granulometrico, JSON.parse(perfilGuardado));
@@ -502,5 +503,22 @@ test('tres series recorren el motor y el informe original de Auditoría', async 
   assert.deepEqual(auditoriaPerfil.data.data.perfil_granulometrico, JSON.parse(perfilGuardado));
   assert.equal(auditoriaPerfil.entrada.banda_min.at(-1), 0);
   assert.equal(auditoriaPerfil.entrada.banda_max.at(-1), 4);
+  assert.match(resultado.innerHTML, /≈ \[62\.27–95\.00\]%/);
+  assert.doesNotMatch(resultado.innerHTML, /La mezcla cumple banda|The mix meets the band/);
+  const resultadoPerfil = auditoriaPerfil.data.data;
+  const esperadoMoreno = [98.9790615, 98.1323407, 57.7286654, 42.2202043, 30.0997828,
+    18.8622936, 10.1572057, 2.5730525, 0.4957698];
+  auditoriaPerfil.entrada.pasante_real.forEach((p, i) => assert.ok(Math.abs(p - esperadoMoreno[i]) < 5e-8));
+  assert.equal(resultadoPerfil.bandas.bloco.at(-1).origen, 'manual');
+  assert.equal(resultadoPerfil.perfil_granulometrico.fuente_manual, 'Referencia manual de la prueba');
+  const desviacion = auditoriaPerfil.entrada.pasante_real.reduce((total, valor, i) =>
+    total + Math.abs(valor - (auditoriaPerfil.entrada.banda_min[i] + auditoriaPerfil.entrada.banda_max[i]) / 2), 0) / 9;
+  const residual = auditoriaPerfil.entrada.pasante_real.reduce((total, valor, i) =>
+    total + Math.max(0, auditoriaPerfil.entrada.banda_min[i] - valor, valor - auditoriaPerfil.entrada.banda_max[i]), 0);
+  assert.ok(Math.abs(resultadoPerfil.fase_2_4_criterios.desviacion_media_centro - desviacion) < 1e-9);
+  assert.ok(Math.abs(resultadoPerfil.fase_1.error_total - residual) < 1e-9);
+  assert.equal((100 - desviacion).toFixed(2), '90.55');
+  assert.equal(residual.toFixed(2), '9.14');
+  assert.equal(resultadoPerfil.auditoria_industrial.validacion_tabla_virtual.mezcla_materiales.estado, 'no_viable');
   assert.ok(auditoriaPerfil.funciones.includes('generar_auditoria_completa'));
 });

@@ -58,7 +58,7 @@ class FinuraDinamicaTest(unittest.TestCase):
         for medido, esperado in zip(acumulados, map(sum, zip(*estimados)), strict=True):
             self.assertAlmostEqual(medido, esperado, delta=0.056)
         self.assertEqual(acumulados, sorted(acumulados))
-        self.assertEqual(datos["mix_pasante"], [round(100 - v, 1) for v in acumulados])
+        self.assertEqual(datos["mix_pasante"], [100 - v for v in acumulados])
         self.assertEqual(acumulados[-1], 100)
 
     def test_a_conserva_curva_y_mf_historico_configurado(self):
@@ -73,7 +73,8 @@ class FinuraDinamicaTest(unittest.TestCase):
             ("Brita 2", 25, [0, 8, 168, 570, 34, 6, 0, 0], 7),
             ("Areia Ind.", 10, [0, 0, 13, 227, 150, 91, 65, 56], 120),
         ])
-        self.assertEqual(datos["mix_pasante"], [98.6, 88.0, 73.5, 38.1, 27.5, 15.2, 5.7, 2.6, 0.0])
+        self.assertEqual([round(v, 1) for v in datos["mix_pasante"]],
+                         [98.6, 88.0, 73.5, 38.1, 27.5, 15.2, 5.7, 2.6, 0.0])
         self.assertEqual(datos["modulo_finura"], 4.37)
         self.assertEqual(datos["finura"]["estado"], "calculado")
         self.assertEqual({p["origen"] for p in datos["finura"]["puntos"]}, {"medido"})
@@ -90,6 +91,11 @@ class FinuraDinamicaTest(unittest.TestCase):
         }):
             datos = self.calcular([10, 8, 4, 2, 1, "500 µm", 0.25, 0.125, "63 mic"], muestras)
         self.validar_curvas(datos, muestras)
+        esperado = [98.9790615, 98.1323407, 57.7286654, 42.2202043, 30.0997828,
+                    18.8622936, 10.1572057, 2.5730525, 0.4957698]
+        for calculado, referencia in zip(datos["mix_pasante"][:-1], esperado, strict=True):
+            self.assertAlmostEqual(calculado, referencia, places=7)
+        self.assertAlmostEqual(sum(datos["mix_acum"][:-1]) / 100, 5.4075162, places=7)
         finura = datos["finura"]
         self.assertEqual(finura["estado"], "estimado")
         self.assertEqual(finura["valor"], 4.13)

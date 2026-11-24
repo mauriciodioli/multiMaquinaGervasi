@@ -2308,8 +2308,8 @@
                 ? tAuditoria('operator_action_produce_desc', 'Trabajar con la receta indicada y mantener la relación de carga durante la producción.')
                 : tAuditoria('operator_action_stop_desc', 'No liberar esta mezcla a planta. Ajustar la combinación en laboratorio antes de producir.');
             const calidadOperacion = !bandaEvaluable ? avisoBanda : criterios.es_buena_calidad
-                ? tAuditoria('quality_text_stable', 'Calidad granulométrica estable.')
-                : tAuditoria('quality_text_watch', 'La mezcla cumple banda, pero conviene vigilar estabilidad y repetir control.');
+                ? tAuditoria('quality_text_stable', 'Curva cercana al centro de la banda.')
+                : tAuditoria('quality_text_watch', 'La curva se aleja del centro de la banda.');
             const calidadPorcentaje = Math.max(0, 100 - criterios.desviacion_media_centro);
             const calidadPorcentajeTexto = bandaEvaluable ? porcentaje(calidadPorcentaje, 2) : noEvaluado;
             const calidadDetalle = bandaEvaluable ? fmtAuditoria(
@@ -2326,9 +2326,11 @@
             const textoDecision = !bandaEvaluable ? noEvaluado : criterios.cumple_banda
                 ? tAuditoria('decision_no_virtual', 'NO GENERAR tabla virtual')
                 : tAuditoria('decision_generate_virtual', 'GENERAR tabla virtual');
-            const razonDecision = !bandaEvaluable ? criterios.razon : criterios.cumple_banda
+            const razonDecision = !bandaEvaluable ? criterios.razon : criterios.cumple_banda && fase1.cumpl_count === fase1.n_tamices
                 ? tAuditoria('decision_reason_ok', 'La solución actual ya satisface la especificación.')
-                : tAuditoria('decision_reason_fail', 'La solución actual NO satisface la especificación.');
+                : criterios.cumple_banda
+                    ? tAuditoria('decision_reason_threshold', 'Se alcanzó el umbral, pero hay tamices fuera de banda.')
+                    : tAuditoria('decision_reason_fail', 'La solución actual NO satisface la especificación.');
             const instruccionOperador = bandaInterpolada ? avisoInterpolacion : esModoMateriales
                 ? fmtAuditoria(
                     'operator_instruction_recipe',
@@ -2946,13 +2948,16 @@
                 const estadoReal1 = !evaluarTamiz ? 'N/D' : (pasanteReal >= bandaMin && pasanteReal <= bandaMax) ? '✓' : '✗';
                 const estadoVirt = !bandaEvaluable ? 'N/D' : (pasanteVirt >= bandaMin && pasanteVirt <= bandaMax) ? '✓' : '✗';
                 const bandaTexto = bandaMin == null || bandaMax == null ? 'N/D' :
-                    `${bandaProducto?.origen === 'interpolated' ? '≈ ' : ''}[${bandaMin}-${bandaMax}]%`;
+                    `${bandaProducto?.origen === 'interpolated' ? '≈ ' : ''}[${bandaMin.toFixed(2)}–${bandaMax.toFixed(2)}]%`;
+                const fuenteManual = bandaProducto?.origen === 'manual' ? datos.perfil_granulometrico?.fuente_manual : null;
                 
                 html += `
                     <tr data-curve-index="${i}">
                         <td><strong>${tamiz}</strong></td>
                         <td>${pasanteReal.toFixed(2)}%</td>
-                        <td style="border-right: 2px solid #999;">${bandaTexto}</td>
+                        <td style="border-right: 2px solid #999;">${bandaTexto}
+                            ${fuenteManual ? `<small class="banda-fuente-manual" data-tamiz="${tamiz}"></small>` : ''}
+                        </td>
                         <td>
                             <button
                                 type="button"
@@ -3012,6 +3017,9 @@
             `;
             
             document.getElementById('auditoriaResultado').innerHTML = html;
+            vista.querySelectorAll('.banda-fuente-manual').forEach(nodo => {
+                nodo.textContent = ` · ${datos.perfil_granulometrico.fuente_manual}`;
+            });
 
             if (typeof I18N !== 'undefined' && I18N && typeof I18N.applyTranslations === 'function') {
                 I18N.applyTranslations(document.getElementById('auditoriaResultado'));

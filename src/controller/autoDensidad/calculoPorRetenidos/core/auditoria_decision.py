@@ -5,6 +5,7 @@ Fase 1-6 del sistema de optimización granulométrica
 """
 
 import numpy as np
+from scipy.optimize import linprog
 from typing import Any, Dict, List, Optional, Tuple
 from .nucleo_tabla_virtual import generar_tabla_virtual, validar_tabla_virtual
 
@@ -215,12 +216,15 @@ def _analizar_monotonicidad_y_saltos(
         )
         salto = actual - siguiente
         salto_abs = abs(salto)
+        octavas = abs(np.log2(float(tamices[i])) - np.log2(float(tamices[i + 1])))
+        tasa = float(salto_abs / octavas) if octavas > 0 else None
 
         saltos.append({
             "tamiz_superior": float(tamices[i]),
             "tamiz_inferior": float(tamices[i + 1]),
             "salto": round(salto, 2),
             "salto_abs": round(salto_abs, 2),
+            "pp_por_octava": round(tasa, 2) if tasa is not None else None,
         })
 
         if monotonia["aplica"]:
@@ -249,8 +253,8 @@ def _analizar_monotonicidad_y_saltos(
         if salto_abs > 20.0:
             detalle = (
                 f"Salto de {salto_abs:.2f}% entre {_tamiz_label(tamices[i])} y {_tamiz_label(tamices[i + 1])}. "
-                "Es brusco para una curva estable y puede indicar mezcla artificial, material mal representado "
-                "o corrección demasiado agresiva del algoritmo."
+                + (f"Equivale a {tasa:.2f} puntos porcentuales por octava. " if tasa is not None else "")
+                + "Revisar la masa retenida en ese intervalo y la separación entre aberturas."
             )
             _agregar_problema(problemas, "ERROR MODERADO", "Salto brusco entre tamices", detalle)
 
@@ -411,6 +415,28 @@ def _analizar_materiales(
     }
 
 
+def _verificar_mezcla_virtual(curva, materiales):
+    """Mínima desviación máxima con pesos no negativos que suman uno."""
+    curvas = [_material_a_pasante(m, len(curva)) for m in materiales or []]
+    if not curvas or any(c is None or not np.isfinite(c).all() for c in curvas):
+        return {"estado": "no_evaluado"}
+    matriz = np.asarray(curvas).T
+    unos = np.ones((len(curva), 1))
+    n = len(curvas)
+    resultado = linprog(
+        [*([0.0] * n), 1.0],
+        A_ub=np.vstack((np.hstack((matriz, -unos)), np.hstack((-matriz, -unos)))),
+        b_ub=np.concatenate((curva, -curva)),
+        A_eq=[[1.0] * n + [0.0]], b_eq=[1.0],
+        bounds=[(0, 1)] * n + [(0, None)], method="highs"
+    )
+    if not resultado.success:
+        return {"estado": "no_evaluado"}
+    error = float(resultado.fun)
+    return {"estado": "viable" if error <= TOLERANCIA_BANDA else "no_viable",
+            "error_maximo_minimo_pp": error}
+
+
 def _validar_tabla_virtual_industrial(
     fase5: Dict[str, Any],
     reporte_validacion: Dict[str, Any],
@@ -449,6 +475,11 @@ def _validar_tabla_virtual_industrial(
     if not fase5["valida"]:
         detalle = ", ".join(reporte_validacion.get("fallos", [])) or "Validación física fallida"
         _agregar_problema(problemas, "ERROR CRITICO", "Tabla virtual inválida", detalle)
+    viabilidad = reporte_validacion.get("mezcla_materiales", {})
+    if viabilidad.get("estado") == "no_viable":
+        error = viabilidad["error_maximo_minimo_pp"]
+        _agregar_problema(problemas, "ERROR CRITICO", "Tabla virtual no reproducible con los materiales disponibles",
+                         f"La mejor mezcla todavía difiere en hasta {error:.2f} puntos porcentuales.")
 
     for problema in analisis_virtual.get("problemas", []):
         if problema["severidad"] in {"ERROR CRITICO", "ERROR MODERADO"}:
@@ -466,6 +497,7 @@ def _validar_tabla_virtual_industrial(
         "resumen": resumen,
         "problemas": problemas,
         "estado": estado,
+        "mezcla_materiales": viabilidad,
     }
 
 
@@ -755,7 +787,7 @@ def evaluar_criterios_decision(
         "umbral_cumplimiento": umbral_cumplimiento,
         "cumple_banda": cumple_banda,
         
-        "desviacion_media_centro": round(desviacion_media_centro, 2),
+        "desviacion_media_centro": float(desviacion_media_centro),
         "umbral_calidad": umbral_calidad,
         "es_buena_calidad": es_buena_calidad,
         
@@ -871,6 +903,7 @@ def generar_auditoria_completa(
                 banda_max=banda_max.tolist()
             )
             es_valida = bool(es_valida)  # Convertir a bool Python para JSON
+            reporte_validacion["mezcla_materiales"] = _verificar_mezcla_virtual(pasante_virtual, materiales)
             
             # Calcular mejora
             cumpl_virtual = sum([1 for p, min_b, max_b in zip(pasante_virtual, banda_min, banda_max) if _esta_dentro_banda(p, min_b, max_b)])
@@ -924,14 +957,14 @@ def generar_auditoria_completa(
         "cumplimiento_pct": porcentaje(cumpl_inicial_pct, 1),
         "cumpl_count": cumpl_inicial,
         "n_tamices": len(tamices),
-        "error_total": porcentaje(error_real, 2),
+        "error_total": float(error_real) if error_real is not None else None,
         "estado": ("PARCIAL" if cumpl_inicial_pct < 100 else "PERFECTO") if evaluar_banda else "NO EVALUADO"
     }
 
     fase_2_4 = {
         "cumplimiento_banda_pct": porcentaje(criterios['cumplimiento_banda_pct'], 1),
         "cumple_banda": bool(criterios['cumple_banda']),
-        "desviacion_media_centro": porcentaje(criterios['desviacion_media_centro'], 2),
+        "desviacion_media_centro": criterios['desviacion_media_centro'],
         "es_buena_calidad": bool(criterios['es_buena_calidad']),
         "decision": criterios['decision'],
         "razon": criterios['razon'],

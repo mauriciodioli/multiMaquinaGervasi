@@ -50,7 +50,7 @@ def _acum_to_ind(acum_list):
 
     return ind
 
-def _acum_desc(ret_ind_list, debug=False):
+def _acum_desc(ret_ind_list, debug=False, decimales=2):
     """
     Convierte retido individual → acumulado.
     Si detecta que los datos parecen acumulados, los corrige automáticamente.
@@ -77,7 +77,7 @@ def _acum_desc(ret_ind_list, debug=False):
         acum.append(s)
 
     # 🔧 Saneo numérico
-    acum = [min(100.0, max(0.0, round(x, 2))) for x in acum]
+    acum = [min(100.0, max(0.0, round(x, decimales) if decimales is not None else x)) for x in acum]
 
     # 🔍 Validación final
     if debug:
@@ -95,7 +95,7 @@ def _mezcla_ponderada_acum(materiales, pesos=None):
     for m, w in zip(materiales, pesos):
         for k in range(n):
             mix_acum[k] += w * m['ret_acum'][k]
-    return [round(x, 1) for x in mix_acum]
+    return [100.0 if abs(x - 100.0) < 1e-12 else min(100.0, max(0.0, x)) for x in mix_acum]
 
 
 def _seleccionar_metodo_finura(datos):
@@ -175,8 +175,8 @@ def _finura_modulus(mix_acum, tamices, metodo=None):
     if faltantes:
         return dict(resultado, motivo="faltan_tamices", tamices_faltantes=faltantes, puntos=puntos)
     estado = "estimado" if any(p["origen"] == "interpolado" for p in puntos) else "calculado"
-    return dict(resultado, estado=estado, puntos=puntos,
-                valor=round(math.fsum(p["ret_acum"] for p in puntos) / 100, 2))
+    valor = math.fsum(p["ret_acum"] for p in puntos) / 100
+    return dict(resultado, estado=estado, puntos=puntos, valor=round(valor, 2), valor_exacto=valor)
 
 
 def _retidos_de_masas(material, eje_entrada, tamices):
@@ -674,8 +674,8 @@ def _reparar_curvas_material_auditoria(material, tamices):
 
     assert len(retido_ind) == n_tamices, f"{nombre}: retido_ind reparado len={len(retido_ind)} != tamices len={n_tamices}"
 
-    retido_acum = [round(v, 6) for v in np.cumsum(retido_ind).tolist()]
-    pasante_acum = [round(100.0 - float(v), 6) for v in retido_acum]
+    retido_acum = np.cumsum(retido_ind).tolist()
+    pasante_acum = [100.0 - v for v in retido_acum]
 
     assert len(retido_acum) == n_tamices, f"{nombre}: retido_acum len={len(retido_acum)} != tamices len={n_tamices}"
     assert len(pasante_acum) == n_tamices, f"{nombre}: pasante_acum len={len(pasante_acum)} != tamices len={n_tamices}"
@@ -692,8 +692,8 @@ def _reparar_curvas_material_auditoria(material, tamices):
     )
 
     material_reparado = dict(material)
-    material_reparado['retido_ind_pct'] = [round(float(v), 6) for v in retido_ind]
-    material_reparado['pasantes'] = [round(float(v), 6) for v in pasante_acum]
+    material_reparado['retido_ind_pct'] = retido_ind
+    material_reparado['pasantes'] = pasante_acum
     material_reparado['tipo_curva_detectado'] = fuente
     return material_reparado
 
@@ -885,7 +885,7 @@ def granulometria_retido():
             log(f"   → Usando datos originales como fallback")
             ret_ind_norm = ret_ind_ord  # Fallback a datos originales
 
-        ret_acum_ord = _acum_desc(ret_ind_norm, debug=debug)
+        ret_acum_ord = _acum_desc(ret_ind_norm, debug=debug, decimales=None)
 
         # logs por material
         check_sum_100(ret_ind_norm, f"{nombre} (IND)")
@@ -900,16 +900,16 @@ def granulometria_retido():
             "nombre": nombre,
             "proporcion_pct": round(p, 2),
             "w": round(w, 6),
-            "ret_ind": [round(x, 2) for x in ret_ind_norm],
-            "ret_acum": [round(x, 2) for x in ret_acum_ord],
-            "pasante": [round(100 - x, 2) for x in ret_acum_ord],
+            "ret_ind": ret_ind_norm,
+            "ret_acum": ret_acum_ord,
+            "pasante": [100 - x for x in ret_acum_ord],
         })
 
     # 3) mezcla ponderada (acumulado)
     mix_acum = _mezcla_ponderada_acum(materiales, [p / total_pct for p in proporciones])
 
     # 🔥 convertir a PASANTE
-    mix_pasante = [round(100 - v, 1) for v in mix_acum]
+    mix_pasante = [100 - v for v in mix_acum]
     
     log("\n> MIX ACUM (ponderado):", ["{:.1f}".format(x) for x in mix_acum])
     log("\n> MIX PASANTE:", ["{:.1f}".format(x) for x in mix_pasante])
@@ -2181,7 +2181,15 @@ def _crear_agregado_correctivo(
     }
 
 
-def generar_acciones_zaranda(error_gruesa, error_media, error_fina):
+def _mallas_zaranda(tamices, indices):
+    aberturas = sorted({float(tamices[i]) for i in indices if tamices[i] != FONDO}, reverse=True)
+    if not aberturas:
+        return None
+    extremos = [aberturas[0]] if len(aberturas) == 1 else [aberturas[0], aberturas[-1]]
+    return "–".join(f"{d:g}" for d in extremos) + " mm"
+
+
+def generar_acciones_zaranda(error_gruesa, error_media, error_fina, malla_media=None, malla_fina=None):
     """
     Genera lista de acciones recomendadas para operación de zaranda
     
@@ -2200,7 +2208,8 @@ def generar_acciones_zaranda(error_gruesa, error_media, error_fina):
 
     # GRUESO
     if error_gruesa < -20:
-        acciones.append("GRUESO: Re-zarandear por malla media (2.4–1.2 mm) y reducir uso")
+        acciones.append(f"GRUESO: Verificar malla media ({malla_media}) antes de re-zarandear" if malla_media
+                        else "GRUESO: Verificar las mallas disponibles antes de re-zarandear")
     elif error_gruesa > 20:
         acciones.append("GRUESO: Mantener y aumentar proporción")
     else:
@@ -2208,7 +2217,8 @@ def generar_acciones_zaranda(error_gruesa, error_media, error_fina):
 
     # MEDIO
     if error_media < -20:
-        acciones.append("MEDIO: Re-zarandear por malla fina (0.6–0.3 mm)")
+        acciones.append(f"MEDIO: Verificar malla fina ({malla_fina}) antes de re-zarandear" if malla_fina
+                        else "MEDIO: Verificar las mallas disponibles antes de re-zarandear")
     elif error_media > 20:
         acciones.append("MEDIO: Mantener y aumentar proporción")
     else:
@@ -2341,7 +2351,9 @@ def generar_propuesta_3_agregados(
         acciones_zaranda = generar_acciones_zaranda(
             error_gruesa=zonas['gruesa']['error_total'],
             error_media=zonas['media']['error_total'],
-            error_fina=zonas['fina']['error_total']
+            error_fina=zonas['fina']['error_total'],
+            malla_media=_mallas_zaranda(tamices, zonas['media']['indices']),
+            malla_fina=_mallas_zaranda(tamices, zonas['fina']['indices']),
         )
         log(f"\n[PROPUESTA 3-AGG] Acciones zaranda generadas: {len(acciones_zaranda)} recomendaciones")
         for accion in acciones_zaranda:
@@ -2923,7 +2935,19 @@ def generar_instruccion_receta(proporciones_dict):
     return receta
 
 
-def generar_orden_operativa(materiales, lang="es"):
+def _zona_y_malla_operativa(tamices, indice):
+    eje = [t for t in tamices or [] if t != FONDO]
+    if indice >= len(eje):
+        return "fino", None
+    zonas = _calcular_zonas_defectos([0] * len(eje), eje)
+    for origen, destino, tipo in (("gruesa", "media", "grueso"), ("media", "fina", "medio")):
+        if indice in zonas[origen]["indices"]:
+            finos = [i for i in zonas[destino]["indices"] if indice < i < len(eje)]
+            return tipo, _mallas_zaranda(eje, finos)
+    return "fino", None
+
+
+def generar_orden_operativa(materiales, lang="es", tamices=None):
     """
     Transforma materiales de propuesta en orden operativa para planta.
     Generación de instrucciones paso a paso para el operador.
@@ -3019,7 +3043,7 @@ def generar_orden_operativa(materiales, lang="es"):
     # Obtener diccionario de idioma, fallback a español
     msgs = traducciones.get(lang, traducciones["es"])
     
-    if not materiales or not isinstance(materiales, list):
+    if not materiales or not isinstance(materiales, list) or not tamices:
         return []
     
     orden = []
@@ -3054,18 +3078,17 @@ def generar_orden_operativa(materiales, lang="es"):
             else:
                 max_index = 0
         
-        if max_index <= 2:
+        zona, malla = _zona_y_malla_operativa(tamices, max_index)
+        if zona == "grueso" and malla:
             tipo = msgs["tipo_grueso"]
             tipo_interno = "grueso"  # ← Para frontend (colores, estilos)
             accion = msgs["accion_rezarandear"]
-            malla = "2.4–1.2 mm"
             resultado = msgs["resultado_grueso"]
             uso = msgs["uso_grueso"]
-        elif 3 <= max_index <= 4:
+        elif zona == "medio" and malla:
             tipo = msgs["tipo_medio"]
             tipo_interno = "medio"  # ← Para frontend (colores, estilos)
             accion = msgs["accion_rezarandear"]
-            malla = "0.6–0.3 mm"
             resultado = msgs["resultado_medio"]
             uso = msgs["uso_medio"]
         else:  # max_index >= 5
@@ -3093,7 +3116,7 @@ def generar_orden_operativa(materiales, lang="es"):
     return orden
 
 
-def generar_orden_operativa_real(materiales_originales, lang="es"):
+def generar_orden_operativa_real(materiales_originales, lang="es", tamices=None):
     """
     NUEVA: Genera orden operativa REAL para planta basada en materiales ORIGINALES (difusion 1,2,3)
     CON INTERNACIONALIZACIÓN desde backend
@@ -3179,7 +3202,7 @@ def generar_orden_operativa_real(materiales_originales, lang="es"):
     # Obtener diccionario de idioma, fallback a español
     msgs = traducciones.get(lang, traducciones["es"])
     
-    if not materiales_originales or not isinstance(materiales_originales, list):
+    if not materiales_originales or not isinstance(materiales_originales, list) or not tamices:
         return []
     
     orden = []
@@ -3209,18 +3232,17 @@ def generar_orden_operativa_real(materiales_originales, lang="es"):
             else:
                 max_index = 0
         
-        if max_index <= 2:
+        zona, malla = _zona_y_malla_operativa(tamices, max_index)
+        if zona == "grueso" and malla:
             tipo = msgs["tipo_grueso"]
             tipo_interno = "grueso"  # ← Para frontend (colores, estilos)
             accion = msgs["accion_rezarandear"]
-            malla = "2.4–1.2 mm"
             resultado = msgs["resultado_grueso"]
             uso = msgs["uso_grueso"]
-        elif 3 <= max_index <= 4:
+        elif zona == "medio" and malla:
             tipo = msgs["tipo_medio"]
             tipo_interno = "medio"  # ← Para frontend (colores, estilos)
             accion = msgs["accion_rezarandear"]
-            malla = "0.6–0.3 mm"
             resultado = msgs["resultado_medio"]
             uso = msgs["uso_medio"]
         else:  # max_index >= 5
@@ -3590,7 +3612,7 @@ def api_auditoria():
                     if materiales_con_retido:
                         # 🌐 Obtener idioma desde cookies
                         lang = request.cookies.get('lang', 'es')
-                        orden = generar_orden_operativa(materiales_con_retido, lang=lang)
+                        orden = generar_orden_operativa(materiales_con_retido, lang=lang, tamices=tamices)
                         if orden:
                             resultado['orden_operativa'] = orden
                             import json
@@ -3617,7 +3639,7 @@ def api_auditoria():
                 print(f"[DEBUG] Idioma obtenido desde cookies: {lang}")
                 
                 print(f"[DEBUG] Llamando generar_orden_operativa_real()...")
-                orden_real = generar_orden_operativa_real(materiales_originales_para_orden, lang=lang)
+                orden_real = generar_orden_operativa_real(materiales_originales_para_orden, lang=lang, tamices=tamices)
                 print(f"[DEBUG] orden_real result: {orden_real}")
                 print(f"[DEBUG] orden_real length: {len(orden_real)}")
                 
@@ -3766,7 +3788,7 @@ def api_consolidar_ajuste_auditoria():
                         material['proporcion_pct'] = proporciones_consolidadas[nombre]
 
             lang = request.cookies.get('lang', 'es')
-            orden_real = generar_orden_operativa_real(materiales_reparados, lang=lang) if materiales_reparados else []
+            orden_real = generar_orden_operativa_real(materiales_reparados, lang=lang, tamices=tamices) if materiales_reparados else []
             if orden_real:
                 resultado['orden_operativa_real'] = orden_real
         except Exception as order_error:
